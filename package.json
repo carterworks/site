@@ -1,0 +1,24 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "[![Netlify Status](https://api.netlify.com/api/v1/badges/9f870e7c-beb9-4575-b378-92c773a65353/deploy-status)](https://app.netlify.com/sites/carterworks/deploys)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "parcel src/index.html",
+    "build": "parcel build src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carterworks/site.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/carterworks/site/issues"
+  },
+  "homepage": "https://github.com/carterworks/site#readme",
+  "devDependencies": {
+    "parcel": "^1.12.4"
+  }
+}
