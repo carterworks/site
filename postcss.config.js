@@ -1,5 +1,6 @@
 const autoprefixer = require("autoprefixer");
+const tailwindcss = require("tailwindcss");
 
 module.exports = {
-  plugins: [autoprefixer({ grid: true })],
+  plugins: [tailwindcss, autoprefixer({ grid: true })],
 };

@@ -23,5 +23,7 @@
     "autoprefixer": "^9.8.5",
     "parcel": "^1.12.4"
   },
-  "dependencies": {}
+  "dependencies": {
+    "tailwindcss": "^1.5.1"
+  }
 }
