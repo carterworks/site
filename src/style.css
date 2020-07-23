@@ -6,12 +6,27 @@
   font-size: 20px;
 }
 
+body {
+  @apply text-gray-100 bg-gray-900;
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    @apply bg-gray-100 text-gray-900;
+  }
+}
+
 h1 {
-  @apply text-xl text-center;
+  @apply text-2xl text-center;
 }
 
 h2 {
   @apply text-lg mt-5;
+}
+
+h1,
+h2 {
+  @apply font-sans;
 }
 
 a {
