@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/carterworks/site#readme",
   "devDependencies": {
-    "autoprefixer": "^9.8.5",
+    "autoprefixer": "^9.8.6",
     "parcel": "^1.12.4"
   },
   "dependencies": {
