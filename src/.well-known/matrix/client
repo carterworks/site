@@ -1,9 +1,0 @@
-{
-	"m.homeserver": {
-		"base_url": "https://matrix.carter.works"
-	}
-,
-	"m.identity_server": {
-		"base_url": "https://matrix.carter.works"
-	}
-}

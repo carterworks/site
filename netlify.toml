@@ -12,10 +12,3 @@
 
   # Default build command.
   command = "npm run build"
-
-[[headers]]
-# CORS Headers for the .well-known
-# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-well-known.md#option-1-copying-the-files-manually-to-your-base-domains-server
-  for = "/.well-known/matrix/server"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
