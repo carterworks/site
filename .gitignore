@@ -71,3 +71,6 @@ dist
 __sapper__
 
 .vscode/
+
+# Snowpack builds
+build/
