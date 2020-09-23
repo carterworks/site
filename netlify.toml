@@ -12,3 +12,5 @@
 
   # Default build command.
   command = "yarn build"
+
+  NODE_VERSION = 12
