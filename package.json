@@ -21,8 +21,7 @@
   "homepage": "https://github.com/carterworks/site#readme",
   "devDependencies": {
     "autoprefixer": "^9.8.6",
-    "parcel": "^1.12.4",
-    "node-forge": ">=0.10.0"
+    "parcel": "^1.12.4"
   },
   "dependencies": {
     "tailwindcss": "^1.8.10"
