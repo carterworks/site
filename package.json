@@ -2,28 +2,38 @@
   "name": "site",
   "version": "1.0.0",
   "description": "[![Netlify Status](https://api.netlify.com/api/v1/badges/9f870e7c-beb9-4575-b378-92c773a65353/deploy-status)](https://app.netlify.com/sites/carterworks/deploys)",
-  "main": "index.js",
-  "scripts": {
-    "dev": "parcel src/index.html",
-    "build": "parcel build src/index.html"
-  },
+  "license": "ISC",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carterworks/site.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "private": true,
-  "bugs": {
-    "url": "https://github.com/carterworks/site/issues"
-  },
-  "homepage": "https://github.com/carterworks/site#readme",
-  "devDependencies": {
-    "autoprefixer": "^9.8.6",
-    "parcel": "^1.12.4"
+  "scripts": {
+    "start": "snowpack dev",
+    "build": "snowpack build",
+    "test": "echo \"This template does not include a test runner by default.\" && exit 1",
+    "format": "prettier --write \"src/**/*.js\"",
+    "lint": "prettier --check \"src/**/*.js\""
   },
   "dependencies": {
-    "tailwindcss": "^1.8.10"
+    "tailwindcss": "^1.6.2"
+  },
+  "devDependencies": {
+    "husky": ">=4",
+    "lint-staged": ">=10",
+    "postcss-cli": "^7.1.1",
+    "postcss-import": "^12.0.1",
+    "prettier": "^2.0.5",
+    "snowpack": "^2.7.6"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": "prettier --write",
+    "*.html": "prettier --write",
+    "*.css": "prettier --write"
   }
 }
