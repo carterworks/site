@@ -8,4 +8,8 @@ module.exports = {
   theme: {},
   variants: {},
   plugins: [],
+  future: {
+    purgeLayersByDefault: true,
+    removeDeprecatedGapUtilities: true,
+  },
 };
