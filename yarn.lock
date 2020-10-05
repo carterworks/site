@@ -129,18 +129,18 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-3.1.0.tgz#d8735532635bea69ad39119df5f0f10099bd09dc"
   integrity sha512-n4J+zu52VdY43kdi/XdI9DzuMr1Mur8zFL5ZRG2opCans9aiFwkPxHYFEb5Xgy7n1Z4K6WfI4FpqUqsh3E8BPQ==
 
-"@snowpack/plugin-build-script@^2.0.7":
-  version "2.0.7"
-  resolved "https://registry.yarnpkg.com/@snowpack/plugin-build-script/-/plugin-build-script-2.0.7.tgz#1d133030ceac51efce471b66622d1b7320d5ab9f"
-  integrity sha512-f1fZN0Blsfk25oMBf62wvhHm6v7DUG0W85+JFKzYI6SHOIHrYL37o9xaJX7RJpn2kEKCRymWsQo4PclQdnL77w==
+"@snowpack/plugin-build-script@^2.0.8":
+  version "2.0.8"
+  resolved "https://registry.yarnpkg.com/@snowpack/plugin-build-script/-/plugin-build-script-2.0.8.tgz#fcec132248724ff0a5239bb8501b4df207cb5c1b"
+  integrity sha512-ehYC43yoSuzisnhIA8IYLtc2i7NDeuAtRuLFD650uB8i0Ibtx6R5x9rM54JuPpxiCjPL2g04000yHFxMiCeEVA==
   dependencies:
     execa "^4.0.3"
     npm-run-path "^4.0.1"
 
-"@snowpack/plugin-run-script@^2.1.3":
-  version "2.1.3"
-  resolved "https://registry.yarnpkg.com/@snowpack/plugin-run-script/-/plugin-run-script-2.1.3.tgz#fb689b76955c63c16934b4eb52af9f478416313a"
-  integrity sha512-DhV7KBHnUULtP7eQGHTAGdYsjI1q+vMuX07X8h/v2JnFVaZqowOBjnjQDfbY9oGtw/PZqiY4KEegAh3qxFqODQ==
+"@snowpack/plugin-run-script@^2.1.4":
+  version "2.1.4"
+  resolved "https://registry.yarnpkg.com/@snowpack/plugin-run-script/-/plugin-run-script-2.1.4.tgz#60d2f9672e5af2fbc81649d1b5f2417591ede0e4"
+  integrity sha512-ekxyjzDg+0QCB+S8kizPEoQvV6rMbfEffHg1ATTGw0VQp/67Sa2KxOStIQnvCpQLAJQX2vNLoPCq51nZJ/1BPQ==
   dependencies:
     execa "^4.0.3"
     npm-run-path "^4.0.1"
@@ -822,10 +822,10 @@ escape-string-regexp@^1.0.2, escape-string-regexp@^1.0.5:
   resolved "https://registry.yarnpkg.com/escape-string-regexp/-/escape-string-regexp-1.0.5.tgz#1b61c0562190a8dff6ae3bb2cf0200ca130b86d4"
   integrity sha1-G2HAViGQqN/2rjuyzwIAyhMLhtQ=
 
-esinstall@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/esinstall/-/esinstall-0.3.0.tgz#82e5c75e880ec35817c90333a1824afc4d05a5e6"
-  integrity sha512-kKatJfv7LxUnZLcxaQahdkiOe+ORZ5q7is2w2ztB7RqwsTIoyHM0Q4u0Hr+w12R5tvxGoh/LbwvnMMpe+UDIvA==
+esinstall@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/esinstall/-/esinstall-0.3.1.tgz#0d2340de9fabb29084ba8973eec00e947a92c72e"
+  integrity sha512-TXdM0UfDC7U+KsLLsC0fqXi1qtT2v7YZSm5KxtYMUzTZiVXy7dttAf0f6wIEZ2YoH6ebNwb4LZvT+KTm9vm6hQ==
   dependencies:
     "@rollup/plugin-alias" "^3.0.1"
     "@rollup/plugin-commonjs" "^15.0.0"
@@ -2173,13 +2173,13 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-snowpack@^2.13.1:
-  version "2.13.1"
-  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.13.1.tgz#ffee9c6f62fe23b740d72d048bd4393c4356f79f"
-  integrity sha512-t8zzoIGy9VGzjcxbTDpUxGZ24iS/UW6hjhWe5EPfJDe+olgxg4Kp9LRpGyq9A0m0v8mRz9CU9Z6co5KpQdzXAg==
+snowpack@^2.13.2:
+  version "2.13.2"
+  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.13.2.tgz#bfb9f3dd766ee550d19149b25522f4ef074e5e87"
+  integrity sha512-lzozE2QiuthAwvNZQTIGB13f/hjhr92AZx86ejTUkpSZ6SIzxCgVDDISYAjJXfSqDya51e97tyRK+YJcFdXppw==
   dependencies:
-    "@snowpack/plugin-build-script" "^2.0.7"
-    "@snowpack/plugin-run-script" "^2.1.3"
+    "@snowpack/plugin-build-script" "^2.0.8"
+    "@snowpack/plugin-run-script" "^2.1.4"
     cacache "^15.0.0"
     cachedir "^2.3.0"
     chokidar "^3.4.0"
@@ -2190,7 +2190,7 @@ snowpack@^2.13.1:
     detect-port "^1.3.0"
     es-module-lexer "^0.3.24"
     esbuild "^0.6.28"
-    esinstall "^0.3.0"
+    esinstall "^0.3.1"
     etag "^1.8.1"
     execa "^4.0.3"
     find-cache-dir "^3.3.1"
