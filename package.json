@@ -16,7 +16,7 @@
     "lint": "prettier --check \"src/**/*.js\""
   },
   "dependencies": {
-    "tailwindcss": "^1.8.10"
+    "tailwindcss": "^1.8.11"
   },
   "devDependencies": {
     "husky": ">=4",
