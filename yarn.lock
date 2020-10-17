@@ -124,18 +124,18 @@
     estree-walker "^1.0.1"
     picomatch "^2.2.2"
 
-"@snowpack/plugin-build-script@^2.0.9":
-  version "2.0.9"
-  resolved "https://registry.yarnpkg.com/@snowpack/plugin-build-script/-/plugin-build-script-2.0.9.tgz#c97e421a53c895e39a6cd57864647d58cccbd87f"
-  integrity sha512-y9f/q6QfbnaKmTMGAW9b42RcOYCXTcJhCgr/kgKIS7nHCYAXnuVUHonMVMkrYn8GMKnFNZSOFmV7brOLLN3rPQ==
+"@snowpack/plugin-build-script@^2.0.10":
+  version "2.0.10"
+  resolved "https://registry.yarnpkg.com/@snowpack/plugin-build-script/-/plugin-build-script-2.0.10.tgz#126f179a7bd8b603911ab345940e30e2882c6eb9"
+  integrity sha512-939mCxrvygPDH/osyGnR0KS+BnERW4Nnp+8NG9os8Ww1wI+V9nI/6a1qqoGhVbD8KX93bW8FrqMljLjXRb74eg==
   dependencies:
     execa "^4.0.3"
     npm-run-path "^4.0.1"
 
-"@snowpack/plugin-run-script@^2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@snowpack/plugin-run-script/-/plugin-run-script-2.1.5.tgz#7a71f896004404b8acb3efa0542170c45ae56fe7"
-  integrity sha512-dp71x7yCdcxS8f7OQE+uurrkXXKjQetekQz5iSX1XAiXHER0yOXNC/0y7+SgiMTEyYOvlwXTplzBDd+y8Puo6Q==
+"@snowpack/plugin-run-script@^2.1.6":
+  version "2.1.6"
+  resolved "https://registry.yarnpkg.com/@snowpack/plugin-run-script/-/plugin-run-script-2.1.6.tgz#49399c1b8103e55a4fbac5601708ba25bf272372"
+  integrity sha512-62Rz1ln3igt5uzpLZceSZwGVOj7wmdPW/UoxCRqSvBQ5NLtLCWmzJYUj+trq4e+pUSQPJgQPC26iAraENpm0kA==
   dependencies:
     execa "^4.0.3"
     npm-run-path "^4.0.1"
@@ -2045,13 +2045,13 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-snowpack@^2.14.0:
-  version "2.14.0"
-  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.14.0.tgz#b4dcf2712b8afd0ffce8e1fb2c1b5468ecde7a42"
-  integrity sha512-zYCJdqGBpOQJzid9DsNWVQOliCXOS/2bMpfRLC0iMMqRBDVdZ+wt4q0aGBQVBJd54fG3bxnhfVAcR63qgzCz1w==
+snowpack@^2.14.3:
+  version "2.14.3"
+  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.14.3.tgz#f4a0be107b66c5e780964d0cc629fda25d61249e"
+  integrity sha512-FDDYeOooDGEg7ewLTYT00jMTwSU8aAsrd/hLuQvpZWzLJaPDqiBEsxgYPtFHiEGEQ7AbYBZOAG+rhiFtU4zPvQ==
   dependencies:
-    "@snowpack/plugin-build-script" "^2.0.9"
-    "@snowpack/plugin-run-script" "^2.1.5"
+    "@snowpack/plugin-build-script" "^2.0.10"
+    "@snowpack/plugin-run-script" "^2.1.6"
     cacache "^15.0.0"
     cachedir "^2.3.0"
     chokidar "^3.4.0"
