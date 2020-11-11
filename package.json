@@ -24,7 +24,7 @@
     "postcss-cli": "^7.1.2",
     "postcss-import": "^12.0.1",
     "prettier": "^2.1.2",
-    "snowpack": "^2.17.0"
+    "snowpack": "^2.17.1"
   },
   "husky": {
     "hooks": {

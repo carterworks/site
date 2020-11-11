@@ -1180,6 +1180,11 @@ is-obj@^1.0.1:
   resolved "https://registry.yarnpkg.com/is-obj/-/is-obj-1.0.1.tgz#3e4729ac1f5fde025cd7d83a896dab9f4f67db0f"
   integrity sha1-PkcprB9f3gJc19g6iW2rn09n2w8=
 
+is-plain-object@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/is-plain-object/-/is-plain-object-5.0.0.tgz#4427f50ab3429e9025ea7d52e9043a9ef4159344"
+  integrity sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q==
+
 is-reference@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/is-reference/-/is-reference-1.2.1.tgz#8b2dac0b371f4bc994fdeaba9eb542d03002d0b7"
@@ -2045,10 +2050,10 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-snowpack@^2.17.0:
-  version "2.17.0"
-  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.17.0.tgz#bdcdfc1637e1f9a8bc7696edcf8e122183151b83"
-  integrity sha512-Up8J+pwQANPtvg81M86TU5Qk2rtuNnJiRwWI0qObcsSWVY8+39Uf/FtqQsdG1ecQ9AfhIjtUwpKNYqnJPH/D0w==
+snowpack@^2.17.1:
+  version "2.17.1"
+  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-2.17.1.tgz#9f00a4171526df2fa288026b5496d3e544de71ce"
+  integrity sha512-FCeIESACrCQTGTZW6rbSfe1RgOFMBRPk7I5Wn//3IRl+cLBoZ1THWMdthqbv/xiv0qlK3rHoXTBqrakf7LPAZQ==
   dependencies:
     "@snowpack/plugin-build-script" "^2.0.11"
     "@snowpack/plugin-run-script" "^2.2.0"
@@ -2070,6 +2075,7 @@ snowpack@^2.17.0:
     glob "^7.1.4"
     http-proxy "^1.18.1"
     httpie "^1.1.2"
+    is-plain-object "^5.0.0"
     isbinaryfile "^4.0.6"
     jsonschema "~1.2.5"
     kleur "^4.1.1"
