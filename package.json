@@ -19,6 +19,7 @@
     "tailwindcss": "^1.9.6"
   },
   "devDependencies": {
+    "@snowpack/plugin-build-script": "^2.1.0",
     "husky": ">=4",
     "lint-staged": ">=10",
     "postcss-cli": "^7.1.2",
