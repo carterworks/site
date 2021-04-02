@@ -1504,10 +1504,10 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-snowpack@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-3.2.0.tgz#d443bb0271ffc92cf73b71188f467b33f298e03d"
-  integrity sha512-YXVIxV43vWtvBFVISZk7HRBpFNopM+NvgkJP8/zvYU+GRm2Me+ifKR2lfJmxkbHw6JLHHko/ijHa27ICDtWQ5g==
+snowpack@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/snowpack/-/snowpack-3.2.2.tgz#e4d7b8fd96c5cfbfb8c596ee47de2f7118cc7fea"
+  integrity sha512-lt2FEFpvrWSBhFPlQxDr2hG7hnyucLEh7QSJqUUcAljrt8UoWJjTZlvZ4shGiJLkNjxMgGrJKj37y08/9OvXMw==
   dependencies:
     cli-spinners "^2.5.0"
     default-browser-id "^2.0.0"
