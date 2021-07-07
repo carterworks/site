@@ -1,40 +1,17 @@
 {
   "name": "site",
   "version": "1.0.0",
-  "description": "[![Netlify Status](https://api.netlify.com/api/v1/badges/9f870e7c-beb9-4575-b378-92c773a65353/deploy-status)](https://app.netlify.com/sites/carterworks/deploys)",
+  "description": "",
   "license": "MIT",
   "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carterworks/site.git"
   },
-  "scripts": {
-    "start": "snowpack dev",
-    "build": "snowpack build",
-    "test": "echo \"This template does not include a test runner by default.\" && exit 1",
-    "format": "prettier --write \"src/**/*.js\"",
-    "lint": "prettier --check \"src/**/*.js\""
-  },
-  "dependencies": {
-    "tailwindcss": "^1.9.6"
-  },
+  "scripts": {},
+  "dependencies": {},
   "devDependencies": {
-    "@snowpack/plugin-build-script": "^2.1.0",
-    "husky": ">=7",
-    "lint-staged": ">=11",
-    "postcss-cli": "^7.1.2",
-    "postcss-import": "^12.0.1",
-    "prettier": "^2.3.2",
-    "snowpack": "^3.7.1"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.js": "prettier --write",
-    "*.html": "prettier --write",
-    "*.css": "prettier --write"
+    "autoprefixer": "^10.2.6",
+    "tailwindcss": "^2.2.4"
   }
 }
