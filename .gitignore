@@ -21,3 +21,6 @@ node_modules/
 
 # build output
 build/
+
+# development intermediate builds
+.dev/

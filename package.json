@@ -11,13 +11,20 @@
   "scripts": {
     "build:css": "cross-env NODE_ENV=production tailwindcss -c tailwind.config.js --minify -i src/index.css -o build/index.css",
     "build:html": "cp src/index.html build/index.html",
-    "build": "concurrently 'npm:build:css' 'npm:build:html'"
+    "build": "concurrently 'npm:build:css' 'npm:build:html'",
+    "dev:css": "tailwindcss -c tailwind.config.js --watch -i src/index.css -o .dev/index.css",
+    "dev:html": "concurrently \"mkdir .dev\" \"cp src/index.html .dev/index.html\" \"chokidar 'src/index.html' -c 'cp src/index.html .dev/index.html'\"",
+    "dev:serve": "reload -d .dev/",
+    "dev": "concurrently 'mkdir .dev' 'npm:dev:serve' 'npm:dev:css' 'npm:dev:html'"
   },
   "dependencies": {},
   "devDependencies": {
     "autoprefixer": "^10.2.6",
+    "chokidar": "^3.5.2",
+    "chokidar-cli": "^2.1.0",
     "concurrently": "^6.2.0",
     "cross-env": "^7.0.3",
+    "reload": "^3.2.0",
     "tailwindcss": "^2.2.4"
   }
 }
