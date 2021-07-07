@@ -8,10 +8,16 @@
     "type": "git",
     "url": "git+https://github.com/carterworks/site.git"
   },
-  "scripts": {},
+  "scripts": {
+    "build:css": "cross-env NODE_ENV=production tailwindcss -c tailwind.config.js --minify -i src/index.css -o build/index.css",
+    "build:html": "cp src/index.html build/index.html",
+    "build": "concurrently 'npm:build:css' 'npm:build:html'"
+  },
   "dependencies": {},
   "devDependencies": {
     "autoprefixer": "^10.2.6",
+    "concurrently": "^6.2.0",
+    "cross-env": "^7.0.3",
     "tailwindcss": "^2.2.4"
   }
 }
