@@ -2,6 +2,7 @@
 import UrlLink from '../components/UrlLink.astro';
 import List from '../components/List.astro';
 import ListItem from '../components/ListItem.astro';
+import Heading from '../components/Heading.astro';
 ---
 <html lang="en">
   <head>
@@ -21,7 +22,7 @@ import ListItem from '../components/ListItem.astro';
   </head>
   <body class="subpixel-antialiased font-serif text-gray-100 bg-gray-900">
     <header class="max-w-lg mx-auto px-2 md:px-0">
-      <h1 class="text-2xl text-center font-sans">Hi, I'm Carter.</h1>
+      <Heading level={1}>Hi, I'm Carter.</Heading>
       <p>
         I'm a budding software developer, fresh out of college. I love a good UI
         and a smooth deploy.
@@ -29,7 +30,7 @@ import ListItem from '../components/ListItem.astro';
     </header>
     <main class="max-w-lg mx-auto px-2 md:px-0">
       <section>
-        <h2 class="text-lg mt-5 font-sans">Projects</h2>
+        <Heading level={2}>Projects</Heading>
         <List>
           <ListItem>
             <UrlLink
@@ -64,7 +65,7 @@ import ListItem from '../components/ListItem.astro';
         </List>
       </section>
       <section>
-        <h2 class="text-lg mt-5 font-sans">Jobs</h2>
+        <Heading level={2}>Jobs</Heading>
         <List>
           <ListItem>
             Simplifile
@@ -107,7 +108,7 @@ import ListItem from '../components/ListItem.astro';
         </List>
       </section>
       <section>
-        <h2 class="text-lg mt-5 font-sans">Hobbies include…</h2>
+        <Heading level={2}>Hobbies include…</Heading>
         <ul class="ml-5">
           <ListItem>Tinkering with Docker and Kubernetes</ListItem>
           <ListItem>Cooking</ListItem>
@@ -118,7 +119,7 @@ import ListItem from '../components/ListItem.astro';
         </ul>
       </section>
       <section>
-        <h2 class="text-lg mt-5 font-sans">Contact</h2>
+        <Heading level={2}>Contact</Heading>
         <ul class="ml-5">
           <ListItem>
             <UrlLink href="mailto:hello@site.carter.works">Email me…</UrlLink>
