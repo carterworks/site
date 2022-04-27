@@ -3,6 +3,6 @@ const {ordered = false} = Astro.props;
 const classList = ["ml-5"].join(" ")
 ---
 {ordered ? 
-    <ul class={classList}><slot/></ul> :
-    <ol class={classList}><slot/></ol>
+  <ul class={classList}><slot/></ul> :
+  <ol class={classList}><slot/></ol>
 }
