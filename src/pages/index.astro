@@ -1,5 +1,7 @@
 ---
-
+import UrlLink from '../components/UrlLink.astro';
+import List from '../components/List.astro';
+import ListItem from '../components/ListItem.astro';
 ---
 <html lang="en">
   <head>
@@ -28,119 +30,117 @@
     <main class="max-w-lg mx-auto px-2 md:px-0">
       <section>
         <h2 class="text-lg mt-5 font-sans">Projects</h2>
-        <ul class="ml-5">
-          <li class="list-disc">
-            <a 
-              class="underline"
+        <List>
+          <ListItem>
+            <UrlLink
               href="https://github.com/carterworks/side-projects/tree/master/discord-bots"
             >
               Discord Bots
-            </a>
+            </UrlLink>
             <span>—</span>
             <span>
               A few toy Discord Bots. Includes FTFYBot, which corrects your
               misspellings, and LMGTFYBot, which detects questions and snarkily
               Googles the word for you. Written in Go.
             </span>
-          </li>
-          <li class="list-disc">
-            <a 
-              class="underline"
+          </ListItem>
+          <ListItem>
+            <UrlLink
               href="https://github.com/carterworks/side-projects/tree/master/uta"
             >
               UTA
-            </a>
+            </UrlLink>
             <span>—</span>
             <span>
               A commandline utility and API wrapper for the Utah Transit
               Authority's API. Written in Go.
             </span>
-          </li>
-          <li class="list-disc">
-            <a class="underline" href="https://proposal.carter.works/">A Tinder Clone</a>
+          </ListItem>
+          <ListItem>
+            <UrlLink href="https://proposal.carter.works/">A Tinder Clone</UrlLink>
             <span>—</span>
             <span>My wife and I met on Tinder. This is how I proposed!</span>
-          </li>
-        </ul>
+          </ListItem>
+        </List>
       </section>
       <section>
         <h2 class="text-lg mt-5 font-sans">Jobs</h2>
-        <ul class="ml-5">
-          <li class="list-disc">
+        <List>
+          <ListItem>
             Simplifile
             <span>—</span>
             <span>Software Developer from Jan 2019 to Present</span>
-            <ul class="ml-5">
-              <li class="list-disc">Javascript/Typescript</li>
-              <li class="list-disc">Angular</li>
-              <li class="list-disc">Java</li>
-            </ul>
-          </li>
-          <li class="list-disc">
+            <List>
+              <ListItem>Javascript/Typescript</ListItem>
+              <ListItem>Angular</ListItem>
+              <ListItem>Java</ListItem>
+            </List>
+          </ListItem>
+          <ListItem>
             Lingotek
             <span>—</span>
             <span>Intern from May 2018 to December 2018</span>
-            <ul class="ml-5">
-              <li class="list-disc">Javascript</li>
-              <li class="list-disc">Vue</li>
-            </ul>
-          </li>
-          <li class="list-disc">
+            <List>
+              <ListItem>Javascript</ListItem>
+              <ListItem>Vue</ListItem>
+            </List>
+          </ListItem>
+          <ListItem>
             BYU Center for Teaching and Learning
             <span>—</span>
             <span>Front-End Developer from February 2016 to May 2018</span>
             <ul class="ml-5">
-              <li class="list-disc">Javascript</li>
-              <li class="list-disc">PHP</li>
+              <ListItem>Javascript</ListItem>
+              <ListItem>PHP</ListItem>
             </ul>
-          </li>
-          <li class="list-disc">
+          </ListItem>
+          <ListItem>
             Nu Skin
             <span>—</span>
             <span>Intern from May 2017 to August 2017</span>
             <ul class="ml-5">
-              <li class="list-disc">Javascript/Typescript</li>
-              <li class="list-disc">React</li>
-              <li class="list-disc">Microsoft Sharepoint</li>
+              <ListItem>Javascript/Typescript</ListItem>
+              <ListItem>React</ListItem>
+              <ListItem>Microsoft Sharepoint</ListItem>
             </ul>
-          </li>
-        </ul>
+          </ListItem>
+        </List>
       </section>
       <section>
         <h2 class="text-lg mt-5 font-sans">Hobbies include…</h2>
         <ul class="ml-5">
-          <li class="list-disc">Tinkering with Docker and Kubernetes</li>
-          <li class="list-disc">Cooking</li>
-          <li class="list-disc">
+          <ListItem>Tinkering with Docker and Kubernetes</ListItem>
+          <ListItem>Cooking</ListItem>
+          <ListItem>
             Collecting data about things, like my sugar glider's eating habits
-          </li>
-          <li class="list-disc">Playing video games</li>
+          </ListItem>
+          <ListItem>Playing video games</ListItem>
         </ul>
       </section>
       <section>
         <h2 class="text-lg mt-5 font-sans">Contact</h2>
         <ul class="ml-5">
-          <li class="list-disc">
-            <a class="underline" href="mailto:hello@site.carter.works">Email me…</a>
-          </li>
-          <li class="list-disc">
-            <a class="underline" href="https://www.linkedin.com/in/thatcartermcbride/">
+          <ListItem>
+            <UrlLink href="mailto:hello@site.carter.works">Email me…</UrlLink>
+          </ListItem>
+          <ListItem>
+            <UrlLink href="https://www.linkedin.com/in/thatcartermcbride/">
               …or connect with me on LinkedIn
-            </a>
-          </li>
-          <li class="list-disc">
-            <a class="underline" href="https://github.com/carterworks">
+            </UrlLink>
+          </ListItem>
+          <ListItem>
+            <UrlLink href="https://github.com/carterworks">
               …or improve my code on GitHub
-            </a>
-          </li>
-          <li class="list-disc">
-            <a class="underline" href="https://steamcommunity.com/id/CobraLaserFace/home">
+            </UrlLink>
+          </ListItem>
+          <ListItem>
+            <UrlLink href="https://steamcommunity.com/id/CobraLaserFace/home">
               …or play a game with me on Steam
-            </a>
-          </li>
-          <li class="list-disc">
+            </UrlLink>
+          </ListItem>
+          <ListItem>
             …or find RarePupper#6027 on Discord.
-          </li>
+          </ListItem>
         </ul>
       </section>
     </main>
