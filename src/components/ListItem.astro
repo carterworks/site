@@ -1,7 +1,8 @@
 ---
-const {ordered} = Astro.props;
+const { ordered } = Astro.props;
 const classList = [ordered ? "list-decimal" : "list-disc"].join(" ");
 ---
+
 <li class={classList}>
-  <slot/>
+	<slot />
 </li>
