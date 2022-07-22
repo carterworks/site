@@ -6,7 +6,7 @@ const headingTextSizes = {
 };
 function getClassList(level) {
 	const textSize = headingTextSizes[level] ?? "text-2xl";
-	const classList = [textSize, "font-sans"]
+	const classList = [textSize]
 	if (level === 1) {
 		classList.push("text-center");
 	} else if (level === 2) {
