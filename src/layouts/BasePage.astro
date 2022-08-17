@@ -4,26 +4,24 @@ const { title } = Astro.props;
 ---
 
 <html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#f43f5e" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<meta name="Description" content="Homepage for Carter McBride" />
+		<link rel="canonical" href="https://carter.works" />
+		<title>{title}</title>
+	</head>
 
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>" />
-	<meta name="theme-color" content="#f43f5e" />
-	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-	<meta name="Description" content="Homepage for Carter McBride" />
-	<link rel="canonical" href="https://carter.works" />
-	<link rel="stylesheet" href="../global.css">
-	<title>{title}</title>
-</head>
-
-<body class="subpixel-antialiased font-serif text-gray-100 bg-sky-800">
-	<header class="max-w-lg mx-auto px-2 md:px-0">
-		<slot name="header" />
-	</header>
-	<main class="max-w-lg mx-auto px-2 md:px-0">
-		<slot />
-	</main>
-</body>
-
+	<body
+		class="subpixel-antialiased font-serif text-gray-100 bg-sky-800 h-screen flex flex-col justify-center items-center p-4"
+	>
+		<header class="max-w-lg w-full">
+			<slot name="header" />
+		</header>
+		<main class="max-w-lg w-full">
+			<slot />
+		</main>
+	</body>
 </html>

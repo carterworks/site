@@ -1,16 +1,27 @@
 ---
-import UrlLink from '../components/UrlLink.astro';
-import List from '../components/List.astro';
-import ListItem from '../components/ListItem.astro';
-import Heading from '../components/Heading.astro';
-import BasePage from '../layouts/BasePage.astro';
+import BasePage from "../layouts/BasePage.astro";
+import GitHubIcon from "../components/icons/GitHubIcon.astro";
+import LinkedInIcon from "../components/icons/LinkedInIcon.astro";
+import UrlLink from "../components/UrlLink.astro";
 ---
 
 <BasePage title="Carter McBride">
 	<div slot="header">
 		<h1 class="text-2xl">👋 I'm Carter.</h1>
-		<p>
-			Front-end dev. Father. Young grump. Simple things enjoyer.
-		</p>
+		<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
 	</div>
+	<ul class="flex flex-row justify-start flex-wrap">
+		<li class="flex-auto">
+			<UrlLink href="https://github.com/carterworks">
+				<GitHubIcon />
+				<span class="ml-1 underline decoration-from-font">GitHub</span>
+			</UrlLink>
+		</li>
+		<li class="flex-auto">
+			<UrlLink href="https://www.linkedin.com/in/thatcartermcbride/">
+				<LinkedInIcon />
+				<span class="ml-1 underline decoration-from-font">LinkedIn</span>
+			</UrlLink>
+		</li>
+	</ul>
 </BasePage>
