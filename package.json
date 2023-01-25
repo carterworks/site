@@ -8,15 +8,11 @@
 		"url": "git+https://github.com/carterworks/site.git"
 	},
 	"scripts": {
-		"dev": "astro dev",
-		"start": "astro dev",
-		"build": "astro build",
-		"preview": "astro preview",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"start": "live-server public/"
 	},
 	"devDependencies": {
-		"@astrojs/tailwind": "2.1.0",
-		"astro": "1.9.0",
+		"live-server": "1.2.2",
 		"prettier": "2.8.0"
 	}
 }
