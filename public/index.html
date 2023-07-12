@@ -12,17 +12,104 @@
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<!-- 180×180 -->
 		<link rel="manifest" href="/site.webmanifest" />
-		<link
-			rel="stylesheet"
-			href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css"
-		/>
 		<title>Carter McBride</title>
+		<style>
+			:root {
+				font-size: 24px;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+
+				/* from https://modernfontstacks.com/ */
+				--font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+					"Noto Color Emoji";
+				--font-transitional: "Charter", "Bitstream Charter", "Sitka Text",
+					Cambria, serif;
+				--font-old-style: "Iowan Old Style", "Palatino Linotype",
+					"URW Palladio L", P052, serif;
+				--font-humanist: Seravek, "Gill Sans Nova", Ubuntu, Calibri,
+					"DejaVu Sans", source-sans-pro, sans-serif;
+				--font-geometric-humanist: Avenir, Montserrat, Corbel, "URW Gothic",
+					source-sans-pro, sans-serif;
+				--font-classical-humanist: Optima, Candara, "Noto Sans", source-sans-pro,
+					sans-serif;
+				--font-didone: Didot, "Bodoni MT", "Noto Serif Display",
+					"URW Palladio L", P052, Sylfaen, serif;
+
+				--font-default: var(--font-transitional) var(--font-emoji);
+				--font-header: var(--font-didone) var(--font-emoji);
+
+				--row-gap: 0.5rem;
+			}
+
+			h1,
+			p,
+			ul,
+			body,
+			li {
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				display: grid;
+				height: 100dvh;
+				--gutter: minmax(8px, 1fr);
+				grid-template:
+					var(--gutter) repeat(3, auto) var(--gutter) / var(--gutter)
+					auto var(--gutter);
+				font-family: var(--font-default);
+				font-weight: 100;
+				place-items: center;
+				line-height: 1.25;
+				row-gap: var(--row-gap);
+			}
+
+			header {
+				grid-column: 2 / -2;
+				grid-row: 2 / -2;
+			}
+
+			header,
+			hgroup {
+				display: grid;
+			}
+
+			hgroup > p,
+			nav {
+				margin-block-start: var(--row-gap);
+			}
+
+			nav > ul {
+				list-style: none;
+
+				display: grid;
+				grid-auto-flow: column;
+			}
+
+			@supports (grid-template: subgrid / subgrid) {
+				hgroup {
+					grid-row: 1 / 3;
+				}
+				header,
+				hgroup {
+					grid-template: subgrid / subgrid;
+				}
+				hgroup > p,
+				nav {
+					margin-block-start: 0;
+				}
+			}
+
+			h1 {
+				font-family: var(--font-header);
+			}
+		</style>
 	</head>
 	<body>
 		<header>
 			<hgroup>
 				<h1>👋 I'm Carter.</h1>
-				<h2>Front-end dev. Father. Young grump. Simple things enjoyer.</h2>
+				<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
 			</hgroup>
 			<nav>
 				<ul>
@@ -35,7 +122,6 @@
 								viewBox="0 0 24 24"
 								focusable="false"
 								aria-hidden="true"
-								style="margin-right: 2px"
 							>
 								<path
 									d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
@@ -53,7 +139,6 @@
 								viewBox="0 0 24 24"
 								focusable="false"
 								aria-hidden="true"
-								style="margin-right: 2px"
 							>
 								<path
 									d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
