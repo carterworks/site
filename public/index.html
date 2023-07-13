@@ -39,6 +39,25 @@
 				--font-header: var(--font-didone) var(--font-emoji);
 
 				--row-gap: 0.5rem;
+
+				--color-text: hsl(0deg 0% 0%);
+				--color-background: hsl(0, 0%, 100%);
+				--color-background-hover: hsl(0, 0%, 95%);
+				--color-github: hsl(260, 56%, 52%);
+				--color-linkedIn: hsl(210, 90%, 40%);
+			}
+			@supports (color: oklch(0 0 0)) {
+				:root {
+					--color-text: oklch(0 0 0);
+					--color-background: oklch(100% 0 0);
+					--color-background-hover: color-mix(
+						in oklch,
+						var(--color-background) 95%,
+						var(--color-text) 5%
+					);
+					--color-github: oklch(50.41% 0.2 293.28);
+					--color-linkedIn: oklch(51.56% 0.163 254.73);
+				}
 			}
 
 			h1,
@@ -53,6 +72,9 @@
 			body {
 				display: grid;
 				height: 100dvh;
+				color: var(--color-text);
+				background-color: var(--color-background);
+
 				--gutter: minmax(8px, 1fr);
 				grid-template:
 					var(--gutter) repeat(3, auto) var(--gutter) / var(--gutter)
@@ -81,7 +103,6 @@
 
 			nav > ul {
 				list-style: none;
-
 				display: grid;
 				grid-auto-flow: column;
 			}
@@ -103,6 +124,25 @@
 			h1 {
 				font-family: var(--font-header);
 			}
+
+			a svg {
+				fill: var(--color-text);
+				border-radius: 8px;
+				padding: 8px;
+				transition: fill 0.2s ease-in-out, background-color 0.2s ease-in-out;
+			}
+			a[title="GitHub"] svg {
+				&:hover {
+					background-color: var(--color-background-hover);
+					fill: var(--color-github);
+				}
+			}
+			a[title="LinkedIn"] svg {
+				&:hover {
+					background-color: var(--color-background-hover);
+					fill: var(--color-linkedIn);
+				}
+			}
 		</style>
 	</head>
 	<body>
@@ -114,7 +154,11 @@
 			<nav>
 				<ul>
 					<li>
-						<a href="https://github.com/carterworks">
+						<a
+							href="https://github.com/carterworks"
+							title="GitHub"
+							aria-label="GitHub"
+						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								width="24"
@@ -127,11 +171,14 @@
 									d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
 								></path>
 							</svg>
-							<span>GitHub</span>
 						</a>
 					</li>
 					<li>
-						<a href="https://www.linkedin.com/in/thatcartermcbride/">
+						<a
+							href="https://www.linkedin.com/in/thatcartermcbride/"
+							title="LinkedIn"
+							aria-label="LinkedIn"
+						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								width="24"
@@ -146,7 +193,6 @@
 								<rect x="2" y="9" width="4" height="12"></rect>
 								<circle cx="4" cy="4" r="2"></circle>
 							</svg>
-							<span>LinkedIn</span>
 						</a>
 					</li>
 				</ul>
