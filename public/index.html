@@ -40,23 +40,44 @@
 
 				--row-gap: 0.5rem;
 
-				--color-text: hsl(0deg 0% 0%);
-				--color-background: hsl(0, 0%, 100%);
-				--color-background-hover: hsl(0, 0%, 95%);
+				--color-text: hsl(0deg 0% 100%);
+				--color-background: hsl(0, 0%, 0%);
+				--color-background-hover: hsl(0, 0%, 30%);
 				--color-github: hsl(260, 56%, 52%);
 				--color-linkedIn: hsl(210, 90%, 40%);
 			}
+
+			@media (prefers-color-scheme: light) {
+				:root {
+					--color-text: hsl(0deg 0% 0%);
+					--color-background: hsl(0, 0%, 100%);
+					--color-background-hover: hsl(0, 0%, 95%);
+				}
+			}
+
 			@supports (color: oklch(0 0 0)) {
 				:root {
-					--color-text: oklch(0 0 0);
-					--color-background: oklch(100% 0 0);
+					--color-text: oklch(100% 0 0);
+					--color-background: oklch(0 0 0);
 					--color-background-hover: color-mix(
 						in oklch,
-						var(--color-background) 95%,
-						var(--color-text) 5%
+						var(--color-background) 70%,
+						var(--color-text) 30%
 					);
 					--color-github: oklch(50.41% 0.2 293.28);
 					--color-linkedIn: oklch(51.56% 0.163 254.73);
+				}
+
+				@media (prefers-color-scheme: light) {
+					:root {
+						--color-text: oklch(0 0 0);
+						--color-background: oklch(100% 0 0);
+						--color-background-hover: color-mix(
+							in oklch,
+							var(--color-background) 95%,
+							var(--color-text) 5%
+						);
+					}
 				}
 			}
 
@@ -127,6 +148,7 @@
 
 			a svg {
 				fill: var(--color-text);
+				background-color: var(--color-background);
 				border-radius: 8px;
 				padding: 8px;
 				transition: fill 0.2s ease-in-out, background-color 0.2s ease-in-out;
