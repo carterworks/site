@@ -1,18 +1,16 @@
 {
-	"name": "site",
-	"version": "4.0.0",
-	"private": true,
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/carterworks/site.git"
-	},
-	"scripts": {
-		"format": "prettier --write .",
-		"start": "live-server public/"
-	},
-	"devDependencies": {
-		"live-server": "1.2.2",
-		"prettier": "3.0.0"
-	}
+  "name": "site",
+  "version": "4.0.0",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carterworks/site.git"
+  },
+  "scripts": {
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "3.0.0"
+  }
 }

@@ -14,7 +14,7 @@
         lib = nixpkgs.lib;
       in rec {
         devShell = with pkgs; mkShell {
-          buildInputs = [ nodejs ];
+          buildInputs = [ bun ];
         };
       });
 }
