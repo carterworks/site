@@ -157,7 +157,7 @@
 
 			@font-face {
 				font-family: "Noto Emoji";
-				src: url("/public/NotoEmoji.woff2") format("woff2");
+				src: url("/NotoEmoji.woff2") format("woff2");
 				font-weight: 700;
 			}
 
@@ -191,7 +191,6 @@
 
 			body {
 				font-family: var(--font-default);
-				font-display: swap;
 
 				--margin-width: 16px;
 				min-height: calc(100vh - 2 * var(--margin-width));
@@ -199,7 +198,9 @@
 				place-items: center;
 				align-content: center;
 
+				background-image: url("/noise.svg");
 				background-color: var(--color-background);
+				background-size: 25%;
 				color: var(--color-text);
 
 				border: 6px solid var(--color-text);
