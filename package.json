@@ -1,6 +1,6 @@
 {
 	"name": "site",
-	"version": "4.0.0",
+	"version": "5.0.0",
 	"private": true,
 	"module": "public/index.html",
 	"license": "MIT",
