@@ -1,5 +1,5 @@
 ---
-
+import "../styles/global.css";
 ---
 
 <!doctype html>
@@ -35,207 +35,20 @@
 
 		<title>Carter McBride</title>
 		<style>
-			@layer reset {
-				/** 
-				 * CSS Reset
-				 * https://chriscoyier.net/2023/10/03/being-picky-about-a-css-reset-for-fun-pleasure/ and 
-				 * https://andy-bell.co.uk/a-more-modern-css-reset/ 
-				 */
-
-				/* Box sizing rules */
-				*,
-				*::before,
-				*::after {
-					box-sizing: border-box;
-				}
-
-				/* Prevent font size inflation */
-				html {
-					-moz-text-size-adjust: none;
-					-webkit-text-size-adjust: none;
-					text-size-adjust: none;
-
-					scroll-behavior: initial;
-
-					/* Exclude " from box sizing
-		 * https://chriscoyier.net/2023/11/27/the-hanging-punctuation-property-in-css/ */
-					hanging-punctuation: first allow-end last;
-				}
-
-				/* Remove default margin in favour of better control in authored CSS */
-				body,
-				h1,
-				h2,
-				h3,
-				h4,
-				p,
-				figure,
-				blockquote,
-				dl,
-				dd,
-				ol,
-				ul,
-				pre {
-					margin: 0;
-				}
-
-				/* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
-				ul[class],
-				ol[class] {
-					margin: 0;
-					padding: 0;
-					list-style: none;
-				}
-
-				/* Set core body defaults */
-				body {
-					min-height: 100vh;
-					line-height: 1.5;
-				}
-
-				/* Set shorter line heights on headings and interactive elements */
-				h1,
-				h2,
-				h3,
-				h4,
-				button,
-				input,
-				label {
-					line-height: 1.1;
-				}
-
-				/* Balance text wrapping on headings */
-				h1,
-				h2,
-				h3,
-				h4 {
-					text-wrap: balance;
-				}
-
-				/* A elements that don't have a class get default styles */
-				a:not([class]) {
-					color: currentColor;
-				}
-
-				/* Make images easier to work with */
-				img,
-				picture {
-					max-width: 100%;
-					display: block;
-				}
-
-				/* Inherit fonts for inputs and buttons */
-				input,
-				button,
-				textarea,
-				select {
-					font: inherit;
-				}
-
-				/* Make sure textareas without a rows attribute are not tiny */
-				textarea:not([rows]) {
-					min-height: 10em;
-				}
-
-				/* Anything that has been anchored to should have extra scroll margin */
-				:target {
-					scroll-margin-block: 5ex;
-				}
-
-				/* Remove all animations and transitions for people that prefer not to see them */
-				@media (prefers-reduced-motion: reduce) {
-					*,
-					*::before,
-					*::after {
-						animation-duration: 0.01ms !important;
-						animation-iteration-count: 1 !important;
-						transition-duration: 0.01ms !important;
-						scroll-behavior: auto !important;
-					}
-				}
-			}
-
-			@font-face {
-				font-family: "Noto Emoji";
-				src: url("/NotoEmoji.woff2") format("woff2");
-				font-weight: 700;
-			}
-
-			:root {
-				font-size: 24px;
-				-webkit-font-smoothing: antialiased;
-				-moz-osx-font-smoothing: grayscale;
-
-				/* from https://modernfontstacks.com/ */
-				--font-emoji: "Noto Emoji", "Apple Color Emoji", "Segoe UI Emoji",
-					"Segoe UI Symbol", "Noto Color Emoji";
-				--font-transitional: "Charter", "Bitstream Charter", "Sitka Text",
-					Cambria, serif;
-				--font-old-style: "Iowan Old Style", "Palatino Linotype",
-					"URW Palladio L", P052, serif;
-				--font-humanist: Seravek, "Gill Sans Nova", Ubuntu, Calibri,
-					"DejaVu Sans", source-sans-pro, sans-serif;
-				--font-geometric-humanist: Avenir, Montserrat, Corbel, "URW Gothic",
-					source-sans-pro, sans-serif;
-				--font-classical-humanist: Optima, Candara, "Noto Sans", source-sans-pro,
-					sans-serif;
-				--font-didone: Didot, "Bodoni MT", "Noto Serif Display",
-					"URW Palladio L", P052, Sylfaen, serif;
-
-				--font-default: var(--font-classical-humanist), var(--font-emoji);
-				--font-header: var(--font-didone), var(--font-emoji);
-
-				--color-sepia: oklch(97.35% 0.026 90.1);
-				--color-game-and-watch: oklch(77.89% 0.125 120.5);
-				--color-text: oklch(25% 0.029 221.9);
-				--color-background: var(--color-sepia);
-			}
-
 			body {
-				font-family: var(--font-default);
-
-				--margin-width: 16px;
-				min-height: calc(100vh - 2 * var(--margin-width));
 				display: grid;
 				place-items: center;
 				align-content: center;
-
-				background-image: url("/noise.svg");
-				background-color: var(--color-background);
-				background-size: 25%;
-				color: var(--color-text);
-				filter: drop-shadow(4px 4px rgba(0, 0, 0, 0.1));
-
-				border: 6px solid var(--color-text);
-				border-radius: 8px;
-				margin: var(--margin-width);
-				padding: 16px;
-			}
-
-			h1 {
-				font-family: var(--font-header);
-				font-size: 1.8rem;
 			}
 
 			ul {
 				list-style: none;
 				padding: 0;
+				margin-inline-start: -8px;
 				display: flex;
 				flex-direction: row;
 				> li {
 					margin-inline-end: auto;
-				}
-			}
-
-			a {
-				transition: all 0.4s ease-out;
-				padding: 0.1lh 8px;
-				border-radius: 8px;
-				text-decoration-color: var(--color-text);
-				&:hover {
-					color: var(--color-background);
-					background-color: var(--color-text);
-					text-decoration-color: var(--color-background);
 				}
 			}
 		</style>
