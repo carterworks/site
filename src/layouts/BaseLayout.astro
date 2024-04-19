@@ -1,0 +1,60 @@
+---
+import "../styles/global.css";
+const { title, url, description } = Astro.props.frontmatter ?? Astro.props;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#f43f5e" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<meta
+			name="Description"
+			content="Front-end dev. Father. Young grump. Simple things enjoyer."
+		/>
+		<link rel="canonical" href={url} />
+		<!-- 32×32 -->
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<!-- 180×180 -->
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<meta property="og:title" content={title} />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:description"
+			content="Front-end dev. Father. Young grump. Simple things enjoyer."
+		/>
+		<meta property="og:image" content="https://carter.works/card.jpg" />
+		<meta property="og:url" content="https://carter.works/" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta property="og:site_name" content="Carter McBride" />
+		<meta
+			name="twitter:image:alt"
+			content="A picture of a blue webpage. It reads 'Hi, I'm Carter. Front-end dev. Father. Young grump. Simple things enjoyer.' It has links to his LinkedIn and GitHub profiles, in the form of icons."
+		/>
+
+		<title>{title}</title>
+		<style>
+			body {
+				display: grid;
+				place-items: center;
+				align-content: center;
+			}
+
+			ul {
+				list-style: none;
+				padding: 0;
+				margin-inline-start: -8px;
+				display: flex;
+				flex-direction: row;
+				> li {
+					margin-inline-end: auto;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<slot />
+	</body>
+</html>
