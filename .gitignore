@@ -21,3 +21,6 @@ pnpm-debug.log*
 
 # Astro files
 .astro/
+
+# Zed config
+.zed/

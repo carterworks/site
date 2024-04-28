@@ -36,12 +36,6 @@ const { title, url } = Astro.props;
 
 		<title>{title}</title>
 		<style>
-			body {
-				display: grid;
-				place-items: center;
-				align-content: center;
-			}
-
 			ul {
 				list-style: none;
 				padding: 0;
@@ -56,6 +50,8 @@ const { title, url } = Astro.props;
 	</head>
 
 	<body>
-		<slot />
+		<div class="content-wrapper">
+			<slot />
+		</div>
 	</body>
 </html>

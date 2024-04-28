@@ -4,6 +4,20 @@ import BaseLayout from "./BaseLayout.astro";
 const { frontmatter } = Astro.props;
 ---
 
+<style>
+	body {
+		display: block;
+	}
+	article {
+		height: 100%;
+
+		> p {
+			margin-block-start: var(--padding-width);
+		}
+	}
+</style>
 <BaseLayout title={`${frontmatter.title} | carter.works`}>
-	<slot />
+	<article>
+		<slot />
+	</article>
 </BaseLayout>
