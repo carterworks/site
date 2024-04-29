@@ -1,32 +1,32 @@
 {
-	"name": "site",
-	"version": "5.1.0",
-	"private": true,
-	"module": "src/index.astro",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/carterworks/site.git"
-	},
-	"scripts": {
-		"format": "prettier --write .",
-		"dev": "astro dev",
-		"start": "astro dev",
-		"build": "astro build",
-		"preview": "astro preview"
-	},
-	"devDependencies": {
-		"astro": "latest",
-		"bun-types": "latest",
-		"prettier": "^3.0.0",
-		"prettier-plugin-astro": "^0.13.0"
-	},
-	"peerDependencies": {
-		"typescript": "^5.0.0"
-	},
-	"dependencies": {
-		"@astrojs/mdx": "^2.3.1",
-		"@astrojs/rss": "^4.0.5",
-		"@astrojs/sitemap": "^3.1.4"
-	}
+  "name": "site",
+  "version": "5.1.0",
+  "private": true,
+  "module": "src/index.astro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carterworks/site.git"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "devDependencies": {
+    "astro": "latest",
+    "bun-types": "latest",
+    "prettier": "^3.0.0",
+    "prettier-plugin-astro": "^0.13.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^2.3.1",
+    "@astrojs/rss": "^4.0.5",
+    "@astrojs/sitemap": "^3.1.4"
+  }
 }

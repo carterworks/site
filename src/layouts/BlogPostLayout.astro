@@ -10,9 +10,24 @@ const { frontmatter } = Astro.props;
 	}
 	article {
 		height: 100%;
+		max-width: 55ch;
+		margin-inline: auto;
 
-		> p {
+		> * {
 			margin-block-start: var(--padding-width);
+		}
+		p:has(img) {
+			img {
+				margin-inline: auto;
+			}
+			em {
+				font-size: 0.85rem;
+				padding-inline: 1rem;
+				margin-block-start: 0.25rem;
+				margin-inline: auto;
+				display: block;
+				width: fit-content;
+			}
 		}
 	}
 </style>
