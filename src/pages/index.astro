@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import FormattedDate from "../components/FormattedDate.astro";
 const allPosts = await getCollection("blog");
 ---
 
@@ -8,11 +9,35 @@ const allPosts = await getCollection("blog");
 	ul {
 		list-style: none;
 		padding: 0;
-		margin-inline-start: -8px;
-		display: flex;
-		flex-direction: row;
-		> li {
-			margin-inline-end: auto;
+	}
+
+	main {
+		margin-block-start: 0.5rem;
+	}
+
+	ul {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		grid-template-rows: masonry;
+		gap: 1rem;
+	}
+
+	ul.blog-posts {
+		max-height: 55vh;
+		overflow-y: auto;
+		margin-block-start: 0.25rem;
+
+		a {
+			text-decoration: none;
+			display: block;
+
+			p:first-child {
+				text-decoration: underline;
+			}
+			p:not(:first-child) {
+				font-size: 0.8rem;
+				color: var(--color-text-light);
+			}
 		}
 	}
 
@@ -29,7 +54,7 @@ const allPosts = await getCollection("blog");
 			<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
 		</hgroup>
 		<nav>
-			<ul>
+			<ul class="social-links">
 				<li>
 					<a
 						href="https://github.com/carterworks"
@@ -54,10 +79,17 @@ const allPosts = await getCollection("blog");
 	{
 		allPosts.length > 0 && (
 			<main>
-				<ul>
+				<h2>Blog posts</h2>
+				<ul class="blog-posts">
 					{allPosts.map(post => (
 						<li>
-							<a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+							<a href={`/blog/${post.slug}/`}>
+								<p>{post.data.title}</p>
+								<p>
+									<FormattedDate date={post.data.pubDate.toString()} />
+								</p>
+								<p>{post.data.description}</p>
+							</a>
 						</li>
 					))}
 				</ul>
