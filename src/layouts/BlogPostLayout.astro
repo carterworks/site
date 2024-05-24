@@ -8,13 +8,27 @@ const { frontmatter } = Astro.props;
 	body {
 		display: block;
 	}
+	:global(.content-wrapper) > * {
+		margin-inline: auto;
+		max-width: 55ch;
+	}
+	nav {
+		svg {
+			vertical-align: sub;
+		}
+		svg + span {
+			margin-inline-start: 0.1rem;
+			font-size: 0.8rem;
+		}
+	}
 	article {
 		height: 100%;
-		max-width: 55ch;
-		margin-inline: auto;
 
 		> * {
 			margin-block-start: var(--padding-width);
+		}
+		pre {
+			font-size: 0.75em;
 		}
 		p:has(img) {
 			img {
@@ -32,6 +46,24 @@ const { frontmatter } = Astro.props;
 	}
 </style>
 <BaseLayout title={`${frontmatter.title} | carter.works`}>
+	<nav>
+		<a href="/"
+			><svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="feather feather-chevron-left"
+				><polyline points="15 18 9 12 15 6"></polyline></svg
+			>
+			<span>Home</span>
+		</a>
+	</nav>
 	<article>
 		<slot />
 	</article>
