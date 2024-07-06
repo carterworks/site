@@ -1,5 +1,5 @@
-import rss from "@astrojs/rss";
 import { getCollection } from "astro:content";
+import rss from "@astrojs/rss";
 
 export async function GET(context) {
 	const posts = await getCollection("blog");
@@ -12,6 +12,6 @@ export async function GET(context) {
 			pubDate: post.data.pubDate,
 			body: post.body,
 		})),
-		customData: `<language>en-us</language>`,
+		customData: "<language>en-us</language>",
 	});
 }

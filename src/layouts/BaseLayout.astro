@@ -47,6 +47,30 @@ const { title, url } = Astro.props;
 				}
 			}
 		</style>
+		<script>
+			/**
+			* @param { Date } date
+			* @returns { number }
+			*/
+			class FormattedDate extends HTMLTimeElement {
+				constructor() {
+					super();
+					const attribute = this.getAttribute("datetime");
+					console.log("attribute", attribute);
+					if (!attribute) {
+						return;
+					}
+					const date = new Date(attribute);
+					const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+					this.textContent = utcDate.toLocaleDateString("en-us", {
+						year: "numeric",
+						month: "short",
+						day: "numeric"
+					})
+				}
+			}
+			customElements.define("formatted-date", FormattedDate, { extends: "time" });
+		</script>
 	</head>
 
 	<body>

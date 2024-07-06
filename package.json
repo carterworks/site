@@ -9,24 +9,23 @@
 		"url": "git+https://github.com/carterworks/site.git"
 	},
 	"scripts": {
-		"format": "prettier --write .",
+		"check": "biome check --write --unsafe *.{json,mjs} src/ public/",
 		"dev": "astro dev",
 		"start": "astro dev",
 		"build": "astro build",
 		"preview": "astro preview"
 	},
 	"devDependencies": {
-		"astro": "latest",
-		"bun-types": "latest",
-		"prettier": "^3.0.0",
-		"prettier-plugin-astro": "^0.13.0"
+		"@biomejs/biome": "^1.8.3",
+		"astro": "^4.5.10",
+		"bun-types": "latest"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
-		"@astrojs/mdx": "^3.1.2",
-		"@astrojs/rss": "^4.0.5",
-		"@astrojs/sitemap": "^3.1.4"
-	}
+		"@astrojs/rss": "^4.0.7",
+		"@astrojs/sitemap": "^3.1.6"
+	},
+	"trustedDependencies": ["@biomejs/biome"]
 }
