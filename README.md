@@ -5,7 +5,7 @@ Favicon 🚘 from [Twitter's Twemoji](https://twemoji.twitter.com/).
 
 # Blog post format
 
-Blog posts are `/src/content/blog/*.mdx`. They are `[slug].mdx`. `title`, `pubDate`, and `description` are required frontmatter fields. `pubDate` is a string in the format `YYYY-MM-DD`. The `FormattedDate` component is used to format the date in the post.
+Blog posts are `/src/content/blog/*.md`. They are `[slug].md`. `title`, `pubDate`, and `description` are required frontmatter fields. `pubDate` is a string in the format `YYYY-MM-DD`. The `<time is="formatted-date"/>` component is used to format the date in the post.
 
 
 ```md
