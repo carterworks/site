@@ -28,6 +28,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 			margin-inline-start: 0.1rem;
 			font-size: 0.8rem;
 		}
+		margin-block-end: var(--padding-width);
 	}
 	article {
 		height: 100%;
@@ -39,8 +40,13 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 				font-style: italic;
 			}
 		}
-		> * {
-			margin-block-start: var(--padding-width);
+		> h2,
+		h3 {
+			margin-block-start: calc(3 * var(--padding-width));
+			margin-block-end: var(--padding-width);
+		}
+		p {
+			margin-block-end: var(--padding-width);
 		}
 		pre {
 			font-size: 0.75em;

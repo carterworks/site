@@ -119,7 +119,7 @@
 }
 
 :root {
-	font-size: 24px;
+	font-size: 18px;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 
@@ -146,6 +146,12 @@
 	--color-game-and-watch: oklch(77.89% 0.125 120.5);
 	--color-text: oklch(25% 0.029 221.9);
 	--color-background: var(--color-sepia);
+}
+
+@media (min-width: 768px) {
+	:root {
+		font-size: 24px;
+	}
 }
 
 body {
