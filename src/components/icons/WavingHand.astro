@@ -1,9 +1,7 @@
 ---
-export interface Props {
-	height?: string;
-	verticalAlign?: string;
-}
-const { height = "1em", verticalAlign = "top" }: Props = Astro.props;
+import type { IconProps } from "./props";
+export interface Props extends IconProps {}
+const { height = "1em", verticalAlign = "initial", label }: Props = Astro.props;
 ---
 
 <svg
@@ -12,6 +10,7 @@ const { height = "1em", verticalAlign = "top" }: Props = Astro.props;
 	version="1.1"
 	viewBox="-10 0 2610 2048"
 	style={{ height, verticalAlign }}
+	aria-label={label}
 >
 	<path
 		fill="currentColor"

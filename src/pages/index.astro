@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import WavingHand from "../components/icons/WavingHand.astro";
+import Rss from "../components/icons/Rss.astro";
 const allPosts = await getCollection("blog");
 ---
 
@@ -62,7 +63,7 @@ const allPosts = await getCollection("blog");
 	<header>
 		<hgroup>
 			<h1>
-				<WavingHand height="1em" vertical-align="top" />
+				<WavingHand height="1em" vertical-align="top" label="Hello" />
 				I'm Carter.
 			</h1>
 			<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
@@ -93,7 +94,12 @@ const allPosts = await getCollection("blog");
 	{
 		allPosts.length > 0 && (
 			<main>
-				<h2>Blog posts</h2>
+				<h2>
+					Blog posts{" "}
+					<a href="/blog/feed.xml">
+						<Rss verticalAlign="middle" label="RSS feed" />
+					</a>
+				</h2>
 				<ul class="blog-posts">
 					{allPosts.map((post) => (
 						<li>
