@@ -156,7 +156,7 @@
 
 body {
 	font-family: var(--font-default);
-	--padding-width: 16px;
+	--padding-width: 1rem;
 	padding: var(--padding-width);
 
 	background-image: url("/noise.svg");
