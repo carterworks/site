@@ -1,32 +1,26 @@
 ---
+import { ViewTransitions } from "astro:transitions";
 import "../styles/global.css";
-const { title, url } = Astro.props;
+const { title } = Astro.props;
+const { url } = Astro;
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="theme-color" content="#f43f5e" />
+		<meta name="theme-color" content="#fdf6e3" />
 		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-		<meta
-			name="Description"
-			content="Front-end dev. Father. Young grump. Simple things enjoyer."
-		/>
-		<link rel="canonical" href={url} />
-		<!-- 32×32 -->
+		<link rel="canonical" href={url.toString()} />
+		<meta property="og:url" content={url.toString()} />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:site_name" content="Carter McBride" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<!-- 180×180 -->
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<link rel="sitemap" href="/sitemap-index.xml" />
-		<meta property="og:title" content={title} />
-		<meta property="og:type" content="website" />
-		<meta
-			property="og:description"
-			content="Front-end dev. Father. Young grump. Simple things enjoyer."
-		/>
-		<meta property="og:url" content="https://carter.works/" />
-		<meta property="og:site_name" content="Carter McBride" />
+		<ViewTransitions />
+
+		<slot name="head" />
 
 		<title>{title}</title>
 		<style>

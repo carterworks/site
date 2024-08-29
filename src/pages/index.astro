@@ -49,6 +49,15 @@ const allPosts = await getCollection("blog");
 	}
 </style>
 <BaseLayout title="👋 I'm Carter.">
+	<Fragment slot="head">
+		<meta property="og:title" content="👋 I'm Carter." />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:description"
+			name="description"
+			content="Front-end dev. Father. Young grump. Simple things enjoyer."
+		/>
+	</Fragment>
 	<header>
 		<hgroup>
 			<h1>
@@ -100,12 +109,15 @@ q121 116 253.5 178t260.5 62zM1540 267q-17 -41 -54.5 -65.5t-81.5 -24.5v-100q74 0 
 			<main>
 				<h2>Blog posts</h2>
 				<ul class="blog-posts">
-					{allPosts.map(post => (
+					{allPosts.map((post) => (
 						<li>
 							<a href={`/blog/${post.slug}/`}>
 								<p>{post.data.title}</p>
 								<p>
-									<time datetime={post.data.pubDate.toString()} is="formatted-date"/>
+									<time
+										datetime={post.data.pubDate.toString()}
+										is="formatted-date"
+									/>
 								</p>
 								<p>{post.data.description}</p>
 							</a>
