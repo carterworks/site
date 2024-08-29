@@ -2,6 +2,14 @@
 import BaseLayout from "./BaseLayout.astro";
 
 const { frontmatter } = Astro.props;
+const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
+	"en-US",
+	{
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}
+);
 ---
 
 <style>
@@ -23,14 +31,21 @@ const { frontmatter } = Astro.props;
 	}
 	article {
 		height: 100%;
-
+		header {
+			> *:not(h1) {
+				font-size: 0.75em;
+			}
+			:last-child {
+				font-style: italic;
+			}
+		}
 		> * {
 			margin-block-start: var(--padding-width);
 		}
 		pre {
 			font-size: 0.75em;
 		}
-		p:has(img) {
+		> p:has(img) {
 			img {
 				margin-inline: auto;
 			}
@@ -65,6 +80,13 @@ const { frontmatter } = Astro.props;
 		</a>
 	</nav>
 	<article>
+		<header>
+			<h1>{frontmatter.title}</h1>
+			<time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
+			<p>
+				{frontmatter.description}
+			</p>
+		</header>
 		<slot />
 	</article>
 </BaseLayout>
