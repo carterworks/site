@@ -64,11 +64,8 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 	<Fragment slot="head">
 		<meta property="og:title" content={frontmatter.title} />
 		<meta property="og:type" content="article" />
-		<meta
-			name="description"
-			property="og:description"
-			content={frontmatter.description}
-		/>
+		<meta property="og:description" content={frontmatter.description} />
+		<meta name="description" content={frontmatter.description} />
 		<meta property="og:article:published_time" content={frontmatter.pubDate} />
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
