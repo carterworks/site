@@ -157,7 +157,6 @@ body {
 	background-color: var(--color-background);
 	background-size: 30%;
 	color: var(--color-text);
-	filter: drop-shadow(4px 4px rgba(0, 0, 0, 0.1));
 	height: 100dvh;
 }
 
