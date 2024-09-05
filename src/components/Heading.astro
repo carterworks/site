@@ -1,0 +1,27 @@
+---
+interface Props {
+	level?: 1 | 2 | 3 | 4 | 5 | 6;
+	class?: string;
+	[key: string]: unknown;
+}
+const { level = 1, class: extraClasses, ...rest } = Astro.props;
+const HeaderLevel = ["h1", "h2", "h3", "h4", "h5", "h6"][level - 1];
+---
+
+<HeaderLevel
+	class:list={[
+		extraClasses,
+		"font-didone",
+		{
+			"text-2xl": level === 1,
+			"text-xl": level === 2,
+			"text-lg": level === 3,
+			"text-base": level === 4,
+			"text-sm": level === 5,
+			"text-xs": level === 6,
+		},
+	]}
+	{...rest}
+>
+	<slot />
+</HeaderLevel>

@@ -3,54 +3,15 @@ import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import WavingHand from "../components/icons/WavingHand.astro";
 import Rss from "../components/icons/Rss.astro";
+import A from "../components/A.astro";
+import Heading from "../components/Heading.astro";
 const allPosts = await getCollection("blog");
 ---
 
-<style>
-	ul {
-		list-style: none;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-		grid-template-rows: masonry;
-		gap: 1rem;
-	}
-
-	main {
-		margin-block-start: 0.5rem;
-	}
-
-	.blog-posts {
-		max-height: 55vh;
-		overflow-y: auto;
-		margin-block-start: 0.25rem;
-
-		a {
-			text-decoration: none;
-			display: block;
-
-			p:first-child {
-				text-decoration: underline;
-			}
-			p:not(:first-child) {
-				font-size: 0.8rem;
-				color: var(--color-text-light);
-			}
-		}
-	}
-
-	h1 > svg {
-		height: 1em;
-		vertical-align: top;
-	}
-
-	:global(.content-wrapper) {
-		display: grid;
-		place-content: center;
-		align-items: center;
-	}
-</style>
-<BaseLayout title="👋 I'm Carter.">
+<BaseLayout
+	title="👋 I'm Carter."
+	class="grid place-content-center items-center"
+>
 	<Fragment slot="head">
 		<meta property="og:title" content="👋 I'm Carter." />
 		<meta property="og:type" content="website" />
@@ -66,49 +27,49 @@ const allPosts = await getCollection("blog");
 	</Fragment>
 	<header>
 		<hgroup>
-			<h1>
-				<WavingHand height="1em" vertical-align="top" label="Hello" />
+			<Heading level={1}>
+				<WavingHand label="Hello" />
 				I'm Carter.
-			</h1>
+			</Heading>
 			<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
 		</hgroup>
 		<nav>
-			<ul class="social-links">
+			<ul class="flex gap-4 flex-wrap">
 				<li>
-					<a
+					<A
 						href="https://github.com/carterworks"
 						title="GitHub"
 						aria-label="GitHub"
 					>
 						GitHub
-					</a>
+					</A>
 				</li>
 				<li>
-					<a
+					<A
 						href="https://www.linkedin.com/in/thatcartermcbride/"
 						title="LinkedIn"
 						aria-label="LinkedIn"
 					>
 						LinkedIn
-					</a>
+					</A>
 				</li>
 			</ul>
 		</nav>
 	</header>
 	{
 		allPosts.length > 0 && (
-			<main>
-				<h2>
+			<main class="mt-4">
+				<Heading level={2}>
 					Blog posts{" "}
-					<a href="/blog/feed.xml">
-						<Rss verticalAlign="middle" label="RSS feed" />
-					</a>
-				</h2>
-				<ul class="blog-posts">
+					<A href="/blog/feed.xml" underline={false}>
+						<Rss label="RSS feed" class="align-middle" />
+					</A>
+				</Heading>
+				<ul class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto *:text-sm">
 					{allPosts.map((post) => (
 						<li>
-							<a href={`/blog/${post.slug}/`}>
-								<p>{post.data.title}</p>
+							<A href={`/blog/${post.slug}/`} underline={false}>
+								<p class="underline text-base">{post.data.title}</p>
 								<p>
 									<time
 										datetime={post.data.pubDate.toString()}
@@ -116,7 +77,7 @@ const allPosts = await getCollection("blog");
 									/>
 								</p>
 								<p>{post.data.description}</p>
-							</a>
+							</A>
 						</li>
 					))}
 				</ul>

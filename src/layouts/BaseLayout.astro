@@ -1,7 +1,10 @@
 ---
 import { ViewTransitions } from "astro:transitions";
-import "../styles/global.css";
-const { title } = Astro.props;
+interface Props {
+	title: string;
+	class?: string;
+}
+const { title, class: classContent = "" } = Astro.props;
 const { url } = Astro;
 ---
 
@@ -28,18 +31,6 @@ const { url } = Astro;
 		<slot name="head" />
 
 		<title>{title}</title>
-		<style>
-			ul {
-				list-style: none;
-				padding: 0;
-				margin-inline-start: -8px;
-				display: flex;
-				flex-direction: row;
-				> li {
-					margin-inline-end: auto;
-				}
-			}
-		</style>
 		<script>
 			/**
 			 * @param { Date } date
@@ -69,8 +60,22 @@ const { url } = Astro;
 		</script>
 	</head>
 
-	<body>
-		<div class="content-wrapper">
+	<body
+		class="text-base font-classical-humanist bg-noise bg-sepia bg-[size:30%] p-4 h-screen text-bluish-black"
+	>
+		<div
+			class:list={[
+				"border-4",
+				"border-bluish-black",
+				"h-full",
+				"w-full",
+				"rounded-xl",
+				"overflow-auto",
+				"p-3",
+				"*:max-w-[55ch]",
+				...classContent.split(/\s+/g),
+			]}
+		>
 			<slot />
 		</div>
 	</body>

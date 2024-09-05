@@ -1,4 +1,8 @@
 ---
+import A from "../components/A.astro";
+import Heading from "../components/Heading.astro";
+import Prose from "../components/Prose.astro";
+import BackChevron from "../components/icons/BackChevron.astro";
 import BaseLayout from "./BaseLayout.astro";
 
 const { frontmatter } = Astro.props;
@@ -12,67 +16,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 );
 ---
 
-<style>
-	body {
-		display: block;
-	}
-	:global(.content-wrapper) > * {
-		margin-inline: auto;
-		max-width: 55ch;
-	}
-	nav {
-		svg {
-			vertical-align: sub;
-		}
-		svg + span {
-			margin-inline-start: 0.1rem;
-			font-size: 0.8rem;
-		}
-		margin-block-end: var(--padding-width);
-	}
-	article {
-		height: 100%;
-		header {
-			> *:not(h1) {
-				font-size: 0.75em;
-			}
-			:last-child {
-				font-style: italic;
-			}
-		}
-		> h2,
-		h3:not(:first-of-type) {
-			margin-block-start: calc(2 * var(--padding-width));
-		}
-		> h2,
-		h3 {
-			margin-block-end: calc(var(--padding-width) * 0.5);
-		}
-		p {
-			margin-block-end: var(--padding-width);
-		}
-		pre {
-			font-size: 0.75em;
-		}
-		> p:has(img) {
-			img {
-				margin-inline: auto;
-			}
-			em {
-				font-size: 0.85rem;
-				padding-inline: 1rem;
-				margin-block-start: 0.25rem;
-				margin-inline: auto;
-				display: block;
-				width: fit-content;
-			}
-		}
-		li + li {
-			margin-block-start: calc(var(--padding-width) * 0.25);
-		}
-	}
-</style>
-<BaseLayout title={`${frontmatter.title} | carter.works`}>
+<BaseLayout title={`${frontmatter.title} | carter.works`} class="*:mx-auto">
 	<Fragment slot="head">
 		<meta property="og:title" content={frontmatter.title} />
 		<meta property="og:type" content="article" />
@@ -82,32 +26,31 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
 	</Fragment>
-	<nav>
-		<a href="/"
-			><svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="24"
-				height="24"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				class="feather feather-chevron-left"
-				><polyline points="15 18 9 12 15 6"></polyline></svg
-			>
-			<span>Home</span>
-		</a>
+	<nav class="mb-4">
+		<A underline={false} href="/">
+			<BackChevron label="Back" />
+			<span class="underline">Home</span>
+		</A>
 	</nav>
 	<article>
-		<header>
-			<h1>{frontmatter.title}</h1>
+		<header class="text-sm mb-4">
+			<Heading level={1}>{frontmatter.title}</Heading>
 			<time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
-			<p>
+			{
+				frontmatter.tags.length > 0 && (
+					<ul class="">
+						{frontmatter.tags.map((tag: string) => (
+							<li class="inline-block mr-2">#{tag}</li>
+						))}
+					</ul>
+				)
+			}
+			<p class="mt-4 text-base italic">
 				{frontmatter.description}
 			</p>
 		</header>
-		<slot />
+		<Prose>
+			<slot />
+		</Prose>
 	</article>
 </BaseLayout>

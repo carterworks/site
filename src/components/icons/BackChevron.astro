@@ -1,7 +1,7 @@
 ---
 import { baseStyle, type IconProps } from "./props";
-export interface Props extends IconProps {}
-const { label, class: extraClasses }: Props = Astro.props;
+interface Props extends IconProps {}
+const { class: extraClasses }: Props = Astro.props;
 ---
 
 <svg
@@ -14,8 +14,7 @@ const { label, class: extraClasses }: Props = Astro.props;
 	stroke-width="2"
 	stroke-linecap="round"
 	stroke-linejoin="round"
-	aria-label={label}
+	aria-hidden
 	class:list={[baseStyle, extraClasses]}
-	><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"
-	></path><circle cx="5" cy="19" r="1"></circle></svg
+	><polyline points="15 18 9 12 15 6"></polyline></svg
 >
