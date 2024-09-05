@@ -1,24 +1,30 @@
 ---
-
+interface Props {
+	class?: string;
+}
+const { class: extraClasses = "" } = Astro.props;
 ---
 
 <div
-	class="prose
-	prose-h1:text-2xl
-	prose-h2:text-xl
-	prose-h3:text-lg
-	prose-h4:text-base
-	prose-h5:text-sm
-	prose-h6:text-xs
-	prose-headings:font-didone
-	prose-headings:mb-2
-	prose-headings:mt-4
-	hover:prose-a:opacity-30
-	prose-a:transition-opacity
-	prose-a:underline
-	prose-pre:text-xs
-	prose-img:rounded-lg
-	dark:prose-invert"
+	class:list={[
+		"prose",
+		"prose-h1:text-2xl",
+		"prose-h2:text-xl",
+		"prose-h3:text-lg",
+		"prose-h4:text-base",
+		"prose-h5:text-sm",
+		"prose-h6:text-xs",
+		"prose-headings:font-didone",
+		"prose-headings:mb-2",
+		"prose-headings:mt-4",
+		"hover:prose-a:opacity-30",
+		"prose-a:transition-opacity",
+		"prose-a:underline",
+		"prose-pre:text-xs",
+		"prose-img:rounded-lg",
+		"dark:prose-invert",
+		...extraClasses.split(" "),
+	]}
 >
 	<slot />
 </div>
