@@ -16,7 +16,6 @@ export async function GET(context: { site: string }) {
 					link: `/blog/${post.slug}`,
 					description: post.data.description,
 					categories: post.data.tags,
-					author: "Carter McBride",
 					content: `<p>${post.data.description}</p>
 			<p><a href="${`${context.site}blog/${post.slug}`}">Read more</a></p>`,
 				}) satisfies RSSFeedItem,
