@@ -5,6 +5,7 @@ import WavingHand from "../components/icons/WavingHand.astro";
 import Rss from "../components/icons/Rss.astro";
 import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
+import RssFeed from "../components/RssFeed.astro";
 const allPosts = await getCollection("blog");
 ---
 
@@ -49,32 +50,38 @@ const allPosts = await getCollection("blog");
 			</ul>
 		</nav>
 	</header>
-	{
-		allPosts.length > 0 && (
-			<main class="mt-4">
-				<Heading level={2}>
-					Blog posts{" "}
-					<A href="/blog/feed.xml" underline={false}>
-						<Rss label="RSS feed" class="align-middle" />
-					</A>
-				</Heading>
-				<ul class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto *:text-sm">
-					{allPosts.map((post) => (
-						<li>
-							<A href={`/blog/${post.slug}/`} underline={false}>
-								<p class="underline text-base">{post.data.title}</p>
-								<p>
-									<time
-										datetime={post.data.pubDate.toString()}
-										is="formatted-date"
-									/>
-								</p>
-								<p>{post.data.description}</p>
-							</A>
-						</li>
-					))}
-				</ul>
-			</main>
-		)
-	}
+	<main>
+		<section class="mt-2">
+			<Heading level={2}>Latest speakings</Heading>
+			<RssFeed url="https://mastodon.social/@literallyacar.rss" count={1} />
+		</section>
+		{
+			allPosts.length > 0 && (
+				<section class="mt-2">
+					<Heading level={2}>
+						Blog posts{" "}
+						<A href="/blog/feed.xml" underline={false}>
+							<Rss label="RSS feed" class="align-middle" />
+						</A>
+					</Heading>
+					<ul class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto *:text-sm">
+						{allPosts.map((post) => (
+							<li>
+								<A href={`/blog/${post.slug}/`} underline={false}>
+									<p class="underline text-base">{post.data.title}</p>
+									<p>
+										<time
+											datetime={post.data.pubDate.toString()}
+											is="formatted-date"
+										/>
+									</p>
+									<p>{post.data.description}</p>
+								</A>
+							</li>
+						))}
+					</ul>
+				</section>
+			)
+		}
+	</main>
 </BaseLayout>
