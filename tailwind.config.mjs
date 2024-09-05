@@ -1,3 +1,5 @@
+import typography from "@tailwindcss/typography";
+
 const fontEmoji = [
 	"'Apple Color Emoji'",
 	"'Segoe UI Emoji'",
@@ -259,5 +261,5 @@ export default {
 			},
 		},
 	},
-	plugins: [require("@tailwindcss/typography")],
+	plugins: [typography()],
 };
