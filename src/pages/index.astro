@@ -1,10 +1,10 @@
 ---
 import { getCollection } from "astro:content";
-import BaseLayout from "../layouts/BaseLayout.astro";
-import WavingHand from "../components/icons/WavingHand.astro";
-import Rss from "../components/icons/Rss.astro";
 import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
+import Rss from "../components/icons/Rss.astro";
+import WavingHand from "../components/icons/WavingHand.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 const allPosts = await getCollection("blog");
 ---
 
