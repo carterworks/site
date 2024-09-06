@@ -11,11 +11,15 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	}
+	},
 );
 ---
 
-<BaseLayout title={`${frontmatter.title} | carter.works`} class="*:mx-auto">
+<BaseLayout
+	title={`${frontmatter.title} | carter.works`}
+	class="*:mx-auto"
+	showHeaderLinks
+>
 	<Fragment slot="head">
 		<meta property="og:title" content={frontmatter.title} />
 		<meta property="og:type" content="article" />
@@ -25,12 +29,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
 	</Fragment>
-	<nav class="mb-4">
-		<A underline={false} href="/">
-			<span class="underline">Home</span>
-		</A>
-	</nav>
-	<article>
+	<article class="mt-4">
 		<header class="text-sm mb-4">
 			<Heading level={1}>{frontmatter.title}</Heading>
 			<time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>

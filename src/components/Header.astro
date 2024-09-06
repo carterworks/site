@@ -1,0 +1,63 @@
+---
+import WavingHand from "../icons/WavingHand.astro";
+import A from "./A.astro";
+import Heading from "./Heading.astro";
+interface Props {
+	showSubtitle?: boolean;
+	showLinks?: boolean;
+}
+const { showSubtitle = false, showLinks = false } = Astro.props;
+const possibleSubtitles = [
+	"A software developer.",
+	"A dad.",
+	"A grump.",
+	"An enjoyer of simple things.",
+	"carter.works? I sure hope he does!",
+	"A sepia tone enthusiast.",
+];
+---
+
+<script define:vars={possibleSubtitles}>
+	function randomSubtitle() {
+		const $headingSubtitle = document.getElementById("heading-subtitle");
+		if (!$headingSubtitle) {
+			return;
+		}
+		const subtitle =
+			possibleSubtitles[Math.floor(Math.random() * possibleSubtitles.length)];
+		$headingSubtitle.textContent = subtitle;
+	}
+	randomSubtitle();
+</script>
+<header class:list={["flex", "justify-between"]}>
+	<hgroup>
+		<Heading level={1}>
+			<WavingHand label="Hello" class="inline-block" />
+			I'm Carter.
+		</Heading>
+		{
+			showSubtitle && (
+				<p id="heading-subtitle">
+					{
+						possibleSubtitles[
+							Math.floor(Math.random() * possibleSubtitles.length)
+						]
+					}
+				</p>
+			)
+		}
+	</hgroup>
+	{
+		showLinks && (
+			<nav>
+				<ul>
+					<li>
+						<A underline={false} href="/">
+							<span class="underline">Home</span>
+						</A>
+					</li>
+				</ul>
+			</nav>
+		)
+	}
+</header>
