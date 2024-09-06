@@ -1,0 +1,23 @@
+---
+import A from "../components/A.astro";
+import Heading from "../components/Heading.astro";
+import Rss from "../icons/Rss.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+interface Props {
+	title: string;
+	class: string;
+}
+const { title, class: extraClasses } = Astro.props;
+---
+
+<BaseLayout
+	title={title}
+	class:list={["*:mx-auto", extraClasses]}
+	showHeaderSubtitle
+	showHeaderLinks
+>
+	<Fragment slot="head">
+		<slot name="head" />
+	</Fragment>
+	<slot />
+</BaseLayout>

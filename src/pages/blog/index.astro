@@ -1,0 +1,55 @@
+---
+import { getCollection } from "astro:content";
+import A from "../../components/A.astro";
+import Heading from "../../components/Heading.astro";
+import Rss from "../../icons/Rss.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const allPosts = await getCollection("blog");
+---
+
+<BaseLayout
+	title="Blog | carter.works"
+	class="*:mx-auto"
+	showHeaderSubtitle
+	showHeaderLinks
+>
+	<Fragment slot="head">
+		<meta property="og:title" content="Blog | carter.works" />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:description"
+			name="description"
+			content="All my blog posts"
+		/>
+	</Fragment>
+	<main>
+		{
+			allPosts.length > 0 && (
+				<section class="mt-2">
+					<Heading level={2}>
+						All blog posts{" "}
+						<A href="/blog/feed.xml" underline={false}>
+							<Rss label="RSS feed" class="inline" />
+						</A>
+					</Heading>
+					<ul class="flex flex-col gap-2 overflow-y-auto *:text-sm">
+						{allPosts.map((post) => (
+							<li>
+								<A href={`/blog/${post.slug}/`} underline={false}>
+									<p class="underline text-base">{post.data.title}</p>
+									<p>
+										<time
+											datetime={post.data.pubDate.toString()}
+											is="formatted-date"
+										/>
+									</p>
+									<p>{post.data.description}</p>
+								</A>
+							</li>
+						))}
+					</ul>
+				</section>
+			)
+		}
+	</main>
+</BaseLayout>

@@ -1,12 +1,18 @@
 ---
+import allLinks from "../content/links";
 import WavingHand from "../icons/WavingHand.astro";
 import A from "./A.astro";
 import Heading from "./Heading.astro";
 interface Props {
 	showSubtitle?: boolean;
 	showLinks?: boolean;
+	class?: string;
 }
-const { showSubtitle = false, showLinks = false } = Astro.props;
+const {
+	showSubtitle = false,
+	showLinks = false,
+	class: extraClasses,
+} = Astro.props;
 const possibleSubtitles = [
 	"A software developer.",
 	"A dad.",
@@ -15,6 +21,7 @@ const possibleSubtitles = [
 	"carter.works? I sure hope he does!",
 	"A sepia tone enthusiast.",
 ];
+const links = allLinks.filter((link) => !link.isExternal);
 ---
 
 <script define:vars={possibleSubtitles}>
@@ -29,33 +36,51 @@ const possibleSubtitles = [
 	}
 	randomSubtitle();
 </script>
-<header class:list={["flex", "justify-between"]}>
+<header
+	class:list={[
+		"flex",
+		"justify-between",
+		"sticky",
+		"top-0",
+		"z-10",
+		"!max-w-full",
+		"!m-0",
+		"py-4",
+		"bg-noise",
+		"bg-[size:30%]",
+		"bg-sepia/80",
+		"dark:bg-blackish/80",
+		extraClasses,
+	]}
+>
 	<hgroup>
-		<Heading level={1}>
-			<WavingHand label="Hello" class="inline-block" />
-			I'm Carter.
-		</Heading>
-		{
-			showSubtitle && (
-				<p id="heading-subtitle">
-					{
-						possibleSubtitles[
-							Math.floor(Math.random() * possibleSubtitles.length)
-						]
-					}
-				</p>
-			)
-		}
+		<A href="/" underline={false}>
+			<Heading level={1}>
+				<WavingHand label="Hello" class="inline-block" />
+				I'm Carter.
+			</Heading>
+			{
+				showSubtitle && (
+					<p id="heading-subtitle">
+						{
+							possibleSubtitles[
+								Math.floor(Math.random() * possibleSubtitles.length)
+							]
+						}
+					</p>
+				)
+			}
+		</A>
 	</hgroup>
 	{
-		showLinks && (
+		showLinks && links.length > 0 && (
 			<nav>
-				<ul>
-					<li>
-						<A underline={false} href="/">
-							<span class="underline">Home</span>
-						</A>
-					</li>
+				<ul class="flex flex-row gap-2">
+					{links.map((link) => (
+						<li>
+							<A {...link.attrs}>{link.text}</A>
+						</li>
+					))}
 				</ul>
 			</nav>
 		)

@@ -108,6 +108,13 @@ const { url, count = 2, class: extraClasses } = Astro.props;
 	// Define the custom element
 	customElements.define("rss-feed", RSS);
 </script>
-<Prose class:list={["prose-p:m-0", "prose-hr:m-2", extraClasses]}>
+<Prose
+	class:list={[
+		"prose-p:m-0",
+		"prose-hr:m-2",
+		"prose-a:break-all",
+		extraClasses,
+	]}
+>
 	<rss-feed url={url} count={count}></rss-feed>
 </Prose>

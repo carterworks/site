@@ -16,8 +16,8 @@ export default {
 				noise: "url('/noise.svg')",
 			},
 			colors: {
-				sepia: "oklch(97.35% 0.026 90.1)",
-				blackish: "oklch(25% 0.029 221.9)",
+				sepia: "oklch(97.35% 0.026 90.1 / <alpha-value>)",
+				blackish: "oklch(25% 0.029 221.9 / <alpha-value>)",
 			},
 			fontFamily: {
 				// from https://github.com/system-fonts/modern-font-stacks

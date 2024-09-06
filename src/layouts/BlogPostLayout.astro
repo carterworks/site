@@ -1,8 +1,7 @@
 ---
-import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
 import Prose from "../components/Prose.astro";
-import BaseLayout from "./BaseLayout.astro";
+import PageWithHeaderLayout from "./PageWithHeaderLayout.astro";
 
 const { frontmatter } = Astro.props;
 const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
@@ -15,10 +14,9 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 );
 ---
 
-<BaseLayout
+<PageWithHeaderLayout
 	title={`${frontmatter.title} | carter.works`}
 	class="*:mx-auto"
-	showHeaderLinks
 >
 	<Fragment slot="head">
 		<meta property="og:title" content={frontmatter.title} />
@@ -29,7 +27,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
 	</Fragment>
-	<article class="mt-4">
+	<article>
 		<header class="text-sm mb-4">
 			<Heading level={1}>{frontmatter.title}</Heading>
 			<time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
@@ -50,4 +48,4 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 			<slot />
 		</Prose>
 	</article>
-</BaseLayout>
+</PageWithHeaderLayout>
