@@ -1,16 +1,8 @@
----
-import { type IconProps, baseStyle } from "./props";
-export interface Props extends IconProps {}
-const { label, class: extraClasses }: Props = Astro.props;
----
-
 <svg
 	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	version="1.1"
 	viewBox="-10 0 2610 2048"
-	aria-label={label}
-	class:list={[baseStyle, extraClasses]}
 >
 	<path
 		fill="currentColor"

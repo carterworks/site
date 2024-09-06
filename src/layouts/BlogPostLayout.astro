@@ -2,7 +2,6 @@
 import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
 import Prose from "../components/Prose.astro";
-import BackChevron from "../components/icons/BackChevron.astro";
 import BaseLayout from "./BaseLayout.astro";
 
 const { frontmatter } = Astro.props;
@@ -12,7 +11,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	},
+	}
 );
 ---
 
@@ -28,7 +27,6 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 	</Fragment>
 	<nav class="mb-4">
 		<A underline={false} href="/">
-			<BackChevron label="Back" />
 			<span class="underline">Home</span>
 		</A>
 	</nav>

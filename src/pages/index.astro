@@ -3,8 +3,8 @@ import { getCollection } from "astro:content";
 import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
 import RssFeed from "../components/RssFeed.astro";
-import Rss from "../components/icons/Rss.astro";
-import WavingHand from "../components/icons/WavingHand.astro";
+import Rss from "../icons/Rss.astro";
+import WavingHand from "../icons/WavingHand.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 const allPosts = await getCollection("blog");
 ---
@@ -29,7 +29,7 @@ const allPosts = await getCollection("blog");
 	<header>
 		<hgroup>
 			<Heading level={1}>
-				<WavingHand label="Hello" />
+				<WavingHand label="Hello" class="inline-block" />
 				I'm Carter.
 			</Heading>
 			<p>Front-end dev. Father. Young grump. Simple things enjoyer.</p>
@@ -65,7 +65,7 @@ const allPosts = await getCollection("blog");
 					<Heading level={2}>
 						Blog posts{" "}
 						<A href="/blog/feed.xml" underline={false}>
-							<Rss label="RSS feed" class="align-middle" />
+							<Rss label="RSS feed" class="inline" />
 						</A>
 					</Heading>
 					<ul class="flex flex-col gap-2 max-h-[55vh] overflow-y-auto *:text-sm">

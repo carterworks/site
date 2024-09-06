@@ -18,7 +18,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.8.3",
 		"@tailwindcss/typography": "^0.5.15",
-		"astro": "^4.5.10",
+		"astro": "^4.15.4",
+		"astro-icon": "^1.1.1",
 		"bun-types": "latest"
 	},
 	"peerDependencies": {
