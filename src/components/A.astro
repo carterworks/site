@@ -1,15 +1,24 @@
 ---
+import ExternalLink from "../icons/ExternalLink.astro";
+
 interface Props {
 	class?: string;
 	href: string;
 	underline?: boolean;
 	[key: string]: unknown;
 }
-const { class: extraClasses = "", underline = true, ...rest } = Astro.props;
+const {
+	class: extraClasses = "",
+	underline = true,
+	href,
+	...rest
+} = Astro.props;
+const isExternal = href.startsWith("http");
 ---
 
 <a
 	{...rest}
+	href={href}
 	class:list={[
 		"hover:opacity-30",
 		"transition-opacity",
@@ -18,4 +27,9 @@ const { class: extraClasses = "", underline = true, ...rest } = Astro.props;
 	]}
 >
 	<slot />
+	{
+		isExternal && (
+			<ExternalLink aria-hidden class="inline-block w-3 -ml-0.5 align-sub" />
+		)
+	}
 </a>
