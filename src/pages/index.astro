@@ -46,7 +46,7 @@ const links = allLinks.filter((link) => link.text !== "Home");
 		<section class="mt-4">
 			<Heading level={2}>Recent thoughts</Heading>
 			<RssFeed
-				class="text-sm"
+				class="overflow-y-auto max-h-64"
 				url="https://mastodon.social/@literallyacar.rss"
 				count={2}
 			/>

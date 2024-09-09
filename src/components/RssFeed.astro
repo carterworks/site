@@ -50,7 +50,7 @@ const { url, count = 2, class: extraClasses } = Astro.props;
 
 				const items =
 					xmlDoc.querySelectorAll("item") || xmlDoc.querySelectorAll("entry");
-				const itemsToRender = [...items].slice(0, postCount);
+				const itemsToRender = [...Array.from(items)].slice(0, postCount);
 
 				if (itemsToRender.length) {
 					this.innerHTML = itemsToRender
