@@ -24,6 +24,12 @@ export default [
 		},
 		text: "Blog",
 	},
+	{
+		attrs: {
+			href: "/yazzy",
+		},
+		text: "Yazzy",
+	},
 ]
 	.map((link) => ({ ...link, isExternal: link.attrs.href.startsWith("http") }))
 	.sort((a, b) => a.text.localeCompare(b.text));

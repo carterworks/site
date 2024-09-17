@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Yazzy | carter.works"
+	class="*:mx-auto"
+	showHeaderSubtitle
+	showHeaderLinks
+>
+	<Fragment slot="head">
+		<meta property="og:title" content="Yazzy | carter.works" />
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:description"
+			name="description"
+			content="A simple tool to clip web pages to plain text."
+		/>
+		<meta name="keywords" content="clipping, markdown, web pages, plain text" />
+	</Fragment>
+	<main>
+		<header class="mb-4">
+			<h1 class="text-2xl">Yazzy</h1>
+			<p class="">
+				Tired of popups, ads, and other distractions on your page? Just put the
+				URL in the box below and yazzy will clean it up so you can focus. You
+				can even save it as a Markdown file to keep forever.
+			</p>
+		</header>
+		<form action="/api/clip" method="GET" class="flex gap-1 items-center">
+			<input
+				class="border focus:border-transparent block w-full rounded-md focus:ring-0 py-1 px-4 transition"
+				type="url"
+				id="url"
+				name="url"
+				required
+				placeholder="https://paulgraham.com/submarine.html"
+			/>
+			<button
+				type="submit"
+				class="mx-auto border py-1 px-6 rounded-lg transition bg-blackish text-sepia hover:opacity-30 active:opacity-70 dark:bg-sepia dark:text-blackish"
+			>
+				Clip
+			</button>
+		</form>
+	</main>
+</BaseLayout>
