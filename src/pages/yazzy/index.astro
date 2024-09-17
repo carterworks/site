@@ -1,4 +1,5 @@
 ---
+import Button from "../../components/Button.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
@@ -36,12 +37,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 				required
 				placeholder="https://paulgraham.com/submarine.html"
 			/>
-			<button
+			<Button
 				type="submit"
-				class="mx-auto border py-1 px-6 rounded-lg transition bg-blackish text-sepia hover:opacity-30 active:opacity-70 dark:bg-sepia dark:text-blackish"
+				primary
 			>
 				Clip
-			</button>
+			</Button>
 		</form>
 	</main>
 </BaseLayout>

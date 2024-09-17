@@ -1,4 +1,5 @@
 ---
+import A from "../components/A.astro";
 import Heading from "../components/Heading.astro";
 import Prose from "../components/Prose.astro";
 import PageWithHeaderLayout from "./PageWithHeaderLayout.astro";
@@ -9,6 +10,8 @@ export interface Props {
 		description: string;
 		pubDate: Date;
 		tags: string[];
+		originalUrl?: string;
+		additionalMetadata?: string[];
 	};
 }
 
@@ -39,9 +42,15 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
 	</Fragment>
+
 	<article>
 		<header class="text-sm mb-4">
-			<Heading level={1}>{frontmatter.title}</Heading>
+			<Heading level={1}>
+				{!frontmatter.originalUrl && frontmatter.title}
+				{frontmatter.originalUrl && (
+					<A href={frontmatter.originalUrl}>{frontmatter.title}</A>
+				)}
+			</Heading>
 			<time datetime={frontmatter.pubDate.toISOString()}
 				>{humanFriendlyDate}</time
 			>
@@ -54,9 +63,19 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 					</ul>
 				)
 			}
+			{
+				frontmatter.additionalMetadata && (
+					<p class="text-sm">
+						{frontmatter.additionalMetadata.join(" ・ ")}
+					</p>
+				)
+			}
 			<p class="mt-4 text-base italic">
 				{frontmatter.description}
 			</p>
+			<div class="mt-4">
+				<slot name="controls"/>
+			</div>
 		</header>
 		<Prose>
 			<slot />

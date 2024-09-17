@@ -1,13 +1,5 @@
 import type { APIRoute } from "astro";
-
-function isUrl(potentialUrl: string): boolean {
-	try {
-		new URL(decodeURIComponent(potentialUrl));
-		return true;
-	} catch {
-		return false;
-	}
-}
+import { isUrl } from "../../../shared/utils";
 
 export const prerender = false;
 export const GET: APIRoute = ({ url }) => {

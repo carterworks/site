@@ -1,0 +1,22 @@
+---
+import Button from "./Button.astro";
+
+interface Props {
+	contents: string;
+	filename: string;
+	class?: string;
+}
+function stringToBase64(str: string): string {
+	const bytes = new TextEncoder().encode(str);
+	const binString = Array.from(bytes, (byte) =>
+		String.fromCodePoint(byte),
+	).join("");
+	return btoa(binString);
+}
+const { contents, filename, class: classes = "" } = Astro.props;
+const type = `text/${filename.endsWith(".md") ? "markdown" : "plain"};charset=utf-8`;
+const url = `data:${type};base64,${stringToBase64(contents)}`;
+---
+<Button link href={url} class={classes} download={filename}>
+	<slot/>
+</Button>
