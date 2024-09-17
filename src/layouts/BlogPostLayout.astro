@@ -2,6 +2,15 @@
 import Heading from "../components/Heading.astro";
 import Prose from "../components/Prose.astro";
 import PageWithHeaderLayout from "./PageWithHeaderLayout.astro";
+export interface Props {
+	title: string;
+	frontmatter: {
+		title: string;
+		description: string;
+		pubDate: string;
+		tags: string[];
+	};
+}
 
 const { frontmatter } = Astro.props;
 const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
