@@ -2,44 +2,26 @@
 import Button from "../../components/Button.astro";
 import DownloadAs from "../../components/DownloadAs.astro";
 import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
-import { clip } from "../../services/clipper";
-import { KVCache } from "../../services/kvStore";
+import { getArticle } from "../../services/clipper";
 import {
 	generateObsidianContents,
 	generateObsidianUri,
 } from "../../services/obsidian";
-import type { ReadablePage } from "../../shared/types";
 import { createFilename, isUrl } from "../../shared/utils";
 export const prerender = false;
-interface Frontmatter {
-	title: string;
-	description: string;
-	pubDate: number;
-	tags: string[];
-}
+
 const { urlToClip } = Astro.params;
 if (!urlToClip || !isUrl(urlToClip)) {
 	return Astro.redirect(`/404?url=${encodeURIComponent(urlToClip)}`);
 }
-
-const articleCache = new KVCache(urlToClip, Astro.locals.runtime.env.articles);
-const articleFromCache = await articleCache.get(urlToClip);
-const parsedArticle = articleFromCache ? JSON.parse(articleFromCache) : null;
-const article: ReadablePage | null = articleFromCache
-	? ({
-			...parsedArticle,
-			published: new Date(parsedArticle.published),
-		} satisfies ReadablePage)
-	: await clip(new URL(urlToClip));
+const article = await getArticle(
+	new URL(urlToClip),
+	Astro.locals.runtime.env.articles,
+);
 if (!article) {
 	return Astro.redirect(`/404?url=${encodeURIComponent(urlToClip)}`);
 }
-if (article && !articleFromCache) {
-	await articleCache.put(JSON.stringify(article), urlToClip, {
-		// 30 days
-		expirationTtl: 60 * 60 * 24 * 30,
-	});
-}
+
 const metadata = [article.author, new URL(article.url).hostname].filter(
 	Boolean,
 );

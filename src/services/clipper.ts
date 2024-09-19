@@ -1,6 +1,8 @@
+import type { KVNamespace } from "@cloudflare/workers-types";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import type { ReadablePage } from "../shared/types";
+import { KVCache } from "./kvStore";
 import { convertHtmlToMarkdown } from "./markdown";
 import { sanitize } from "./sanitizer";
 
@@ -47,7 +49,7 @@ function getMetaContent(
 	return content.trim();
 }
 
-export async function clip(url: URL): Promise<ReadablePage> {
+async function clip(url: URL): Promise<ReadablePage> {
 	const page = await fetchPage(url);
 	if (!page || !page.window.document) {
 		throw new Error(`Failed to fetch page "${url.toString()}"`);
@@ -102,4 +104,32 @@ export async function clip(url: URL): Promise<ReadablePage> {
 		textContent: article.textContent,
 		htmlContent: article.content,
 	};
+}
+
+export async function getArticle(
+	url: URL,
+	kv: KVNamespace,
+): Promise<ReadablePage | null> {
+	const articleCache = new KVCache(url.toString(), kv);
+	const articleFromCache = await articleCache.get(url.toString());
+	let article: ReadablePage;
+	if (articleFromCache) {
+		const parsed = JSON.parse(articleFromCache);
+		article = {
+			...parsed,
+			published: new Date(parsed.published),
+		};
+	} else {
+		article = await clip(url);
+	}
+	if (!article) {
+		return null;
+	}
+	if (!articleFromCache) {
+		await articleCache.put(JSON.stringify(article), url.toString(), {
+			// 30 days
+			expirationTtl: 60 * 60 * 24 * 30,
+		});
+	}
+	return article;
 }
