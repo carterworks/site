@@ -25,8 +25,10 @@ async function fetchPage(
 			"If-None-Match": etag || "",
 		},
 	});
-	if (!response.ok) {
-		throw new Error(`Failed to fetch ${url.toString()}`);
+	if (!response.ok && response.status !== 304) {
+		throw new Error(
+			`Failed to fetch ${url.toString()}: ${response.statusText}`,
+		);
 	}
 	if (response.status === 304) {
 		return { status: "unmodified", page: null, etag: "", lastModified: "" };

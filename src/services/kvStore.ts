@@ -18,8 +18,8 @@ export class KVCache {
 		return this.#kv.get(this.#combineKeys([key]));
 	}
 	async put(
+		key: string,
 		value: string | ArrayBuffer | ArrayBufferView,
-		key = "",
 		options?: KVNamespacePutOptions,
 	) {
 		return this.#kv.put(this.#combineKeys([key]), value, options);

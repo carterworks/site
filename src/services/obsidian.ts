@@ -1,6 +1,5 @@
 import type { ReadablePage } from "../shared/types";
 import { createFilename, formatDate } from "../shared/utils";
-import { convertHtmlToMarkdown } from "./markdown";
 
 export function generateObsidianContents(article: ReadablePage): string {
 	const today = formatDate(new Date());

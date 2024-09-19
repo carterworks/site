@@ -40,14 +40,7 @@ const frontmatter = {
 
 <BlogPostLayout title={frontmatter.title} frontmatter={frontmatter}>
 	<div slot="controls" class="flex flex-wrap items-center gap-2">
-		<div
-			class="
-			text-center
-			hover:bg-slate-200
-			active:bg-slate-400"
-		>
-			<Button link href={obsidianUri}> Save to Obsidian </>
-		</div>
+		<Button link href={obsidianUri}> Save to Obsidian </>
 		<DownloadAs
 			
 			contents={markdownContent}
