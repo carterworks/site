@@ -4,6 +4,7 @@ export interface ReadablePage {
 	published?: Date;
 	author: string;
 	tags: string[];
+	description: string;
 	markdownContent: string;
 	textContent: string;
 	htmlContent: string;

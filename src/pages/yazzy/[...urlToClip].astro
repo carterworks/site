@@ -48,7 +48,7 @@ const obsidianUri = generateObsidianUri(markdownContent, article.title);
 const plainTextContent = `${article.title}\n\n${article.textContent}`;
 const frontmatter = {
 	title: article.title,
-	description: "",
+	description: article.description,
 	pubDate: article.published ?? article.createdAt ?? new Date(),
 	tags: article.tags,
 	originalUrl: article.url,

@@ -1,20 +1,8 @@
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
+import type { ReadablePage } from "../shared/types";
 import { convertHtmlToMarkdown } from "./markdown";
 import { sanitize } from "./sanitizer";
-
-interface ReadablePage {
-	title: string;
-	url: string;
-	published?: Date;
-	author: string;
-	tags: string[];
-	markdownContent: string;
-	textContent: string;
-	htmlContent: string;
-	createdAt?: Date;
-	summary?: string;
-}
 
 async function fetchPage(url: URL): Promise<JSDOM> {
 	const response = await fetch(url.toString(), {
@@ -98,10 +86,16 @@ export async function clip(url: URL): Promise<ReadablePage> {
 		page.window.document.querySelector("time")?.getAttribute("datetime");
 	const published = publishedDate ? new Date(publishedDate) : undefined;
 
+	const description =
+		article.excerpt ||
+		getMetaContent(page.window.document, "name", "description") ||
+		getMetaContent(page.window.document, "property", "og:description");
+
 	return {
 		title: article.title,
 		url: url.toString(),
 		published,
+		description,
 		author,
 		tags,
 		markdownContent: markdownBody,
