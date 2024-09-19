@@ -6,14 +6,30 @@ import { KVCache } from "./kvStore";
 import { convertHtmlToMarkdown } from "./markdown";
 import { sanitize } from "./sanitizer";
 
-async function fetchPage(url: URL): Promise<JSDOM> {
+const ARTICLE_TTL = 60 * 60 * 24 * 30; // 30 days, in seconds
+
+async function fetchPage(
+	url: URL,
+	etag?: string,
+	lastModified?: string,
+): Promise<{
+	status: "new" | "unmodified";
+	page: JSDOM | null;
+	etag: string;
+	lastModified: string;
+}> {
 	const response = await fetch(url.toString(), {
 		headers: {
 			"User-Agent": "YazzyWebClipper/0.0.1",
+			"If-Modified-Since": lastModified || "",
+			"If-None-Match": etag || "",
 		},
 	});
 	if (!response.ok) {
 		throw new Error(`Failed to fetch ${url.toString()}`);
+	}
+	if (response.status === 304) {
+		return { status: "unmodified", page: null, etag: "", lastModified: "" };
 	}
 	const page = new JSDOM(await response.text(), { url: url.toString() });
 	// force lazy-loaded images to load
@@ -32,7 +48,12 @@ async function fetchPage(url: URL): Promise<JSDOM> {
 			}
 		}
 	}
-	return page;
+	return {
+		status: "new",
+		page,
+		etag: response.headers.get("etag") ?? "",
+		lastModified: response.headers.get("last-modified") ?? "",
+	};
 }
 
 // Utility function to get meta content by name or property
@@ -49,12 +70,7 @@ function getMetaContent(
 	return content.trim();
 }
 
-async function clip(url: URL): Promise<ReadablePage> {
-	const page = await fetchPage(url);
-	if (!page || !page.window.document) {
-		throw new Error(`Failed to fetch page "${url.toString()}"`);
-	}
-
+async function clip(url: URL, page: JSDOM): Promise<ReadablePage> {
 	const tags = [
 		"clippings",
 		...(
@@ -111,25 +127,36 @@ export async function getArticle(
 	kv: KVNamespace,
 ): Promise<ReadablePage | null> {
 	const articleCache = new KVCache(url.toString(), kv);
-	const articleFromCache = await articleCache.get(url.toString());
-	let article: ReadablePage;
-	if (articleFromCache) {
-		const parsed = JSON.parse(articleFromCache);
-		article = {
-			...parsed,
-			published: new Date(parsed.published),
-		};
+	const oldEtag = (await articleCache.get("etag")) ?? undefined;
+	const oldLastModified = (await articleCache.get("lastModified")) ?? undefined;
+	const { status, page, etag, lastModified } = await fetchPage(
+		url,
+		oldEtag,
+		oldLastModified,
+	);
+	let article: ReadablePage | null = null;
+	if (status === "unmodified") {
+		// use cache
+		const cachedArticle = await articleCache.get("article");
+		if (!cachedArticle) {
+			return null;
+		}
+		const parsed = JSON.parse(cachedArticle);
+		article = { ...parsed, published: new Date(parsed.published) };
 	} else {
-		article = await clip(url);
-	}
-	if (!article) {
-		return null;
-	}
-	if (!articleFromCache) {
-		await articleCache.put(JSON.stringify(article), url.toString(), {
-			// 30 days
-			expirationTtl: 60 * 60 * 24 * 30,
+		// a brand new article
+		if (!page) {
+			return null;
+		}
+		article = await clip(url, page);
+		await articleCache.put("article", JSON.stringify(article), {
+			expirationTtl: ARTICLE_TTL,
+		});
+		await articleCache.put("etag", etag, { expirationTtl: ARTICLE_TTL });
+		await articleCache.put("lastModified", lastModified, {
+			expirationTtl: ARTICLE_TTL,
 		});
 	}
+
 	return article;
 }
