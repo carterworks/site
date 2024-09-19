@@ -22,12 +22,6 @@ export function generateObsidianContents(article: ReadablePage): string {
 		.join("\n");
 	fileContent += "\n---\n";
 	fileContent += `\n# ${article.title}\n`;
-	if (article.summary) {
-		fileContent += "\n---\n";
-		fileContent += "\n## Summary\n";
-		fileContent += `\n${convertHtmlToMarkdown(article.summary)}\n`;
-		fileContent += "\n---\n";
-	}
 	fileContent += `\n${article.markdownContent}\n`;
 
 	return fileContent;

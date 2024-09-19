@@ -2,3 +2,8 @@
 name = "carterworks"
 compatibility_date = "2024-09-03"
 pages_build_output_dir  = "./dist"
+
+[[kv_namespaces]]
+binding = "articles"
+id = "dbc0c7a1ab7649cb9129595684edd886"
+preview_id = "26d09abef246437586c71b5182f836cf"

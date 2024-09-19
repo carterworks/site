@@ -1,14 +1,15 @@
 ---
 import Button from "../../components/Button.astro";
 import DownloadAs from "../../components/DownloadAs.astro";
-import Prose from "../../components/Prose.astro";
 import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
 import { clip } from "../../services/clipper";
+import { KVCache } from "../../services/kvStore";
 import {
 	generateObsidianContents,
 	generateObsidianUri,
 } from "../../services/obsidian";
-import { createFilename, formatDate, isUrl } from "../../shared/utils";
+import type { ReadablePage } from "../../shared/types";
+import { createFilename, isUrl } from "../../shared/utils";
 export const prerender = false;
 interface Frontmatter {
 	title: string;
@@ -21,19 +22,33 @@ if (!urlToClip || !isUrl(urlToClip)) {
 	return Astro.redirect(`/404?url=${encodeURIComponent(urlToClip)}`);
 }
 
-const article = await clip(new URL(urlToClip));
-const plainTextSummary = article.summary
-	? article.summary.replace(/<[^>]*>/g, "")
-	: `${article.textContent.substring(0, 300)}…`;
+const articleCache = new KVCache(urlToClip, Astro.locals.runtime.env.articles);
+const articleFromCache = await articleCache.get(urlToClip);
+const parsedArticle = articleFromCache ? JSON.parse(articleFromCache) : null;
+const article: ReadablePage | null = articleFromCache
+	? ({
+			...parsedArticle,
+			published: new Date(parsedArticle.published),
+		} satisfies ReadablePage)
+	: await clip(new URL(urlToClip));
+if (!article) {
+	return Astro.redirect(`/404?url=${encodeURIComponent(urlToClip)}`);
+}
+if (article && !articleFromCache) {
+	await articleCache.put(JSON.stringify(article), urlToClip, {
+		// 30 days
+		expirationTtl: 60 * 60 * 24 * 30,
+	});
+}
 const metadata = [article.author, new URL(article.url).hostname].filter(
 	Boolean,
 );
 const markdownContent = generateObsidianContents(article);
 const obsidianUri = generateObsidianUri(markdownContent, article.title);
-const plainTextContent = `${article.title}\n---\nSummary\n\n${plainTextSummary}\n---\n${article.textContent}`;
+const plainTextContent = `${article.title}\n\n${article.textContent}`;
 const frontmatter = {
 	title: article.title,
-	description: plainTextSummary,
+	description: "",
 	pubDate: article.published ?? article.createdAt ?? new Date(),
 	tags: article.tags,
 	originalUrl: article.url,
@@ -49,7 +64,7 @@ const frontmatter = {
 			hover:bg-slate-200
 			active:bg-slate-400"
 		>
-			<Button href={obsidianUri}> Save to Obsidian </>
+			<Button link href={obsidianUri}> Save to Obsidian </>
 		</div>
 		<DownloadAs
 			
