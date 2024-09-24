@@ -30,7 +30,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 		</header>
 		<form action="/yazzy/api/clip" method="GET" class="flex gap-1 items-center">
 			<input
-				class="border focus:border-transparent block w-full rounded-md focus:ring-0 py-1 px-4 transition"
+				class:list={[
+					"border-2",
+					"focus:border-transparent",
+					"border-blackish",
+					"dark:border-sepia",
+					"bg-transparent",
+					"text-blackish",
+					"dark:text-sepia",
+					"block",
+					"w-full",
+					"rounded-md",
+					"focus:ring-0",
+					"py-1",
+					"px-4",
+					"transition",
+				]}
 				type="url"
 				id="url"
 				name="url"
@@ -39,7 +54,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 			/>
 			<Button
 				type="submit"
-				primary
 			>
 				Clip
 			</Button>

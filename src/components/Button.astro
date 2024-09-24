@@ -2,24 +2,23 @@
 interface Props {
 	class?: string;
 	link?: boolean;
-	primary?: boolean;
 	[k: string]: unknown;
 }
-const { class: extraClasses, primary, link = false, ...props } = Astro.props;
+const { class: extraClasses, link = false, ...props } = Astro.props;
 const classes = [
 	"border",
-	"border-blackish",
 	"border-2",
 	"py-1",
 	"px-6",
 	"rounded-lg",
 	"transition",
-	primary && "bg-blackish",
-	primary && "text-sepia",
+	"bg-transparent",
+	"text-blackish",
+	"border-blackish",
+	"dark:text-sepia",
+	"dark:border-sepia",
 	"hover:opacity-30",
 	"active:opacity-70",
-	"dark:bg-sepia",
-	"dark:text-blackish",
 	"underline",
 	extraClasses,
 ];
