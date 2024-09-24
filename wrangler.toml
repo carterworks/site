@@ -2,6 +2,7 @@
 name = "carterworks"
 compatibility_date = "2024-09-03"
 pages_build_output_dir  = "./dist"
+compatibility_flags = [ "nodejs_compat_v2" ]
 
 [[kv_namespaces]]
 binding = "articles"

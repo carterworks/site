@@ -18,4 +18,29 @@ export default defineConfig({
 			enabled: true,
 		},
 	}),
+	vite: {
+		ssr: {
+			// for jsdom
+			external: [
+				"path",
+				"fs",
+				"vm",
+				"events",
+				"url",
+				"util",
+				"http",
+				"https",
+				"stream",
+				"zlib",
+				"buffer",
+				"crypto",
+				"net",
+				"tls",
+				"assert",
+				"string_decoder",
+				"child_process",
+				"os",
+			],
+		},
+	},
 });
