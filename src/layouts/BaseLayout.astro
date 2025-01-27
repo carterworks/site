@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
+import "../styles/global.css";
 interface Props {
 	title: string;
 	class?: string;
@@ -71,7 +72,7 @@ const { url } = Astro;
 	</head>
 
 	<body
-		class="text-base font-classical-humanist bg-noise bg-sepia dark:bg-blackish bg-[size:30%] p-4 h-[100dvh] text-blackish dark:text-sepia"
+		class="text-base font-classical-humanist bg-[url('/noise.svg')] bg-sepia dark:bg-blackish bg-[size:30%] p-4 h-[100dvh] text-blackish dark:text-sepia"
 	>
 		<div
 			class:list={[
