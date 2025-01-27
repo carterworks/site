@@ -35,7 +35,7 @@ const allPosts = await getCollection("blog");
 					<ul class="flex flex-col gap-2 overflow-y-auto *:text-sm">
 						{allPosts.map((post) => (
 							<li>
-								<A href={`/blog/${post.slug}/`} underline={false}>
+								<A href={`/blog/${post.id}/`} underline={false}>
 									<p class="underline text-base">{post.data.title}</p>
 									<p>
 										<time

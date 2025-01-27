@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from "astro:transitions";
+import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
 interface Props {
 	title: string;
@@ -36,7 +36,7 @@ const { url } = Astro;
 		/>
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<link rel="sitemap" href="/sitemap-index.xml" />
-		<ViewTransitions />
+		<ClientRouter />
 
 		<slot name="head" />
 

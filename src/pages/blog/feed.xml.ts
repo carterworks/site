@@ -13,11 +13,11 @@ export async function GET(context: { site: string }) {
 				({
 					title: post.data.title,
 					pubDate: post.data.pubDate,
-					link: `/blog/${post.slug}`,
+					link: `/blog/${post.id}`,
 					description: post.data.description,
 					categories: post.data.tags,
 					content: `<p>${post.data.description}</p>
-			<p><a href="${`${context.site}blog/${post.slug}`}">Read more</a></p>`,
+			<p><a href="${`${context.site}blog/${post.id}`}">Read more</a></p>`,
 				}) satisfies RSSFeedItem,
 		),
 		customData: "<language>en-us</language>",

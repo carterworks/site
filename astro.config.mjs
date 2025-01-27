@@ -9,7 +9,7 @@ import cloudflare from "@astrojs/cloudflare";
 export default defineConfig({
 	site: "https://carter.works",
 	integrations: [sitemap(), tailwind(), icon()],
-	output: "hybrid",
+	output: "static",
 	adapter: cloudflare({
 		imageService: "passthrough",
 		platformProxy: {
