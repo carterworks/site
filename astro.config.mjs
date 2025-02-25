@@ -9,6 +9,6 @@ export default defineConfig({
 	integrations: [sitemap(), tailwind(), icon()],
 	output: "static",
 	vite: {
-		plugins: [tailwind()]
-	}
+		plugins: [tailwind()],
+	},
 });
