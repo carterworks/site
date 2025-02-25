@@ -7,14 +7,12 @@ interface Props {
 	class?: string;
 	showHeaderSubtitle?: boolean;
 	showHeaderLinks?: boolean;
-	noHeaderBackground?: boolean;
 }
 const {
 	title,
 	class: classContent = "",
 	showHeaderSubtitle = false,
 	showHeaderLinks = false,
-	noHeaderBackground = false,
 } = Astro.props;
 const { url } = Astro;
 ---
@@ -88,11 +86,7 @@ const { url } = Astro;
 				...classContent.split(/\s+/g),
 			]}
 		>
-			<Header
-				showLinks={showHeaderLinks}
-				showSubtitle={showHeaderSubtitle}
-				noHeaderBackground={noHeaderBackground}
-			/>
+			<Header showLinks={showHeaderLinks} showSubtitle={showHeaderSubtitle} />
 			<slot />
 		</div>
 	</body>
