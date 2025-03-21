@@ -7,19 +7,17 @@ interface Props {
 	class?: string;
 	showHeaderSubtitle?: boolean;
 	showHeaderLinks?: boolean;
-	noHeaderBackground?: boolean;
 }
 const {
 	title,
 	class: classContent = "",
 	showHeaderSubtitle = false,
 	showHeaderLinks = false,
-	noHeaderBackground = false,
 } = Astro.props;
 const { url } = Astro;
 ---
 
-<html lang="en" class="md:text-[20px] text-[16px]">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -56,7 +54,7 @@ const { url } = Astro;
 					}
 					const date = new Date(attribute);
 					const utcDate = new Date(
-						date.getTime() + date.getTimezoneOffset() * 60000
+						date.getTime() + date.getTimezoneOffset() * 60000,
 					);
 					this.textContent = utcDate.toLocaleDateString("en-us", {
 						year: "numeric",
@@ -84,15 +82,11 @@ const { url } = Astro;
 				"rounded-xl",
 				"overflow-auto",
 				"p-4 pt-0",
-				"*:max-w-[55ch]",
+				"*:max-w-[60ch]",
 				...classContent.split(/\s+/g),
 			]}
 		>
-			<Header
-				showLinks={showHeaderLinks}
-				showSubtitle={showHeaderSubtitle}
-				noHeaderBackground={noHeaderBackground}
-			/>
+			<Header showLinks={showHeaderLinks} showSubtitle={showHeaderSubtitle} />
 			<slot />
 		</div>
 	</body>
