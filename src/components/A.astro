@@ -2,30 +2,14 @@
 import ExternalLink from "../icons/ExternalLink.astro";
 
 interface Props {
-	class?: string;
 	href: string;
-	underline?: boolean;
 	[key: string]: unknown;
 }
-const {
-	class: extraClasses = "",
-	underline = true,
-	href,
-	...rest
-} = Astro.props;
+const {href, ...rest} = Astro.props;
 const isExternal = href.startsWith("http");
 ---
 
-<a
-	{...rest}
-	href={href}
-	class:list={[
-		"hover:opacity-30",
-		"transition-opacity",
-		underline && "underline",
-		extraClasses,
-	]}
->
+<a {...rest} href={href}>
 	<slot />
 	{
 		isExternal && (

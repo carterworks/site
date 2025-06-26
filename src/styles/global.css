@@ -29,7 +29,8 @@
 	figure,
 	blockquote,
 	dl,
-	dd {
+	dd,
+	pre {
 		margin: 0;
 	}
 
@@ -37,6 +38,8 @@
 	ul[role="list"],
 	ol[role="list"] {
 		list-style: none;
+		margin: 0;
+		padding: 0;
 	}
 
 	/* Set core body defaults */
@@ -95,11 +98,59 @@
 	:target {
 		scroll-margin-block: 1rlh;
 	}
+
+	/* Remove all animations and transitions for people that prefer not to see them */
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
 }
-body[data-theme="2024"] {
+@layer utilities {
+	.text-sm {
+		font-size: var(--text-sm, 0.875rem);
+	}
+	.text-base {
+		font-size: var(--text-base, 1rem);
+	}
+	.text-lg {
+		font-size: var(--text-lg, 1.125rem);
+	}
+	.text-xl {
+		font-size: var(--text-xl, 1.5rem);
+	}
+	.text-2xl {
+		font-size: var(--text-2xl, 2rem);
+	}
+	.flow > * + * {
+		margin-block-start: var(--flow-space, 1em);
+	}
+	.flow-horizontal {
+		display: flex;
+		flex-direction: row;
+		> * + * {
+			margin-inline-start: var(--flow-space, 1em);
+		}
+	}
+	.justify-between {
+		justify-content: space-between;
+	}
+}
+:root[data-theme="2024"] {
+	*,
+	*::before,
+	*::after {
+		transition: all 0.2s ease-in-out;
+	}
 	/* #region variables */
 	/* #region colors */
-	--color-sepia: oklch(97.35% 0.026 90.1);
+	--color-sepia: oklch(0.9735 0.026 90.1);
+	--color-blue: oklch(0.4818 0.1315 254.79);
 	--color-blackish: oklch(25% 0.029 221.9);
 	/* #endregion */
 
@@ -145,38 +196,80 @@ body[data-theme="2024"] {
 	--font-emoji:
 		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 	/* #endregion */
+
+	/* #region typography */
+	--text-sm: 0.875rem;
+	--text-base: 1rem;
+	--text-lg: 1.125rem;
+	--text-xl: 1.5rem;
+	--text-2xl: 2rem;
+
+	font-size: var(--text-base);
+	/* #endregion */
 	/* #region spacing */
 	--spacer: 0.25rem;
+	--flow-space: calc(var(--spacer) * 4);
 	/* #endregion */
 	/* #endregion */
-
-	font-family: var(--font-classical-humanist), var(--font-emoji);
-	background-color: light-dark(var(--color-sepia), var(--color-blackish));
-	color: light-dark(var(--color-blackish), var(--color-sepia));
-	background-image: url("/noise.svg");
-	background-size: 30%;
-	padding: calc(var(--spacer) * 4);
-	margin: 0;
-	height: 100dvh;
-
-	:is(h1, h2, h3, h4, h5, h6) {
-		font-family: var(--font-didone);
-	}
-
-	:is(p, li, blockquote, dd, dt, figcaption, caption) {
-		font-family: var(--font-transitional);
-	}
-
-	> div {
-		border: 4px solid light-dark(var(--color-blackish), var(--color-sepia));
-		height: 100%;
-		width: 100%;
-		overflow: auto;
-		border-radius: calc(var(--spacer) * 3);
+	body {
+		font-family: var(--font-classical-humanist), var(--font-emoji);
+		background-color: light-dark(var(--color-sepia), var(--color-blackish));
+		color: light-dark(var(--color-blackish), var(--color-sepia));
+		background-image: url("/noise.svg");
+		background-size: 30%;
 		padding: calc(var(--spacer) * 4);
-		padding-top: 0;
-		> * {
-			max-width: 60ch;
+		margin: 0;
+		min-height: 100svh;
+		transition: all 0.2s ease-in-out;
+	}
+
+	body > * {
+		margin-inline: auto;
+		max-width: 60ch;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		font-family: var(--font-didone);
+		font-weight: 400;
+		margin-block-end: calc(var(--spacer) * 1);
+	}
+
+	a,
+	a:visited {
+		color: inherit;
+		text-decoration: none;
+		border-radius: calc(var(--spacer) * 2);
+		background-color: transparent;
+		display: inline-block;
+		transition: background-color 0.2s ease-in-out;
+		&:hover {
+			background-color: light-dark(
+				oklch(from var(--color-blackish) l c h / 0.1),
+				oklch(from var(--color-sepia) l c h / 0.2)
+			);
+		}
+	}
+
+	.posts .post-title {
+		text-decoration: underline;
+	}
+	.posts .post-link {
+		display: flex;
+		flex-direction: row;
+		gap: calc(var(--spacer) * 2);
+	}
+
+	.prose {
+		max-width: 60ch;
+		text-wrap: pretty;
+		> * + * {
+			margin-block-start: var(--flow-space, 1em);
+		}
+		a {
+			text-decoration: underline;
 		}
 	}
 }

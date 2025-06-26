@@ -1,12 +1,10 @@
 ---
-import Prose from "./Prose.astro";
-
 interface Props {
 	url: string;
 	count?: number;
 	class?: string;
 }
-const { url, count = 2, class: extraClasses } = Astro.props;
+const {url, count = 2, class: extraClasses} = Astro.props;
 ---
 
 <!-- <script
@@ -84,13 +82,13 @@ const { url, count = 2, class: extraClasses } = Astro.props;
 					year: "numeric",
 					month: "long",
 					day: "numeric",
-				}
+				},
 			);
 			const mediaContent = item.querySelector("content");
 			const mediaIsImage = mediaContent?.getAttribute("medium") === "image";
 			const mediaUrl = mediaContent?.getAttribute("url");
 			const mediaDescription = mediaContent?.querySelector(
-				CSS.escape("description")
+				CSS.escape("description"),
 			)?.textContent;
 
 			return `
@@ -108,13 +106,6 @@ const { url, count = 2, class: extraClasses } = Astro.props;
 	// Define the custom element
 	customElements.define("rss-feed", RSS);
 </script>
-<Prose
-	class:list={[
-		"prose-p:m-0",
-		"prose-hr:m-2",
-		"prose-a:break-all",
-		extraClasses,
-	]}
->
+<div class="prose">
 	<rss-feed url={url} count={count}></rss-feed>
-</Prose>
+</div>
