@@ -2,8 +2,11 @@
 import {getCollection} from "astro:content";
 import Mastodon from "../icons/Mastodon.astro";
 import RssFeed from "../components/RssFeed.astro";
+import Book from "../icons/Book.astro";
 import Rss from "../icons/Rss.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Yazzy from "../icons/Yazzy.astro";
+import RssReader from "../icons/RssReader.astro";
 const recentPosts = (await getCollection("blog"))
 	.slice(0, 10)
 	.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
@@ -21,6 +24,37 @@ function wordCount(body: string): number {
 		/>
 	</Fragment>
 	<main class="flow">
+		<section>
+			<h2>Who?</h2>
+			Still figuring things out. Right now: a dad, a tired man, a code plumber on
+			the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
+			researcher, a homebody, a reader, a eater (not a foodie), and <a
+				href="https://churchofjesuschrist.org">a disciple of Christ</a
+			>.
+		</section>
+		<section>
+			<h2>Some things I made</h2>
+			<ul role="list">
+				<li role="listitem">
+					<a href="https://yazzy.carter.works">
+						<Yazzy verticalAlign="middle" />
+						Yazzy, a site to bring reader mode to all the web.
+					</a>
+				</li>
+				<li role="listitem">
+					<a href="https://carterworks.github.io/rss-reader/">
+						<RssReader verticalAlign="middle" />
+						My personal RSS reader
+					</a>
+				</li>
+				<li role="listitem">
+					<a href="https://github.com/carterworks/substack-to-epub">
+						<Book verticalAlign="middle" />
+						Substack-to-epub scraper
+					</a>
+				</li>
+			</ul>
+		</section>
 		<section>
 			<h2>
 				<a href="https://mastodon.social/@literallyacar">
