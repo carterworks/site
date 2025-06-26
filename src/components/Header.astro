@@ -1,18 +1,10 @@
 ---
-import allLinks from "../content/links";
 import WavingHand from "../icons/WavingHand.astro";
+import Mastodon from "../icons/Mastodon.astro";
+import Github from "../icons/Github.astro";
+import LinkedIn from "../icons/LinkedIn.astro";
 import A from "./A.astro";
-import Heading from "./Heading.astro";
-interface Props {
-	showSubtitle?: boolean;
-	showLinks?: boolean;
-	class?: string;
-}
-const {
-	showSubtitle = false,
-	showLinks = false,
-	class: extraClasses,
-} = Astro.props;
+const props = Astro.props;
 const possibleSubtitles = [
 	"A software developer.",
 	"A dad.",
@@ -22,10 +14,9 @@ const possibleSubtitles = [
 	"A sepia tone enthusiast.",
 	"A crust eaten in peace is better than a banquet partaken in anxiety.",
 ];
-const links = allLinks.filter((link) => !link.isExternal);
 ---
 
-<script defer define:vars={{ possibleSubtitles }}>
+<script defer define:vars={{possibleSubtitles}}>
 	function randomSubtitle() {
 		const $headingSubtitle = document.getElementById("heading-subtitle");
 		if (!$headingSubtitle) {
@@ -37,46 +28,40 @@ const links = allLinks.filter((link) => !link.isExternal);
 	}
 	randomSubtitle();
 </script>
-<header
-	class:list={[
-		"flex",
-		"justify-between",
-		"!max-w-full",
-		"!m-0",
-		"py-4",
-		extraClasses,
-	]}
->
+<header class:list={["flow-horizontal", "justify-between"]}>
 	<hgroup>
-		<A href="/" underline={false}>
-			<Heading level={1}>
+		<a href="/">
+			<h1>
 				<WavingHand label="Hello" class="inline-block" />
 				I'm Carter.
-			</Heading>
-			{
-				showSubtitle && (
-					<p id="heading-subtitle">
-						{
-							possibleSubtitles[
-								Math.floor(Math.random() * possibleSubtitles.length)
-							]
-						}
-					</p>
-				)
-			}
-		</A>
+			</h1>
+			<p id="heading-subtitle">
+				{
+					possibleSubtitles[
+						Math.floor(Math.random() * possibleSubtitles.length)
+					]
+				}
+			</p>
+		</a>
 	</hgroup>
-	{
-		showLinks && links.length > 0 && (
-			<nav>
-				<ul class="flex flex-row gap-2">
-					{links.map((link) => (
-						<li>
-							<A {...link.attrs}>{link.text}</A>
-						</li>
-					))}
-				</ul>
-			</nav>
-		)
-	}
+	<ul role="list" class="flow-horizontal">
+		<li role="listitem">
+			<a
+				href="https://mastodon.social/@literallyacar"
+				rel="me"
+				aria-label="Mastodon"><Mastodon class="text-lg" /></a
+			>
+		</li>
+		<li role="listitem">
+			<a href="https://github.com/carterworks" aria-label="GitHub"
+				><Github class="text-lg" /></a
+			>
+		</li>
+		<li role="listitem">
+			<a
+				href="https://www.linkedin.com/in/thatcartermcbride/"
+				aria-label="LinkedIn"><LinkedIn class="text-lg" /></a
+			>
+		</li>
+	</ul>
 </header>

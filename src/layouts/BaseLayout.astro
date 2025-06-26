@@ -1,27 +1,20 @@
 ---
-import { ClientRouter } from "astro:transitions";
+import {ClientRouter} from "astro:transitions";
 import Header from "../components/Header.astro";
 import "../styles/global.css";
 interface Props {
 	title: string;
-	class?: string;
-	showHeaderSubtitle?: boolean;
-	showHeaderLinks?: boolean;
 }
-const {
-	title,
-	class: classContent = "",
-	showHeaderSubtitle = false,
-	showHeaderLinks = false,
-} = Astro.props;
-const { url } = Astro;
+const {title} = Astro.props;
+const {url} = Astro;
 ---
 
-<html lang="en">
+<html lang="en" data-theme="2025">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#fdf6e3" />
+		<meta name="color-scheme" content="light dark" />
 		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 		<link rel="canonical" href={url} />
 		<meta property="og:url" content={url} />
@@ -40,6 +33,9 @@ const { url } = Astro;
 		<slot name="head" />
 
 		<title>{title}</title>
+
+		<meta property="og:title" content={title} />
+		<meta property="og:type" content="website" />
 		<script>
 			/**
 			 * @param { Date } date
@@ -69,25 +65,8 @@ const { url } = Astro;
 		</script>
 	</head>
 
-	<body
-		class="text-base font-classical-humanist bg-[url('/noise.svg')] bg-sepia dark:bg-blackish bg-[size:30%] p-4 h-[100dvh] text-blackish dark:text-sepia"
-	>
-		<div
-			class:list={[
-				"border-4",
-				"border-blackish",
-				"dark:border-sepia",
-				"h-full",
-				"w-full",
-				"rounded-xl",
-				"overflow-auto",
-				"p-4 pt-0",
-				"*:max-w-[60ch]",
-				...classContent.split(/\s+/g),
-			]}
-		>
-			<Header showLinks={showHeaderLinks} showSubtitle={showHeaderSubtitle} />
-			<slot />
-		</div>
+	<body class="flow">
+		<Header />
+		<slot />
 	</body>
 </html>

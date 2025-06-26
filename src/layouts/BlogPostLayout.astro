@@ -1,9 +1,8 @@
 ---
-import Heading from "../components/Heading.astro";
-import Prose from "../components/Prose.astro";
+import BaseLayout from "./BaseLayout.astro";
 import PageWithHeaderLayout from "./PageWithHeaderLayout.astro";
 
-const { frontmatter } = Astro.props;
+const {frontmatter} = Astro.props;
 const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 	"en-US",
 	{
@@ -12,40 +11,30 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
 		day: "numeric",
 	},
 );
+const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
 ---
 
-<PageWithHeaderLayout
-	title={`${frontmatter.title} | carter.works`}
-	class="*:mx-auto"
->
+<BaseLayout title={`${frontmatter.title} | carter.works`}>
 	<Fragment slot="head">
-		<meta property="og:title" content={frontmatter.title} />
 		<meta property="og:type" content="article" />
-		<meta property="og:description" content={frontmatter.description} />
-		<meta name="description" content={frontmatter.description} />
+		<meta
+			name="description"
+			property="og:description"
+			content={frontmatter.description}
+		/>
 		<meta property="og:article:published_time" content={frontmatter.pubDate} />
 		<meta property="og:article:author" content="Carter McBride" />
 		<meta property="og:article:tag" content={frontmatter.tags.join(", ")} />
 	</Fragment>
-	<article>
-		<header class="text-sm mb-4">
-			<Heading level={1}>{frontmatter.title}</Heading>
+	<article class="flow">
+		<header class="flow" style="--flow-space: calc(var(--spacer) * 1)">
+			<h1>{frontmatter.title}</h1>
 			<time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
-			{
-				frontmatter.tags.length > 0 && (
-					<ul class="">
-						{frontmatter.tags.map((tag: string) => (
-							<li class="inline-block mr-2">#{tag}</li>
-						))}
-					</ul>
-				)
-			}
-			<p class="mt-4 text-base italic">
-				{frontmatter.description}
-			</p>
+			{tags.length > 0 && <p>{tags}</p>}
+			{frontmatter.description}
 		</header>
-		<Prose>
+		<div class="prose">
 			<slot />
-		</Prose>
+		</div>
 	</article>
-</PageWithHeaderLayout>
+</BaseLayout>
