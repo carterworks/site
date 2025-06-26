@@ -28,7 +28,7 @@
 		"wrangler": "^4.22.0"
 	},
 	"peerDependencies": {
-		"typescript": "^5.7.3"
+		"typescript": "^5.8.3"
 	},
 	"dependencies": {
 		"@astrojs/rss": "^4.0.12",
