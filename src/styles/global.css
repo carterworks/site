@@ -141,7 +141,7 @@
 		justify-content: space-between;
 	}
 }
-:root[data-theme="2024"] {
+:root[data-theme="2025"] {
 	*,
 	*::before,
 	*::after {
@@ -271,5 +271,11 @@
 		a {
 			text-decoration: underline;
 		}
+	}
+	img {
+		border-radius: calc(var(--spacer) * 2);
+		width: 100%;
+		height: auto;
+		border: 2px solid light-dark(var(--color-blackish), var(--color-sepia));
 	}
 }

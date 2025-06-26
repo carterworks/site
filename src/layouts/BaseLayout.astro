@@ -4,19 +4,12 @@ import Header from "../components/Header.astro";
 import "../styles/global.css";
 interface Props {
 	title: string;
-	class?: string;
-	showHeaderLinks?: boolean;
 }
-const {
-	title,
-	class: classContent = "",
-	showHeaderSubtitle = false,
-	showHeaderLinks = false,
-} = Astro.props;
+const {title} = Astro.props;
 const {url} = Astro;
 ---
 
-<html lang="en" data-theme="2024">
+<html lang="en" data-theme="2025">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />

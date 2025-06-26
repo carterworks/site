@@ -4,8 +4,9 @@ import Mastodon from "../icons/Mastodon.astro";
 import RssFeed from "../components/RssFeed.astro";
 import Rss from "../icons/Rss.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import {Debug} from "astro:components";
-const recentPosts = (await getCollection("blog")).slice(0, 10);
+const recentPosts = (await getCollection("blog"))
+	.slice(0, 10)
+	.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 function wordCount(body: string): number {
 	return body.split(/\s+/).length;
 }

@@ -1,10 +1,7 @@
 ---
 import {getCollection} from "astro:content";
-import Mastodon from "../../icons/Mastodon.astro";
-import RssFeed from "../../components/RssFeed.astro";
 import Rss from "../../icons/Rss.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import {Debug} from "astro:components";
 const posts = await getCollection("blog");
 function wordCount(body: string): number {
 	return body.split(/\s+/).length;
