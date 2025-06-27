@@ -271,6 +271,11 @@
 		a {
 			text-decoration: underline;
 		}
+		blockquote {
+			border-left: 2px solid
+				light-dark(var(--color-blackish), var(--color-sepia));
+			padding-left: calc(var(--spacer) * 2);
+		}
 	}
 	img {
 		border-radius: calc(var(--spacer) * 2);
