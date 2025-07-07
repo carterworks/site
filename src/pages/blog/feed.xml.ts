@@ -11,11 +11,11 @@ export async function GET(context: { site: string }) {
 		items: posts.map(
 			(post) =>
 				({
-					title: post.data.title,
+					title: post.data.title ?? "A post from Carter's blog",
 					pubDate: post.data.pubDate,
 					link: `/blog/${post.id}`,
-					description: post.data.description,
-					categories: post.data.tags,
+					description: post.data.description ?? "",
+					categories: post.data.tags ?? [],
 					content: `<p>${post.data.description}</p>
 			<p><a href="${`${context.site}blog/${post.id}`}">Read more</a></p>`,
 				}) satisfies RSSFeedItem,
