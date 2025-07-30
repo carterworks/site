@@ -1,6 +1,6 @@
 ---
 title: Context isn't just for LLMs
-pubDate: 2024-07-07
+pubDate: 2025-07-07
 description: A file-based workflow
 tags:
   - links
