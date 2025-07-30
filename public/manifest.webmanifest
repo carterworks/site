@@ -1,8 +1,8 @@
 {
-	"name": "Carter McBride",
-	"short_name": "Carter McBride",
-	"start_url": "/",
-	"icons": [],
-	"background_color": "#fdf6e3",
-	"display": "standalone"
+  "name": "Carter McBride",
+  "short_name": "Carter McBride",
+  "start_url": "/",
+  "icons": [],
+  "background_color": "#fdf6e3",
+  "display": "standalone"
 }

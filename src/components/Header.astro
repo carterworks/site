@@ -6,62 +6,72 @@ import LinkedIn from "../icons/LinkedIn.astro";
 import A from "./A.astro";
 const props = Astro.props;
 const possibleSubtitles = [
-	"A software developer.",
-	"A dad.",
-	"A grump.",
-	"An enjoyer of simple things.",
-	"carter.works? I sure hope he does!",
-	"A sepia tone enthusiast.",
-	"A crust eaten in peace is better than a banquet partaken in anxiety.",
+  "A software developer.",
+  "A dad.",
+  "A grump.",
+  "An enjoyer of simple things.",
+  "carter.works? I sure hope he does!",
+  "A sepia tone enthusiast.",
+  "A crust eaten in peace is better than a banquet partaken in anxiety.",
 ];
 ---
 
-<script defer define:vars={{possibleSubtitles}}>
-	function randomSubtitle() {
-		const $headingSubtitle = document.getElementById("heading-subtitle");
-		if (!$headingSubtitle) {
-			return;
-		}
-		const subtitle =
-			possibleSubtitles[Math.floor(Math.random() * possibleSubtitles.length)];
-		$headingSubtitle.textContent = subtitle;
-	}
-	randomSubtitle();
+<script defer define:vars={{ possibleSubtitles }}>
+  function randomSubtitle() {
+    const $headingSubtitle = document.getElementById("heading-subtitle");
+    if (!$headingSubtitle) {
+      return;
+    }
+    const subtitle =
+      possibleSubtitles[Math.floor(Math.random() * possibleSubtitles.length)];
+    $headingSubtitle.textContent = subtitle;
+  }
+  randomSubtitle();
 </script>
 <header class:list={["flow-horizontal", "justify-between"]}>
-	<hgroup>
-		<a href="/">
-			<h1>
-				<WavingHand label="Hello" class="inline-block" />
-				I'm Carter.
-			</h1>
-			<p id="heading-subtitle">
-				{
-					possibleSubtitles[
-						Math.floor(Math.random() * possibleSubtitles.length)
-					]
-				}
-			</p>
-		</a>
-	</hgroup>
-	<ul role="list" class="flow-horizontal">
-		<li role="listitem">
-			<a
-				href="https://mastodon.social/@literallyacar"
-				rel="me"
-				aria-label="Mastodon"><Mastodon class="text-lg" /></a
-			>
-		</li>
-		<li role="listitem">
-			<a href="https://github.com/carterworks" aria-label="GitHub"
-				><Github class="text-lg" /></a
-			>
-		</li>
-		<li role="listitem">
-			<a
-				href="https://www.linkedin.com/in/thatcartermcbride/"
-				aria-label="LinkedIn"><LinkedIn class="text-lg" /></a
-			>
-		</li>
-	</ul>
+  <hgroup>
+    <a href="/">
+      <h1>
+        <WavingHand
+          label="Hello"
+          class="inline-block"
+        />
+        I'm Carter.
+      </h1>
+      <p id="heading-subtitle">
+        {
+          possibleSubtitles[
+            Math.floor(Math.random() * possibleSubtitles.length)
+          ]
+        }
+      </p>
+    </a>
+  </hgroup>
+  <ul
+    role="list"
+    class="flow-horizontal"
+  >
+    <li role="listitem">
+      <a
+        href="https://mastodon.social/@literallyacar"
+        rel="me"
+        aria-label="Mastodon"
+        ><Mastodon class="text-lg" /></a
+      >
+    </li>
+    <li role="listitem">
+      <a
+        href="https://github.com/carterworks"
+        aria-label="GitHub"
+        ><Github class="text-lg" /></a
+      >
+    </li>
+    <li role="listitem">
+      <a
+        href="https://www.linkedin.com/in/thatcartermcbride/"
+        aria-label="LinkedIn"
+        ><LinkedIn class="text-lg" /></a
+      >
+    </li>
+  </ul>
 </header>

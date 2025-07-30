@@ -1,9 +1,4 @@
 {
-	"recommendations": [
-		"esbenp.prettier-vscode",
-		"editorconfig.editorconfig",
-		"astro-build.astro-vscode",
-		"unifiedjs.vscode-mdx"
-	],
-	"unwantedRecommendations": []
+  "recommendations": ["esbenp.prettier-vscode", "astro-build.astro-vscode"],
+  "unwantedRecommendations": []
 }

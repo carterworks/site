@@ -2,18 +2,24 @@
 import ExternalLink from "../icons/ExternalLink.astro";
 
 interface Props {
-	href: string;
-	[key: string]: unknown;
+  href: string;
+  [key: string]: unknown;
 }
-const {href, ...rest} = Astro.props;
+const { href, ...rest } = Astro.props;
 const isExternal = href.startsWith("http");
 ---
 
-<a {...rest} href={href}>
-	<slot />
-	{
-		isExternal && (
-			<ExternalLink aria-hidden class="inline-block w-3 -ml-0.5 align-sub" />
-		)
-	}
+<a
+  {...rest}
+  href={href}
+>
+  <slot />
+  {
+    isExternal && (
+      <ExternalLink
+        aria-hidden
+        class="inline-block w-3 -ml-0.5 align-sub"
+      />
+    )
+  }
 </a>

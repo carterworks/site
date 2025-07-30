@@ -1,5 +1,5 @@
 ---
-import {getCollection} from "astro:content";
+import { getCollection } from "astro:content";
 import Mastodon from "../icons/Mastodon.astro";
 import RssFeed from "../components/RssFeed.astro";
 import Book from "../icons/Book.astro";
@@ -8,118 +8,128 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Yazzy from "../icons/Yazzy.astro";
 import RssReader from "../icons/RssReader.astro";
 const recentPosts = (await getCollection("blog"))
-	.slice(0, 10)
-	.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+  .slice(0, 10)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 function wordCount(body: string): number {
-	return body.split(/\s+/).length;
+  return body.split(/\s+/).length;
 }
 ---
 
 <BaseLayout title="👋 I'm Carter.">
-	<Fragment slot="head">
-		<meta
-			name="description"
-			property="og:description"
-			content="Front-end dev. Father. Young grump. Simple things enjoyer."
-		/>
-	</Fragment>
-	<main class="flow">
-		<section>
-			<h2>Who?</h2>
-			Still figuring things out. Right now: a dad, a tired man, a code plumber on
-			the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
-			researcher, a homebody, a reader, a eater (not a foodie), and <a
-				href="https://churchofjesuschrist.org">a disciple of Christ</a
-			>.
-		</section>
-		<section>
-			<h2>Some things I made</h2>
-			<ul role="list">
-				<li role="listitem">
-					<a href="https://yazzy.carter.works">
-						<Yazzy verticalAlign="middle" />
-						Yazzy, a site to bring reader mode to all the web.
-					</a>
-				</li>
-				<li role="listitem">
-					<a href="https://carterworks.github.io/rss-reader/">
-						<RssReader verticalAlign="middle" />
-						My personal RSS reader
-					</a>
-				</li>
-				<li role="listitem">
-					<a href="https://github.com/carterworks/substack-to-epub">
-						<Book verticalAlign="middle" />
-						Substack-to-epub scraper
-					</a>
-				</li>
-			</ul>
-		</section>
-		<section>
-			<h2>
-				<a href="https://mastodon.social/@literallyacar">
-					<Mastodon class="text-xl" />
-					Mastodon
-				</a>
-			</h2>
-			<RssFeed
-				class="overflow-y-auto max-h-64"
-				url="https://mastodon.social/@literallyacar.rss"
-				count={2}
-			/>
-		</section>
-		{
-			recentPosts.length > 0 && (
-				<section>
-					<h2>
-						<a href="/blog/feed.xml">
-							<Rss label="RSS feed" />
-						</a>
-						<a href="/blog/">Blog posts</a>
-					</h2>
-					<ul class="flow" role="list" class="posts">
-						{recentPosts.map((post) => {
-							const wc = wordCount(post.body ?? "");
-							const splitPoint = 100;
-							const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
-							// html of the first two paragraphs
-							const excerpt = post.body
-								?.split(/\s+/)
-								.slice(0, splitPoint)
-								.join(" ");
-							return (
-								<li role="listitem" class="posts">
-									<h3>
-										<a href={`/blog/${post.id}/`} class="post-link">
-											{post.data.title && (
-												<p class="post-title">{post.data.title}</p>
-											)}
-											<p>
-												<time
-													datetime={post.data.pubDate.toString()}
-													is="formatted-date"
-												/>
-											</p>
-											{tags && <p>{tags}</p>}
-										</a>
-									</h3>
-									<article class="flow prose">
-										<Fragment set:html={excerpt} />
-										{wc > splitPoint && excerpt.length > splitPoint && (
-											<>
-												…
-												<a href={`/blog/${post.id}/`}>
-													{Intl.NumberFormat("en-US").format(wc)} words
-												</a>
-											</>
-										)}
-									</article>
-								</li>
-							);
-						})}
-					</ul>
-				</section>
-			)
-		}
-	</main>
+  <Fragment slot="head">
+    <meta
+      name="description"
+      property="og:description"
+      content="Front-end dev. Father. Young grump. Simple things enjoyer."
+    />
+  </Fragment>
+  <main class="flow">
+    <section>
+      <h2>Who?</h2>
+      Still figuring things out. Right now: a dad, a tired man, a code plumber on
+      the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
+      researcher, a homebody, a reader, a eater (not a foodie), and <a
+        href="https://churchofjesuschrist.org">a disciple of Christ</a
+      >.
+    </section>
+    <section>
+      <h2>Some things I made</h2>
+      <ul role="list">
+        <li role="listitem">
+          <a href="https://yazzy.carter.works">
+            <Yazzy verticalAlign="middle" />
+            Yazzy, a site to bring reader mode to all the web.
+          </a>
+        </li>
+        <li role="listitem">
+          <a href="https://carterworks.github.io/rss-reader/">
+            <RssReader verticalAlign="middle" />
+            My personal RSS reader
+          </a>
+        </li>
+        <li role="listitem">
+          <a href="https://github.com/carterworks/substack-to-epub">
+            <Book verticalAlign="middle" />
+            Substack-to-epub scraper
+          </a>
+        </li>
+      </ul>
+    </section>
+    <section>
+      <h2>
+        <a href="https://mastodon.social/@literallyacar">
+          <Mastodon class="text-xl" />
+          Mastodon
+        </a>
+      </h2>
+      <RssFeed
+        class="overflow-y-auto max-h-64"
+        url="https://mastodon.social/@literallyacar.rss"
+        count={2}
+      />
+    </section>
+    {
+      recentPosts.length > 0 && (
+        <section>
+          <h2>
+            <a href="/blog/feed.xml">
+              <Rss label="RSS feed" />
+            </a>
+            <a href="/blog/">Blog posts</a>
+          </h2>
+          <ul
+            class="flow"
+            role="list"
+            class="posts"
+          >
+            {recentPosts.map((post) => {
+              const wc = wordCount(post.body ?? "");
+              const splitPoint = 100;
+              const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
+              // html of the first two paragraphs
+              const excerpt = post.body
+                ?.split(/\s+/)
+                .slice(0, splitPoint)
+                .join(" ");
+              return (
+                <li
+                  role="listitem"
+                  class="posts"
+                >
+                  <h3>
+                    <a
+                      href={`/blog/${post.id}/`}
+                      class="post-link"
+                    >
+                      {post.data.title && (
+                        <p class="post-title">{post.data.title}</p>
+                      )}
+                      <p>
+                        <time
+                          datetime={post.data.pubDate.toString()}
+                          is="formatted-date"
+                        />
+                      </p>
+                      {tags && <p>{tags}</p>}
+                    </a>
+                  </h3>
+                  <article class="flow prose">
+                    <Fragment set:html={excerpt} />
+                    {wc > splitPoint && excerpt.length > splitPoint && (
+                      <>
+                        …
+                        <a href={`/blog/${post.id}/`}>
+                          {Intl.NumberFormat("en-US").format(wc)} words
+                        </a>
+                      </>
+                    )}
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )
+    }
+  </main>
 </BaseLayout>

@@ -1,57 +1,64 @@
 ---
-import {getCollection} from "astro:content";
+import { getCollection } from "astro:content";
 import Rss from "../../icons/Rss.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 const posts = await getCollection("blog");
 function wordCount(body: string): number {
-	return body.split(/\s+/).length;
+  return body.split(/\s+/).length;
 }
 ---
 
 <BaseLayout title="All blog posts | carter.works">
-	<Fragment slot="head">
-		<meta
-			name="description"
-			property="og:description"
-			content="Everything fit to print!"
-		/>
-	</Fragment>
-	<main class="flow">
-		{
-			(
-				<section>
-					<h2>
-						<a href="/blog/feed.xml">
-							<Rss label="RSS feed" />
-						</a>
-						<a href="/blog/">All blog posts</a>
-					</h2>
-					<ul class="flow" role="list" class="posts">
-						{posts.map((post) => {
-							const wc = wordCount(post.body ?? "");
-							const splitPoint = 200;
-							const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
-							// html of the first two paragraphs
-							return (
-								<li role="listitem" class="posts">
-									<a href={`/blog/${post.id}/`}>
-										{post.data.title && (
-											<p class="post-title">{post.data.title}</p>
-										)}
-										<p>
-											<time
-												datetime={post.data.pubDate.toString()}
-												is="formatted-date"
-											/>
-										</p>
-										{tags && <p class="tags">{tags}</p>}
-									</a>
-								</li>
-							);
-						})}
-					</ul>
-				</section>
-			)
-		}
-	</main>
+  <Fragment slot="head">
+    <meta
+      name="description"
+      property="og:description"
+      content="Everything fit to print!"
+    />
+  </Fragment>
+  <main class="flow">
+    {
+      (
+        <section>
+          <h2>
+            <a href="/blog/feed.xml">
+              <Rss label="RSS feed" />
+            </a>
+            <a href="/blog/">All blog posts</a>
+          </h2>
+          <ul
+            class="flow"
+            role="list"
+            class="posts"
+          >
+            {posts.map((post) => {
+              const wc = wordCount(post.body ?? "");
+              const splitPoint = 200;
+              const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
+              // html of the first two paragraphs
+              return (
+                <li
+                  role="listitem"
+                  class="posts"
+                >
+                  <a href={`/blog/${post.id}/`}>
+                    {post.data.title && (
+                      <p class="post-title">{post.data.title}</p>
+                    )}
+                    <p>
+                      <time
+                        datetime={post.data.pubDate.toString()}
+                        is="formatted-date"
+                      />
+                    </p>
+                    {tags && <p class="tags">{tags}</p>}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )
+    }
+  </main>
 </BaseLayout>

@@ -1,72 +1,115 @@
 ---
-import {ClientRouter} from "astro:transitions";
+import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
 import "../styles/global.css";
 interface Props {
-	title: string;
+  title: string;
 }
-const {title} = Astro.props;
-const {url} = Astro;
+const { title } = Astro.props;
+const { url } = Astro;
 ---
 
-<html lang="en" data-theme="2025">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="theme-color" content="#fdf6e3" />
-		<meta name="color-scheme" content="light dark" />
-		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-		<link rel="canonical" href={url} />
-		<meta property="og:url" content={url} />
-		<meta property="og:locale" content="en_US" />
-		<meta property="og:site_name" content="Carter McBride" />
-		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<link
-			rel="alternate"
-			type="application/rss+xml"
-			href={new URL("/blog/feed.xml", Astro.site)}
-		/>
-		<link rel="manifest" href="/manifest.webmanifest" />
-		<link rel="sitemap" href="/sitemap-index.xml" />
-		<ClientRouter />
+<html
+  lang="en"
+  data-theme="2025"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <meta
+      name="theme-color"
+      content="#fdf6e3"
+    />
+    <meta
+      name="color-scheme"
+      content="light dark"
+    />
+    <meta
+      http-equiv="X-UA-Compatible"
+      content="ie=edge"
+    />
+    <link
+      rel="canonical"
+      href={url}
+    />
+    <meta
+      property="og:url"
+      content={url}
+    />
+    <meta
+      property="og:locale"
+      content="en_US"
+    />
+    <meta
+      property="og:site_name"
+      content="Carter McBride"
+    />
+    <link
+      rel="icon"
+      href="/favicon.svg"
+      type="image/svg+xml"
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href={new URL("/blog/feed.xml", Astro.site)}
+    />
+    <link
+      rel="manifest"
+      href="/manifest.webmanifest"
+    />
+    <link
+      rel="sitemap"
+      href="/sitemap-index.xml"
+    />
+    <ClientRouter />
 
-		<slot name="head" />
+    <slot name="head" />
 
-		<title>{title}</title>
+    <title>{title}</title>
 
-		<meta property="og:title" content={title} />
-		<meta property="og:type" content="website" />
-		<script>
-			/**
-			 * @param { Date } date
-			 * @returns { number }
-			 */
-			class FormattedDate extends HTMLTimeElement {
-				constructor() {
-					super();
-					const attribute = this.getAttribute("datetime");
-					if (!attribute) {
-						return;
-					}
-					const date = new Date(attribute);
-					const utcDate = new Date(
-						date.getTime() + date.getTimezoneOffset() * 60000,
-					);
-					this.textContent = utcDate.toLocaleDateString("en-us", {
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-					});
-				}
-			}
-			customElements.define("formatted-date", FormattedDate, {
-				extends: "time",
-			});
-		</script>
-	</head>
+    <meta
+      property="og:title"
+      content={title}
+    />
+    <meta
+      property="og:type"
+      content="website"
+    />
+    <script>
+      /**
+       * @param { Date } date
+       * @returns { number }
+       */
+      class FormattedDate extends HTMLTimeElement {
+        constructor() {
+          super();
+          const attribute = this.getAttribute("datetime");
+          if (!attribute) {
+            return;
+          }
+          const date = new Date(attribute);
+          const utcDate = new Date(
+            date.getTime() + date.getTimezoneOffset() * 60000,
+          );
+          this.textContent = utcDate.toLocaleDateString("en-us", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+      }
+      customElements.define("formatted-date", FormattedDate, {
+        extends: "time",
+      });
+    </script>
+  </head>
 
-	<body class="flow">
-		<Header />
-		<slot />
-	</body>
+  <body class="flow">
+    <Header />
+    <slot />
+  </body>
 </html>

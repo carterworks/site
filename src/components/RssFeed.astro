@@ -1,10 +1,10 @@
 ---
 interface Props {
-	url: string;
-	count?: number;
-	class?: string;
+  url: string;
+  count?: number;
+  class?: string;
 }
-const {url, count = 2, class: extraClasses} = Astro.props;
+const { url, count = 2, class: extraClasses } = Astro.props;
 ---
 
 <!-- <script
@@ -12,86 +12,86 @@ const {url, count = 2, class: extraClasses} = Astro.props;
 	src="https://catskull.net/public/js/components/rss-feed.js"
 	async></script> -->
 <style>
-	@layer overrides {
-		a {
-			@apply transition-opacity hover:opacity-30 underline;
-		}
-	}
+  @layer overrides {
+    a {
+      @apply transition-opacity hover:opacity-30 underline;
+    }
+  }
 </style>
 <script>
-	// From https://github.com/catskull/rss-feed (MIT License)
-	class RSS extends HTMLElement {
-		async connectedCallback() {
-			const feedUrl = this.getAttribute("url");
-			let postCount = parseInt(this.getAttribute("count") ?? "1");
+  // From https://github.com/catskull/rss-feed (MIT License)
+  class RSS extends HTMLElement {
+    async connectedCallback() {
+      const feedUrl = this.getAttribute("url");
+      let postCount = parseInt(this.getAttribute("count") ?? "1");
 
-			if (!feedUrl) {
-				console.error("No RSS feed URL provided!");
-				return;
-			}
+      if (!feedUrl) {
+        console.error("No RSS feed URL provided!");
+        return;
+      }
 
-			if (isNaN(postCount)) {
-				postCount = 1;
-			}
+      if (isNaN(postCount)) {
+        postCount = 1;
+      }
 
-			try {
-				const response = await fetch(feedUrl);
+      try {
+        const response = await fetch(feedUrl);
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-				const data = await response.text();
+        const data = await response.text();
 
-				const parser = new DOMParser();
-				const xmlDoc = parser.parseFromString(data, "application/xml");
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(data, "application/xml");
 
-				const items =
-					xmlDoc.querySelectorAll("item") || xmlDoc.querySelectorAll("entry");
-				const itemsToRender = [...Array.from(items)].slice(0, postCount);
+        const items =
+          xmlDoc.querySelectorAll("item") || xmlDoc.querySelectorAll("entry");
+        const itemsToRender = [...Array.from(items)].slice(0, postCount);
 
-				if (itemsToRender.length) {
-					this.innerHTML = itemsToRender
-						.map((item) => this.itemToHTML(item))
-						.join("<hr>");
-				} else {
-					console.log("No items found in the feed.");
-					this.innerHTML = "<p>No recent feed items.</p>";
-				}
-			} catch (error) {
-				console.error("Error fetching the RSS feed:", error);
-			}
-		}
+        if (itemsToRender.length) {
+          this.innerHTML = itemsToRender
+            .map((item) => this.itemToHTML(item))
+            .join("<hr>");
+        } else {
+          console.log("No items found in the feed.");
+          this.innerHTML = "<p>No recent feed items.</p>";
+        }
+      } catch (error) {
+        console.error("Error fetching the RSS feed:", error);
+      }
+    }
 
-		itemToHTML(item: Element) {
-			const title = item.querySelector("title")?.textContent;
-			const linkElement = item.querySelector("link");
-			const link =
-				linkElement?.getAttribute("href") || linkElement?.textContent;
-			const description =
-				item.querySelector("description")?.textContent ||
-				item.querySelector("summary")?.textContent;
-			const pubDate =
-				item.querySelector("pubDate")?.textContent ||
-				item.querySelector("updated")?.textContent;
-			const hostname = link ? new URL(link).hostname : "No hostname";
-			const userLocale = navigator.language || "en-US";
-			const formattedPubDate = new Date(pubDate!).toLocaleDateString(
-				userLocale,
-				{
-					year: "numeric",
-					month: "long",
-					day: "numeric",
-				},
-			);
-			const mediaContent = item.querySelector("content");
-			const mediaIsImage = mediaContent?.getAttribute("medium") === "image";
-			const mediaUrl = mediaContent?.getAttribute("url");
-			const mediaDescription = mediaContent?.querySelector(
-				CSS.escape("description"),
-			)?.textContent;
+    itemToHTML(item: Element) {
+      const title = item.querySelector("title")?.textContent;
+      const linkElement = item.querySelector("link");
+      const link =
+        linkElement?.getAttribute("href") || linkElement?.textContent;
+      const description =
+        item.querySelector("description")?.textContent
+        || item.querySelector("summary")?.textContent;
+      const pubDate =
+        item.querySelector("pubDate")?.textContent
+        || item.querySelector("updated")?.textContent;
+      const hostname = link ? new URL(link).hostname : "No hostname";
+      const userLocale = navigator.language || "en-US";
+      const formattedPubDate = new Date(pubDate!).toLocaleDateString(
+        userLocale,
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        },
+      );
+      const mediaContent = item.querySelector("content");
+      const mediaIsImage = mediaContent?.getAttribute("medium") === "image";
+      const mediaUrl = mediaContent?.getAttribute("url");
+      const mediaDescription = mediaContent?.querySelector(
+        CSS.escape("description"),
+      )?.textContent;
 
-			return `
+      return `
 				${title ? `<div>${title}</div>` : ""}
 				${description ? `<div>${description}</div>` : ""}
 				${mediaUrl && mediaIsImage ? `<img src="${mediaUrl}" alt="${mediaDescription}"></img>` : ""}
@@ -100,12 +100,15 @@ const {url, count = 2, class: extraClasses} = Astro.props;
 				${pubDate ? `<time datetime="${new Date(pubDate).toISOString()}">${formattedPubDate}</time>` : ""}
 				</small>
 				`;
-		}
-	}
+    }
+  }
 
-	// Define the custom element
-	customElements.define("rss-feed", RSS);
+  // Define the custom element
+  customElements.define("rss-feed", RSS);
 </script>
 <div class="prose">
-	<rss-feed url={url} count={count}></rss-feed>
+  <rss-feed
+    url={url}
+    count={count}
+  ></rss-feed>
 </div>
