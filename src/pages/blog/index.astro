@@ -2,10 +2,10 @@
 import { getCollection } from "astro:content";
 import Rss from "../../icons/Rss.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-const posts = await getCollection("blog");
-function wordCount(body: string): number {
-  return body.split(/\s+/).length;
-}
+import ArticlePreview from "../../components/ArticlePreview.astro";
+const posts = (await getCollection("blog")).sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
+);
 ---
 
 <BaseLayout title="All blog posts | carter.works">
@@ -16,49 +16,31 @@ function wordCount(body: string): number {
       content="Everything fit to print!"
     />
   </Fragment>
-  <main class="flow">
-    {
-      (
-        <section>
-          <h2>
-            <a href="/blog/feed.xml">
-              <Rss label="RSS feed" />
-            </a>
-            <a href="/blog/">All blog posts</a>
-          </h2>
-          <ul
-            class="flow"
-            role="list"
-            class="posts"
-          >
-            {posts.map((post) => {
-              const wc = wordCount(post.body ?? "");
-              const splitPoint = 200;
-              const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
-              // html of the first two paragraphs
-              return (
-                <li
-                  role="listitem"
-                  class="posts"
-                >
-                  <a href={`/blog/${post.id}/`}>
-                    {post.data.title && (
-                      <p class="post-title">{post.data.title}</p>
-                    )}
-                    <p>
-                      <time
-                        datetime={post.data.pubDate.toString()}
-                        is="formatted-date"
-                      />
-                    </p>
-                    {tags && <p class="tags">{tags}</p>}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )
-    }
+  <main>
+    <h2 class="theme-2025:text-xl">
+      <a
+        href="/blog/feed.xml"
+        title="RSS feed"
+        aria-label="RSS feed"
+      >
+        <Rss
+          label="RSS feed"
+          class="inline-block align-middle"
+        />
+      </a>
+      <a href="/blog/">All blog posts</a>
+    </h2>
+    <ul
+      role="list"
+      class="space-y-4"
+    >
+      {
+        posts.map((post) => (
+          <li role="listitem">
+            <ArticlePreview post={post} />
+          </li>
+        ))
+      }
+    </ul>
   </main>
 </BaseLayout>

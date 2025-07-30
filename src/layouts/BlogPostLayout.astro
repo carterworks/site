@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
-import PageWithHeaderLayout from "./PageWithHeaderLayout.astro";
 
 const { frontmatter } = Astro.props;
 const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
@@ -38,18 +37,19 @@ const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
       content={frontmatter.tags.join(", ")}
     />
   </Fragment>
-  <article class="flow">
-    <header
-      class="flow"
-      style="--flow-space: calc(var(--spacer) * 1)"
-    >
-      <h1>{frontmatter.title}</h1>
-      <time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
+  <article class="space-y-4 prose">
+    <header>
+      <h1 class="theme-2025:text-2xl">{frontmatter.title}</h1>
+      <p>
+        <time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
+      </p>
       {tags.length > 0 && <p>{tags}</p>}
-      {frontmatter.description}
+      {
+        frontmatter.description && (
+          <p class="theme-2025:italic">{frontmatter.description}</p>
+        )
+      }
     </header>
-    <div class="prose">
-      <slot />
-    </div>
+    <slot />
   </article>
 </BaseLayout>

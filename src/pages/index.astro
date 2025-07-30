@@ -7,12 +7,10 @@ import Rss from "../icons/Rss.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Yazzy from "../icons/Yazzy.astro";
 import RssReader from "../icons/RssReader.astro";
+import ArticlePreview from "../components/ArticlePreview.astro";
 const recentPosts = (await getCollection("blog"))
   .slice(0, 10)
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
-function wordCount(body: string): number {
-  return body.split(/\s+/).length;
-}
 ---
 
 <BaseLayout title="👋 I'm Carter.">
@@ -23,9 +21,9 @@ function wordCount(body: string): number {
       content="Front-end dev. Father. Young grump. Simple things enjoyer."
     />
   </Fragment>
-  <main class="flow">
+  <main class="space-y-8">
     <section>
-      <h2>Who?</h2>
+      <h2 class="theme-2025:text-xl">Who?</h2>
       Still figuring things out. Right now: a dad, a tired man, a code plumber on
       the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
       researcher, a homebody, a reader, a eater (not a foodie), and <a
@@ -33,37 +31,37 @@ function wordCount(body: string): number {
       >.
     </section>
     <section>
-      <h2>Some things I made</h2>
+      <h2 class="theme-2025:text-xl">Some things I made</h2>
       <ul role="list">
         <li role="listitem">
           <a href="https://yazzy.carter.works">
-            <Yazzy verticalAlign="middle" />
+            <Yazzy class="inline-block align-middle" />
             Yazzy, a site to bring reader mode to all the web.
           </a>
         </li>
         <li role="listitem">
           <a href="https://carterworks.github.io/rss-reader/">
-            <RssReader verticalAlign="middle" />
+            <RssReader class="inline-block align-middle" />
             My personal RSS reader
           </a>
         </li>
         <li role="listitem">
           <a href="https://github.com/carterworks/substack-to-epub">
-            <Book verticalAlign="middle" />
+            <Book class="inline-block align-middle" />
             Substack-to-epub scraper
           </a>
         </li>
       </ul>
     </section>
     <section>
-      <h2>
+      <h2 class="theme-2025:text-xl">
         <a href="https://mastodon.social/@literallyacar">
-          <Mastodon class="text-xl" />
+          <Mastodon class="text-xl inline-block align-text-top" />
           Mastodon
         </a>
       </h2>
       <RssFeed
-        class="overflow-y-auto max-h-64"
+        class="theme-2025:overflow-y-auto theme-2025:max-h-64"
         url="https://mastodon.social/@literallyacar.rss"
         count={2}
       />
@@ -71,62 +69,28 @@ function wordCount(body: string): number {
     {
       recentPosts.length > 0 && (
         <section>
-          <h2>
-            <a href="/blog/feed.xml">
-              <Rss label="RSS feed" />
+          <h2 class="theme-2025:text-xl">
+            <a
+              href="/blog/feed.xml"
+              title="RSS feed"
+              aria-label="RSS feed"
+            >
+              <Rss
+                label="RSS feed"
+                class="inline-block align-middle"
+              />
             </a>
             <a href="/blog/">Blog posts</a>
           </h2>
           <ul
-            class="flow"
             role="list"
-            class="posts"
+            class="space-y-4"
           >
-            {recentPosts.map((post) => {
-              const wc = wordCount(post.body ?? "");
-              const splitPoint = 100;
-              const tags = post.data.tags.map((tag) => `#${tag}`).join(" ");
-              // html of the first two paragraphs
-              const excerpt = post.body
-                ?.split(/\s+/)
-                .slice(0, splitPoint)
-                .join(" ");
-              return (
-                <li
-                  role="listitem"
-                  class="posts"
-                >
-                  <h3>
-                    <a
-                      href={`/blog/${post.id}/`}
-                      class="post-link"
-                    >
-                      {post.data.title && (
-                        <p class="post-title">{post.data.title}</p>
-                      )}
-                      <p>
-                        <time
-                          datetime={post.data.pubDate.toString()}
-                          is="formatted-date"
-                        />
-                      </p>
-                      {tags && <p>{tags}</p>}
-                    </a>
-                  </h3>
-                  <article class="flow prose">
-                    <Fragment set:html={excerpt} />
-                    {wc > splitPoint && excerpt.length > splitPoint && (
-                      <>
-                        …
-                        <a href={`/blog/${post.id}/`}>
-                          {Intl.NumberFormat("en-US").format(wc)} words
-                        </a>
-                      </>
-                    )}
-                  </article>
-                </li>
-              );
-            })}
+            {recentPosts.map((post) => (
+              <li role="listitem">
+                <ArticlePreview post={post} />
+              </li>
+            ))}
           </ul>
         </section>
       )

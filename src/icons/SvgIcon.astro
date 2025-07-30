@@ -1,6 +1,6 @@
 ---
 const props = Astro.props;
-const { viewBox = "0 0 24 24", verticalAlign = "bottom" } = props;
+const { viewBox = "0 0 24 24" } = props;
 ---
 
 <svg
@@ -8,7 +8,6 @@ const { viewBox = "0 0 24 24", verticalAlign = "bottom" } = props;
   width="1em"
   height="1em"
   viewBox={viewBox}
-  style={`vertical-align: ${verticalAlign}`}
   {...props}
 >
   <slot />

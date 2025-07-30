@@ -1,0 +1,34 @@
+---
+const { post, class: className, ...props } = Astro.props;
+function wordCount(body: string): number {
+  return body.split(/\s+/).length;
+}
+const wc = wordCount(post.body ?? "");
+const splitPoint = 100;
+const tags = post.data.tags.map((tag: string) => `#${tag}`).join(" ");
+// html of the first two paragraphs
+const excerpt = post.body?.split(/\s+/).slice(0, splitPoint).join(" ");
+---
+
+<a
+  href={`/blog/${post.id}/`}
+  class={`theme-2025:flex theme-2025:flex-row theme-2025:gap-2 theme-2025:no-underline theme-2025:flex-wrap ${className}`}
+  {...props}
+>
+  {post.data.title && <p class="theme-2025:underline">{post.data.title}</p>}
+  <p>
+    <time
+      datetime={post.data.pubDate.toString()}
+      is="formatted-date"
+    ></time>
+  </p>
+  {tags && <p>{tags}</p>}
+  <article class="theme-2025:w-full">
+    <Fragment set:html={excerpt} />
+    {
+      wc > splitPoint && excerpt.length > splitPoint && (
+        <>…{Intl.NumberFormat("en-US").format(wc)} words</>
+      )
+    }
+  </article>
+</a>

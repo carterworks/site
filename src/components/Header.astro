@@ -28,13 +28,14 @@ const possibleSubtitles = [
   }
   randomSubtitle();
 </script>
-<header class:list={["flow-horizontal", "justify-between"]}>
+<header class="flex flex-row justify-between items-center">
   <hgroup>
     <a href="/">
-      <h1>
+      <h1 class="theme-2025:text-3xl">
         <WavingHand
           label="Hello"
           class="inline-block"
+          verticalAlign="text-top"
         />
         I'm Carter.
       </h1>
@@ -49,7 +50,7 @@ const possibleSubtitles = [
   </hgroup>
   <ul
     role="list"
-    class="flow-horizontal"
+    class="flex flex-row gap-2"
   >
     <li role="listitem">
       <a

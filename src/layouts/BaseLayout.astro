@@ -108,7 +108,23 @@ const { url } = Astro;
     </script>
   </head>
 
-  <body class="flow">
+  <body
+    class="space-y-8
+    theme-2025:font-classical-humanist
+    theme-2025:bg-sepia
+    theme-2025:dark:bg-blackish
+    theme-2025:text-blackish
+    theme-2025:dark:text-sepia
+    theme-2025:bg-[url('/noise.svg')]
+    theme-2025:bg-size-[30%]
+    theme-2025:p-4
+    theme-2025:m-0
+    theme-2025:*:mx-auto
+    theme-2025:*:max-w-prose
+    min-h-screen
+    transition-all
+    reduced-motion:no-motion"
+  >
     <Header />
     <slot />
   </body>
