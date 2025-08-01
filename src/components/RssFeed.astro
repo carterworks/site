@@ -53,7 +53,7 @@ const { url, count = 2, class: extraClasses } = Astro.props;
         if (itemsToRender.length) {
           this.innerHTML = itemsToRender
             .map((item) => this.itemToHTML(item))
-            .join("<hr>");
+            .join("");
         } else {
           console.log("No items found in the feed.");
           this.innerHTML = "<p>No recent feed items.</p>";
@@ -92,14 +92,15 @@ const { url, count = 2, class: extraClasses } = Astro.props;
       )?.textContent;
 
       return `
-				${title ? `<div>${title}</div>` : ""}
-				${description ? `<div>${description}</div>` : ""}
-				${mediaUrl && mediaIsImage ? `<img src="${mediaUrl}" alt="${mediaDescription}"></img>` : ""}
-				<small>
-				${link ? `<a href="${link}" target="_blank">${hostname || "source"}</a>` : `${hostname || "source"}`}
-				${pubDate ? `<time datetime="${new Date(pubDate).toISOString()}">${formattedPubDate}</time>` : ""}
-				</small>
-				`;
+        <div>
+          ${title ? `<div>${title}</div>` : ""}
+          ${description ? `<div>${description}</div>` : ""}
+          ${mediaUrl && mediaIsImage ? `<img src="${mediaUrl}" alt="${mediaDescription}"></img>` : ""}
+          <small>
+          ${link ? `<a href="${link}" target="_blank">${hostname || "source"}</a>` : `${hostname || "source"}`}
+          ${pubDate ? `<time datetime="${new Date(pubDate).toISOString()}">${formattedPubDate}</time>` : ""}
+          </small>
+        </div>`;
     }
   }
 
@@ -110,5 +111,6 @@ const { url, count = 2, class: extraClasses } = Astro.props;
   <rss-feed
     url={url}
     count={count}
+    class={extraClasses}
   ></rss-feed>
 </div>

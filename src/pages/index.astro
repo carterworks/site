@@ -23,7 +23,7 @@ const recentPosts = (await getCollection("blog"))
   </Fragment>
   <main class="space-y-8">
     <section>
-      <h2 class="theme-2025:text-xl">Who?</h2>
+      <h2 class="text-xl">Who?</h2>
       Still figuring things out. Right now: a dad, a tired man, a code plumber on
       the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
       researcher, a homebody, a reader, a eater (not a foodie), and <a
@@ -31,7 +31,7 @@ const recentPosts = (await getCollection("blog"))
       >.
     </section>
     <section>
-      <h2 class="theme-2025:text-xl">Some things I made</h2>
+      <h2 class="text-xl">Some things I made</h2>
       <ul role="list">
         <li role="listitem">
           <a href="https://yazzy.carter.works">
@@ -54,14 +54,14 @@ const recentPosts = (await getCollection("blog"))
       </ul>
     </section>
     <section>
-      <h2 class="theme-2025:text-xl">
+      <h2 class="text-xl">
         <a href="https://mastodon.social/@literallyacar">
           <Mastodon class="text-xl inline-block align-text-top" />
           Mastodon
         </a>
       </h2>
       <RssFeed
-        class="theme-2025:overflow-y-auto theme-2025:max-h-64"
+        class="overflow-y-auto max-h-64 space-y-4"
         url="https://mastodon.social/@literallyacar.rss"
         count={2}
       />
@@ -69,7 +69,7 @@ const recentPosts = (await getCollection("blog"))
     {
       recentPosts.length > 0 && (
         <section>
-          <h2 class="theme-2025:text-xl">
+          <h2 class="text-xl">
             <a
               href="/blog/feed.xml"
               title="RSS feed"
@@ -84,7 +84,7 @@ const recentPosts = (await getCollection("blog"))
           </h2>
           <ul
             role="list"
-            class="theme-2025:space-y-2"
+            class="space-y-2"
           >
             {recentPosts.map((post) => (
               <li

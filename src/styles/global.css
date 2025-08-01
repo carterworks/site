@@ -49,64 +49,15 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   /* #endregion */
 }
-@custom-variant theme-2025 {
-  &:where([data-theme="2025"] *) {
-    @slot;
-  }
-}
-@utility text-2xs {
-  @apply text-[0.5rem];
-}
-@utility text-xs-relative {
-  @apply text-[0.625em];
-}
-@utility text-sm-relative {
-  @apply text-[0.75em];
-}
-@utility text-base-relative {
-  @apply text-[1em];
-}
-@utility text-lg-relative {
-  @apply text-[1.125em];
-}
-@utility text-xl-relative {
-  @apply text-[1.25em];
-}
-@utility text-2xl-relative {
-  @apply text-[1.5em];
-}
-@utility text-3xl-relative {
-  @apply text-[1.75em];
-}
-@utility text-4xl-relative {
-  @apply text-[2em];
-}
-@utility text-5xl-relative {
-  @apply text-[2.25em];
-}
-@utility text-6xl-relative {
-  @apply text-[2.5em];
-}
-@utility text-7xl-relative {
-  @apply text-[2.75em];
-}
-@utility text-8xl-relative {
-  @apply text-[3em];
-}
-@utility text-9xl-relative {
-  @apply text-[3.25em];
-}
 
 @layer base {
-  [data-theme="2025"] {
-    h1,
-    h2,
-    h3,
-    h4 {
-      font-family: var(--font-didone);
-      font-weight: 400;
-      margin-block-end: calc(var(--spacer) * 1);
-    }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-didone);
+    font-weight: 400;
+    margin-block-end: calc(var(--spacer) * 1);
   }
 
   a,
@@ -132,37 +83,26 @@
 }
 @layer components {
   .prose {
-    @variant theme-2025 {
-      @apply max-w-prose text-pretty space-y-4;
-      a {
-        @apply underline;
-      }
-      blockquote {
-        @apply border-s-2 border-blackish dark:border-sepia pl-4;
-      }
-      ul {
-        @apply list-disc list-inside;
-      }
-      ol {
-        @apply list-decimal list-inside;
-      }
-      :is(ul, ol) li :is(ul, ol) li {
-        @apply ps-4 list-[circle];
-      }
-      h1 {
-        @apply text-2xl-relative;
-      }
-      h2 {
-        @apply text-xl-relative;
-      }
-      h3 {
-        @apply text-lg-relative;
-      }
-      h1,
-      h2,
-      h3 {
-        @apply mb-1!;
-      }
+    @apply max-w-prose text-pretty space-y-4;
+    a {
+      @apply underline;
+    }
+    blockquote {
+      @apply border-s-2 border-blackish dark:border-sepia pl-4;
+    }
+    ul {
+      @apply list-disc list-inside;
+    }
+    ol {
+      @apply list-decimal list-inside;
+    }
+    :is(ul, ol) li :is(ul, ol) li {
+      @apply ps-4 list-[circle];
+    }
+    h1,
+    h2,
+    h3 {
+      @apply mb-1!;
     }
   }
 }
