@@ -2,32 +2,38 @@
 import type { CollectionEntry } from "astro:content";
 interface Props {
   post: CollectionEntry<"blog">;
-  content?: "small" | "none";
   className?: string;
 }
-const { post, className, content = "none", ...props }: Props = Astro.props;
-
-const tags = post.data.tags?.map((tag: string) => `#${tag}`).join(" ") ?? "";
+const { post, className, ...props }: Props = Astro.props;
+const title = post.data.title || "A short thought";
 ---
 
 <a
   href={`/blog/${post.id}/`}
-  class={`theme-2025:flex theme-2025:flex-row theme-2025:no-underline theme-2025:gap-1 theme-2025:flex-wrap ${className}`}
+  class={`text-xl ${className}`}
   {...props}
 >
-  {post.data.title && <p class="theme-2025:underline">{post.data.title}</p>}
-  <p>
-    <time
-      datetime={post.data.pubDate.toString()}
-      is="formatted-date"
-    ></time>
-  </p>
-  {tags && <p>{tags}</p>}
+  {title}
+</a>
+<div class="flex flex-wrap flex-row gap-1">
+  <time
+    datetime={post.data.pubDate.toString()}
+    is="formatted-date"
+  ></time>
   {
-    content !== "none" && (
-      <article class:list={["prose"]}>
-        <Fragment set:html={post.rendered?.html ?? post.body} />
-      </article>
+    post.data.tags != null && post.data.tags.length > 0 && (
+      <ul class="flex flex-row gap-1">
+        {post.data.tags.map((t) => (
+          <li>
+            <a
+              href={`/blog/tags/${encodeURI(t)}`}
+              class="underline"
+            >
+              #{t}
+            </a>
+          </li>
+        ))}
+      </ul>
     )
   }
-</a>
+</div>

@@ -68,7 +68,7 @@ const recentPosts = (await getCollection("blog"))
     </section>
     {
       recentPosts.length > 0 && (
-        <section class="theme-2025:space-y-2">
+        <section>
           <h2 class="theme-2025:text-xl">
             <a
               href="/blog/feed.xml"
@@ -84,14 +84,7 @@ const recentPosts = (await getCollection("blog"))
           </h2>
           <ul
             role="list"
-            class="theme-2025:gap-4
-                theme-2025:flex
-                theme-2025:flex-row
-                theme-2025:flex-wrap
-                theme-2025:divide-y-2
-                md:theme-2025:divide-y-0
-                md:theme-2025:py-0
-                theme-2025:py-2"
+            class="theme-2025:space-y-2"
           >
             {recentPosts.map((post) => (
               <li
@@ -100,8 +93,7 @@ const recentPosts = (await getCollection("blog"))
               >
                 <ArticlePreview
                   post={post}
-                  content="small"
-                  className="theme-2025:w-[20cqw]!"
+                  className=""
                 />
               </li>
             ))}
