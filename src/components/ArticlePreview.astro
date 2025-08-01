@@ -1,0 +1,39 @@
+---
+import type { CollectionEntry } from "astro:content";
+interface Props {
+  post: CollectionEntry<"blog">;
+  className?: string;
+}
+const { post, className, ...props }: Props = Astro.props;
+const title = post.data.title || "A short thought";
+---
+
+<a
+  href={`/blog/${post.id}/`}
+  class={`text-xl ${className}`}
+  {...props}
+>
+  {title}
+</a>
+<div class="flex flex-wrap flex-row gap-1">
+  <time
+    datetime={post.data.pubDate.toString()}
+    is="formatted-date"
+  ></time>
+  {
+    post.data.tags != null && post.data.tags.length > 0 && (
+      <ul class="flex flex-row gap-1">
+        {post.data.tags.map((t) => (
+          <li>
+            <a
+              href={`/blog/tags/${encodeURI(t)}`}
+              class="underline"
+            >
+              #{t}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>

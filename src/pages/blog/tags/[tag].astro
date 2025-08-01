@@ -1,0 +1,54 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ArticlePreview from "../../../components/ArticlePreview.astro";
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection("blog");
+  const tags = new Set();
+  for (const entry of blogEntries) {
+    if (entry.data.tags) {
+      for (const tag of entry.data.tags) {
+        tags.add(tag);
+      }
+    }
+  }
+  return [...tags].map((t) => ({
+    params: { tag: t },
+  }));
+}
+
+const { tag } = Astro.params;
+console.log(`Fetching posts with tag: ${tag}`);
+
+const posts = (await getCollection("blog"))
+  .filter((e) => e.data.tags?.includes(tag as string))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+---
+
+<BaseLayout title={`#${tag} blog posts | carter.works`}>
+  <Fragment slot="head">
+    <meta
+      name="description"
+      property="og:description"
+      content="Everything fit to print!"
+    />
+  </Fragment>
+  <main>
+    <h2 class="text-xl">
+      #{tag} blog posts
+    </h2>
+    <ul
+      role="list"
+      class="space-y-4"
+    >
+      {
+        posts.map((post) => (
+          <li role="listitem">
+            <ArticlePreview post={post} />
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</BaseLayout>

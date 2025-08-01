@@ -1,11 +1,11 @@
 {
-	"version": "0.2.0",
-	"configurations": [
-		{
-			"command": "./node_modules/.bin/live-server public/",
-			"name": "Development server",
-			"request": "launch",
-			"type": "node-terminal"
-		}
-	]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "./node_modules/.bin/live-server public/",
+      "name": "Development server",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
 }
