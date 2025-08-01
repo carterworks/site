@@ -1,6 +1,6 @@
 ---
 title: Tailwind's back, alright!
-pubDate: 2025-07-07
+pubDate: 2025-08-01
 tags:
   - personal-site
   - tailwind
