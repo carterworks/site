@@ -54,6 +54,49 @@
     @slot;
   }
 }
+@utility text-2xs {
+  @apply text-[0.5rem];
+}
+@utility text-xs-relative {
+  @apply text-[0.625em];
+}
+@utility text-sm-relative {
+  @apply text-[0.75em];
+}
+@utility text-base-relative {
+  @apply text-[1em];
+}
+@utility text-lg-relative {
+  @apply text-[1.125em];
+}
+@utility text-xl-relative {
+  @apply text-[1.25em];
+}
+@utility text-2xl-relative {
+  @apply text-[1.5em];
+}
+@utility text-3xl-relative {
+  @apply text-[1.75em];
+}
+@utility text-4xl-relative {
+  @apply text-[2em];
+}
+@utility text-5xl-relative {
+  @apply text-[2.25em];
+}
+@utility text-6xl-relative {
+  @apply text-[2.5em];
+}
+@utility text-7xl-relative {
+  @apply text-[2.75em];
+}
+@utility text-8xl-relative {
+  @apply text-[3em];
+}
+@utility text-9xl-relative {
+  @apply text-[3.25em];
+}
+
 @layer base {
   [data-theme="2025"] {
     h1,
@@ -107,13 +150,13 @@
         @apply ps-4 list-[circle];
       }
       h1 {
-        @apply text-2xl;
+        @apply text-2xl-relative;
       }
       h2 {
-        @apply text-xl;
+        @apply text-xl-relative;
       }
       h3 {
-        @apply text-lg;
+        @apply text-lg-relative;
       }
       h1,
       h2,
