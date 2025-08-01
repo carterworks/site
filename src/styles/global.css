@@ -2,7 +2,6 @@
 @theme {
   /* #region colors */
   --color-sepia: oklch(0.9735 0.026 90.1);
-  --color-blue: oklch(0.4818 0.1315 254.79);
   --color-blackish: oklch(25% 0.029 221.9);
   /* #endregion */
 
@@ -48,6 +47,11 @@
   --font-emoji:
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   /* #endregion */
+}
+@custom-variant color-scheme-carterworks-2025 {
+  &:where([data-color-scheme="carterworks-2025"] *) {
+    @slot;
+  }
 }
 
 @layer base {
