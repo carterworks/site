@@ -1,9 +1,10 @@
+import { DEV } from "astro:env/client";
 import { getCollection } from "astro:content";
 import rss from "@astrojs/rss";
 import type { RSSFeedItem } from "@astrojs/rss";
 
 export async function GET(context: { site: string }) {
-  const posts = await getCollection("blog");
+  const posts = (await getCollection("blog")).filter((e) => (DEV ? true : e.data.draft !== true))
   return rss({
     title: "Carter's Blog",
     description: "A software engineer's blog? How original.",

@@ -1,10 +1,9 @@
 ---
+import { DEV } from "astro:env/client";
 import WavingHand from "../icons/WavingHand.astro";
 import Mastodon from "../icons/Mastodon.astro";
 import Github from "../icons/Github.astro";
 import LinkedIn from "../icons/LinkedIn.astro";
-import A from "./A.astro";
-const props = Astro.props;
 const possibleSubtitles = [
   "A software developer.",
   "A dad.",
@@ -37,7 +36,7 @@ const possibleSubtitles = [
           class="inline-block"
           verticalAlign="text-top"
         />
-        I'm Carter.
+        I'm {DEV && "(dev mode) "}Carter.
       </h1>
       <p id="heading-subtitle">
         {

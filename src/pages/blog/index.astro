@@ -1,11 +1,12 @@
 ---
+import { DEV } from "astro:env/client";
 import { getCollection } from "astro:content";
 import Rss from "../../icons/Rss.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ArticlePreview from "../../components/ArticlePreview.astro";
-const posts = (await getCollection("blog")).sort(
-  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
-);
+const posts = (await getCollection("blog"))
+  .filter((e) => (DEV ? true : e.data.draft !== true))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 ---
 
 <BaseLayout title="All blog posts | carter.works">

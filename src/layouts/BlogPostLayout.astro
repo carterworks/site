@@ -39,7 +39,9 @@ const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
   </Fragment>
   <article class="space-y-4 prose">
     <header>
-      <h1 class="text-2xl">{frontmatter.title}</h1>
+      <h1 class="text-2xl">
+        {frontmatter.draft && "Rough Draft: "}{frontmatter.title}
+      </h1>
       <p>
         <time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
       </p>

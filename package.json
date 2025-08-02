@@ -9,8 +9,8 @@
     "url": "git+https://github.com/carterworks/site.git"
   },
   "scripts": {
-    "dev": "wrangler types && astro dev",
-    "start": "wrangler types && astro dev",
+    "dev": "wrangler types && DEV=true astro dev",
+    "start": "wrangler types && DEV=true astro dev",
     "build": "wrangler types && astro build",
     "preview": "wrangler types && astro preview",
     "cf-typegen": "wrangler types",
