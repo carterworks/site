@@ -66,6 +66,7 @@ function foo(bar) {
 * "Ease of use" (including "ease of maintenance") is a very high priority.
 * Convention over configuration. Most people don't want to read, they want to get things done. Not to say that "[ricing](https://www.reddit.com/r/unixporn)" (term used broadly) is a bad hobby (it's a good hobby!) but configuration can get in the way.
 * In our age of LLMs, if you are going to use one to write a message to send to me, just send me what you told the LLM.
+* Constraints are what give us definition. Make sure the constraints are well-defined.
 
 
 ## Not coding related.
@@ -91,3 +92,4 @@ function foo(bar) {
   * aka spend your time on the things you have the power to change.
 * Focus on what is done, either well or poorly, rather than what is not done.
 * Put on your own oxygen mask first.
+* You can't be everything to everyone. Instead, be more to few.
