@@ -89,3 +89,4 @@ function foo(bar) {
 * Resist the urge to read the comments. At least, resist the urge to read the comments first.
 * "God, grant me the serenity to accept the things I cannot change, the courage to change the things I can, and the wisdom to know the difference."—[Reinhold Niebuhr](https://en.wikipedia.org/wiki/Serenity_Prayer)
   * aka spend your time on the things you have the power to change.
+* Focus on what is done, either well or poorly, rather than what is not done.
