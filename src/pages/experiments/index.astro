@@ -1,0 +1,28 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Experiments | carter.works";>
+    <Fragment slot="head">
+    <meta
+      name="description"
+      property="og:description"
+      content="Little things"
+    />
+  </Fragment>
+  <header>
+    <h2>Experiments</h2>
+    <p>I am devoting a section of my site to "experiments"—little "what if's" and prototypes of ideas. They aren't big enough to turn into apps or tools, nor do I want to spend the time to fully integrate them into my main site. They are independent, atomic, and fun. The point is to be non-committal and give me a chance to try out new things then throw them away.</p>
+  </header>
+  <main>
+    <ul class="flex flex-row flex-wrap gap-4 *:border-tx/30 *:border-[0.5px] *:p-2 *:rounded-md md:*:w-[35cqw]">
+      <!-- cards -->
+      <li>
+        <a href="/experiments/halftone-painting">
+          <img class="w-full h-auto aspect-[4/3] object-cover" src="/src/content/blog/assets/heart-in-a-box-halftone.png" alt="Halftone painting" />
+          <h3>Halftone Painting</h3>
+          <p>A small painting toy for creating halftone images.</p>
+        </a>
+        <a class="text-sm underline" href="/blog/2025-08-14-experiments-and-halftone">Blog post</a>
+    </ul>
+  </main>
+</BaseLayout>
