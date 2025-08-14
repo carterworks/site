@@ -19,6 +19,6 @@ export default defineConfig({
         default: false,
         description: "Whether the site is running in development mode",
       }),
-    }
-  }
+    },
+  },
 });

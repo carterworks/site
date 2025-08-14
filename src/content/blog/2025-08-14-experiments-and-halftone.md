@@ -1,12 +1,13 @@
 ---
 title: Experiments and halftone
 pubDate: 2025-08-14
-description: 
+description:
 draft: false
 tags:
   - css
   - diy
 ---
+
 I am devoting a section of my site to "experiments"—little "what if's" and prototypes of ideas. They aren't big enough to turn into apps or tools, nor do I want to spend the time to fully integrate them into my main site. They are independent, atomic, and fun. The point is to be non-committal and give me a chance to try out new things then throw them away. You can see them all [on my Experiments page](/experiements).
 
 ---
