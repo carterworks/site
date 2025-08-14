@@ -51,9 +51,24 @@
               "icon": "lucide-file",
               "title": "2025-07-07-context-engineering"
             }
+          },
+          {
+            "id": "c0bfe467f313c50b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "src/content/blog/2025-08-14-experiments-and-halftone.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": false
+              },
+              "icon": "lucide-file",
+              "title": "2025-08-14-experiments-and-halftone"
+            }
           }
         ],
-        "currentTab": 2
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -175,10 +190,19 @@
       "daily-notes:Open today's daily note": false
     }
   },
-  "active": "3ccb7b77505e5b0a",
+  "active": "8cee85a6372b2d5c",
   "lastOpenFiles": [
-    "src/content/blog/2025-06-27-simon-willison-link-blog.md",
+    "src/icons/Experimental.astro",
+    "src/content/blog/assets/Halftone Painting Aug 14 2025.png",
+    "src/content/blog/assets/heart-in-a-box-halftone.png",
+    "src/content/blog/assets/samdape-the-creation-of-projects.png",
+    "src/content/blog/assets/perplexity.png",
+    "src/content/blog/assets/halftone-painting-app.jpeg",
+    "src/content/blog/assets/openai-halftone-internet-dots.png",
+    "Untitled.md",
+    "src/content/blog/2025-08-14-experiments-and-halftone.md",
     "src/content/blog/2025-07-07-context-engineering.md",
+    "src/content/blog/2025-06-27-simon-willison-link-blog.md",
     "2025-07-07.md",
     "src/content/content.config.ts",
     "src/content/blog/_template.md",
