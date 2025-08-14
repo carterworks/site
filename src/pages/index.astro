@@ -9,6 +9,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Yazzy from "../icons/Yazzy.astro";
 import RssReader from "../icons/RssReader.astro";
 import ArticlePreview from "../components/ArticlePreview.astro";
+import Experimental from "../icons/Experimental.astro";
 const recentPosts = (await getCollection("blog"))
   .filter((e) => (DEV ? true : e.data.draft !== true))
   .slice(0, 10)
@@ -51,6 +52,11 @@ const recentPosts = (await getCollection("blog"))
           <a href="https://github.com/carterworks/substack-to-epub">
             <Book class="inline-block align-middle" />
             Substack-to-epub scraper
+          </a>
+        </li>        <li role="listitem">
+          <a href="/experiments/">
+            <Experimental class="inline-block align-middle" />
+            Experiments, what ifs, and prototypes
           </a>
         </li>
       </ul>
