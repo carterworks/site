@@ -18,4 +18,27 @@ Carl Sagan, _Cosmos: A Personal Voyage_, Episode 9 (1980)
 
 > No man is an island, entire of itself; every man is a piece of the continent, a part of the main. 
  
-John Donne, _Devotions upon Emergent Occasions_, Meditation XVII (1624)
+John Donne, "Devotions upon Emergent Occasions", _Meditation XVII_ (1624)
+
+> [Do you have any advice for ambitious designers or engineers?](https://ui.land/interviews/paco-coursey#do-you-have-any-advice-for-ambitious-designers-or-engineers?)
+> 
+> Design and build your own apps. You’ll never understand the challenges, tricks, and edge-cases of a note-taking app until you build a note-taking app.
+> 
+> Copy and re-implement work you admire until you can proudly create for yourself. Work where you can grow.
+> 
+> Play [The Witness](http://the-witness.net/).
+
+[Paco Coursey (design engineer @ Linear), Interview with ui.land (2024)](https://ui.land/interviews/paco-coursey#do-you-have-any-advice-for-ambitious-designers-or-engineers?)
+
+> You need to surround yourself with great work.
+>
+> If you are a designer, look at great designs. If you are a writer, read great books. Expose yourself to great work, this way you’ll learn how greatness looks and feels like.
+>
+> \[…] Designers should copy great designs, writers should copy great books.
+> 
+> [Copy and re-implement work you admire until you can proudly create for yourself](https://ui.land/interviews/paco-coursey#do-you-have-any-advice-for-ambitious-designers-or-engineers?).
+> 
+> Heavy exposure to great things shapes output.
+> 
+
+Emil Kowalski (design engineer @ Linear), "Taste", animations.dev course (2024)
