@@ -24,17 +24,19 @@ const recentPosts = (await getCollection("blog"))
       content="A gallery of things I made and tried during the animations.dev course."
     />
   </Fragment>
-  <main class="space-y-8">
+  <main class="space-y-8 *:space-y-4">
     <section>
-      <h2 class="text-xl">
+      <h1 class="text-2xl">
         A gallery of things from <a
           class="underline"
           href="https://animations.dev"
-          >Emil Kowalski's animations.dev course</a>
-      </h2>
+          >Emil Kowalski's animations.dev course</a
+        >
+      </h1>
     </section>
-    <section>
-      <h2 class="text-xl">Thing One</h2>
+    <section class="animations-dev-gallery space-y-4">
+      <h2 class="text-xl">A popover with <code>ease-out</code></h2>
+      <div class="card"></div>
     </section>
   </main>
 </BaseLayout>

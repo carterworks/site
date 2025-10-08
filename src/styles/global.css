@@ -109,4 +109,10 @@
       @apply mb-1!;
     }
   }
+
+  .animations-dev-gallery {
+    .card {
+      @apply h-52 bg-[color-mix(in_oklch,var(--color-sepia),_#000_40%)]/30 dark:bg-[color-mix(in_oklch,var(--color-blackish),_#000_4%)]/30 rounded;
+    }
+  }
 }
