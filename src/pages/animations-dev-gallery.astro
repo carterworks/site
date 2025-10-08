@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import { DEV } from "astro:env/client";
+import Mastodon from "../icons/Mastodon.astro";
+import RssFeed from "../components/RssFeed.astro";
+import Book from "../icons/Book.astro";
+import Rss from "../icons/Rss.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Yazzy from "../icons/Yazzy.astro";
+import RssReader from "../icons/RssReader.astro";
+import ArticlePreview from "../components/ArticlePreview.astro";
+import Experimental from "../icons/Experimental.astro";
+const recentPosts = (await getCollection("blog"))
+  .filter((e) => (DEV ? true : e.data.draft !== true))
+  .slice(0, 10)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+---
+
+<BaseLayout title="animations.dev gallery | Carter">
+  <Fragment slot="head">
+    <meta
+      name="description"
+      property="og:description"
+      content="A gallery of things I made and tried during the animations.dev course."
+    />
+  </Fragment>
+  <main class="space-y-8">
+    <section>
+      <h2 class="text-xl">
+        A gallery of things from <a
+          class="underline"
+          href="https://animations.dev"
+          >Emil Kowalski's animations.dev course</a>
+      </h2>
+    </section>
+    <section>
+      <h2 class="text-xl">Thing One</h2>
+    </section>
+  </main>
+</BaseLayout>
