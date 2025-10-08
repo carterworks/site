@@ -5,6 +5,29 @@
   --color-blackish: oklch(25% 0.029 221.9);
   /* #endregion */
 
+  /* #region animations.dev easings */
+  --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --ease-in-cubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --ease-in-quart: cubic-bezier(0.895, 0.03, 0.685, 0.22);
+  --ease-in-quint: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+  --ease-in-expo: cubic-bezier(0.95, 0.05, 0.795, 0.035);
+  --ease-in-circ: cubic-bezier(0.6, 0.04, 0.98, 0.335);
+
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-out-circ: cubic-bezier(0.075, 0.82, 0.165, 1);
+
+  --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+  --ease-in-out-expo: cubic-bezier(1, 0, 0, 1);
+  --ease-in-out-circ: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+  /* #endregion */
+
   /* System Font Stack—https://github.com/system-fonts/modern-font-stacks */
   /* #region fonts */
   --font-system: system-ui, sans-serif;
@@ -70,7 +93,7 @@
   }
 
   img {
-    @apply rounded  mx-auto border-2 border-blackish dark:border-sepia;
+    @apply rounded ease-[ease] mx-auto border-2 border-blackish dark:border-sepia;
   }
 
   /* Remove all animations and transitions for people that prefer not to see them */
@@ -112,7 +135,30 @@
 
   .animations-dev-gallery {
     .card {
-      @apply h-52 bg-[color-mix(in_oklch,var(--color-sepia),_#000_40%)]/30 dark:bg-[color-mix(in_oklch,var(--color-blackish),_#000_4%)]/30 rounded;
+      @apply h-52
+        bg-[color-mix(in_oklch,var(--color-sepia),_#000_40%)]/30
+        dark:bg-[color-mix(in_oklch,var(--color-blackish),_#000_4%)]/30
+        rounded
+        flex items-center justify-center;
+    }
+
+    fig-caption {
+      @apply text-sm text-center;
+    }
+
+    .btn {
+      @apply outline-2
+      rounded
+      outline-blackish/95
+      bg-blackish/90
+      text-sepia
+      hover:bg-blackish/60
+      px-4 py-2
+      cursor-pointer
+      active:scale-97
+      transition-[scale,background-color]
+      duration-150
+      hover:ease-[ease];
     }
   }
 }
