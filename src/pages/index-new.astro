@@ -135,10 +135,10 @@ const possibleSubtitles = [
     color-scheme-carterworks-2025:dark:text-sepia
     reduced-motion:no-motion
     grid grid-cols-12
-    m-0 p-4 min-h-screen"
+    m-0 p-4 min-h-screen gap-3"
   >
     <header
-      class="col-span-3 rounded h-full outline-[0.5px] p-2 flex flex-col space-y-2"
+      class="col-span-3 rounded h-[calc(100vh-(var(--spacing)*8))] top-4 outline-[0.5px] p-2 flex flex-col space-y-2 sticky frosted-glass relative z-10"
     >
       <hgroup>
         <a
@@ -196,5 +196,239 @@ const possibleSubtitles = [
         </ul>
       </nav>
     </header>
+    <main
+      class="col-span-9 flex flex-col gap-2 *:outline-[0.5px] *:rounded *:p-2 *:frosted-glass relative z-10"
+    >
+      <section>
+        <h2 class="text-xl">Who?</h2>
+        Still figuring things out. Right now: a dad, a tired man, a code plumber
+        on the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
+        researcher, a homebody, a reader, a eater (not a foodie), and <a
+          href="https://churchofjesuschrist.org">a disciple of Christ</a
+        >.
+      </section>
+      <section>
+        <h2 class="text-xl">Some things I made</h2>
+        <ul role="list">
+          <li role="listitem">
+            <a href="https://yazzy.carter.works">
+              <Yazzy class="inline-block align-middle" />
+              Yazzy, a site to bring reader mode to all the web.
+            </a>
+          </li>
+          <li role="listitem">
+            <a href="https://carterworks.github.io/rss-reader/">
+              <RssReader class="inline-block align-middle" />
+              My personal RSS reader
+            </a>
+          </li>
+          <li role="listitem">
+            <a href="https://github.com/carterworks/substack-to-epub">
+              <Book class="inline-block align-middle" />
+              Substack-to-epub scraper
+            </a>
+          </li>
+          <li role="listitem">
+            <a href="/experiments/">
+              <Experimental class="inline-block align-middle" />
+              Experiments, what ifs, and prototypes
+            </a>
+          </li>
+        </ul>
+      </section>
+      {
+        recentPosts.length > 0 && (
+          <section>
+            <h2 class="text-xl">
+              <a
+                href="/blog/feed.xml"
+                title="RSS feed"
+                aria-label="RSS feed"
+              >
+                <Rss
+                  label="RSS feed"
+                  class="inline-block align-middle"
+                />
+              </a>
+              <a href="/blog/">Blog posts</a>
+            </h2>
+            <ul
+              role="list"
+              class="space-y-2"
+            >
+              {recentPosts.map((post) => (
+                <li
+                  role="listitem"
+                  class=""
+                >
+                  <ArticlePreview
+                    post={post}
+                    className=""
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </main>
+    <canvas
+      id="flowy-grid"
+      class="pointer-events-none fixed inset-0 z-[-20] h-full w-full"
+    ></canvas>
+    <script is:inline type="module">
+      (() => {
+        const canvas = document.getElementById("flowy-grid");
+        if (!canvas) {
+          return;
+        }
+        const context = canvas.getContext("2d", { alpha: true });
+        if (!context) {
+          return;
+        }
+
+        const SQUARE_SIZE = 20;
+        const SPACING = 40;
+        const SPEED = 0.001;
+        const COLOR = "#d3d3d3";
+
+        let devicePixelRatio = window.devicePixelRatio || 1;
+        let width = 0;
+        let height = 0;
+        let squares = [];
+        let animationFrameId;
+
+        const mediaQuery =
+          typeof window.matchMedia === "function" ?
+            window.matchMedia("(prefers-reduced-motion: reduce)")
+          : null;
+        let reduceMotion = detectReduceMotion();
+
+        function detectReduceMotion() {
+          return Boolean(mediaQuery && mediaQuery.matches);
+        }
+
+        function resizeCanvas() {
+          devicePixelRatio = window.devicePixelRatio || 1;
+          width = window.innerWidth;
+          height = window.innerHeight;
+
+          canvas.width = Math.ceil(width * devicePixelRatio);
+          canvas.height = Math.ceil(height * devicePixelRatio);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+
+          context.setTransform(1, 0, 0, 1, 0, 0);
+          context.scale(devicePixelRatio, devicePixelRatio);
+
+          regenerateSquares();
+        }
+
+        function regenerateSquares() {
+          squares = [];
+          const columns = Math.ceil(width / SPACING) + 1;
+          const rows = Math.ceil(height / SPACING) + 1;
+          const offset = SPACING / 2;
+
+          for (let row = 0; row < rows; row += 1) {
+            for (let column = 0; column < columns; column += 1) {
+              squares.push({
+                x: column * SPACING + offset,
+                y: row * SPACING + offset,
+                phase: Math.random() * Math.PI * 2,
+              });
+            }
+          }
+        }
+
+        function drawStatic() {
+          context.clearRect(0, 0, width, height);
+          context.fillStyle = COLOR;
+          context.globalAlpha = 0.35;
+
+          for (const square of squares) {
+            context.fillRect(
+              square.x - SQUARE_SIZE / 2,
+              square.y - SQUARE_SIZE / 2,
+              SQUARE_SIZE,
+              SQUARE_SIZE,
+            );
+          }
+
+          context.globalAlpha = 1;
+        }
+
+        function animateFrame(timestamp) {
+          context.clearRect(0, 0, width, height);
+          context.fillStyle = COLOR;
+
+          for (const square of squares) {
+            const opacity =
+              0.5 + 0.5 * Math.sin(timestamp * SPEED + square.phase);
+            context.globalAlpha = opacity;
+            context.fillRect(
+              square.x - SQUARE_SIZE / 2,
+              square.y - SQUARE_SIZE / 2,
+              SQUARE_SIZE,
+              SQUARE_SIZE,
+            );
+          }
+
+          context.globalAlpha = 1;
+          animationFrameId = window.requestAnimationFrame(animateFrame);
+        }
+
+        function startDrawing() {
+          if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = undefined;
+          }
+
+          if (reduceMotion) {
+            drawStatic();
+            return;
+          }
+
+          animationFrameId = window.requestAnimationFrame(animateFrame);
+        }
+
+        function handleMotionPreferenceChange() {
+          const nextReduceMotion = detectReduceMotion();
+          if (nextReduceMotion === reduceMotion) {
+            return;
+          }
+
+          reduceMotion = nextReduceMotion;
+          startDrawing();
+        }
+
+        resizeCanvas();
+        startDrawing();
+
+        window.addEventListener(
+          "resize",
+          () => {
+            resizeCanvas();
+            if (reduceMotion) {
+              drawStatic();
+            }
+          },
+          { passive: true },
+        );
+
+        document.addEventListener(
+          "astro:after-swap",
+          handleMotionPreferenceChange,
+        );
+
+        if (mediaQuery) {
+          if (typeof mediaQuery.addEventListener === "function") {
+            mediaQuery.addEventListener("change", handleMotionPreferenceChange);
+          } else if (typeof mediaQuery.addListener === "function") {
+            mediaQuery.addListener(handleMotionPreferenceChange);
+          }
+        }
+      })();
+    </script>
   </body>
 </html>
