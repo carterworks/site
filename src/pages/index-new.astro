@@ -1,0 +1,200 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import { getCollection } from "astro:content";
+import { DEV } from "astro:env/client";
+import Book from "../icons/Book.astro";
+import Rss from "../icons/Rss.astro";
+import Yazzy from "../icons/Yazzy.astro";
+import RssReader from "../icons/RssReader.astro";
+import Experimental from "../icons/Experimental.astro";
+import WavingHand from "../icons/WavingHand.astro";
+import ArticlePreview from "../components/ArticlePreview.astro";
+import LinkedIn from "../icons/LinkedIn.astro";
+import Github from "../icons/Github.astro";
+import Mastodon from "../icons/Mastodon.astro";
+const recentPosts = (await getCollection("blog"))
+  .filter((e) => (DEV ? true : e.data.draft !== true))
+  .slice(0, 10)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+const title = "👋 I'm Carter.";
+const { url } = Astro;
+const possibleSubtitles = [
+  "A software developer.",
+  "A dad.",
+  "A grump.",
+  "An enjoyer of simple things.",
+  "carter.works? I sure hope he does!",
+  "A sepia tone enthusiast.",
+  "A crust eaten in peace is better than a banquet partaken in anxiety.",
+];
+---
+
+<html
+  lang="en"
+  data-color-scheme="carterworks-2025"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <meta
+      name="theme-color"
+      content="#fdf6e3"
+    />
+    <meta
+      name="color-scheme"
+      content="light dark"
+    />
+    <meta
+      http-equiv="X-UA-Compatible"
+      content="ie=edge"
+    />
+    <link
+      rel="canonical"
+      href="https://carter.works"
+    />
+    <meta
+      property="og:url"
+      content={url}
+    />
+    <meta
+      property="og:locale"
+      content="en_US"
+    />
+    <meta
+      property="og:site_name"
+      content="Carter McBride"
+    />
+    <link
+      rel="icon"
+      href="/favicon.svg"
+      type="image/svg+xml"
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href={new URL("/blog/feed.xml", Astro.site)}
+    />
+    <link
+      rel="manifest"
+      href="/manifest.webmanifest"
+    />
+    <link
+      rel="sitemap"
+      href="/sitemap-index.xml"
+    />
+    <ClientRouter />
+
+    <title>{title}</title>
+
+    <meta
+      property="og:title"
+      content={title}
+    />
+    <meta
+      property="og:type"
+      content="website"
+    />
+    <script>
+      /**
+       * @param { Date } date
+       * @returns { number }
+       */
+      class FormattedDate extends HTMLTimeElement {
+        constructor() {
+          super();
+          const attribute = this.getAttribute("datetime");
+          if (!attribute) {
+            return;
+          }
+          const date = new Date(attribute);
+          const utcDate = new Date(
+            date.getTime() + date.getTimezoneOffset() * 60000,
+          );
+          this.textContent = utcDate.toLocaleDateString("en-us", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+      }
+      customElements.define("formatted-date", FormattedDate, {
+        extends: "time",
+      });
+    </script>
+  </head>
+
+  <body
+    class="font-classical-humanist
+    color-scheme-carterworks-2025:bg-sepia
+    color-scheme-carterworks-2025:text-blackish
+    color-scheme-carterworks-2025:dark:bg-blackish
+    color-scheme-carterworks-2025:dark:text-sepia
+    reduced-motion:no-motion
+    grid grid-cols-12
+    m-0 p-4 min-h-screen"
+  >
+    <header
+      class="col-span-3 rounded h-full outline-[0.5px] p-2 flex flex-col space-y-2"
+    >
+      <hgroup>
+        <a
+          class="w-full"
+          href="/"
+        >
+          <h1 class="text-xl">
+            <WavingHand
+              label="Hello"
+              class="inline-block"
+              verticalAlign="text-top"
+            />
+            I'm {DEV && "(dev mode) "}Carter.
+          </h1>
+          <p id="heading-subtitle">
+            {
+              possibleSubtitles[
+                Math.floor(Math.random() * possibleSubtitles.length)
+              ]
+            }
+          </p>
+        </a>
+      </hgroup>
+      <nav>
+        <ul
+          role="list"
+          class="space-y-1 list-disc pl-4"
+        >
+          <li role="listitem">
+            <a href="/blog">Blog</a>
+          </li>
+          <li role="listitem">
+            <a href="/experiments/"> Experiments</a>
+          </li>
+          <li role="listitem">
+            <a
+              href="https://mastodon.social/@literallyacar"
+              rel="me"
+            >
+              <Mastodon class="inline-block" /> Mastodon
+            </a>
+          </li>
+          <li role="
+                listitem">
+            <a href="https://github.com/carterworks">
+              <Github class="inline-block" /> GitHub
+            </a>
+          </li>
+          <li role="
+                    listitem">
+            <a href="https://www.linkedin.com/in/thatcartermcbride/">
+              <LinkedIn class="inline-block" /> LinkedIn
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+  </body>
+</html>
