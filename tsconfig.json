@@ -15,7 +15,9 @@
     "allowJs": true,
     "noEmit": true,
     "types": [
-      "bun-types" // add Bun global
+      "bun-types", // add Bun global
+      "astro/client", // add Astro global
+      "astro/astro-jsx" // add JSX intrinsic elements
     ]
   }
 }
