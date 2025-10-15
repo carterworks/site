@@ -274,9 +274,9 @@ const possibleSubtitles = [
     </main>
     <canvas
       id="flowy-grid"
-      class="pointer-events-none fixed inset-0 z-[-20] h-full w-full"
+      class="motion-reduce:hidden pointer-events-none fixed inset-0 z-[-20] h-full w-full"
     ></canvas>
-    <script is:inline type="module">
+    <script>
       (() => {
         const canvas = document.getElementById("flowy-grid");
         if (!canvas) {
@@ -289,8 +289,8 @@ const possibleSubtitles = [
 
         const SQUARE_SIZE = 20;
         const SPACING = 40;
-        const SPEED = 0.001;
-        const COLOR = "#d3d3d3";
+        const SPEED = 0.0025;
+        const COLOR = "oklch(87% 0 0)";
 
         let devicePixelRatio = window.devicePixelRatio || 1;
         let width = 0;
