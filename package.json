@@ -18,21 +18,22 @@
     "deploy": "wrangler types && astro build && wrangler pages deploy"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250620.0",
-    "astro": "^5.10.1",
-    "bun-types": "latest",
+    "@cloudflare/workers-types": "^4.20251011.0",
+    "astro": "5.14.5",
+    "bun-types": "^1.3.0",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
-    "wrangler": "^4.22.0"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.43.0"
   },
   "peerDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
-    "@astrojs/sitemap": "^3.4.1",
-    "@tailwindcss/vite": "^4.1.11",
-    "tailwindcss": "^4.1.11"
+    "@astrojs/sitemap": "3.6.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "tailwindcss": "^4.1.14"
   },
   "trustedDependencies": [
     "esbuild",
