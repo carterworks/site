@@ -11,9 +11,9 @@ import RssReader from "../icons/RssReader.astro";
 import ArticlePreview from "../components/ArticlePreview.astro";
 import Experimental from "../icons/Experimental.astro";
 const recentPosts = (await getCollection("blog"))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
   .filter((e) => (DEV ? true : e.data.draft !== true))
-  .slice(0, 10)
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+  .slice(0, 10);
 ---
 
 <BaseLayout title="👋 I'm Carter.">
