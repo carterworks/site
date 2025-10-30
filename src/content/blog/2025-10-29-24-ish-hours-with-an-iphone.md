@@ -56,15 +56,13 @@ Camera Control is very cool. Swiping my finger left and right as well as the hal
 
 This is more of a diss on Samsung than on Android as a whole, but wow does the Samsung app ecosystem disappoint. People gripe about how the Microsoft Store on Windows is full of shovelware and scams, but those people have never visited the Samsung App Store. Please, never purchase a third-party app from this place.
 
-Samsung third party apps are disappointing and filled with advertisements for other Samsung services and "Samsung selected partners". For example, Wallet has an a persistent ad for Samsung Money by SoFi. If you dismiss it, it will come back in a few days. It will give you push notifications for special offers. People who already own Samsung devices were not surprised when the company announced that [the company would bring ads to the giant screens on expensive their moderately-priced fridges](https://www.theverge.com/news/780757/samsung-brings-ads-to-us-fridges).
+Samsung third party apps are disappointing and filled with advertisements for other Samsung services and "Samsung selected partners". For example, Wallet has an a persistent ad for Samsung Money by SoFi. If you dismiss it, it will come back in a few days. It will give you push notifications for special offers. People who already own Samsung devices were not surprised when the company announced that [the company would bring ads to the giant screens on expensive their moderately-priced fridges](https://www.theverge.com/news/780757/samsung-brings-ads-to-us-fridges.)
 
 The overall user interface presented by One UI 5.1 on Android 13 was fairly inconsistent in presentation and in performance. Again, this may be a factor of comparing a 5-year old budget phone to a brand new flagship, but the iPhone has not dropped a frame yet. Animations stutter not, no matter how much I futz with them. Meanwhile, it was _impossible_ to quick-switch (aka a "slide to the right" on the app bar) between apps. It would flash on the screen, then disappear.
 
 ## Things I miss about Android
 
 Honestly, not as much as I thought I was going to! I thought I was going to miss Syncthing as a way of syncing my Obsidian vault around, but [Möbius Sync](https://mobiussync.com/) works really well.
-
-I also really thought I was going to love MagSafe. It was on my list of require
 
 <video autoplay disablepictureinpicture playsinline loop muted width="300px">
   <source src="/assets/niagara.avif" type="video/avif"/>
