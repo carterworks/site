@@ -69,8 +69,9 @@
     @apply text-inherit no-underline rounded bg-transparent inline-block hover:bg-blackish/10 dark:hover:bg-sepia/20 transition-all;
   }
 
-  img {
-    @apply rounded  mx-auto border-2 border-blackish dark:border-sepia;
+  img,
+  video {
+    @apply rounded mx-auto border-2 border-blackish dark:border-sepia;
   }
 
   /* Remove all animations and transitions for people that prefer not to see them */
