@@ -65,7 +65,6 @@ The overall user interface presented by One UI 5.1 on Android 13 was fairly inco
 Honestly, not as much as I thought I was going to! I thought I was going to miss Syncthing as a way of syncing my Obsidian vault around, but [Möbius Sync](https://mobiussync.com/) works really well.
 
 <video autoplay disablepictureinpicture playsinline loop muted width="300px">
-  <source src="/assets/niagara.avif" type="video/avif"/>
   <source src="/assets/niagara.webm" type="video/webm"/>
   <source src="/assets/niagara.mp4" type="video/mp4"/>
 </video>
