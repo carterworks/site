@@ -24,15 +24,18 @@ Anyways, as I thought more about it over the past year, the Apple ecosystem seem
 Additionally, my wife has an iPhone and an iPad. A unified family platform would be nice, for managing screen time for kids (in the future) and for Airtags. I know that Google also has a Find My network, but [it is _opt. in._](https://www.theverge.com/google/655319/google-find-my-device-smart-tag-network-one-year-later) (kinda). The utility of Find My requires a proliferation of participant devices, and Google just didn't have the quality network as of right now.
 
 And I gotta say, for all its haters, liquid glass can be beautiful.
+
 ![An iPhone screenshot, showcasing the ](assets/liquid-glass.png)
+
 Look at the chromatic aberration on the edges of the notification shade! The edge distortion! And have you seen the airdrop animation?
 
 Meanwhile, Google made some different shapes, like a sawtooth clock. How funky of them.
-<video autoplay disablepictureinpicture playsinline loop muted width="300px">
 
+<video autoplay disablepictureinpicture playsinline loop muted width="300px">
   <source src="/assets/airdrop.webm" type="video/webm"/>
   <source src="/assets/airdrop.mp4" type="video/mp4"/>
 </video>
+
 Now the day is finally here. To be fair, this is not an apples-to-apples comparison. This is comparing a 5-year old [Samsung Galaxy S20 FE](https://www.gsmarena.com/samsung_galaxy_s20_fe_5g-10377.php) to the iPhone 17 Pro Max, [a device with literally triple the Geekbench score, twice the RAM, and a screen that isn't cracked.](https://www.gsmarena.com/apple_iphone_17_pro_max-13964.php)
 
 ## Things I like about iOS
