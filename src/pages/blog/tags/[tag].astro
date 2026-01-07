@@ -1,32 +1,17 @@
 ---
-import { DEV } from "astro:env/client";
-import { getCollection } from "astro:content";
+import { getAllTags, getPostsByTag } from "../../../lib/blog";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import ArticlePreview from "../../../components/ArticlePreview.astro";
 
 export async function getStaticPaths() {
-  const blogEntries = (await getCollection("blog")).filter((e) =>
-    DEV ? true : e.data.draft !== true,
-  );
-  const tags = new Set();
-  for (const entry of blogEntries) {
-    if (entry.data.tags) {
-      for (const tag of entry.data.tags) {
-        tags.add(tag);
-      }
-    }
-  }
-  return [...tags].map((t) => ({
-    params: { tag: t },
+  const tags = await getAllTags();
+  return tags.map((tag) => ({
+    params: { tag },
   }));
 }
 
 const { tag } = Astro.params;
-
-const posts = (await getCollection("blog"))
-  .filter((e) => e.data.tags?.includes(tag as string))
-  .filter((e) => (DEV ? true : e.data.draft !== true))
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+const posts = await getPostsByTag(tag as string);
 ---
 
 <BaseLayout title={`#${tag} blog posts | carter.works`}>
