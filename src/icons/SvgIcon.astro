@@ -1,13 +1,11 @@
 ---
 import type { HTMLAttributes } from "astro/types";
 
-export interface Props extends HTMLAttributes<"svg"> {
+interface Props extends HTMLAttributes<"svg"> {
   /** Accessible label for the icon. When provided, sets aria-label and role="img". */
   label?: string;
   /** SVG viewBox attribute. Defaults to "0 0 24 24". */
   viewBox?: string;
-  /** Vertical alignment for inline display. */
-  verticalAlign?: string;
 }
 
 const { label, viewBox = "0 0 24 24", ...rest } = Astro.props;

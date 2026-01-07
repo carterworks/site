@@ -1,11 +1,8 @@
 ---
-import SvgIcon, { type Props } from "./SvgIcon.astro";
-
-type IconProps = Props;
-const props: IconProps = Astro.props;
+import SvgIcon from "./SvgIcon.astro";
 ---
 
-<SvgIcon {...props}
+<SvgIcon {...Astro.props}
   ><!-- Icon from MingCute Icon by MingCute Design - https://github.com/Richard9394/MingCute/blob/main/LICENSE -->
   <g
     fill="none"

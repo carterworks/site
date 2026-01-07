@@ -1,13 +1,10 @@
 ---
-import SvgIcon, { type Props } from "./SvgIcon.astro";
-
-type IconProps = Props;
-const props: IconProps = Astro.props;
+import SvgIcon from "./SvgIcon.astro";
 ---
 
 <SvgIcon
   viewBox="-10 0 2610 2048"
-  {...props}
+  {...Astro.props}
 >
   <path
     fill="currentColor"
