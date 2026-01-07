@@ -1,7 +1,8 @@
 ---
-import SvgIcon from "./SvgIcon.astro";
+import SvgIcon, { type Props } from "./SvgIcon.astro";
 
-const props = Astro.props;
+type IconProps = Props;
+const props: IconProps = Astro.props;
 ---
 
 <SvgIcon {...props}

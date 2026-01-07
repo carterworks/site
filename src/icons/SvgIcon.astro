@@ -1,6 +1,16 @@
 ---
-const props = Astro.props;
-const { viewBox = "0 0 24 24" } = props;
+import type { HTMLAttributes } from "astro/types";
+
+export interface Props extends HTMLAttributes<"svg"> {
+  /** Accessible label for the icon. When provided, sets aria-label and role="img". */
+  label?: string;
+  /** SVG viewBox attribute. Defaults to "0 0 24 24". */
+  viewBox?: string;
+  /** Vertical alignment for inline display. */
+  verticalAlign?: string;
+}
+
+const { label, viewBox = "0 0 24 24", ...rest } = Astro.props;
 ---
 
 <svg
@@ -8,7 +18,10 @@ const { viewBox = "0 0 24 24" } = props;
   width="1em"
   height="1em"
   viewBox={viewBox}
-  {...props}
+  aria-label={label}
+  role={label ? "img" : undefined}
+  aria-hidden={label ? undefined : "true"}
+  {...rest}
 >
   <slot />
 </svg>

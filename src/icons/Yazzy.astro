@@ -1,6 +1,8 @@
 ---
-import SvgIcon from "./SvgIcon.astro";
-const props = Astro.props;
+import SvgIcon, { type Props } from "./SvgIcon.astro";
+
+type IconProps = Props;
+const props: IconProps = Astro.props;
 ---
 
 <!-- https://github.com/carterworks/yazzy/blob/main/public/scissors.svg -->
