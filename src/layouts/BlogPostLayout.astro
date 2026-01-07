@@ -10,7 +10,7 @@ const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
     day: "numeric",
   },
 );
-const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
+const tags = frontmatter.tags?.map((tag: string) => `#${tag}`).join(" ") ?? "";
 ---
 
 <BaseLayout title={`${frontmatter.title} | carter.works`}>
@@ -32,10 +32,14 @@ const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
       property="og:article:author"
       content="Carter McBride"
     />
-    <meta
-      property="og:article:tag"
-      content={frontmatter.tags.join(", ")}
-    />
+    {
+      frontmatter.tags && (
+        <meta
+          property="og:article:tag"
+          content={frontmatter.tags.join(", ")}
+        />
+      )
+    }
   </Fragment>
   <article class="space-y-4 prose">
     <header>
