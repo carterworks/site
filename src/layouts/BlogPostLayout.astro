@@ -1,15 +1,9 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
+import { formatDateLong } from "../lib/date";
 
 const { frontmatter } = Astro.props;
-const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
-  "en-US",
-  {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  },
-);
+const humanFriendlyDate = formatDateLong(new Date(frontmatter.pubDate));
 const tags = frontmatter.tags?.map((tag: string) => `#${tag}`).join(" ") ?? "";
 ---
 

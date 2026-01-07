@@ -1,5 +1,7 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { formatDate, toISODateString } from "../lib/date";
+
 interface Props {
   post: CollectionEntry<"blog">;
   className?: string;
@@ -16,10 +18,9 @@ const title = post.data.title || "A short thought";
   {title}
 </a>
 <div class="flex flex-wrap flex-row gap-1">
-  <time
-    datetime={post.data.pubDate.toString()}
-    is="formatted-date"
-  ></time>
+  <time datetime={toISODateString(post.data.pubDate)}>
+    {formatDate(post.data.pubDate)}
+  </time>
   {
     post.data.tags != null && post.data.tags.length > 0 && (
       <ul class="flex flex-row gap-1">
