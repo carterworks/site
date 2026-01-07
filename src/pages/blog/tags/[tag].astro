@@ -22,7 +22,6 @@ export async function getStaticPaths() {
 }
 
 const { tag } = Astro.params;
-console.log(`Fetching posts with tag: ${tag}`);
 
 const posts = (await getCollection("blog"))
   .filter((e) => e.data.tags?.includes(tag as string))
