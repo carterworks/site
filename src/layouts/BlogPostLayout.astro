@@ -1,16 +1,16 @@
 ---
+import type { CollectionEntry } from "astro:content";
 import BaseLayout from "./BaseLayout.astro";
+import { formatDateLong } from "../lib/date";
+
+interface Props {
+  frontmatter: CollectionEntry<"blog">["data"];
+}
 
 const { frontmatter } = Astro.props;
-const humanFriendlyDate = new Date(frontmatter.pubDate).toLocaleDateString(
-  "en-US",
-  {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  },
-);
-const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
+const pubDateISO = frontmatter.pubDate.toISOString();
+const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
+const tags = frontmatter.tags?.map((tag) => `#${tag}`).join(" ") ?? "";
 ---
 
 <BaseLayout title={`${frontmatter.title} | carter.works`}>
@@ -26,16 +26,20 @@ const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
     />
     <meta
       property="og:article:published_time"
-      content={frontmatter.pubDate}
+      content={pubDateISO}
     />
     <meta
       property="og:article:author"
       content="Carter McBride"
     />
-    <meta
-      property="og:article:tag"
-      content={frontmatter.tags.join(", ")}
-    />
+    {
+      frontmatter.tags && (
+        <meta
+          property="og:article:tag"
+          content={frontmatter.tags.join(", ")}
+        />
+      )
+    }
   </Fragment>
   <article class="space-y-4 prose">
     <header>
@@ -43,7 +47,7 @@ const tags = frontmatter.tags.map((tag: string) => `#${tag}`).join(" ");
         {frontmatter.draft && "Rough Draft: "}{frontmatter.title}
       </h1>
       <p>
-        <time datetime={frontmatter.pubDate}>{humanFriendlyDate}</time>
+        <time datetime={pubDateISO}>{humanFriendlyDate}</time>
       </p>
       {tags.length > 0 && <p>{tags}</p>}
       {

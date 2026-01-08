@@ -15,6 +15,7 @@
     "preview": "wrangler types && astro preview",
     "cf-typegen": "wrangler types",
     "format": "prettier --write .",
+    "check": "astro check",
     "deploy": "wrangler types && astro build && wrangler pages deploy"
   },
   "devDependencies": {
