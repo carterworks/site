@@ -1205,25 +1205,51 @@ const { url } = Astro;
         navigator.clipboard.writeText(text);
       }
 
+      /** 10-char base32 random seed */
+      function randomSeed() {
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        const bytes = crypto.getRandomValues(new Uint8Array(10));
+        return Array.from(bytes, b => alphabet[b & 31]).join('');
+      }
+
       /** Main app */
+      function getSeedFromURL() {
+        return new URLSearchParams(window.location.search).get('seed') || '';
+      }
+
+      function setSeedInURL(s) {
+        const url = new URL(window.location);
+        if (s) url.searchParams.set('seed', s);
+        else url.searchParams.delete('seed');
+        window.history.replaceState(null, '', url);
+      }
+
       function BuddyCreator() {
-        const [seed, setSeed] = useState('');
-        const [result, setResult] = useState(null);
+        const initialSeed = useMemo(() => getSeedFromURL() || randomSeed(), []);
+        const [seed, setSeed] = useState(initialSeed);
+        const [result, setResult] = useState(() => {
+          const { bones } = roll(initialSeed);
+          return { bones, seed: initialSeed };
+        });
         const [themeName] = useTheme();
         const theme = getTheme(themeName);
         const [copied, setCopied] = useState(false);
 
+        useEffect(() => { setSeedInURL(initialSeed); }, []);
+
         const generate = useCallback(() => {
-          const s = seed.trim() || crypto.randomUUID();
+          const s = seed.trim() || randomSeed();
           if (!seed.trim()) setSeed(s);
+          setSeedInURL(s);
           const { bones } = roll(s);
           setResult({ bones, seed: s });
           setCopied(false);
         }, [seed]);
 
         const randomize = useCallback(() => {
-          const s = crypto.randomUUID();
+          const s = randomSeed();
           setSeed(s);
+          setSeedInURL(s);
           const { bones } = roll(s);
           setResult({ bones, seed: s });
           setCopied(false);
@@ -1302,7 +1328,7 @@ const { url } = Astro;
                       key=${species}
                       class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300 cursor-pointer"
                       style=${{ borderColor: theme.subtle, backgroundColor: theme.subtle }}
-                      onClick=${() => { setSeed(species); const { bones } = roll(species); setResult({ bones, seed: species }); setCopied(false); }}
+                      onClick=${() => { setSeed(species); setSeedInURL(species); const { bones } = roll(species); setResult({ bones, seed: species }); setCopied(false); }}
                     >
                       <pre
                         class="font-mono text-xs leading-tight select-none"
