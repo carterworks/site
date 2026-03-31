@@ -2069,7 +2069,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 }}
               />
               ${bones.shiny && html`<div class="shiny-overlay" />`}
-              ${bones.shiny && html`<div class="shiny-badge">✦</div>`}
             </div>
           </div>
         `;
@@ -2362,8 +2361,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 href="https://samwarnick.com/pokemon/"
                 rel="noopener noreferrer"
                 class="mx-[0.5ch] underline"
-                >Sam Warnick</a
-              >.
+                >Sam Warnick.</a
+              >
             </p>
             <p>
               View the source code on
@@ -2525,7 +2524,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         inset: 0;
         background-image:
           radial-gradient(circle at 50% 50%, transparent 0%, var(--bg) 100%),
-          radial-gradient(circle, rgba(128, 128, 128, 0.18) 1px, transparent 1px);
+          radial-gradient(
+            circle,
+            rgba(128, 128, 128, 0.18) 1px,
+            transparent 1px
+          );
         background-size:
           100% 100%,
           18px 18px;
@@ -2746,11 +2749,17 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       >
     </nav>
     <main class="max-w-2xl mx-auto p-4">
-      <div class="flex items-baseline justify-between gap-4 mb-6 animate-entrance animate-entrance-2">
+      <div
+        class="flex items-baseline justify-between gap-4 mb-6 animate-entrance animate-entrance-2"
+      >
         <h1 class="text-2xl font-bold title-glow">Claude Code Buddy Creator</h1>
         <div id="theme-switcher"></div>
       </div>
-      <div id="buddy-app" class="animate-entrance animate-entrance-3"></div>
+      <div
+        id="buddy-app"
+        class="animate-entrance animate-entrance-3"
+      >
+      </div>
     </main>
   </body>
 </html>
