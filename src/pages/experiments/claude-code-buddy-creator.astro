@@ -1418,8 +1418,7 @@ const { url } = Astro;
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
         const stars = RARITY_STARS[bones.rarity];
-        const species =
-          bones.species.toUpperCase() + (bones.shiny ? " *" : "");
+        const species = bones.species.toUpperCase() + (bones.shiny ? " *" : "");
         const hatLabel = bones.hat !== "none" ? bones.hat : "—";
         const spriteLines = renderSprite(bones, 0);
         const totalStats = Object.values(bones.stats).reduce(
@@ -1494,7 +1493,8 @@ const { url } = Astro;
       }
 
       /**
-       * Animated card — renders box-drawing text with colored spans
+       * Animated card — renders box-drawing text with colored spans,
+       * wrapped in a 3D tilt/glare container inspired by Sam Warnick's tcg-card.
        * @param {{ bones: CompanionBones, seed: string }} props
        */
       function TradingCard({ bones, seed }) {
@@ -1502,11 +1502,205 @@ const { url } = Astro;
         const [themeName] = useTheme();
         const theme = getTheme(themeName);
         const preRef = useRef(null);
+        const cardRef = useRef(null);
+        const wrapperRef = useRef(null);
+        const [expanded, setExpanded] = useState(false);
+        const expandedRef = useRef(false);
+        const tiltState = useRef({
+          transforming: false,
+          pendingFrame: null,
+          isTouching: false,
+        });
 
         useEffect(() => {
           const id = setInterval(() => setTick((t) => t + 1), TICK_MS);
           return () => clearInterval(id);
         }, []);
+
+        // --- TCG card interaction handlers ---
+        const startInteraction = useCallback((clientX, clientY) => {
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition =
+            "transform 300ms ease-out, box-shadow 300ms ease-out";
+          el.style.setProperty("--glare-opacity", "0.75");
+          const r =
+            (Math.random() * 0.5 + 0.5) * (Math.random() < 0.5 ? -1 : 1);
+          el.style.setProperty("--display-rz", `${r}deg`);
+          updateTilt(clientX, clientY);
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+          }, 300);
+        }, []);
+
+        const updateTilt = useCallback((clientX, clientY) => {
+          const st = tiltState.current;
+          if (st.transforming) return;
+          const el = cardRef.current;
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          const xPercent = (x / rect.width) * 100;
+          const yPercent = (y / rect.height) * 100;
+          const tiltX = -((y - rect.height / 2) / rect.height) * 10;
+          const tiltY = ((x - rect.width / 2) / rect.width) * 10;
+          st.pendingFrame = requestAnimationFrame(() => {
+            el.style.setProperty("--pointer-x", `${xPercent}%`);
+            el.style.setProperty("--pointer-y", `${yPercent}%`);
+            el.style.setProperty("--display-rx", `${tiltX}deg`);
+            el.style.setProperty("--display-ry", `${tiltY}deg`);
+            st.transforming = false;
+          });
+          st.transforming = true;
+        }, []);
+
+        const endInteraction = useCallback(() => {
+          const st = tiltState.current;
+          if (st.pendingFrame) {
+            cancelAnimationFrame(st.pendingFrame);
+            st.transforming = false;
+          }
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition =
+            "transform 300ms ease-out, box-shadow 300ms ease-out";
+          el.style.setProperty("--glare-opacity", "0");
+          el.style.setProperty("--display-rz", "0deg");
+          el.style.setProperty("--display-rx", "0deg");
+          el.style.setProperty("--display-ry", "0deg");
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+            st.isTouching = false;
+          }, 300);
+        }, []);
+
+        const onMouseEnter = useCallback(
+          (e) => {
+            if (tiltState.current.isTouching) return;
+            startInteraction(e.clientX, e.clientY);
+          },
+          [startInteraction],
+        );
+
+        const onMouseMove = useCallback(
+          (e) => {
+            if (tiltState.current.isTouching) return;
+            updateTilt(e.clientX, e.clientY);
+          },
+          [updateTilt],
+        );
+
+        const onMouseLeave = useCallback(() => {
+          if (tiltState.current.isTouching) return;
+          endInteraction();
+        }, [endInteraction]);
+
+        const onTouchStart = useCallback(
+          (e) => {
+            tiltState.current.isTouching = true;
+            const t = e.touches[0];
+            startInteraction(t.clientX, t.clientY);
+          },
+          [startInteraction],
+        );
+
+        const onTouchMove = useCallback(
+          (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            updateTilt(t.clientX, t.clientY);
+          },
+          [updateTilt],
+        );
+
+        const onTouchEnd = useCallback(() => {
+          endInteraction();
+        }, [endInteraction]);
+
+        const EXPAND_DURATION = 600;
+        const SPRING_1 =
+          "linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001)";
+        const SPRING_2 =
+          "linear(0, .007, .029 2.2%, .118 4.7%, .625 14.4%, .826 19%, .902, .962, 1.008 26.1%, 1.041 28.7%, 1.064 32.1%, 1.07 36%, 1.061 40.5%, 1.015 53.4%, .999 61.6%, .995 71.2%, 1)";
+
+        const centerCard = useCallback(() => {
+          const el = cardRef.current;
+          const wrapper = wrapperRef.current;
+          if (!el || !wrapper) return;
+          const rect = wrapper.getBoundingClientRect();
+          const screenX = window.innerWidth / 2;
+          const screenY = window.innerHeight / 2;
+          const tx = screenX - rect.left - rect.width / 2;
+          const ty = screenY - rect.top - rect.height / 2;
+          const scaleX = (window.innerWidth * 0.9) / rect.width;
+          const scaleY = (window.innerHeight * 0.9) / rect.height;
+          const scale = Math.min(scaleX, scaleY, 1.5);
+
+          el.style.transition = `transform ${EXPAND_DURATION}ms ${SPRING_1}, scale ${EXPAND_DURATION}ms ${SPRING_2}`;
+          el.style.setProperty("--display-rz", "0deg");
+          el.style.transform = `translate(${tx}px, ${ty}px) rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz)) rotateY(360deg)`;
+          el.style.scale = `${scale}`;
+          el.style.zIndex = "50";
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+          }, EXPAND_DURATION);
+        }, []);
+
+        const resetCard = useCallback(() => {
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition = `transform ${EXPAND_DURATION}ms ${SPRING_1}, scale ${EXPAND_DURATION}ms ${SPRING_2}`;
+          el.style.transform =
+            "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))";
+          el.style.scale = "1";
+          setTimeout(() => {
+            if (el) {
+              el.style.transition = "";
+              el.style.zIndex = "";
+            }
+          }, EXPAND_DURATION);
+        }, []);
+
+        const closeCard = useCallback(() => {
+          expandedRef.current = false;
+          setExpanded(false);
+          resetCard();
+        }, [resetCard]);
+
+        const onCardClick = useCallback(
+          (e) => {
+            e.stopPropagation();
+            if (expandedRef.current) {
+              closeCard();
+            } else {
+              expandedRef.current = true;
+              setExpanded(true);
+              centerCard();
+            }
+          },
+          [centerCard, closeCard],
+        );
+
+        // Close on outside click or keydown when expanded
+        useEffect(() => {
+          if (!expanded) return;
+          const onDocClick = (e) => {
+            if (!cardRef.current?.contains(e.target)) closeCard();
+          };
+          const onKeyDown = () => closeCard();
+          const onResize = () => {
+            if (expandedRef.current) centerCard();
+          };
+          document.addEventListener("click", onDocClick);
+          document.addEventListener("keydown", onKeyDown);
+          window.addEventListener("resize", onResize);
+          return () => {
+            document.removeEventListener("click", onDocClick);
+            document.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("resize", onResize);
+          };
+        }, [expanded, closeCard, centerCard]);
 
         const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
         const accentColor = bones.shiny ? theme.warning : rarityColor;
@@ -1630,23 +1824,70 @@ const { url } = Astro;
         });
 
         return html`
-          <pre
-            ref=${preRef}
-            class="select-all leading-snug"
-            style=${{
-              fontFamily: "var(--font-monospace-code)",
-              fontSize: fontSize + "px",
-              lineHeight: "1.4",
-              color: theme.text,
-              background: theme.userMessageBackground,
-              padding: "12px 16px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-              display: "inline-block",
-            }}
+          <div
+            ref=${wrapperRef}
+            style=${{ perspective: "800px", display: "inline-block" }}
+            onMouseEnter=${onMouseEnter}
+            onMouseMove=${onMouseMove}
+            onMouseLeave=${onMouseLeave}
+            onTouchStart=${onTouchStart}
+            onTouchMove=${onTouchMove}
+            onTouchEnd=${onTouchEnd}
+            onTouchCancel=${onTouchEnd}
           >
+            <div
+              ref=${cardRef}
+              onClick=${onCardClick}
+              style=${{
+                "--display-rx": "0deg",
+                "--display-ry": "0deg",
+                "--display-rz": "0deg",
+                "--pointer-x": "50%",
+                "--pointer-y": "50%",
+                "--glare-opacity": "0",
+                transform:
+                  "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))",
+                transformOrigin: "center",
+                position: "relative",
+                borderRadius: "8px",
+                willChange: "transform",
+                cursor: "pointer",
+              }}
+            >
+              <pre
+                ref=${preRef}
+                class="leading-snug"
+                style=${{
+                  fontFamily: "var(--font-monospace-code)",
+                  fontSize: fontSize + "px",
+                  lineHeight: "1.4",
+                  color: theme.text,
+                  background: theme.userMessageBackground,
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                  display: "inline-block",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                }}
+              >
 ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
-          >
+              >
+              <div
+                style=${{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "8px",
+                  backgroundImage:
+                    "radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y), hsla(0,0%,100%,0.8) 10%, hsla(0,0%,100%,0.65) 20%, hsla(0,0%,0%,0.5) 90%)",
+                  mixBlendMode: "overlay",
+                  opacity: "var(--glare-opacity)",
+                  transition: "opacity 500ms ease-out",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
+          </div>
         `;
       }
 
@@ -1689,7 +1930,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         push(HATS.indexOf(bones.hat), 3);
         push(RARITIES.indexOf(bones.rarity), 3);
         push(bones.shiny ? 1 : 0, 1);
-        for (const n of STAT_NAMES) push(Math.max(1, Math.min(100, bones.stats[n])), 7);
+        for (const n of STAT_NAMES)
+          push(Math.max(1, Math.min(100, bones.stats[n])), 7);
         // Pad to full bytes
         while (bits.length % 8) bits.push(0);
         const bytes = new Uint8Array(bits.length / 8);
@@ -1724,11 +1966,22 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             for (let i = 0; i < n; i++) v = (v << 1) | (bits[pos++] || 0);
             return v;
           };
-          const si = read(5), ei = read(3), hi = read(3), ri = read(3), sh = read(1);
-          if (si >= SPECIES.length || ei >= EYES.length || hi >= HATS.length || ri >= RARITIES.length) return null;
+          const si = read(5),
+            ei = read(3),
+            hi = read(3),
+            ri = read(3),
+            sh = read(1);
+          if (
+            si >= SPECIES.length
+            || ei >= EYES.length
+            || hi >= HATS.length
+            || ri >= RARITIES.length
+          )
+            return null;
           /** @type {Record<StatName, number>} */
           const stats = {};
-          for (const n of STAT_NAMES) stats[n] = Math.max(1, Math.min(100, read(7)));
+          for (const n of STAT_NAMES)
+            stats[n] = Math.max(1, Math.min(100, read(7)));
           return {
             species: SPECIES[si],
             eye: EYES[ei],
@@ -1776,7 +2029,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        */
       function Selector({ label, options, value, onChange, theme }) {
         return html`
-          <span class="font-mono text-sm self-center" style=${{ color: theme.inactive }}>${label}</span>
+          <span
+            class="font-mono text-sm self-center"
+            style=${{ color: theme.inactive }}
+            >${label}</span
+          >
           <select
             value=${value}
             onChange=${(e) => onChange(e.target.value)}
@@ -1790,7 +2047,13 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             }}
           >
             ${options.map(
-              (o) => html`<option key=${o} value=${o}>${o}</option>`,
+              (o) =>
+                html`<option
+                  key=${o}
+                  value=${o}
+                >
+                  ${o}
+                </option>`,
             )}
           </select>
         `;
@@ -1802,7 +2065,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        */
       function StatSlider({ name, value, onChange, theme }) {
         return html`
-          <span class="font-mono text-xs self-center" style=${{ color: theme.inactive }}>${name}</span>
+          <span
+            class="font-mono text-xs self-center"
+            style=${{ color: theme.inactive }}
+            >${name}</span
+          >
           <input
             type="range"
             min="1"
@@ -1810,7 +2077,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             value=${value}
             onInput=${(e) => onChange(Number(e.target.value))}
           />
-          <span class="font-mono text-xs self-center" style=${{ color: theme.text, textAlign: "right" }}>${value}</span>
+          <span
+            class="font-mono text-xs self-center"
+            style=${{ color: theme.text, textAlign: "right" }}
+            >${value}</span
+          >
         `;
       }
 
@@ -1841,15 +2112,18 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           setCopied(false);
         }, []);
 
-        const onSeedInput = useCallback((e) => {
-          const s = e.target.value;
-          setSeed(s);
-          const effective = s.trim() || initialSeed;
-          setSeedInURL(effective);
-          const { bones } = bonesFromSeed(effective);
-          setResult({ bones, seed: effective });
-          setCopied(false);
-        }, [initialSeed]);
+        const onSeedInput = useCallback(
+          (e) => {
+            const s = e.target.value;
+            setSeed(s);
+            const effective = s.trim() || initialSeed;
+            setSeedInURL(effective);
+            const { bones } = bonesFromSeed(effective);
+            setResult({ bones, seed: effective });
+            setCopied(false);
+          },
+          [initialSeed],
+        );
 
         const randomize = useCallback(() => {
           const s = randomSeed();
@@ -1882,24 +2156,39 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         const bones = result.bones;
 
         return html`
-          <div class="flex flex-col gap-6">
-            <p
-              class="text-sm"
-              style=${{ color: theme.inactive }}
-            >
+          <div class="flex flex-col gap-2 text-sm">
+            <p>
               Enter any seed to generate a buddy card. Same seed = same card.
               Screenshot or copy to share.
             </p>
-            <p class="text-sm">
+            <p>
               Copied shamelessly from the
               <code>/buddy</code> source code from
               <a
                 href="https://github.com/chatgptprojects/claude-code/tree/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy"
                 rel="noopener noreferrer"
-                class="mx-[0.5ch] underline hover:text-[--"
+                class="mx-[0.5ch] underline"
                 >the 2026-03-31 leak</a
               >
               of Anthropic's Claude Code.
+            </p>
+            <p>
+              The card component is made by the tired genius
+              <a
+                href="https://samwarnick.com/pokemon/"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline"
+                >Sam Warnick</a
+              >.
+            </p>
+            <p>
+              View the source code on
+              <a
+                href="https://github.com/carterworks/site/tree/main/src/pages/experiments/claude-code-buddy-creator.astro"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline"
+                >GitHub</a
+              >.
             </p>
 
             <div class="flex gap-2">
@@ -1951,74 +2240,89 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                     class="font-mono text-xs"
                     style=${{ color: theme.inactive }}
                   >
-                    seed: ${result.seed.length > 24
-                      ? result.seed.slice(0, 24) + "..."
-                      : result.seed}
+                    seed:
+                    ${result.seed.length > 24 ?
+                      result.seed.slice(0, 24) + "..."
+                    : result.seed}
                   </span>
                 </div>
               </div>
             `}
 
-            <details class="mt-4" open=${initialParsed.isGerm}>
+            <details
+              class="mt-4"
+              open=${initialParsed.isGerm}
+            >
               <summary
                 class="cursor-pointer font-mono text-sm select-none"
                 style=${{ color: theme.inactive }}
               >
                 Card creator
               </summary>
-              <div class="grid gap-x-3 gap-y-2 mt-4 p-4 rounded border transition-colors duration-300 items-center"
+              <div
+                class="grid gap-x-3 gap-y-2 mt-4 p-4 rounded border transition-colors duration-300 items-center"
                 style=${{
                   borderColor: theme.subtle,
                   backgroundColor: theme.subtle,
                   gridTemplateColumns: "auto 1fr auto",
-                }}>
-                    <${Selector}
-                      label="Species"
-                      options=${SPECIES}
-                      value=${bones.species}
-                      onChange=${(v) => updateBones({ ...bones, species: v })}
+                }}
+              >
+                <${Selector}
+                  label="Species"
+                  options=${SPECIES}
+                  value=${bones.species}
+                  onChange=${(v) => updateBones({ ...bones, species: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  label="Eyes"
+                  options=${EYES}
+                  value=${bones.eye}
+                  onChange=${(v) => updateBones({ ...bones, eye: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  label="Hat"
+                  options=${HATS}
+                  value=${bones.hat}
+                  onChange=${(v) => updateBones({ ...bones, hat: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  label="Rarity"
+                  options=${RARITIES}
+                  value=${bones.rarity}
+                  onChange=${(v) => updateBones({ ...bones, rarity: v })}
+                  theme=${theme}
+                />
+                <span
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Shiny</span
+                >
+                <input
+                  type="checkbox"
+                  checked=${bones.shiny}
+                  onChange=${(e) =>
+                    updateBones({ ...bones, shiny: e.target.checked })}
+                  class="justify-self-start"
+                  style=${{ gridColumn: "2 / -1" }}
+                />
+                ${STAT_NAMES.map(
+                  (name) => html`
+                    <${StatSlider}
+                      key=${name}
+                      name=${name}
+                      value=${bones.stats[name]}
+                      onChange=${(v) =>
+                        updateBones({
+                          ...bones,
+                          stats: { ...bones.stats, [name]: v },
+                        })}
                       theme=${theme}
                     />
-                    <${Selector}
-                      label="Eyes"
-                      options=${EYES}
-                      value=${bones.eye}
-                      onChange=${(v) => updateBones({ ...bones, eye: v })}
-                      theme=${theme}
-                    />
-                    <${Selector}
-                      label="Hat"
-                      options=${HATS}
-                      value=${bones.hat}
-                      onChange=${(v) => updateBones({ ...bones, hat: v })}
-                      theme=${theme}
-                    />
-                    <${Selector}
-                      label="Rarity"
-                      options=${RARITIES}
-                      value=${bones.rarity}
-                      onChange=${(v) => updateBones({ ...bones, rarity: v })}
-                      theme=${theme}
-                    />
-                    <span class="font-mono text-sm" style=${{ color: theme.inactive }}>Shiny</span>
-                    <input
-                      type="checkbox"
-                      checked=${bones.shiny}
-                      onChange=${(e) => updateBones({ ...bones, shiny: e.target.checked })}
-                      class="justify-self-start"
-                      style=${{ gridColumn: "2 / -1" }}
-                    />
-                  ${STAT_NAMES.map(
-                    (name) => html`
-                      <${StatSlider}
-                        key=${name}
-                        name=${name}
-                        value=${bones.stats[name]}
-                        onChange=${(v) => updateBones({ ...bones, stats: { ...bones.stats, [name]: v } })}
-                        theme=${theme}
-                      />
-                    `,
-                  )}
+                  `,
+                )}
               </div>
             </details>
           </div>
