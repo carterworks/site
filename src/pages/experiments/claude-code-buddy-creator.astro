@@ -60,6 +60,10 @@ const { url } = Astro;
       rel="sitemap"
       href="/sitemap-index.xml"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap"
+    />
     <ClientRouter />
 
     <slot name="head" />
@@ -90,6 +94,8 @@ const { url } = Astro;
       } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
+      const MONO_FONT_FAMILY =
+        '"Geist Mono", var(--font-monospace-code)';
 
       // Port of
       // #region Theme
@@ -1621,7 +1627,11 @@ const { url } = Astro;
        * @param {number} continuationWidth
        * @returns {string[]}
        */
-      function wrapCardSegment(text, firstWidth, continuationWidth = firstWidth) {
+      function wrapCardSegment(
+        text,
+        firstWidth,
+        continuationWidth = firstWidth,
+      ) {
         const source = text.trim();
         if (!source) return [" "];
 
@@ -2006,10 +2016,9 @@ const { url } = Astro;
           [bones, seed, soul],
         );
         const fontSize = useMemo(() => {
-          const family = "var(--font-monospace-code)";
           for (let size = 16; size >= 10; size--) {
             try {
-              const p = prepare(cardText, size + "px " + family);
+              const p = prepare(cardText, size + "px " + MONO_FONT_FAMILY);
               const { height } = layout(p, 600, Math.round(size * 1.4));
               // If it doesn't wrap (lineCount matches our line count), this size works
               if (height <= cardText.split("\n").length * size * 1.4 + 4)
@@ -2082,11 +2091,9 @@ const { url } = Astro;
             const tail = line.slice(-2);
             return html`<span style=${{ color: accentColor }}>${B.v}</span
               ><span
-                style=${
-                  i === 1 ?
-                    { color: accentColor, fontWeight: "bold" }
-                  : { color: theme.inactive }
-                }
+                style=${i === 1 ?
+                  { color: accentColor, fontWeight: "bold" }
+                : { color: theme.inactive }}
                 >${content}</span
               ><span style=${{ color: accentColor }}>${tail}</span>`;
           }
@@ -2153,7 +2160,7 @@ const { url } = Astro;
                 ref=${preRef}
                 class="leading-snug"
                 style=${{
-                  fontFamily: "var(--font-monospace-code)",
+                  fontFamily: MONO_FONT_FAMILY,
                   fontSize: fontSize + "px",
                   lineHeight: "1.4",
                   color: theme.text,
@@ -2402,7 +2409,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         return html`
           <label
             for=${inputId}
-            class="font-mono text-sm self-center"
+            class="geist-mono text-sm self-center"
             style=${{ color: theme.inactive }}
             >${label}</label
           >
@@ -2416,7 +2423,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               backgroundColor: theme.userMessageBackground,
               color: theme.text,
               borderColor: theme.inactive,
-              fontFamily: "var(--font-monospace-code)",
+              fontFamily: MONO_FONT_FAMILY,
             }}
           >
             ${options.map(
@@ -2440,7 +2447,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         return html`
           <label
             for=${inputId}
-            class="font-mono text-xs self-center"
+            class="geist-mono text-xs self-center"
             style=${{ color: theme.inactive }}
             >${name}</label
           >
@@ -2453,7 +2460,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             onInput=${(e) => onChange(Number(e.target.value))}
           />
           <span
-            class="font-mono text-xs self-center"
+            class="geist-mono text-xs self-center"
             style=${{ color: theme.text, textAlign: "right" }}
             >${value}</span
           >
@@ -2603,7 +2610,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 value=${seed}
                 onInput=${onSeedInput}
                 placeholder="Enter a seed"
-                class="flex-1 px-3 py-2 rounded border font-mono text-sm transition-colors duration-300 outline-none"
+                class="geist-mono flex-1 px-3 py-2 rounded border text-sm transition-colors duration-300 outline-none"
                 style=${{
                   backgroundColor: theme.userMessageBackground,
                   color: theme.text,
@@ -2613,7 +2620,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               <button
                 onClick=${randomize}
                 aria-label="Generate random seed"
-                class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
+                class="geist-mono px-4 py-2 rounded text-sm transition-colors duration-300 cursor-pointer border"
                 style=${{ borderColor: theme.inactive, color: theme.text }}
                 title="Random seed"
               >
@@ -2633,20 +2640,20 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 <div class="flex gap-2 items-center flex-wrap justify-center">
                   <button
                     onClick=${onCopy}
-                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    class="geist-mono px-3 py-1.5 rounded text-xs transition-colors duration-300 cursor-pointer border"
                     style=${{ borderColor: theme.inactive, color: theme.text }}
                   >
                     ${copied ? "Copied!" : "Copy as text"}
                   </button>
                   <button
                     onClick=${exportGerm}
-                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    class="geist-mono px-3 py-1.5 rounded text-xs transition-colors duration-300 cursor-pointer border"
                     style=${{ borderColor: theme.inactive, color: theme.text }}
                   >
                     ${germCopied ? "Link copied!" : "Copy share link"}
                   </button>
                   <span
-                    class="font-mono text-xs"
+                    class="geist-mono text-xs"
                     style=${{ color: theme.inactive }}
                   >
                     seed:
@@ -2663,7 +2670,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               open=${initialParsed.isGerm}
             >
               <summary
-                class="cursor-pointer font-mono text-sm select-none"
+                class="geist-mono cursor-pointer text-sm select-none"
                 style=${{ color: theme.inactive }}
               >
                 Card creator
@@ -2710,7 +2717,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 />
                 <label
                   for=${nameInputId}
-                  class="font-mono text-sm"
+                  class="geist-mono text-sm"
                   style=${{ color: theme.inactive }}
                   >Name</label
                 >
@@ -2725,12 +2732,12 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                     backgroundColor: theme.userMessageBackground,
                     color: theme.text,
                     borderColor: theme.inactive,
-                    fontFamily: "var(--font-monospace-code)",
+                    fontFamily: MONO_FONT_FAMILY,
                   }}
                 />
                 <label
                   for=${personalityInputId}
-                  class="font-mono text-sm"
+                  class="geist-mono text-sm"
                   style=${{ color: theme.inactive }}
                   >Personality</label
                 >
@@ -2745,12 +2752,12 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                     backgroundColor: theme.userMessageBackground,
                     color: theme.text,
                     borderColor: theme.inactive,
-                    fontFamily: "var(--font-monospace-code)",
+                    fontFamily: MONO_FONT_FAMILY,
                   }}
                 />
                 <label
                   for=${shinyInputId}
-                  class="font-mono text-sm"
+                  class="geist-mono text-sm"
                   style=${{ color: theme.inactive }}
                   >Shiny</label
                 >
@@ -2874,6 +2881,10 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         color: var(--claude, rgb(215, 119, 87));
         text-shadow: 0 0 30px rgba(215, 119, 87, 0.35);
         letter-spacing: -0.02em;
+      }
+
+      .geist-mono {
+        font-family: "Geist Mono", var(--font-monospace-code);
       }
 
       /* --- Button & control micro-interactions --- */
