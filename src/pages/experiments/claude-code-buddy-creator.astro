@@ -1671,6 +1671,78 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         return Array.from(bytes, (b) => alphabet[b & 31]).join("");
       }
 
+      // #region Germ encoding/decoding
+      // Pack bones into bits, base64url encode. Layout (50 bits, 7 bytes padded):
+      // species:5 | eye:3 | hat:3 | rarity:3 | shiny:1 | stat*5:7each(=35) = 50 bits
+
+      /**
+       * @param {CompanionBones} bones
+       * @returns {string}
+       */
+      function encodeGerm(bones) {
+        const bits = [];
+        const push = (val, n) => {
+          for (let i = n - 1; i >= 0; i--) bits.push((val >> i) & 1);
+        };
+        push(SPECIES.indexOf(bones.species), 5);
+        push(EYES.indexOf(bones.eye), 3);
+        push(HATS.indexOf(bones.hat), 3);
+        push(RARITIES.indexOf(bones.rarity), 3);
+        push(bones.shiny ? 1 : 0, 1);
+        for (const n of STAT_NAMES) push(Math.max(1, Math.min(100, bones.stats[n])), 7);
+        // Pad to full bytes
+        while (bits.length % 8) bits.push(0);
+        const bytes = new Uint8Array(bits.length / 8);
+        for (let i = 0; i < bytes.length; i++) {
+          let b = 0;
+          for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j];
+          bytes[i] = b;
+        }
+        // base64url (no padding)
+        return btoa(String.fromCharCode(...bytes))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      /**
+       * @param {string} germ
+       * @returns {CompanionBones|null}
+       */
+      function decodeGerm(germ) {
+        try {
+          const b64 = germ.replace(/-/g, "+").replace(/_/g, "/");
+          const raw = atob(b64);
+          const bits = [];
+          for (let i = 0; i < raw.length; i++) {
+            const b = raw.charCodeAt(i);
+            for (let j = 7; j >= 0; j--) bits.push((b >> j) & 1);
+          }
+          let pos = 0;
+          const read = (n) => {
+            let v = 0;
+            for (let i = 0; i < n; i++) v = (v << 1) | (bits[pos++] || 0);
+            return v;
+          };
+          const si = read(5), ei = read(3), hi = read(3), ri = read(3), sh = read(1);
+          if (si >= SPECIES.length || ei >= EYES.length || hi >= HATS.length || ri >= RARITIES.length) return null;
+          /** @type {Record<StatName, number>} */
+          const stats = {};
+          for (const n of STAT_NAMES) stats[n] = Math.max(1, Math.min(100, read(7)));
+          return {
+            species: SPECIES[si],
+            eye: EYES[ei],
+            hat: HATS[hi],
+            rarity: RARITIES[ri],
+            shiny: sh === 1,
+            stats,
+          };
+        } catch {
+          return null;
+        }
+      }
+      // #endregion
+
       /** @returns {string} */
       function getSeedFromURL() {
         return new URLSearchParams(window.location.search).get("seed") || "";
@@ -1684,45 +1756,109 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         window.history.replaceState(null, "", url);
       }
 
+      /**
+       * Try to extract bones from a seed. If it starts with "germ:" try decoding;
+       * on failure fall back to treating the whole string as a normal seed.
+       * @param {string} seed
+       * @returns {{ bones: CompanionBones, isGerm: boolean }}
+       */
+      function bonesFromSeed(seed) {
+        if (seed.startsWith("germ:")) {
+          const decoded = decodeGerm(seed.slice(5));
+          if (decoded) return { bones: decoded, isGerm: true };
+        }
+        return { bones: roll(seed).bones, isGerm: false };
+      }
+
+      /**
+       * Selector row — renders as two grid children (label + select)
+       * @param {{ label: string, options: string[], value: string, onChange: (v: string) => void, theme: Theme }} props
+       */
+      function Selector({ label, options, value, onChange, theme }) {
+        return html`
+          <span class="font-mono text-sm self-center" style=${{ color: theme.inactive }}>${label}</span>
+          <select
+            value=${value}
+            onChange=${(e) => onChange(e.target.value)}
+            class="px-2 py-1 rounded border text-sm transition-colors duration-300"
+            style=${{
+              gridColumn: "2 / -1",
+              backgroundColor: theme.userMessageBackground,
+              color: theme.text,
+              borderColor: theme.inactive,
+              fontFamily: "var(--font-monospace-code)",
+            }}
+          >
+            ${options.map(
+              (o) => html`<option key=${o} value=${o}>${o}</option>`,
+            )}
+          </select>
+        `;
+      }
+
+      /**
+       * Stat slider row — renders as three grid children (label + slider + value)
+       * @param {{ name: string, value: number, onChange: (v: number) => void, theme: Theme }} props
+       */
+      function StatSlider({ name, value, onChange, theme }) {
+        return html`
+          <span class="font-mono text-xs self-center" style=${{ color: theme.inactive }}>${name}</span>
+          <input
+            type="range"
+            min="1"
+            max="100"
+            value=${value}
+            onInput=${(e) => onChange(Number(e.target.value))}
+          />
+          <span class="font-mono text-xs self-center" style=${{ color: theme.text, textAlign: "right" }}>${value}</span>
+        `;
+      }
+
       function BuddyCreator() {
         const initialSeed = useMemo(() => getSeedFromURL() || randomSeed(), []);
+        const initialParsed = useMemo(() => bonesFromSeed(initialSeed), []);
+
         const [seed, setSeed] = useState(initialSeed);
-        const [result, setResult] = useState(() => {
-          const { bones } = roll(initialSeed);
-          return { bones, seed: initialSeed };
-        });
+        const [result, setResult] = useState(() => ({
+          bones: initialParsed.bones,
+          seed: initialSeed,
+        }));
         const [themeName] = useTheme();
         const theme = getTheme(themeName);
         const [copied, setCopied] = useState(false);
+        const [germCopied, setGermCopied] = useState(false);
 
         useEffect(() => {
           setSeedInURL(initialSeed);
         }, []);
 
-        const generate = useCallback(() => {
-          const s = seed.trim() || randomSeed();
-          if (!seed.trim()) setSeed(s);
-          setSeedInURL(s);
-          const { bones } = roll(s);
-          setResult({ bones, seed: s });
+        /** Update bones via the creator, syncing seed/URL to a germ */
+        const updateBones = useCallback((newBones) => {
+          const germSeed = "germ:" + encodeGerm(newBones);
+          setSeed(germSeed);
+          setSeedInURL(germSeed);
+          setResult({ bones: newBones, seed: germSeed });
           setCopied(false);
-        }, [seed]);
+        }, []);
+
+        const onSeedInput = useCallback((e) => {
+          const s = e.target.value;
+          setSeed(s);
+          const effective = s.trim() || initialSeed;
+          setSeedInURL(effective);
+          const { bones } = bonesFromSeed(effective);
+          setResult({ bones, seed: effective });
+          setCopied(false);
+        }, [initialSeed]);
 
         const randomize = useCallback(() => {
           const s = randomSeed();
           setSeed(s);
           setSeedInURL(s);
-          const { bones } = roll(s);
+          const { bones } = bonesFromSeed(s);
           setResult({ bones, seed: s });
           setCopied(false);
         }, []);
-
-        const onKeyDown = useCallback(
-          (e) => {
-            if (e.key === "Enter") generate();
-          },
-          [generate],
-        );
 
         const onCopy = useCallback(() => {
           if (!result) return;
@@ -1730,6 +1866,20 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }, [result]);
+
+        const exportGerm = useCallback(() => {
+          if (!result) return;
+          const germSeed = "germ:" + encodeGerm(result.bones);
+          const url = new URL(window.location);
+          url.search = "";
+          url.searchParams.set("seed", germSeed);
+          navigator.clipboard.writeText(url.toString());
+          setGermCopied(true);
+          setTimeout(() => setGermCopied(false), 2000);
+        }, [result]);
+
+        // Creator controls derived from current bones
+        const bones = result.bones;
 
         return html`
           <div class="flex flex-col gap-6">
@@ -1756,9 +1906,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               <input
                 type="text"
                 value=${seed}
-                onInput=${(e) => setSeed(e.target.value)}
-                onKeyDown=${onKeyDown}
-                placeholder="Enter a seed (or leave blank for random)"
+                onInput=${onSeedInput}
+                placeholder="Enter a seed"
                 class="flex-1 px-3 py-2 rounded border font-mono text-sm transition-colors duration-300 outline-none"
                 style=${{
                   backgroundColor: theme.userMessageBackground,
@@ -1766,16 +1915,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   borderColor: theme.inactive,
                 }}
               />
-              <button
-                onClick=${generate}
-                class="px-4 py-2 rounded font-mono text-sm font-bold transition-colors duration-300 cursor-pointer"
-                style=${{
-                  backgroundColor: theme.claude,
-                  color: theme.inverseText,
-                }}
-              >
-                Hatch
-              </button>
               <button
                 onClick=${randomize}
                 class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
@@ -1793,7 +1932,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   bones=${result.bones}
                   seed=${result.seed}
                 />
-                <div class="flex gap-2 items-center">
+                <div class="flex gap-2 items-center flex-wrap justify-center">
                   <button
                     onClick=${onCopy}
                     class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
@@ -1801,66 +1940,85 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   >
                     ${copied ? "Copied!" : "Copy as text"}
                   </button>
+                  <button
+                    onClick=${exportGerm}
+                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                  >
+                    ${germCopied ? "Link copied!" : "Copy share link"}
+                  </button>
                   <span
                     class="font-mono text-xs"
                     style=${{ color: theme.inactive }}
                   >
-                    seed:
-                    ${result.seed.length > 24 ?
-                      result.seed.slice(0, 24) + "..."
-                    : result.seed}
+                    seed: ${result.seed.length > 24
+                      ? result.seed.slice(0, 24) + "..."
+                      : result.seed}
                   </span>
                 </div>
               </div>
             `}
 
-            <details class="mt-4">
+            <details class="mt-4" open=${initialParsed.isGerm}>
               <summary
                 class="cursor-pointer font-mono text-sm select-none"
                 style=${{ color: theme.inactive }}
               >
-                Browse all species
+                Card creator
               </summary>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                ${SPECIES.map((species) => {
-                  const previewBones = {
-                    species,
-                    eye: "·",
-                    hat: "none",
-                    rarity: "common",
-                    shiny: false,
-                    stats: {},
-                  };
-                  return html`
-                    <div
-                      key=${species}
-                      class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300 cursor-pointer"
-                      style=${{
-                        borderColor: theme.subtle,
-                        backgroundColor: theme.subtle,
-                      }}
-                      onClick=${() => {
-                        setSeed(species);
-                        setSeedInURL(species);
-                        const { bones } = roll(species);
-                        setResult({ bones, seed: species });
-                        setCopied(false);
-                      }}
-                    >
-                      <pre
-                        class="font-mono text-xs leading-tight select-none"
-                        style=${{ color: theme.text }}
-                      >
-${renderSprite(previewBones, 0).join("\n")}</pre
-                      >
-                      <span
-                        class="font-mono text-xs"
-                        style=${{ color: theme.inactive }}
-                        >${species}</span
-                      >
-                    </div>
-                  `;
-                })}
+              <div class="grid gap-x-3 gap-y-2 mt-4 p-4 rounded border transition-colors duration-300 items-center"
+                style=${{
+                  borderColor: theme.subtle,
+                  backgroundColor: theme.subtle,
+                  gridTemplateColumns: "auto 1fr auto",
+                }}>
+                    <${Selector}
+                      label="Species"
+                      options=${SPECIES}
+                      value=${bones.species}
+                      onChange=${(v) => updateBones({ ...bones, species: v })}
+                      theme=${theme}
+                    />
+                    <${Selector}
+                      label="Eyes"
+                      options=${EYES}
+                      value=${bones.eye}
+                      onChange=${(v) => updateBones({ ...bones, eye: v })}
+                      theme=${theme}
+                    />
+                    <${Selector}
+                      label="Hat"
+                      options=${HATS}
+                      value=${bones.hat}
+                      onChange=${(v) => updateBones({ ...bones, hat: v })}
+                      theme=${theme}
+                    />
+                    <${Selector}
+                      label="Rarity"
+                      options=${RARITIES}
+                      value=${bones.rarity}
+                      onChange=${(v) => updateBones({ ...bones, rarity: v })}
+                      theme=${theme}
+                    />
+                    <span class="font-mono text-sm" style=${{ color: theme.inactive }}>Shiny</span>
+                    <input
+                      type="checkbox"
+                      checked=${bones.shiny}
+                      onChange=${(e) => updateBones({ ...bones, shiny: e.target.checked })}
+                      class="justify-self-start"
+                      style=${{ gridColumn: "2 / -1" }}
+                    />
+                  ${STAT_NAMES.map(
+                    (name) => html`
+                      <${StatSlider}
+                        key=${name}
+                        name=${name}
+                        value=${bones.stats[name]}
+                        onChange=${(v) => updateBones({ ...bones, stats: { ...bones.stats, [name]: v } })}
+                        theme=${theme}
+                      />
+                    `,
+                  )}
               </div>
             </details>
           </div>
