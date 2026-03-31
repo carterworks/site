@@ -77,7 +77,7 @@ const { url } = Astro;
 
     <script type="module" is:inline>
       import { h, render } from "https://esm.sh/preact@10";
-      import { useState, useEffect, useMemo } from "https://esm.sh/preact@10/hooks";
+      import { useState, useEffect, useMemo, useRef, useCallback } from "https://esm.sh/preact@10/hooks";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
 
@@ -643,6 +643,245 @@ const { url } = Astro;
       };
       // #endregion
 
+      // #region Sprites
+      // Each sprite is 5 lines tall, 12 wide (after {E}→1char substitution).
+      // Multiple frames per species for idle fidget animation.
+      // Line 0 is the hat slot — must be blank in frames 0-1; frame 2 may use it.
+      /** @type {Record<Species, string[][]>} */
+      const BODIES = {
+        [duck]: [
+          ['            ', '    __      ', '  <({E} )___  ', '   (  ._>   ', '    `--´    '],
+          ['            ', '    __      ', '  <({E} )___  ', '   (  ._>   ', '    `--´~   '],
+          ['            ', '    __      ', '  <({E} )___  ', '   (  .__>  ', '    `--´    '],
+        ],
+        [goose]: [
+          ['            ', '     ({E}>    ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
+          ['            ', '    ({E}>     ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
+          ['            ', '     ({E}>>   ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
+        ],
+        [blob]: [
+          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (      )  ', '   `----´   '],
+          ['            ', '  .------.  ', ' (  {E}  {E}  ) ', ' (        ) ', '  `------´  '],
+          ['            ', '    .--.    ', '   ({E}  {E})   ', '   (    )   ', '    `--´    '],
+        ],
+        [cat]: [
+          ['            ', '   /\\_/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")   '],
+          ['            ', '   /\\_/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")~  '],
+          ['            ', '   /\\-/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")   '],
+        ],
+        [dragon]: [
+          ['            ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (   ~~   ) ', '  `-vvvv-´  '],
+          ['            ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (        ) ', '  `-vvvv-´  '],
+          ['   ~    ~   ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (   ~~   ) ', '  `-vvvv-´  '],
+        ],
+        [octopus]: [
+          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  /\\/\\/\\/\\  '],
+          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  \\/\\/\\/\\/  '],
+          ['     o      ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  /\\/\\/\\/\\  '],
+        ],
+        [owl]: [
+          ['            ', '   /\\  /\\   ', '  (({E})({E}))  ', '  (  ><  )  ', '   `----´   '],
+          ['            ', '   /\\  /\\   ', '  (({E})({E}))  ', '  (  ><  )  ', '   .----.   '],
+          ['            ', '   /\\  /\\   ', '  (({E})(-))  ', '  (  ><  )  ', '   `----´   '],
+        ],
+        [penguin]: [
+          ['            ', '  .---.     ', '  ({E}>{E})     ', ' /(   )\\    ', '  `---´     '],
+          ['            ', '  .---.     ', '  ({E}>{E})     ', ' |(   )|    ', '  `---´     '],
+          ['  .---.     ', '  ({E}>{E})     ', ' /(   )\\    ', '  `---´     ', '   ~ ~      '],
+        ],
+        [turtle]: [
+          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[______]\\ ', '  ``    ``  '],
+          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[______]\\ ', '   ``  ``   '],
+          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[======]\\ ', '  ``    ``  '],
+        ],
+        [snail]: [
+          ['            ', ' {E}    .--.  ', '  \\  ( @ )  ', '   \\_`--´   ', '  ~~~~~~~   '],
+          ['            ', '  {E}   .--.  ', '  |  ( @ )  ', '   \\_`--´   ', '  ~~~~~~~   '],
+          ['            ', ' {E}    .--.  ', '  \\  ( @  ) ', '   \\_`--´   ', '   ~~~~~~   '],
+        ],
+        [ghost]: [
+          ['            ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  ~`~``~`~  '],
+          ['            ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  `~`~~`~`  '],
+          ['    ~  ~    ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  ~~`~~`~~  '],
+        ],
+        [axolotl]: [
+          ['            ', '}~(______)~{', '}~({E} .. {E})~{', '  ( .--. )  ', '  (_/  \\_)  '],
+          ['            ', '~}(______){~', '~}({E} .. {E}){~', '  ( .--. )  ', '  (_/  \\_)  '],
+          ['            ', '}~(______)~{', '}~({E} .. {E})~{', '  (  --  )  ', '  ~_/  \\_~  '],
+        ],
+        [capybara]: [
+          ['            ', '  n______n  ', ' ( {E}    {E} ) ', ' (   oo   ) ', '  `------´  '],
+          ['            ', '  n______n  ', ' ( {E}    {E} ) ', ' (   Oo   ) ', '  `------´  '],
+          ['    ~  ~    ', '  u______n  ', ' ( {E}    {E} ) ', ' (   oo   ) ', '  `------´  '],
+        ],
+        [cactus]: [
+          ['            ', ' n  ____  n ', ' | |{E}  {E}| | ', ' |_|    |_| ', '   |    |   '],
+          ['            ', '    ____    ', ' n |{E}  {E}| n ', ' |_|    |_| ', '   |    |   '],
+          [' n        n ', ' |  ____  | ', ' | |{E}  {E}| | ', ' |_|    |_| ', '   |    |   '],
+        ],
+        [robot]: [
+          ['            ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ ==== ]  ', '  `------´  '],
+          ['            ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ -==- ]  ', '  `------´  '],
+          ['     *      ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ ==== ]  ', '  `------´  '],
+        ],
+        [rabbit]: [
+          ['            ', '   (\\__/)   ', '  ( {E}  {E} )  ', ' =(  ..  )= ', '  (")__(")  '],
+          ['            ', '   (|__/)   ', '  ( {E}  {E} )  ', ' =(  ..  )= ', '  (")__(")  '],
+          ['            ', '   (\\__/)   ', '  ( {E}  {E} )  ', ' =( .  . )= ', '  (")__(")  '],
+        ],
+        [mushroom]: [
+          ['            ', ' .-o-OO-o-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
+          ['            ', ' .-O-oo-O-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
+          ['   . o  .   ', ' .-o-OO-o-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
+        ],
+        [chonk]: [
+          ['            ', '  /\\    /\\  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´  '],
+          ['            ', '  /\\    /|  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´  '],
+          ['            ', '  /\\    /\\  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´~ '],
+        ],
+      };
+
+      /** @type {Record<Hat, string>} */
+      const HAT_LINES = {
+        none: '',
+        crown: '   \\^^^/    ',
+        tophat: '   [___]    ',
+        propeller: '    -+-     ',
+        halo: '   (   )    ',
+        wizard: '    /^\\     ',
+        beanie: '   (___)    ',
+        tinyduck: '    ,>      ',
+      };
+
+      /**
+       * @param {CompanionBones} bones
+       * @param {number} [frame=0]
+       * @returns {string[]}
+       */
+      function renderSprite(bones, frame = 0) {
+        const frames = BODIES[bones.species];
+        const body = frames[frame % frames.length].map(line =>
+          line.replaceAll('{E}', bones.eye),
+        );
+        const lines = [...body];
+        if (bones.hat !== 'none' && !lines[0].trim()) {
+          lines[0] = HAT_LINES[bones.hat];
+        }
+        if (!lines[0].trim() && frames.every(f => !f[0].trim())) lines.shift();
+        return lines;
+      }
+
+      /**
+       * @param {Species} species
+       * @returns {number}
+       */
+      function spriteFrameCount(species) {
+        return BODIES[species].length;
+      }
+      // #endregion
+
+      // #region Companion Generation
+      /** Mulberry32 — tiny seeded PRNG */
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+          a |= 0;
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function hashString(s) {
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) {
+          h ^= s.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      function pick(rng, arr) {
+        return arr[Math.floor(rng() * arr.length)];
+      }
+
+      /** @returns {Rarity} */
+      function rollRarity(rng) {
+        const total = Object.values(RARITY_WEIGHTS).reduce((a, b) => a + b, 0);
+        let roll = rng() * total;
+        for (const rarity of RARITIES) {
+          roll -= RARITY_WEIGHTS[rarity];
+          if (roll < 0) return rarity;
+        }
+        return 'common';
+      }
+
+      const RARITY_FLOOR = {
+        common: 5,
+        uncommon: 15,
+        rare: 25,
+        epic: 35,
+        legendary: 50,
+      };
+
+      function rollStats(rng, rarity) {
+        const floor = RARITY_FLOOR[rarity];
+        const peak = pick(rng, STAT_NAMES);
+        let dump = pick(rng, STAT_NAMES);
+        while (dump === peak) dump = pick(rng, STAT_NAMES);
+
+        /** @type {Record<StatName, number>} */
+        const stats = {};
+        for (const name of STAT_NAMES) {
+          if (name === peak) {
+            stats[name] = Math.min(100, floor + 50 + Math.floor(rng() * 30));
+          } else if (name === dump) {
+            stats[name] = Math.max(1, floor - 10 + Math.floor(rng() * 15));
+          } else {
+            stats[name] = floor + Math.floor(rng() * 40);
+          }
+        }
+        return stats;
+      }
+
+      const SALT = 'friend-2026-401';
+
+      /**
+       * @param {() => number} rng
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function rollFrom(rng) {
+        const rarity = rollRarity(rng);
+        /** @type {CompanionBones} */
+        const bones = {
+          rarity,
+          species: pick(rng, SPECIES),
+          eye: pick(rng, EYES),
+          hat: rarity === 'common' ? 'none' : pick(rng, HATS),
+          shiny: rng() < 0.01,
+          stats: rollStats(rng, rarity),
+        };
+        return { bones, inspirationSeed: Math.floor(rng() * 1e9) };
+      }
+
+      /**
+       * @param {string} seed
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function rollWithSeed(seed) {
+        return rollFrom(mulberry32(hashString(seed)));
+      }
+
+      /**
+       * @param {string} userId
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function roll(userId) {
+        return rollFrom(mulberry32(hashString(userId + SALT)));
+      }
+      // #endregion
+
       // #region Theme Switcher
 
       // --- localStorage-backed signal abstraction ---
@@ -742,7 +981,212 @@ const { url } = Astro;
         document.getElementById("theme-switcher"),
       );
       // #endregion
-      // #theme
+
+      // #region Buddy Creator App
+
+      const IDLE_SEQUENCE = [0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 2, 0, 0, 0];
+      const TICK_MS = 500;
+
+      /** Animated sprite display */
+      function SpriteDisplay({ bones }) {
+        const [tick, setTick] = useState(0);
+        useEffect(() => {
+          const id = setInterval(() => setTick(t => t + 1), TICK_MS);
+          return () => clearInterval(id);
+        }, []);
+
+        const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
+        const frame = frameIdx === -1 ? 0 : frameIdx;
+        const lines = renderSprite(bones, frame);
+
+        // Blink: replace eyes with - on frame -1
+        const displayLines = frameIdx === -1
+          ? lines.map(l => l.replaceAll(bones.eye, '-'))
+          : lines;
+
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
+        const spriteColor = bones.shiny ? theme.warning : rarityColor;
+
+        return html`
+          <pre
+            class="font-mono text-base leading-tight select-none text-center"
+            style=${{ color: spriteColor }}
+          >${displayLines.join('\n')}</pre>
+        `;
+      }
+
+      /** Stat bar */
+      function StatBar({ name, value, theme }) {
+        const filled = Math.round(value / 5);
+        const bar = '█'.repeat(filled) + '░'.repeat(20 - filled);
+        return html`
+          <div class="flex items-center gap-2 font-mono text-xs">
+            <span class="w-24 text-right" style=${{ color: theme.inactive }}>${name}</span>
+            <span style=${{ color: theme.claude }}>${bar}</span>
+            <span class="w-8 text-right" style=${{ color: theme.text }}>${value}</span>
+          </div>
+        `;
+      }
+
+      /** Rarity badge */
+      function RarityBadge({ rarity }) {
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const color = theme[RARITY_COLORS[rarity]] || theme.text;
+        const stars = RARITY_STARS[rarity];
+        return html`
+          <span
+            class="font-mono text-sm font-bold uppercase tracking-wider"
+            style=${{ color }}
+          >${rarity} ${stars}</span>
+        `;
+      }
+
+      /** Card for a generated buddy */
+      function BuddyCard({ bones }) {
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+
+        return html`
+          <div
+            class="rounded-lg border p-6 transition-colors duration-300 flex flex-col items-center gap-4"
+            style=${{
+              borderColor: theme.inactive,
+              backgroundColor: theme.subtle,
+            }}
+          >
+            <${SpriteDisplay} bones=${bones} />
+
+            <div class="flex flex-col items-center gap-1">
+              <span class="font-mono text-xs uppercase tracking-wider" style=${{ color: theme.inactive }}>
+                ${bones.species}${bones.shiny ? ' ✨ SHINY' : ''}
+              </span>
+              <${RarityBadge} rarity=${bones.rarity} />
+              <span class="font-mono text-xs" style=${{ color: theme.inactive }}>
+                eyes: ${bones.eye}${' '}hat: ${bones.hat}
+              </span>
+            </div>
+
+            <div class="w-full flex flex-col gap-1 mt-2">
+              ${STAT_NAMES.map(name => html`
+                <${StatBar} key=${name} name=${name} value=${bones.stats[name]} theme=${theme} />
+              `)}
+            </div>
+          </div>
+        `;
+      }
+
+      /** Main app */
+      function BuddyCreator() {
+        const [seed, setSeed] = useState('');
+        const [result, setResult] = useState(null);
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const inputRef = useRef(null);
+
+        const generate = useCallback(() => {
+          const s = seed.trim() || crypto.randomUUID();
+          if (!seed.trim()) setSeed(s);
+          const { bones } = roll(s);
+          setResult({ bones, seed: s });
+        }, [seed]);
+
+        const randomize = useCallback(() => {
+          const s = crypto.randomUUID();
+          setSeed(s);
+          const { bones } = roll(s);
+          setResult({ bones, seed: s });
+        }, []);
+
+        // Generate on Enter
+        const onKeyDown = useCallback((e) => {
+          if (e.key === 'Enter') generate();
+        }, [generate]);
+
+        return html`
+          <div class="flex flex-col gap-6">
+            <p class="text-sm" style=${{ color: theme.inactive }}>
+              Enter any seed text to deterministically generate a buddy. Same seed always produces the same companion.
+            </p>
+
+            <div class="flex gap-2">
+              <input
+                ref=${inputRef}
+                type="text"
+                value=${seed}
+                onInput=${(e) => setSeed(e.target.value)}
+                onKeyDown=${onKeyDown}
+                placeholder="Enter a seed (or leave blank for random)"
+                class="flex-1 px-3 py-2 rounded border font-mono text-sm transition-colors duration-300 outline-none"
+                style=${{
+                  backgroundColor: theme.userMessageBackground,
+                  color: theme.text,
+                  borderColor: theme.inactive,
+                }}
+              />
+              <button
+                onClick=${generate}
+                class="px-4 py-2 rounded font-mono text-sm font-bold transition-colors duration-300 cursor-pointer"
+                style=${{
+                  backgroundColor: theme.claude,
+                  color: theme.inverseText,
+                }}
+              >Hatch</button>
+              <button
+                onClick=${randomize}
+                class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
+                style=${{
+                  borderColor: theme.inactive,
+                  color: theme.text,
+                }}
+              >🎲</button>
+            </div>
+
+            ${result && html`
+              <div class="flex flex-col gap-2">
+                <div class="text-xs font-mono" style=${{ color: theme.inactive }}>
+                  seed: ${result.seed}
+                </div>
+                <${BuddyCard} bones=${result.bones} />
+              </div>
+            `}
+
+            <!-- Species gallery -->
+            <details class="mt-4">
+              <summary
+                class="cursor-pointer font-mono text-sm select-none"
+                style=${{ color: theme.inactive }}
+              >Browse all species</summary>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                ${SPECIES.map(species => {
+                  const bones = { species, eye: '·', hat: 'none', rarity: 'common', shiny: false, stats: {} };
+                  return html`
+                    <div
+                      key=${species}
+                      class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300"
+                      style=${{ borderColor: theme.subtle, backgroundColor: theme.subtle }}
+                    >
+                      <pre
+                        class="font-mono text-xs leading-tight select-none"
+                        style=${{ color: theme.text }}
+                      >${renderSprite(bones, 0).join('\n')}</pre>
+                      <span class="font-mono text-xs" style=${{ color: theme.inactive }}>${species}</span>
+                    </div>
+                  `;
+                })}
+              </div>
+            </details>
+          </div>
+        `;
+      }
+
+      render(
+        html`<${BuddyCreator} />`,
+        document.getElementById("buddy-app"),
+      );
+      // #endregion
     </script>
   </head>
   <body
@@ -757,11 +1201,13 @@ const { url } = Astro;
         ><Experimental />Back to /experiments</a
       >
     </nav>
-    <main class="p-4">
-      <div class="flex items-baseline justify-between gap-4 mb-4">
+    <main class="max-w-2xl mx-auto p-4">
+      <div class="flex items-baseline justify-between gap-4 mb-6">
         <h1 class="text-2xl font-bold">Claude Code Buddy Creator</h1>
         <div id="theme-switcher"></div>
       </div>
+      <div id="buddy-app"></div>
     </main>
+
   </body>
 </html>
