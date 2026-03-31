@@ -91,6 +91,9 @@ const { url } = Astro;
       import {
         prepare,
         layout,
+        prepareWithSegments,
+        layoutWithLines,
+        layoutNextLine,
       } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
@@ -1525,6 +1528,8 @@ const { url } = Astro;
 
       const IDLE_SEQUENCE = [0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 2, 0, 0, 0];
       const TICK_MS = 500;
+      const CARD_FONT_SIZES = [16, 15, 14, 13, 12, 11, 10];
+      const PRETEXT_MEASURE_SCALE_PX = 16;
 
       // Card inner width in monospace columns (inner = CARD_COLS, total = CARD_COLS + 2 for │ │)
       const CARD_COLS = 34;
@@ -1541,60 +1546,39 @@ const { url } = Astro;
         rt: "┤",
       };
 
+      /** @returns {string} */
+      function getCardLayoutFont() {
+        return `normal ${PRETEXT_MEASURE_SCALE_PX}px ${MONO_FONT_FAMILY}`;
+      }
+
       /**
-       * Use pretext to find max chars of `text` that fit in `maxPx` at given font.
-       * Returns a truncated string (with ellipsis if needed).
+       * Measure a single-line width using Pretext's segmented layout path.
        * @param {string} text
        * @param {string} font
-       * @param {number} maxPx
-       * @returns {string}
+       * @returns {number}
        */
-      function truncateToFit(text, font, maxPx) {
+      function measureTextWidthPx(text, font) {
         try {
-          const prepared = prepare(text, font);
-          const { lineCount } = layout(prepared, maxPx, 100);
-          if (lineCount <= 1) return text;
-          // Binary search for the longest prefix that fits in one line
-          let lo = 0,
-            hi = text.length;
-          while (lo < hi) {
-            const mid = (lo + hi + 1) >> 1;
-            const sub = text.slice(0, mid) + "…";
-            const p = prepare(sub, font);
-            if (layout(p, maxPx, 100).lineCount <= 1) lo = mid;
-            else hi = mid - 1;
-          }
-          return text.slice(0, lo) + "…";
+          const prepared = prepareWithSegments(text || " ", font, {
+            whiteSpace: "pre-wrap",
+          });
+          const lineHeightPx = Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4);
+          const { lines } = layoutWithLines(prepared, Number.MAX_SAFE_INTEGER, lineHeightPx);
+          return lines[0]?.width || 0;
         } catch {
-          // Fallback: simple char truncation
-          return text.length > CARD_COLS - 4 ?
-              text.slice(0, CARD_COLS - 5) + "…"
-            : text;
+          return text.length * PRETEXT_MEASURE_SCALE_PX;
         }
       }
 
-      const TEXT_EXPORT_REPLACEMENTS = {
-        "★": "*",
-        "✦": "*",
-        "×": "x",
-        "◉": "O",
-        "°": "o",
-        "·": ".",
-        "—": "-",
-        "´": "'",
-        ω: "w",
-      };
-
       /**
-       * Keep copied cards aligned in terminals that render some decorative glyphs wider.
-       * @param {string} str
-       * @returns {string}
+       * Convert an intended monospace column count into a Pretext max width.
+       * @param {number} columns
+       * @param {string} font
+       * @returns {number}
        */
-      function toCopySafeText(str) {
-        return Array.from(
-          str,
-          (char) => TEXT_EXPORT_REPLACEMENTS[char] || char,
-        ).join("");
+      function getColumnWidthPx(columns, font) {
+        if (columns <= 0) return 0;
+        return measureTextWidthPx("0".repeat(columns), font);
       }
 
       /**
@@ -1613,10 +1597,36 @@ const { url } = Astro;
        * @param {number} width
        * @returns {string}
        */
-      function truncateCardSegment(text, maxWidth) {
+      function truncateCardSegment(text, maxWidth, font = getCardLayoutFont()) {
         if (maxWidth <= 0) return "";
-        if (text.length <= maxWidth) return text;
-        return maxWidth === 1 ? "…" : text.slice(0, maxWidth - 1) + "…";
+        const maxWidthPx = getColumnWidthPx(maxWidth, font);
+        try {
+          const prepared = prepare(text, font, { whiteSpace: "pre-wrap" });
+          if (layout(prepared, maxWidthPx, Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4)).lineCount <= 1) {
+            return text;
+          }
+
+          let low = 0;
+          let high = text.length;
+          while (low < high) {
+            const mid = (low + high + 1) >> 1;
+            const candidate = (mid >= text.length ? text : text.slice(0, mid) + "…").trimEnd();
+            const preparedCandidate = prepare(candidate, font, {
+              whiteSpace: "pre-wrap",
+            });
+            if (
+              layout(preparedCandidate, maxWidthPx, Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4)).lineCount <= 1
+            ) {
+              low = mid;
+            } else {
+              high = mid - 1;
+            }
+          }
+
+          return low >= text.length ? text : (text.slice(0, low) + "…").trimEnd();
+        } catch {
+          return maxWidth === 1 ? "…" : text.slice(0, maxWidth - 1) + "…";
+        }
       }
 
       /**
@@ -1631,62 +1641,79 @@ const { url } = Astro;
         text,
         firstWidth,
         continuationWidth = firstWidth,
+        font = getCardLayoutFont(),
       ) {
         const source = text.trim();
         if (!source) return [" "];
 
-        const lines = [];
-        let remaining = source;
-        let width = Math.max(1, firstWidth - 1);
+        try {
+          const prepared = prepareWithSegments(source, font, {
+            whiteSpace: "pre-wrap",
+          });
+          const firstWidthPx = getColumnWidthPx(Math.max(1, firstWidth - 1), font);
+          const continuationWidthPx = getColumnWidthPx(
+            Math.max(1, continuationWidth - 1),
+            font,
+          );
 
-        while (remaining.length > 0) {
-          if (remaining.length <= width) {
-            lines.push(" " + remaining);
-            break;
+          const wrapped = [];
+          let cursor = { segmentIndex: 0, graphemeIndex: 0 };
+          let isFirstLine = true;
+          while (true) {
+            const maxWidthPx = isFirstLine ? firstWidthPx : continuationWidthPx;
+            const nextLine = layoutNextLine(prepared, cursor, maxWidthPx);
+            if (nextLine === null) break;
+            wrapped.push(" " + nextLine.text.trimEnd());
+            cursor = nextLine.end;
+            isFirstLine = false;
+          }
+          return wrapped.length > 0 ? wrapped : [" "];
+        } catch {
+          const lines = [];
+          let remaining = source;
+          let width = Math.max(1, firstWidth - 1);
+
+          while (remaining.length > 0) {
+            if (remaining.length <= width) {
+              lines.push(" " + remaining);
+              break;
+            }
+
+            let breakAt = remaining.lastIndexOf(" ", width);
+            if (breakAt <= 0) breakAt = width;
+
+            lines.push(" " + remaining.slice(0, breakAt).trimEnd());
+            remaining = remaining.slice(breakAt).trimStart();
+            width = Math.max(1, continuationWidth - 1);
           }
 
-          let breakAt = remaining.lastIndexOf(" ", width);
-          if (breakAt <= 0) breakAt = width;
-
-          lines.push(" " + remaining.slice(0, breakAt).trimEnd());
-          remaining = remaining.slice(breakAt).trimStart();
-          width = Math.max(1, continuationWidth - 1);
+          return lines;
         }
-
-        return lines;
       }
 
       /**
-       * Build the card lines with configurable text shaping for display vs copy.
+       * Build the card lines once so display and copied output stay identical.
        * @param {CompanionBones} bones
        * @param {string} seed
        * @param {CompanionSoul} [soul]
-       * @param {(text: string) => string} [formatText]
        * @returns {string[]}
        */
-      function buildCardTextInternal(
-        bones,
-        seed,
-        soul,
-        formatText = (text) => text,
-      ) {
+      function buildCardTextInternal(bones, seed, soul) {
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
-        const stars = formatText(RARITY_STARS[bones.rarity]);
-        const species = formatText(
-          bones.species.toUpperCase() + (bones.shiny ? " *" : ""),
-        );
-        const rarity = formatText(bones.rarity.toUpperCase());
-        const hatLabel = formatText(bones.hat !== "none" ? bones.hat : "—");
-        const traits = formatText(bones.eye) + " / " + hatLabel;
-        const personalityAndName = formatText(
+        const layoutFont = getCardLayoutFont();
+        const stars = RARITY_STARS[bones.rarity];
+        const species = bones.species.toUpperCase() + (bones.shiny ? " *" : "");
+        const rarity = bones.rarity.toUpperCase();
+        const hatLabel = bones.hat !== "none" ? bones.hat : "—";
+        const traits = bones.eye + " / " + hatLabel;
+        const personalityAndName =
           [soul?.personality?.trim(), soul?.name?.trim()]
             .filter(Boolean)
             .join(" ")
-            .toUpperCase(),
-        );
+            .toUpperCase();
         const rarityAndSpecies = [rarity, species].join(" ");
-        const spriteLines = renderSprite(bones, 0).map(formatText);
+        const spriteLines = renderSprite(bones, 0);
         const totalStats = Object.values(bones.stats).reduce(
           (a, b) => a + b,
           0,
@@ -1697,10 +1724,12 @@ const { url } = Astro;
           personalityAndName,
           w - traitRight.length,
           w - traitRight.length,
+          layoutFont,
         );
         const rarityLeft = truncateCardSegment(
           " " + rarityAndSpecies,
-          w - traitRight.length,
+          w - headerRight.length,
+          layoutFont,
         );
 
         const lines = [];
@@ -1746,10 +1775,11 @@ const { url } = Astro;
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Footer
         const tot = "TOT " + totalStats;
-        const seedStr =
-          seed.length > inner - tot.length - 2 ?
-            seed.slice(0, inner - tot.length - 3) + "…"
-          : seed;
+        const seedStr = truncateCardSegment(
+          seed,
+          inner - tot.length - 1,
+          layoutFont,
+        );
         lines.push(
           B.v
             + " "
@@ -1777,14 +1807,14 @@ const { url } = Astro;
       }
 
       /**
-       * Build a terminal-stable copy of the card text.
+       * Build a copy of the exact on-screen card text.
        * @param {CompanionBones} bones
        * @param {string} seed
        * @param {CompanionSoul} [soul]
        * @returns {string[]}
        */
       function buildCopyCardText(bones, seed, soul) {
-        return buildCardTextInternal(bones, seed, soul, toCopySafeText);
+        return buildCardTextInternal(bones, seed, soul);
       }
 
       /**
@@ -2015,20 +2045,33 @@ const { url } = Astro;
           () => buildCardText(bones, seed, soul).join("\n"),
           [bones, seed, soul],
         );
+        const preparedCardTextBySize = useMemo(() => {
+          return new Map(
+            CARD_FONT_SIZES.map((size) => {
+              const font = `normal ${size}px ${MONO_FONT_FAMILY}`;
+              return [
+                size,
+                prepare(cardText, font, { whiteSpace: "pre-wrap" }),
+              ];
+            }),
+          );
+        }, [cardText]);
         const fontSize = useMemo(() => {
-          for (let size = 16; size >= 10; size--) {
+          for (const size of CARD_FONT_SIZES) {
             try {
-              const p = prepare(cardText, size + "px " + MONO_FONT_FAMILY);
-              const { height } = layout(p, 600, Math.round(size * 1.4));
+              const preparedCardText = preparedCardTextBySize.get(size);
+              if (!preparedCardText) continue;
+              const lineHeightPx = Math.round(size * 1.4);
+              const { height } = layout(preparedCardText, 600, lineHeightPx);
               // If it doesn't wrap (lineCount matches our line count), this size works
-              if (height <= cardText.split("\n").length * size * 1.4 + 4)
+              if (height <= cardText.split("\n").length * lineHeightPx + 4)
                 return size;
             } catch {
               continue;
             }
           }
           return 12;
-        }, [cardText]);
+        }, [cardText, preparedCardTextBySize]);
 
         // Build the animated version (sprite frame changes per tick)
         const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
@@ -2092,7 +2135,7 @@ const { url } = Astro;
             return html`<span style=${{ color: accentColor }}>${B.v}</span
               ><span
                 style=${i === 1 ?
-                  { color: accentColor, fontWeight: "bold" }
+                  { color: accentColor }
                 : { color: theme.inactive }}
                 >${content}</span
               ><span style=${{ color: accentColor }}>${tail}</span>`;
@@ -2113,7 +2156,7 @@ const { url } = Astro;
             return html`<span style=${{ color: accentColor }}>${B.v}</span
               ><span style=${{ color: theme.inactive }}> ${label}</span
               ><span style=${{ color: accentColor }}>${bar}</span
-              ><span style=${{ color: theme.text, fontWeight: "bold" }}
+              ><span style=${{ color: theme.text }}
                 >${val}</span
               ><span style=${{ color: accentColor }}> ${B.v}</span>`;
           }
