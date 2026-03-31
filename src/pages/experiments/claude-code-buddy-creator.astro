@@ -1,0 +1,3037 @@
+---
+import { ClientRouter } from "astro:transitions";
+import "../../styles/global.css";
+import Experimental from "../../icons/Experimental.astro";
+
+const { url } = Astro;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <meta
+      name="theme-color"
+      content="#fdf6e3"
+    />
+    <meta
+      name="color-scheme"
+      content="light dark"
+    />
+    <meta
+      http-equiv="X-UA-Compatible"
+      content="ie=edge"
+    />
+    <link
+      rel="canonical"
+      href={url}
+    />
+    <meta
+      property="og:url"
+      content={url}
+    />
+    <meta
+      property="og:locale"
+      content="en_US"
+    />
+    <meta
+      property="og:site_name"
+      content="Carter McBride"
+    />
+    <link
+      rel="icon"
+      href="/favicon.svg"
+      type="image/svg+xml"
+    />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href={new URL("/blog/feed.xml", Astro.site)}
+    />
+    <link
+      rel="manifest"
+      href="/manifest.webmanifest"
+    />
+    <link
+      rel="sitemap"
+      href="/sitemap-index.xml"
+    />
+    <ClientRouter />
+
+    <slot name="head" />
+
+    <title>Claude Code Buddy Creator | carter.works</title>
+
+    <meta
+      property="og:title"
+      content="Claude Code Buddy Creator"
+    />
+    <meta
+      property="og:type"
+      content="website"
+    />
+
+    <script type="module" is:inline>
+      import { h, render } from "https://esm.sh/preact@10";
+      import {
+        useState,
+        useEffect,
+        useMemo,
+        useRef,
+        useCallback,
+      } from "https://esm.sh/preact@10/hooks";
+      import {
+        prepare,
+        layout,
+      } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
+      import htm from "https://esm.sh/htm@3";
+      const html = htm.bind(h);
+
+      // Port of
+      // #region Theme
+
+      /**
+       * @typedef {Object} Theme
+       * @property {string} autoAccept
+       * @property {string} bashBorder
+       * @property {string} claude
+       * @property {string} claudeShimmer - Lighter version of claude color for shimmer effect
+       * @property {string} claudeBlue_FOR_SYSTEM_SPINNER
+       * @property {string} claudeBlueShimmer_FOR_SYSTEM_SPINNER
+       * @property {string} permission
+       * @property {string} permissionShimmer - Lighter version of permission color for shimmer effect
+       * @property {string} planMode
+       * @property {string} ide
+       * @property {string} promptBorder
+       * @property {string} promptBorderShimmer - Lighter version of promptBorder color for shimmer effect
+       * @property {string} text
+       * @property {string} inverseText
+       * @property {string} inactive
+       * @property {string} inactiveShimmer - Lighter version of inactive color for shimmer effect
+       * @property {string} subtle
+       * @property {string} suggestion
+       * @property {string} remember
+       * @property {string} background
+       * @property {string} success
+       * @property {string} error
+       * @property {string} warning
+       * @property {string} merged
+       * @property {string} warningShimmer - Lighter version of warning color for shimmer effect
+       * @property {string} diffAdded
+       * @property {string} diffRemoved
+       * @property {string} diffAddedDimmed
+       * @property {string} diffRemovedDimmed
+       * @property {string} diffAddedWord
+       * @property {string} diffRemovedWord
+       * @property {string} red_FOR_SUBAGENTS_ONLY
+       * @property {string} blue_FOR_SUBAGENTS_ONLY
+       * @property {string} green_FOR_SUBAGENTS_ONLY
+       * @property {string} yellow_FOR_SUBAGENTS_ONLY
+       * @property {string} purple_FOR_SUBAGENTS_ONLY
+       * @property {string} orange_FOR_SUBAGENTS_ONLY
+       * @property {string} pink_FOR_SUBAGENTS_ONLY
+       * @property {string} cyan_FOR_SUBAGENTS_ONLY
+       * @property {string} professionalBlue
+       * @property {string} chromeYellow
+       * @property {string} clawd_body
+       * @property {string} clawd_background
+       * @property {string} userMessageBackground
+       * @property {string} userMessageBackgroundHover
+       * @property {string} messageActionsBackground - Cool shift toward suggestion blue; distinct from default AND userMessageBackground.
+       * @property {string} selectionBg - Text-selection highlight background (alt-screen mouse selection).
+       * @property {string} bashMessageBackgroundColor
+       * @property {string} memoryBackgroundColor
+       * @property {string} rate_limit_fill
+       * @property {string} rate_limit_empty
+       * @property {string} fastMode
+       * @property {string} fastModeShimmer
+       * @property {string} briefLabelYou
+       * @property {string} briefLabelClaude
+       * @property {string} rainbow_red
+       * @property {string} rainbow_orange
+       * @property {string} rainbow_yellow
+       * @property {string} rainbow_green
+       * @property {string} rainbow_blue
+       * @property {string} rainbow_indigo
+       * @property {string} rainbow_violet
+       * @property {string} rainbow_red_shimmer
+       * @property {string} rainbow_orange_shimmer
+       * @property {string} rainbow_yellow_shimmer
+       * @property {string} rainbow_green_shimmer
+       * @property {string} rainbow_blue_shimmer
+       * @property {string} rainbow_indigo_shimmer
+       * @property {string} rainbow_violet_shimmer
+       */
+
+      const THEME_NAMES = [
+        "dark",
+        "light",
+        "light-daltonized",
+        "dark-daltonized",
+        "solarized-dark",
+        "solarized-light",
+      ];
+
+      /** @typedef {(typeof THEME_NAMES)[number]} ThemeName - A renderable theme. Always resolvable to a concrete color palette. */
+
+      const THEME_SETTINGS = ["auto", ...THEME_NAMES];
+
+      /**
+       * @typedef {(typeof THEME_SETTINGS)[number]} ThemeSetting
+       * A theme preference as stored in user config. `'auto'` follows the system
+       * dark/light mode and is resolved to a ThemeName at runtime.
+       */
+
+      /**
+       * Light theme using explicit RGB values to avoid inconsistencies
+       * from users' custom terminal ANSI color definitions
+       */
+      /** @type {Theme} */
+      const lightTheme = {
+        autoAccept: "rgb(135,0,255)", // Electric violet
+        bashBorder: "rgb(255,0,135)", // Vibrant pink
+        claude: "rgb(215,119,87)", // Claude orange
+        claudeShimmer: "rgb(245,149,117)", // Lighter claude orange for shimmer effect
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(87,105,247)", // Medium blue for system spinner
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(117,135,255)", // Lighter blue for system spinner shimmer
+        permission: "rgb(87,105,247)", // Medium blue
+        permissionShimmer: "rgb(137,155,255)", // Lighter blue for shimmer effect
+        planMode: "rgb(0,102,102)", // Muted teal
+        ide: "rgb(71,130,200)", // Muted blue
+        promptBorder: "rgb(153,153,153)", // Medium gray
+        promptBorderShimmer: "rgb(183,183,183)", // Lighter gray for shimmer effect
+        text: "rgb(0,0,0)", // Black
+        inverseText: "rgb(255,255,255)", // White
+        inactive: "rgb(102,102,102)", // Dark gray
+        inactiveShimmer: "rgb(142,142,142)", // Lighter gray for shimmer effect
+        subtle: "rgb(175,175,175)", // Light gray
+        suggestion: "rgb(87,105,247)", // Medium blue
+        remember: "rgb(0,0,255)", // Blue
+        background: "rgb(0,153,153)", // Cyan
+        success: "rgb(44,122,57)", // Green
+        error: "rgb(171,43,63)", // Red
+        warning: "rgb(150,108,30)", // Amber
+        merged: "rgb(135,0,255)", // Electric violet (matches autoAccept)
+        warningShimmer: "rgb(200,158,80)", // Lighter amber for shimmer effect
+        diffAdded: "rgb(105,219,124)", // Light green
+        diffRemoved: "rgb(255,168,180)", // Light red
+        diffAddedDimmed: "rgb(199,225,203)", // Very light green
+        diffRemovedDimmed: "rgb(253,210,216)", // Very light red
+        diffAddedWord: "rgb(47,157,68)", // Medium green
+        diffRemovedWord: "rgb(209,69,75)", // Medium red
+        // Agent colors
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,38,38)", // Red 600
+        blue_FOR_SUBAGENTS_ONLY: "rgb(37,99,235)", // Blue 600
+        green_FOR_SUBAGENTS_ONLY: "rgb(22,163,74)", // Green 600
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(202,138,4)", // Yellow 600
+        purple_FOR_SUBAGENTS_ONLY: "rgb(147,51,234)", // Purple 600
+        orange_FOR_SUBAGENTS_ONLY: "rgb(234,88,12)", // Orange 600
+        pink_FOR_SUBAGENTS_ONLY: "rgb(219,39,119)", // Pink 600
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(8,145,178)", // Cyan 600
+        // Grove colors
+        professionalBlue: "rgb(106,155,204)",
+        // Chrome colors
+        chromeYellow: "rgb(251,188,4)", // Chrome yellow
+        // TUI V2 colors
+        clawd_body: "rgb(215,119,87)",
+        clawd_background: "rgb(0,0,0)",
+        userMessageBackground: "rgb(240, 240, 240)", // Slightly darker grey for optimal contrast
+        userMessageBackgroundHover: "rgb(252, 252, 252)", // ≥250 to quantize distinct from base at 256-color level
+        messageActionsBackground: "rgb(232, 236, 244)", // cool gray — darker than userMsg 240 (visible on white), slight blue toward `suggestion`
+        selectionBg: "rgb(180, 213, 255)", // classic light-mode selection blue (macOS/VS Code-ish); dark fgs stay readable
+        bashMessageBackgroundColor: "rgb(250, 245, 250)",
+
+        memoryBackgroundColor: "rgb(230, 245, 250)",
+        rate_limit_fill: "rgb(87,105,247)", // Medium blue
+        rate_limit_empty: "rgb(39,47,111)", // Dark blue
+        fastMode: "rgb(255,106,0)", // Electric orange
+        fastModeShimmer: "rgb(255,150,50)", // Lighter orange for shimmer
+        // Brief/assistant mode
+        briefLabelYou: "rgb(37,99,235)", // Blue
+        briefLabelClaude: "rgb(215,119,87)", // Brand orange
+        rainbow_red: "rgb(235,95,87)",
+        rainbow_orange: "rgb(245,139,87)",
+        rainbow_yellow: "rgb(250,195,95)",
+        rainbow_green: "rgb(145,200,130)",
+        rainbow_blue: "rgb(130,170,220)",
+        rainbow_indigo: "rgb(155,130,200)",
+        rainbow_violet: "rgb(200,130,180)",
+        rainbow_red_shimmer: "rgb(250,155,147)",
+        rainbow_orange_shimmer: "rgb(255,185,137)",
+        rainbow_yellow_shimmer: "rgb(255,225,155)",
+        rainbow_green_shimmer: "rgb(185,230,180)",
+        rainbow_blue_shimmer: "rgb(180,205,240)",
+        rainbow_indigo_shimmer: "rgb(195,180,230)",
+        rainbow_violet_shimmer: "rgb(230,180,210)",
+      };
+
+      /**
+       * Light daltonized theme (color-blind friendly) using explicit RGB values
+       * to avoid inconsistencies from users' custom terminal ANSI color definitions
+       */
+      /** @type {Theme} */
+      const lightDaltonizedTheme = {
+        autoAccept: "rgb(135,0,255)", // Electric violet
+        bashBorder: "rgb(0,102,204)", // Blue instead of pink
+        claude: "rgb(255,153,51)", // Orange adjusted for deuteranopia
+        claudeShimmer: "rgb(255,183,101)", // Lighter orange for shimmer effect
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(51,102,255)", // Bright blue for system spinner
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(101,152,255)", // Lighter bright blue for system spinner shimmer
+        permission: "rgb(51,102,255)", // Bright blue
+        permissionShimmer: "rgb(101,152,255)", // Lighter bright blue for shimmer
+        planMode: "rgb(51,102,102)", // Muted blue-gray (works for color-blind)
+        ide: "rgb(71,130,200)", // Muted blue
+        promptBorder: "rgb(153,153,153)", // Medium gray
+        promptBorderShimmer: "rgb(183,183,183)", // Lighter gray for shimmer
+        text: "rgb(0,0,0)", // Black
+        inverseText: "rgb(255,255,255)", // White
+        inactive: "rgb(102,102,102)", // Dark gray
+        inactiveShimmer: "rgb(142,142,142)", // Lighter gray for shimmer effect
+        subtle: "rgb(175,175,175)", // Light gray
+        suggestion: "rgb(51,102,255)", // Bright blue
+        remember: "rgb(51,102,255)", // Bright blue
+        background: "rgb(0,153,153)", // Cyan (color-blind friendly)
+        success: "rgb(0,102,153)", // Blue instead of green for deuteranopia
+        error: "rgb(204,0,0)", // Pure red for better distinction
+        warning: "rgb(255,153,0)", // Orange adjusted for deuteranopia
+        merged: "rgb(135,0,255)", // Electric violet (matches autoAccept)
+        warningShimmer: "rgb(255,183,50)", // Lighter orange for shimmer
+        diffAdded: "rgb(153,204,255)", // Light blue instead of green
+        diffRemoved: "rgb(255,204,204)", // Light red
+        diffAddedDimmed: "rgb(209,231,253)", // Very light blue
+        diffRemovedDimmed: "rgb(255,233,233)", // Very light red
+        diffAddedWord: "rgb(51,102,204)", // Medium blue (less intense than deep blue)
+        diffRemovedWord: "rgb(153,51,51)", // Softer red (less intense than deep red)
+        // Agent colors (daltonism-friendly)
+        red_FOR_SUBAGENTS_ONLY: "rgb(204,0,0)", // Pure red
+        blue_FOR_SUBAGENTS_ONLY: "rgb(0,102,204)", // Pure blue
+        green_FOR_SUBAGENTS_ONLY: "rgb(0,204,0)", // Pure green
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(255,204,0)", // Golden yellow
+        purple_FOR_SUBAGENTS_ONLY: "rgb(128,0,128)", // True purple
+        orange_FOR_SUBAGENTS_ONLY: "rgb(255,128,0)", // True orange
+        pink_FOR_SUBAGENTS_ONLY: "rgb(255,102,178)", // Adjusted pink
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(0,178,178)", // Adjusted cyan
+        // Grove colors
+        professionalBlue: "rgb(106,155,204)",
+        // Chrome colors
+        chromeYellow: "rgb(251,188,4)", // Chrome yellow
+        // TUI V2 colors
+        clawd_body: "rgb(215,119,87)",
+        clawd_background: "rgb(0,0,0)",
+        userMessageBackground: "rgb(220, 220, 220)", // Slightly darker grey for optimal contrast
+        userMessageBackgroundHover: "rgb(232, 232, 232)", // ≥230 to quantize distinct from base at 256-color level
+        messageActionsBackground: "rgb(210, 216, 226)", // cool gray — darker than userMsg 220, slight blue
+        selectionBg: "rgb(180, 213, 255)", // light selection blue; daltonized fgs are yellows/blues, both readable on light blue
+        bashMessageBackgroundColor: "rgb(250, 245, 250)",
+
+        memoryBackgroundColor: "rgb(230, 245, 250)",
+        rate_limit_fill: "rgb(51,102,255)", // Bright blue
+        rate_limit_empty: "rgb(23,46,114)", // Dark blue
+        fastMode: "rgb(255,106,0)", // Electric orange (color-blind safe)
+        fastModeShimmer: "rgb(255,150,50)", // Lighter orange for shimmer
+        briefLabelYou: "rgb(37,99,235)", // Blue
+        briefLabelClaude: "rgb(255,153,51)", // Orange adjusted for deuteranopia (matches claude)
+        rainbow_red: "rgb(235,95,87)",
+        rainbow_orange: "rgb(245,139,87)",
+        rainbow_yellow: "rgb(250,195,95)",
+        rainbow_green: "rgb(145,200,130)",
+        rainbow_blue: "rgb(130,170,220)",
+        rainbow_indigo: "rgb(155,130,200)",
+        rainbow_violet: "rgb(200,130,180)",
+        rainbow_red_shimmer: "rgb(250,155,147)",
+        rainbow_orange_shimmer: "rgb(255,185,137)",
+        rainbow_yellow_shimmer: "rgb(255,225,155)",
+        rainbow_green_shimmer: "rgb(185,230,180)",
+        rainbow_blue_shimmer: "rgb(180,205,240)",
+        rainbow_indigo_shimmer: "rgb(195,180,230)",
+        rainbow_violet_shimmer: "rgb(230,180,210)",
+      };
+
+      /**
+       * Dark theme using explicit RGB values to avoid inconsistencies
+       * from users' custom terminal ANSI color definitions
+       */
+      /** @type {Theme} */
+      const darkTheme = {
+        autoAccept: "rgb(175,135,255)", // Electric violet
+        bashBorder: "rgb(253,93,177)", // Bright pink
+        claude: "rgb(215,119,87)", // Claude orange
+        claudeShimmer: "rgb(235,159,127)", // Lighter claude orange for shimmer effect
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(147,165,255)", // Blue for system spinner
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(177,195,255)", // Lighter blue for system spinner shimmer
+        permission: "rgb(177,185,249)", // Light blue-purple
+        permissionShimmer: "rgb(207,215,255)", // Lighter blue-purple for shimmer
+        planMode: "rgb(72,150,140)", // Muted sage green
+        ide: "rgb(71,130,200)", // Muted blue
+        promptBorder: "rgb(136,136,136)", // Medium gray
+        promptBorderShimmer: "rgb(166,166,166)", // Lighter gray for shimmer
+        text: "rgb(255,255,255)", // White
+        inverseText: "rgb(0,0,0)", // Black
+        inactive: "rgb(153,153,153)", // Light gray
+        inactiveShimmer: "rgb(193,193,193)", // Lighter gray for shimmer effect
+        subtle: "rgb(80,80,80)", // Dark gray
+        suggestion: "rgb(177,185,249)", // Light blue-purple
+        remember: "rgb(177,185,249)", // Light blue-purple
+        background: "rgb(0,204,204)", // Bright cyan
+        success: "rgb(78,186,101)", // Bright green
+        error: "rgb(255,107,128)", // Bright red
+        warning: "rgb(255,193,7)", // Bright amber
+        merged: "rgb(175,135,255)", // Electric violet (matches autoAccept)
+        warningShimmer: "rgb(255,223,57)", // Lighter amber for shimmer
+        diffAdded: "rgb(34,92,43)", // Dark green
+        diffRemoved: "rgb(122,41,54)", // Dark red
+        diffAddedDimmed: "rgb(71,88,74)", // Very dark green
+        diffRemovedDimmed: "rgb(105,72,77)", // Very dark red
+        diffAddedWord: "rgb(56,166,96)", // Medium green
+        diffRemovedWord: "rgb(179,89,107)", // Softer red (less intense than bright red)
+        // Agent colors
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,38,38)", // Red 600
+        blue_FOR_SUBAGENTS_ONLY: "rgb(37,99,235)", // Blue 600
+        green_FOR_SUBAGENTS_ONLY: "rgb(22,163,74)", // Green 600
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(202,138,4)", // Yellow 600
+        purple_FOR_SUBAGENTS_ONLY: "rgb(147,51,234)", // Purple 600
+        orange_FOR_SUBAGENTS_ONLY: "rgb(234,88,12)", // Orange 600
+        pink_FOR_SUBAGENTS_ONLY: "rgb(219,39,119)", // Pink 600
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(8,145,178)", // Cyan 600
+        // Grove colors
+        professionalBlue: "rgb(106,155,204)",
+        // Chrome colors
+        chromeYellow: "rgb(251,188,4)", // Chrome yellow
+        // TUI V2 colors
+        clawd_body: "rgb(215,119,87)",
+        clawd_background: "rgb(0,0,0)",
+        userMessageBackground: "rgb(55, 55, 55)", // Lighter grey for better visual contrast
+        userMessageBackgroundHover: "rgb(70, 70, 70)",
+        messageActionsBackground: "rgb(44, 50, 62)", // cool gray, slight blue
+        selectionBg: "rgb(38, 79, 120)", // classic dark-mode selection blue (VS Code dark default); light fgs stay readable
+        bashMessageBackgroundColor: "rgb(65, 60, 65)",
+
+        memoryBackgroundColor: "rgb(55, 65, 70)",
+        rate_limit_fill: "rgb(177,185,249)", // Light blue-purple
+        rate_limit_empty: "rgb(80,83,112)", // Medium blue-purple
+        fastMode: "rgb(255,120,20)", // Electric orange for dark bg
+        fastModeShimmer: "rgb(255,165,70)", // Lighter orange for shimmer
+        briefLabelYou: "rgb(122,180,232)", // Light blue
+        briefLabelClaude: "rgb(215,119,87)", // Brand orange
+        rainbow_red: "rgb(235,95,87)",
+        rainbow_orange: "rgb(245,139,87)",
+        rainbow_yellow: "rgb(250,195,95)",
+        rainbow_green: "rgb(145,200,130)",
+        rainbow_blue: "rgb(130,170,220)",
+        rainbow_indigo: "rgb(155,130,200)",
+        rainbow_violet: "rgb(200,130,180)",
+        rainbow_red_shimmer: "rgb(250,155,147)",
+        rainbow_orange_shimmer: "rgb(255,185,137)",
+        rainbow_yellow_shimmer: "rgb(255,225,155)",
+        rainbow_green_shimmer: "rgb(185,230,180)",
+        rainbow_blue_shimmer: "rgb(180,205,240)",
+        rainbow_indigo_shimmer: "rgb(195,180,230)",
+        rainbow_violet_shimmer: "rgb(230,180,210)",
+      };
+
+      /**
+       * Dark daltonized theme (color-blind friendly) using explicit RGB values
+       * to avoid inconsistencies from users' custom terminal ANSI color definitions
+       */
+      /** @type {Theme} */
+      const darkDaltonizedTheme = {
+        autoAccept: "rgb(175,135,255)", // Electric violet
+        bashBorder: "rgb(51,153,255)", // Bright blue
+        claude: "rgb(255,153,51)", // Orange adjusted for deuteranopia
+        claudeShimmer: "rgb(255,183,101)", // Lighter orange for shimmer effect
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(153,204,255)", // Light blue for system spinner
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(183,224,255)", // Lighter blue for system spinner shimmer
+        permission: "rgb(153,204,255)", // Light blue
+        permissionShimmer: "rgb(183,224,255)", // Lighter blue for shimmer
+        planMode: "rgb(102,153,153)", // Muted gray-teal (works for color-blind)
+        ide: "rgb(71,130,200)", // Muted blue
+        promptBorder: "rgb(136,136,136)", // Medium gray
+        promptBorderShimmer: "rgb(166,166,166)", // Lighter gray for shimmer
+        text: "rgb(255,255,255)", // White
+        inverseText: "rgb(0,0,0)", // Black
+        inactive: "rgb(153,153,153)", // Light gray
+        inactiveShimmer: "rgb(193,193,193)", // Lighter gray for shimmer effect
+        subtle: "rgb(80,80,80)", // Dark gray
+        suggestion: "rgb(153,204,255)", // Light blue
+        remember: "rgb(153,204,255)", // Light blue
+        background: "rgb(0,204,204)", // Bright cyan (color-blind friendly)
+        success: "rgb(51,153,255)", // Blue instead of green
+        error: "rgb(255,102,102)", // Bright red
+        warning: "rgb(255,204,0)", // Yellow-orange for deuteranopia
+        merged: "rgb(175,135,255)", // Electric violet (matches autoAccept)
+        warningShimmer: "rgb(255,234,50)", // Lighter yellow-orange for shimmer
+        diffAdded: "rgb(0,68,102)", // Dark blue
+        diffRemoved: "rgb(102,0,0)", // Dark red
+        diffAddedDimmed: "rgb(62,81,91)", // Dimmed blue
+        diffRemovedDimmed: "rgb(62,44,44)", // Dimmed red
+        diffAddedWord: "rgb(0,119,179)", // Medium blue
+        diffRemovedWord: "rgb(179,0,0)", // Medium red
+        // Agent colors (daltonism-friendly, dark mode)
+        red_FOR_SUBAGENTS_ONLY: "rgb(255,102,102)", // Bright red
+        blue_FOR_SUBAGENTS_ONLY: "rgb(102,178,255)", // Bright blue
+        green_FOR_SUBAGENTS_ONLY: "rgb(102,255,102)", // Bright green
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(255,255,102)", // Bright yellow
+        purple_FOR_SUBAGENTS_ONLY: "rgb(178,102,255)", // Bright purple
+        orange_FOR_SUBAGENTS_ONLY: "rgb(255,178,102)", // Bright orange
+        pink_FOR_SUBAGENTS_ONLY: "rgb(255,153,204)", // Bright pink
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(102,204,204)", // Bright cyan
+        // Grove colors
+        professionalBlue: "rgb(106,155,204)",
+        // Chrome colors
+        chromeYellow: "rgb(251,188,4)", // Chrome yellow
+        // TUI V2 colors
+        clawd_body: "rgb(215,119,87)",
+        clawd_background: "rgb(0,0,0)",
+        userMessageBackground: "rgb(55, 55, 55)", // Lighter grey for better visual contrast
+        userMessageBackgroundHover: "rgb(70, 70, 70)",
+        messageActionsBackground: "rgb(44, 50, 62)", // cool gray, slight blue
+        selectionBg: "rgb(38, 79, 120)", // classic dark-mode selection blue (VS Code dark default); light fgs stay readable
+        bashMessageBackgroundColor: "rgb(65, 60, 65)",
+
+        memoryBackgroundColor: "rgb(55, 65, 70)",
+        rate_limit_fill: "rgb(153,204,255)", // Light blue
+        rate_limit_empty: "rgb(69,92,115)", // Dark blue
+        fastMode: "rgb(255,120,20)", // Electric orange for dark bg (color-blind safe)
+        fastModeShimmer: "rgb(255,165,70)", // Lighter orange for shimmer
+        briefLabelYou: "rgb(122,180,232)", // Light blue
+        briefLabelClaude: "rgb(255,153,51)", // Orange adjusted for deuteranopia (matches claude)
+        rainbow_red: "rgb(235,95,87)",
+        rainbow_orange: "rgb(245,139,87)",
+        rainbow_yellow: "rgb(250,195,95)",
+        rainbow_green: "rgb(145,200,130)",
+        rainbow_blue: "rgb(130,170,220)",
+        rainbow_indigo: "rgb(155,130,200)",
+        rainbow_violet: "rgb(200,130,180)",
+        rainbow_red_shimmer: "rgb(250,155,147)",
+        rainbow_orange_shimmer: "rgb(255,185,137)",
+        rainbow_yellow_shimmer: "rgb(255,225,155)",
+        rainbow_green_shimmer: "rgb(185,230,180)",
+        rainbow_blue_shimmer: "rgb(180,205,240)",
+        rainbow_indigo_shimmer: "rgb(195,180,230)",
+        rainbow_violet_shimmer: "rgb(230,180,210)",
+      };
+
+      /**
+       * Solarized Dark — Ethan Schoonover's palette on base03 background
+       */
+      /** @type {Theme} */
+      const solarizedDarkTheme = {
+        autoAccept: "rgb(108,113,196)", // Violet
+        bashBorder: "rgb(211,54,130)", // Magenta
+        claude: "rgb(203,75,22)", // Solarized orange
+        claudeShimmer: "rgb(233,105,52)", // Lighter orange
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(38,139,210)", // Blue
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(68,169,240)", // Lighter blue
+        permission: "rgb(38,139,210)", // Blue
+        permissionShimmer: "rgb(88,169,230)", // Lighter blue
+        planMode: "rgb(42,161,152)", // Cyan
+        ide: "rgb(38,139,210)", // Blue
+        promptBorder: "rgb(88,110,117)", // Base01
+        promptBorderShimmer: "rgb(101,123,131)", // Base00
+        text: "rgb(131,148,150)", // Base0
+        inverseText: "rgb(0,43,54)", // Base03
+        inactive: "rgb(88,110,117)", // Base01
+        inactiveShimmer: "rgb(101,123,131)", // Base00
+        subtle: "rgb(7,54,66)", // Base02
+        suggestion: "rgb(38,139,210)", // Blue
+        remember: "rgb(108,113,196)", // Violet
+        background: "rgb(42,161,152)", // Cyan
+        success: "rgb(133,153,0)", // Green
+        error: "rgb(220,50,47)", // Red
+        warning: "rgb(181,137,0)", // Yellow
+        merged: "rgb(108,113,196)", // Violet
+        warningShimmer: "rgb(211,167,30)", // Lighter yellow
+        diffAdded: "rgb(23,69,23)", // Dark green
+        diffRemoved: "rgb(100,30,30)", // Dark red
+        diffAddedDimmed: "rgb(15,55,30)", // Very dark green
+        diffRemovedDimmed: "rgb(70,25,25)", // Very dark red
+        diffAddedWord: "rgb(133,153,0)", // Green
+        diffRemovedWord: "rgb(220,50,47)", // Red
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,50,47)",
+        blue_FOR_SUBAGENTS_ONLY: "rgb(38,139,210)",
+        green_FOR_SUBAGENTS_ONLY: "rgb(133,153,0)",
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(181,137,0)",
+        purple_FOR_SUBAGENTS_ONLY: "rgb(108,113,196)",
+        orange_FOR_SUBAGENTS_ONLY: "rgb(203,75,22)",
+        pink_FOR_SUBAGENTS_ONLY: "rgb(211,54,130)",
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(42,161,152)",
+        professionalBlue: "rgb(38,139,210)",
+        chromeYellow: "rgb(181,137,0)",
+        clawd_body: "rgb(203,75,22)",
+        clawd_background: "rgb(0,43,54)",
+        userMessageBackground: "rgb(7,54,66)", // Base02
+        userMessageBackgroundHover: "rgb(18,65,77)",
+        messageActionsBackground: "rgb(12,60,72)",
+        selectionBg: "rgb(7,54,66)", // Base02
+        bashMessageBackgroundColor: "rgb(12,58,70)",
+        memoryBackgroundColor: "rgb(10,56,68)",
+        rate_limit_fill: "rgb(38,139,210)", // Blue
+        rate_limit_empty: "rgb(7,54,66)", // Base02
+        fastMode: "rgb(203,75,22)", // Orange
+        fastModeShimmer: "rgb(233,105,52)",
+        briefLabelYou: "rgb(38,139,210)", // Blue
+        briefLabelClaude: "rgb(203,75,22)", // Orange
+        rainbow_red: "rgb(220,50,47)",
+        rainbow_orange: "rgb(203,75,22)",
+        rainbow_yellow: "rgb(181,137,0)",
+        rainbow_green: "rgb(133,153,0)",
+        rainbow_blue: "rgb(38,139,210)",
+        rainbow_indigo: "rgb(108,113,196)",
+        rainbow_violet: "rgb(211,54,130)",
+        rainbow_red_shimmer: "rgb(240,90,87)",
+        rainbow_orange_shimmer: "rgb(233,115,62)",
+        rainbow_yellow_shimmer: "rgb(211,167,30)",
+        rainbow_green_shimmer: "rgb(163,183,30)",
+        rainbow_blue_shimmer: "rgb(68,169,240)",
+        rainbow_indigo_shimmer: "rgb(138,143,226)",
+        rainbow_violet_shimmer: "rgb(231,84,160)",
+      };
+
+      /**
+       * Solarized Light — Ethan Schoonover's palette on base3 background
+       */
+      /** @type {Theme} */
+      const solarizedLightTheme = {
+        autoAccept: "rgb(108,113,196)", // Violet
+        bashBorder: "rgb(211,54,130)", // Magenta
+        claude: "rgb(203,75,22)", // Solarized orange
+        claudeShimmer: "rgb(233,105,52)", // Lighter orange
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(38,139,210)", // Blue
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(68,169,240)", // Lighter blue
+        permission: "rgb(38,139,210)", // Blue
+        permissionShimmer: "rgb(88,169,230)", // Lighter blue
+        planMode: "rgb(42,161,152)", // Cyan
+        ide: "rgb(38,139,210)", // Blue
+        promptBorder: "rgb(147,161,161)", // Base1
+        promptBorderShimmer: "rgb(131,148,150)", // Base0
+        text: "rgb(101,123,131)", // Base00
+        inverseText: "rgb(253,246,227)", // Base3
+        inactive: "rgb(147,161,161)", // Base1
+        inactiveShimmer: "rgb(131,148,150)", // Base0
+        subtle: "rgb(238,232,213)", // Base2
+        suggestion: "rgb(38,139,210)", // Blue
+        remember: "rgb(108,113,196)", // Violet
+        background: "rgb(42,161,152)", // Cyan
+        success: "rgb(133,153,0)", // Green
+        error: "rgb(220,50,47)", // Red
+        warning: "rgb(181,137,0)", // Yellow
+        merged: "rgb(108,113,196)", // Violet
+        warningShimmer: "rgb(211,167,30)", // Lighter yellow
+        diffAdded: "rgb(200,230,170)", // Light green
+        diffRemoved: "rgb(255,195,190)", // Light red
+        diffAddedDimmed: "rgb(225,240,210)", // Very light green
+        diffRemovedDimmed: "rgb(255,225,220)", // Very light red
+        diffAddedWord: "rgb(133,153,0)", // Green
+        diffRemovedWord: "rgb(220,50,47)", // Red
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,50,47)",
+        blue_FOR_SUBAGENTS_ONLY: "rgb(38,139,210)",
+        green_FOR_SUBAGENTS_ONLY: "rgb(133,153,0)",
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(181,137,0)",
+        purple_FOR_SUBAGENTS_ONLY: "rgb(108,113,196)",
+        orange_FOR_SUBAGENTS_ONLY: "rgb(203,75,22)",
+        pink_FOR_SUBAGENTS_ONLY: "rgb(211,54,130)",
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(42,161,152)",
+        professionalBlue: "rgb(38,139,210)",
+        chromeYellow: "rgb(181,137,0)",
+        clawd_body: "rgb(203,75,22)",
+        clawd_background: "rgb(253,246,227)",
+        userMessageBackground: "rgb(238,232,213)", // Base2
+        userMessageBackgroundHover: "rgb(248,242,223)",
+        messageActionsBackground: "rgb(230,224,206)",
+        selectionBg: "rgb(238,232,213)", // Base2
+        bashMessageBackgroundColor: "rgb(243,237,218)",
+        memoryBackgroundColor: "rgb(235,230,210)",
+        rate_limit_fill: "rgb(38,139,210)", // Blue
+        rate_limit_empty: "rgb(7,54,66)", // Base03
+        fastMode: "rgb(203,75,22)", // Orange
+        fastModeShimmer: "rgb(233,105,52)",
+        briefLabelYou: "rgb(38,139,210)", // Blue
+        briefLabelClaude: "rgb(203,75,22)", // Orange
+        rainbow_red: "rgb(220,50,47)",
+        rainbow_orange: "rgb(203,75,22)",
+        rainbow_yellow: "rgb(181,137,0)",
+        rainbow_green: "rgb(133,153,0)",
+        rainbow_blue: "rgb(38,139,210)",
+        rainbow_indigo: "rgb(108,113,196)",
+        rainbow_violet: "rgb(211,54,130)",
+        rainbow_red_shimmer: "rgb(240,90,87)",
+        rainbow_orange_shimmer: "rgb(233,115,62)",
+        rainbow_yellow_shimmer: "rgb(211,167,30)",
+        rainbow_green_shimmer: "rgb(163,183,30)",
+        rainbow_blue_shimmer: "rgb(68,169,240)",
+        rainbow_indigo_shimmer: "rgb(138,143,226)",
+        rainbow_violet_shimmer: "rgb(231,84,160)",
+      };
+
+      /**
+       * @param {ThemeName} themeName
+       * @returns {Theme}
+       */
+      function getTheme(themeName) {
+        switch (themeName) {
+          case "light":
+            return lightTheme;
+          case "light-daltonized":
+            return lightDaltonizedTheme;
+          case "dark-daltonized":
+            return darkDaltonizedTheme;
+          case "solarized-dark":
+            return solarizedDarkTheme;
+          case "solarized-light":
+            return solarizedLightTheme;
+          default:
+            return darkTheme;
+        }
+      }
+      // #endregion
+      // Port of https://github.com/chatgptprojects/claude-code/blob/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy/types.ts ---
+      // #region DATA
+      const RARITIES = ["common", "uncommon", "rare", "epic", "legendary"];
+      /** @typedef {(typeof RARITIES)[number]} Rarity */
+
+      // One species name collides with a model-codename canary in excluded-strings.txt.
+      // The check greps build output (not source), so runtime-constructing the value keeps
+      // the literal out of the bundle while the check stays armed for the actual codename.
+      // All species encoded uniformly; `as` casts are type-position only (erased pre-bundle).
+      const c = String.fromCharCode;
+      // biome-ignore format: keep the species list compact
+
+      const duck = c(0x64, 0x75, 0x63, 0x6b);
+      const goose = c(0x67, 0x6f, 0x6f, 0x73, 0x65);
+      const blob = c(0x62, 0x6c, 0x6f, 0x62);
+      const cat = c(0x63, 0x61, 0x74);
+      const dragon = c(0x64, 0x72, 0x61, 0x67, 0x6f, 0x6e);
+      const octopus = c(0x6f, 0x63, 0x74, 0x6f, 0x70, 0x75, 0x73);
+      const owl = c(0x6f, 0x77, 0x6c);
+      const penguin = c(0x70, 0x65, 0x6e, 0x67, 0x75, 0x69, 0x6e);
+      const turtle = c(0x74, 0x75, 0x72, 0x74, 0x6c, 0x65);
+      const snail = c(0x73, 0x6e, 0x61, 0x69, 0x6c);
+      const ghost = c(0x67, 0x68, 0x6f, 0x73, 0x74);
+      const axolotl = c(0x61, 0x78, 0x6f, 0x6c, 0x6f, 0x74, 0x6c);
+      const capybara = c(0x63, 0x61, 0x70, 0x79, 0x62, 0x61, 0x72, 0x61);
+      const cactus = c(0x63, 0x61, 0x63, 0x74, 0x75, 0x73);
+      const robot = c(0x72, 0x6f, 0x62, 0x6f, 0x74);
+      const rabbit = c(0x72, 0x61, 0x62, 0x62, 0x69, 0x74);
+      const mushroom = c(0x6d, 0x75, 0x73, 0x68, 0x72, 0x6f, 0x6f, 0x6d);
+      const chonk = c(0x63, 0x68, 0x6f, 0x6e, 0x6b);
+
+      const SPECIES = [
+        duck,
+        goose,
+        blob,
+        cat,
+        dragon,
+        octopus,
+        owl,
+        penguin,
+        turtle,
+        snail,
+        ghost,
+        axolotl,
+        capybara,
+        cactus,
+        robot,
+        rabbit,
+        mushroom,
+        chonk,
+      ];
+      /** @typedef {(typeof SPECIES)[number]} Species */
+
+      const EYES = ["·", "✦", "×", "◉", "@", "°"];
+      /** @typedef {(typeof EYES)[number]} Eye */
+
+      const HATS = [
+        "none",
+        "crown",
+        "tophat",
+        "propeller",
+        "halo",
+        "wizard",
+        "beanie",
+        "tinyduck",
+      ];
+      /** @typedef {(typeof HATS)[number]} Hat */
+
+      const STAT_NAMES = ["DEBUGGING", "PATIENCE", "CHAOS", "WISDOM", "SNARK"];
+      /** @typedef {(typeof STAT_NAMES)[number]} StatName */
+
+      /**
+       * Deterministic parts — derived from hash(userId)
+       * @typedef {Object} CompanionBones
+       * @property {Rarity} rarity
+       * @property {Species} species
+       * @property {Eye} eye
+       * @property {Hat} hat
+       * @property {boolean} shiny
+       * @property {Record<StatName, number>} stats
+       */
+
+      /**
+       * Optional soul metadata carried by creator germs.
+       * @typedef {Object} CompanionSoul
+       * @property {string} [name]
+       * @property {string} [personality]
+       */
+
+      /** @typedef {CompanionBones & CompanionSoul & { hatchedAt: number }} Companion */
+
+      /**
+       * What actually persists in config. Bones are regenerated from hash(userId)
+       * on every read so species renames don't break stored companions and users
+       * can't edit their way to a legendary.
+       * @typedef {CompanionSoul & { hatchedAt: number }} StoredCompanion
+       */
+
+      const RARITY_WEIGHTS = {
+        common: 60,
+        uncommon: 25,
+        rare: 10,
+        epic: 4,
+        legendary: 1,
+      };
+
+      const RARITY_STARS = {
+        common: "★",
+        uncommon: "★★",
+        rare: "★★★",
+        epic: "★★★★",
+        legendary: "★★★★★",
+      };
+
+      const RARITY_COLORS = {
+        common: "inactive",
+        uncommon: "success",
+        rare: "permission",
+        epic: "autoAccept",
+        legendary: "warning",
+      };
+      // #endregion
+
+      // #region Sprites
+      // Each sprite is 5 lines tall, 12 wide (after {E}→1char substitution).
+      // Multiple frames per species for idle fidget animation.
+      // Line 0 is the hat slot — must be blank in frames 0-1; frame 2 may use it.
+      /** @type {Record<Species, string[][]>} */
+      const BODIES = {
+        [duck]: [
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  ._>   ",
+            "    `--´    ",
+          ],
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  ._>   ",
+            "    `--´~   ",
+          ],
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  .__>  ",
+            "    `--´    ",
+          ],
+        ],
+        [goose]: [
+          [
+            "            ",
+            "     ({E}>    ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
+          [
+            "            ",
+            "    ({E}>     ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
+          [
+            "            ",
+            "     ({E}>>   ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
+        ],
+        [blob]: [
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (      )  ",
+            "   `----´   ",
+          ],
+          [
+            "            ",
+            "  .------.  ",
+            " (  {E}  {E}  ) ",
+            " (        ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "    .--.    ",
+            "   ({E}  {E})   ",
+            "   (    )   ",
+            "    `--´    ",
+          ],
+        ],
+        [cat]: [
+          [
+            "            ",
+            "   /\\_/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")   ',
+          ],
+          [
+            "            ",
+            "   /\\_/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")~  ',
+          ],
+          [
+            "            ",
+            "   /\\-/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")   ',
+          ],
+        ],
+        [dragon]: [
+          [
+            "            ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (   ~~   ) ",
+            "  `-vvvv-´  ",
+          ],
+          [
+            "            ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (        ) ",
+            "  `-vvvv-´  ",
+          ],
+          [
+            "   ~    ~   ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (   ~~   ) ",
+            "  `-vvvv-´  ",
+          ],
+        ],
+        [octopus]: [
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  /\\/\\/\\/\\  ",
+          ],
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  \\/\\/\\/\\/  ",
+          ],
+          [
+            "     o      ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  /\\/\\/\\/\\  ",
+          ],
+        ],
+        [owl]: [
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})({E}))  ",
+            "  (  ><  )  ",
+            "   `----´   ",
+          ],
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})({E}))  ",
+            "  (  ><  )  ",
+            "   .----.   ",
+          ],
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})(-))  ",
+            "  (  ><  )  ",
+            "   `----´   ",
+          ],
+        ],
+        [penguin]: [
+          [
+            "            ",
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " /(   )\\    ",
+            "  `---´     ",
+          ],
+          [
+            "            ",
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " |(   )|    ",
+            "  `---´     ",
+          ],
+          [
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " /(   )\\    ",
+            "  `---´     ",
+            "   ~ ~      ",
+          ],
+        ],
+        [turtle]: [
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[______]\\ ",
+            "  ``    ``  ",
+          ],
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[______]\\ ",
+            "   ``  ``   ",
+          ],
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[======]\\ ",
+            "  ``    ``  ",
+          ],
+        ],
+        [snail]: [
+          [
+            "            ",
+            " {E}    .--.  ",
+            "  \\  ( @ )  ",
+            "   \\_`--´   ",
+            "  ~~~~~~~   ",
+          ],
+          [
+            "            ",
+            "  {E}   .--.  ",
+            "  |  ( @ )  ",
+            "   \\_`--´   ",
+            "  ~~~~~~~   ",
+          ],
+          [
+            "            ",
+            " {E}    .--.  ",
+            "  \\  ( @  ) ",
+            "   \\_`--´   ",
+            "   ~~~~~~   ",
+          ],
+        ],
+        [ghost]: [
+          [
+            "            ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  ~`~``~`~  ",
+          ],
+          [
+            "            ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  `~`~~`~`  ",
+          ],
+          [
+            "    ~  ~    ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  ~~`~~`~~  ",
+          ],
+        ],
+        [axolotl]: [
+          [
+            "            ",
+            "}~(______)~{",
+            "}~({E} .. {E})~{",
+            "  ( .--. )  ",
+            "  (_/  \\_)  ",
+          ],
+          [
+            "            ",
+            "~}(______){~",
+            "~}({E} .. {E}){~",
+            "  ( .--. )  ",
+            "  (_/  \\_)  ",
+          ],
+          [
+            "            ",
+            "}~(______)~{",
+            "}~({E} .. {E})~{",
+            "  (  --  )  ",
+            "  ~_/  \\_~  ",
+          ],
+        ],
+        [capybara]: [
+          [
+            "            ",
+            "  n______n  ",
+            " ( {E}    {E} ) ",
+            " (   oo   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  n______n  ",
+            " ( {E}    {E} ) ",
+            " (   Oo   ) ",
+            "  `------´  ",
+          ],
+          [
+            "    ~  ~    ",
+            "  u______n  ",
+            " ( {E}    {E} ) ",
+            " (   oo   ) ",
+            "  `------´  ",
+          ],
+        ],
+        [cactus]: [
+          [
+            "            ",
+            " n  ____  n ",
+            " | |{E}  {E}| | ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
+          [
+            "            ",
+            "    ____    ",
+            " n |{E}  {E}| n ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
+          [
+            " n        n ",
+            " |  ____  | ",
+            " | |{E}  {E}| | ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
+        ],
+        [robot]: [
+          [
+            "            ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ ==== ]  ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ -==- ]  ",
+            "  `------´  ",
+          ],
+          [
+            "     *      ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ ==== ]  ",
+            "  `------´  ",
+          ],
+        ],
+        [rabbit]: [
+          [
+            "            ",
+            "   (\\__/)   ",
+            "  ( {E}  {E} )  ",
+            " =(  ..  )= ",
+            '  (")__(")  ',
+          ],
+          [
+            "            ",
+            "   (|__/)   ",
+            "  ( {E}  {E} )  ",
+            " =(  ..  )= ",
+            '  (")__(")  ',
+          ],
+          [
+            "            ",
+            "   (\\__/)   ",
+            "  ( {E}  {E} )  ",
+            " =( .  . )= ",
+            '  (")__(")  ',
+          ],
+        ],
+        [mushroom]: [
+          [
+            "            ",
+            " .-o-OO-o-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
+          [
+            "            ",
+            " .-O-oo-O-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
+          [
+            "   . o  .   ",
+            " .-o-OO-o-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
+        ],
+        [chonk]: [
+          [
+            "            ",
+            "  /\\    /\\  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  /\\    /|  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  /\\    /\\  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´~ ",
+          ],
+        ],
+      };
+
+      /** @type {Record<Hat, string>} */
+      const HAT_LINES = {
+        none: "",
+        crown: "   \\^^^/    ",
+        tophat: "   [___]    ",
+        propeller: "    -+-     ",
+        halo: "   (   )    ",
+        wizard: "    /^\\     ",
+        beanie: "   (___)    ",
+        tinyduck: "    ,>      ",
+      };
+
+      /**
+       * @param {CompanionBones} bones
+       * @param {number} [frame=0]
+       * @returns {string[]}
+       */
+      function renderSprite(bones, frame = 0) {
+        const frames = BODIES[bones.species];
+        const body = frames[frame % frames.length].map((line) =>
+          line.replaceAll("{E}", bones.eye),
+        );
+        const lines = [...body];
+        if (bones.hat !== "none" && !lines[0].trim()) {
+          lines[0] = HAT_LINES[bones.hat];
+        }
+        // Keep line 0 even when blank so every sprite is the same height.
+        return lines;
+      }
+
+      /**
+       * @param {Species} species
+       * @returns {number}
+       */
+      function spriteFrameCount(species) {
+        return BODIES[species].length;
+      }
+
+      /**
+       * Convert "rgb(r,g,b)" to "rgba(r,g,b,a)"
+       * @param {string} rgb
+       * @param {number} alpha
+       * @returns {string}
+       */
+      function rgbToRgba(rgb, alpha) {
+        return rgb.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+      }
+      // #endregion
+
+      // #region Companion Generation
+      /**
+       * Mulberry32 — tiny seeded PRNG
+       * @param {number} seed
+       * @returns {() => number}
+       */
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+          a |= 0;
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      /**
+       * FNV-1a hash
+       * @param {string} s
+       * @returns {number}
+       */
+      function hashString(s) {
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) {
+          h ^= s.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      /**
+       * @template T
+       * @param {() => number} rng
+       * @param {T[]} arr
+       * @returns {T}
+       */
+      function pick(rng, arr) {
+        return arr[Math.floor(rng() * arr.length)];
+      }
+
+      /**
+       * @param {() => number} rng
+       * @returns {Rarity}
+       */
+      function rollRarity(rng) {
+        const total = Object.values(RARITY_WEIGHTS).reduce((a, b) => a + b, 0);
+        let roll = rng() * total;
+        for (const rarity of RARITIES) {
+          roll -= RARITY_WEIGHTS[rarity];
+          if (roll < 0) return rarity;
+        }
+        return "common";
+      }
+
+      const RARITY_FLOOR = {
+        common: 5,
+        uncommon: 15,
+        rare: 25,
+        epic: 35,
+        legendary: 50,
+      };
+
+      /**
+       * @param {() => number} rng
+       * @param {Rarity} rarity
+       * @returns {Record<StatName, number>}
+       */
+      function rollStats(rng, rarity) {
+        const floor = RARITY_FLOOR[rarity];
+        const peak = pick(rng, STAT_NAMES);
+        let dump = pick(rng, STAT_NAMES);
+        while (dump === peak) dump = pick(rng, STAT_NAMES);
+
+        /** @type {Record<StatName, number>} */
+        const stats = {};
+        for (const name of STAT_NAMES) {
+          if (name === peak) {
+            stats[name] = Math.min(100, floor + 50 + Math.floor(rng() * 30));
+          } else if (name === dump) {
+            stats[name] = Math.max(1, floor - 10 + Math.floor(rng() * 15));
+          } else {
+            stats[name] = floor + Math.floor(rng() * 40);
+          }
+        }
+        return stats;
+      }
+
+      const SALT = "friend-2026-401";
+
+      /**
+       * @param {() => number} rng
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function rollFrom(rng) {
+        const rarity = rollRarity(rng);
+        /** @type {CompanionBones} */
+        const bones = {
+          rarity,
+          species: pick(rng, SPECIES),
+          eye: pick(rng, EYES),
+          hat: rarity === "common" ? "none" : pick(rng, HATS),
+          shiny: rng() < 0.01,
+          stats: rollStats(rng, rarity),
+        };
+        return { bones, inspirationSeed: Math.floor(rng() * 1e9) };
+      }
+
+      /**
+       * @param {string} seed
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function rollWithSeed(seed) {
+        return rollFrom(mulberry32(hashString(seed)));
+      }
+
+      /**
+       * @param {string} userId
+       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
+       */
+      function roll(userId) {
+        return rollFrom(mulberry32(hashString(userId + SALT)));
+      }
+      // #endregion
+
+      // #region Theme Switcher
+
+      // --- localStorage-backed signal abstraction ---
+      const STORAGE_KEY = "buddy-creator-theme";
+      const DEFAULT_THEME = "dark";
+
+      /** @type {Set<(value: ThemeName) => void>} */
+      const _themeListeners = new Set();
+      let _themeValue = (() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          return THEME_NAMES.includes(stored) ? stored : DEFAULT_THEME;
+        } catch {
+          return DEFAULT_THEME;
+        }
+      })();
+
+      const themeSignal = {
+        get: () => _themeValue,
+        set: (/** @type {ThemeName} */ v) => {
+          if (v === _themeValue) return;
+          _themeValue = v;
+          try {
+            localStorage.setItem(STORAGE_KEY, v);
+          } catch {}
+          for (const fn of _themeListeners) fn(v);
+        },
+        subscribe: (/** @type {(value: ThemeName) => void} */ fn) => {
+          _themeListeners.add(fn);
+          return () => _themeListeners.delete(fn);
+        },
+      };
+
+      /**
+       * Hook: subscribe a Preact component to the theme signal
+       * @returns {[ThemeName, (v: ThemeName) => void]}
+       */
+      function useTheme() {
+        const [value, setValue] = useState(themeSignal.get);
+        useEffect(() => themeSignal.subscribe(setValue), []);
+        return [value, themeSignal.set];
+      }
+
+      // --- end signal abstraction ---
+
+      const THEME_LABELS = {
+        dark: "Dark",
+        light: "Light",
+        "dark-daltonized": "Dark (colorblind)",
+        "light-daltonized": "Light (colorblind)",
+        "solarized-dark": "Solarized Dark",
+        "solarized-light": "Solarized Light",
+      };
+
+      /** @param {ThemeName} themeName */
+      function applyTheme(themeName) {
+        const theme = getTheme(themeName);
+        const root = document.documentElement;
+        root.style.setProperty("--bg", theme.userMessageBackground);
+        root.style.setProperty("--text", theme.text);
+        root.style.setProperty("--claude", theme.claude);
+        root.style.setProperty("--subtle", theme.subtle);
+        root.style.setProperty("--inactive", theme.inactive);
+      }
+
+      function ThemeSwitcher() {
+        const [selected, setSelected] = useTheme();
+
+        const onChange = (e) => {
+          const name = e.target.value;
+          setSelected(name);
+          applyTheme(name);
+        };
+
+        return html`
+          <label class="flex items-center gap-2 text-sm">
+            Theme
+            <select
+              value=${selected}
+              onChange=${onChange}
+              class="bg-[var(--bg)] text-[var(--text)] border border-[var(--inactive)] rounded px-2 py-1 text-sm transition-colors duration-300"
+            >
+              ${THEME_NAMES.map(
+                (name) => html`
+                  <option
+                    key=${name}
+                    value=${name}
+                  >
+                    ${THEME_LABELS[name]}
+                  </option>
+                `,
+              )}
+            </select>
+          </label>
+        `;
+      }
+
+      // Apply saved (or default) theme immediately
+      applyTheme(themeSignal.get());
+      // Also react to future signal changes (e.g. from other tabs)
+      themeSignal.subscribe(applyTheme);
+
+      render(
+        html`<${ThemeSwitcher} />`,
+        document.getElementById("theme-switcher"),
+      );
+      // #endregion
+
+      // #region Buddy Creator App
+
+      const IDLE_SEQUENCE = [0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 2, 0, 0, 0];
+      const TICK_MS = 500;
+
+      // Card inner width in monospace columns (inner = CARD_COLS, total = CARD_COLS + 2 for │ │)
+      const CARD_COLS = 34;
+
+      // Box-drawing chars
+      const B = {
+        tl: "┌",
+        tr: "┐",
+        bl: "└",
+        br: "┘",
+        h: "─",
+        v: "│",
+        lt: "├",
+        rt: "┤",
+      };
+
+      /**
+       * Use pretext to find max chars of `text` that fit in `maxPx` at given font.
+       * Returns a truncated string (with ellipsis if needed).
+       * @param {string} text
+       * @param {string} font
+       * @param {number} maxPx
+       * @returns {string}
+       */
+      function truncateToFit(text, font, maxPx) {
+        try {
+          const prepared = prepare(text, font);
+          const { lineCount } = layout(prepared, maxPx, 100);
+          if (lineCount <= 1) return text;
+          // Binary search for the longest prefix that fits in one line
+          let lo = 0,
+            hi = text.length;
+          while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            const sub = text.slice(0, mid) + "…";
+            const p = prepare(sub, font);
+            if (layout(p, maxPx, 100).lineCount <= 1) lo = mid;
+            else hi = mid - 1;
+          }
+          return text.slice(0, lo) + "…";
+        } catch {
+          // Fallback: simple char truncation
+          return text.length > CARD_COLS - 4 ?
+              text.slice(0, CARD_COLS - 5) + "…"
+            : text;
+        }
+      }
+
+      const TEXT_EXPORT_REPLACEMENTS = {
+        "★": "*",
+        "✦": "*",
+        "×": "x",
+        "◉": "O",
+        "°": "o",
+        "·": ".",
+        "—": "-",
+        "´": "'",
+        ω: "w",
+      };
+
+      /**
+       * Keep copied cards aligned in terminals that render some decorative glyphs wider.
+       * @param {string} str
+       * @returns {string}
+       */
+      function toCopySafeText(str) {
+        return Array.from(
+          str,
+          (char) => TEXT_EXPORT_REPLACEMENTS[char] || char,
+        ).join("");
+      }
+
+      /**
+       * @param {string} left
+       * @param {string} right
+       * @param {number} width
+       * @returns {string}
+       */
+      function fillBetween(left, right, width) {
+        const gap = Math.max(0, width - left.length - right.length);
+        return left + " ".repeat(gap) + right;
+      }
+
+      /**
+       * @param {string} text
+       * @param {number} width
+       * @returns {string}
+       */
+      function truncateCardSegment(text, maxWidth) {
+        if (maxWidth <= 0) return "";
+        if (text.length <= maxWidth) return text;
+        return maxWidth === 1 ? "…" : text.slice(0, maxWidth - 1) + "…";
+      }
+
+      /**
+       * Wrap header text inside the card, preferring word boundaries.
+       * Continuation lines can use a different width than the first line.
+       * @param {string} text
+       * @param {number} firstWidth
+       * @param {number} continuationWidth
+       * @returns {string[]}
+       */
+      function wrapCardSegment(text, firstWidth, continuationWidth = firstWidth) {
+        const source = text.trim();
+        if (!source) return [" "];
+
+        const lines = [];
+        let remaining = source;
+        let width = Math.max(1, firstWidth - 1);
+
+        while (remaining.length > 0) {
+          if (remaining.length <= width) {
+            lines.push(" " + remaining);
+            break;
+          }
+
+          let breakAt = remaining.lastIndexOf(" ", width);
+          if (breakAt <= 0) breakAt = width;
+
+          lines.push(" " + remaining.slice(0, breakAt).trimEnd());
+          remaining = remaining.slice(breakAt).trimStart();
+          width = Math.max(1, continuationWidth - 1);
+        }
+
+        return lines;
+      }
+
+      /**
+       * Build the card lines with configurable text shaping for display vs copy.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @param {CompanionSoul} [soul]
+       * @param {(text: string) => string} [formatText]
+       * @returns {string[]}
+       */
+      function buildCardTextInternal(
+        bones,
+        seed,
+        soul,
+        formatText = (text) => text,
+      ) {
+        const w = CARD_COLS;
+        const inner = w - 2; // inside the │ │
+        const stars = formatText(RARITY_STARS[bones.rarity]);
+        const species = formatText(
+          bones.species.toUpperCase() + (bones.shiny ? " *" : ""),
+        );
+        const rarity = formatText(bones.rarity.toUpperCase());
+        const hatLabel = formatText(bones.hat !== "none" ? bones.hat : "—");
+        const traits = formatText(bones.eye) + " / " + hatLabel;
+        const personalityAndName = formatText(
+          [soul?.personality?.trim(), soul?.name?.trim()]
+            .filter(Boolean)
+            .join(" ")
+            .toUpperCase(),
+        );
+        const rarityAndSpecies = [rarity, species].join(" ");
+        const spriteLines = renderSprite(bones, 0).map(formatText);
+        const totalStats = Object.values(bones.stats).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        const headerRight = stars + " ";
+        const traitRight = traits + " ";
+        const personalityLines = wrapCardSegment(
+          personalityAndName,
+          w - traitRight.length,
+          w - traitRight.length,
+        );
+        const rarityLeft = truncateCardSegment(
+          " " + rarityAndSpecies,
+          w - traitRight.length,
+        );
+
+        const lines = [];
+        // Top
+        lines.push(B.tl + B.h.repeat(w) + B.tr);
+        // Personality + name, then rarity + species
+        lines.push(B.v + fillBetween(rarityLeft, headerRight, w) + B.v);
+        lines.push(B.v + fillBetween(personalityLines[0], traitRight, w) + B.v);
+        for (const continuation of personalityLines.slice(1)) {
+          lines.push(B.v + fillBetween(continuation, "", w) + B.v);
+        }
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Sprite
+        for (const sl of spriteLines) {
+          // Center the sprite (sprites are ~12 wide)
+          const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
+          const rightPad = Math.max(0, inner - leftPad - sl.length);
+          lines.push(
+            B.v
+              + " "
+              + " ".repeat(leftPad)
+              + sl
+              + " ".repeat(rightPad)
+              + " "
+              + B.v,
+          );
+        }
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Stats
+        const BAR_W = 18;
+        for (const name of STAT_NAMES) {
+          const v = bones.stats[name];
+          const filled = Math.round((v * BAR_W) / 100);
+          const bar = "█".repeat(filled) + "░".repeat(BAR_W - filled);
+          const label = name.padEnd(10);
+          lines.push(
+            B.v + " " + label + bar + String(v).padStart(4) + " " + B.v,
+          );
+        }
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Footer
+        const tot = "TOT " + totalStats;
+        const seedStr =
+          seed.length > inner - tot.length - 2 ?
+            seed.slice(0, inner - tot.length - 3) + "…"
+          : seed;
+        lines.push(
+          B.v
+            + " "
+            + tot
+            + " ".repeat(inner - tot.length - seedStr.length)
+            + seedStr
+            + " "
+            + B.v,
+        );
+        // Bottom
+        lines.push(B.bl + B.h.repeat(w) + B.br);
+
+        return lines;
+      }
+
+      /**
+       * Build the on-screen card lines (no color). Used as the render source.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @param {CompanionSoul} [soul]
+       * @returns {string[]}
+       */
+      function buildCardText(bones, seed, soul) {
+        return buildCardTextInternal(bones, seed, soul);
+      }
+
+      /**
+       * Build a terminal-stable copy of the card text.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @param {CompanionSoul} [soul]
+       * @returns {string[]}
+       */
+      function buildCopyCardText(bones, seed, soul) {
+        return buildCardTextInternal(bones, seed, soul, toCopySafeText);
+      }
+
+      /**
+       * Animated card — renders box-drawing text with colored spans,
+       * wrapped in a 3D tilt/glare container inspired by Sam Warnick's tcg-card.
+       * @param {{ bones: CompanionBones, seed: string, soul?: CompanionSoul }} props
+       */
+      function TradingCard({ bones, seed, soul }) {
+        const [tick, setTick] = useState(0);
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const preRef = useRef(null);
+        const cardRef = useRef(null);
+        const wrapperRef = useRef(null);
+        const [expanded, setExpanded] = useState(false);
+        const expandedRef = useRef(false);
+        const tiltState = useRef({
+          transforming: false,
+          pendingFrame: null,
+          isTouching: false,
+        });
+
+        useEffect(() => {
+          const id = setInterval(() => setTick((t) => t + 1), TICK_MS);
+          return () => clearInterval(id);
+        }, []);
+
+        // --- TCG card interaction handlers ---
+        const startInteraction = useCallback((clientX, clientY) => {
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition =
+            "transform 300ms ease-out, box-shadow 300ms ease-out";
+          el.style.setProperty("--glare-opacity", "0.75");
+          const r =
+            (Math.random() * 0.5 + 0.5) * (Math.random() < 0.5 ? -1 : 1);
+          el.style.setProperty("--display-rz", `${r}deg`);
+          updateTilt(clientX, clientY);
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+          }, 300);
+        }, []);
+
+        const updateTilt = useCallback((clientX, clientY) => {
+          const st = tiltState.current;
+          if (st.transforming) return;
+          const el = cardRef.current;
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          const xPercent = (x / rect.width) * 100;
+          const yPercent = (y / rect.height) * 100;
+          const tiltX = -((y - rect.height / 2) / rect.height) * 10;
+          const tiltY = ((x - rect.width / 2) / rect.width) * 10;
+          st.pendingFrame = requestAnimationFrame(() => {
+            el.style.setProperty("--pointer-x", `${xPercent}%`);
+            el.style.setProperty("--pointer-y", `${yPercent}%`);
+            el.style.setProperty("--display-rx", `${tiltX}deg`);
+            el.style.setProperty("--display-ry", `${tiltY}deg`);
+            st.transforming = false;
+          });
+          st.transforming = true;
+        }, []);
+
+        const endInteraction = useCallback(() => {
+          const st = tiltState.current;
+          if (st.pendingFrame) {
+            cancelAnimationFrame(st.pendingFrame);
+            st.transforming = false;
+          }
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition =
+            "transform 300ms ease-out, box-shadow 300ms ease-out";
+          el.style.setProperty("--glare-opacity", "0");
+          el.style.setProperty("--display-rz", "0deg");
+          el.style.setProperty("--display-rx", "0deg");
+          el.style.setProperty("--display-ry", "0deg");
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+            st.isTouching = false;
+          }, 300);
+        }, []);
+
+        const onMouseEnter = useCallback(
+          (e) => {
+            if (tiltState.current.isTouching) return;
+            startInteraction(e.clientX, e.clientY);
+          },
+          [startInteraction],
+        );
+
+        const onMouseMove = useCallback(
+          (e) => {
+            if (tiltState.current.isTouching) return;
+            updateTilt(e.clientX, e.clientY);
+          },
+          [updateTilt],
+        );
+
+        const onMouseLeave = useCallback(() => {
+          if (tiltState.current.isTouching) return;
+          endInteraction();
+        }, [endInteraction]);
+
+        const onTouchStart = useCallback(
+          (e) => {
+            tiltState.current.isTouching = true;
+            const t = e.touches[0];
+            startInteraction(t.clientX, t.clientY);
+          },
+          [startInteraction],
+        );
+
+        const onTouchMove = useCallback(
+          (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            updateTilt(t.clientX, t.clientY);
+          },
+          [updateTilt],
+        );
+
+        const onTouchEnd = useCallback(() => {
+          endInteraction();
+        }, [endInteraction]);
+
+        const EXPAND_DURATION = 600;
+        const SPRING_1 =
+          "linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001)";
+        const SPRING_2 =
+          "linear(0, .007, .029 2.2%, .118 4.7%, .625 14.4%, .826 19%, .902, .962, 1.008 26.1%, 1.041 28.7%, 1.064 32.1%, 1.07 36%, 1.061 40.5%, 1.015 53.4%, .999 61.6%, .995 71.2%, 1)";
+
+        const centerCard = useCallback(() => {
+          const el = cardRef.current;
+          const wrapper = wrapperRef.current;
+          if (!el || !wrapper) return;
+          const rect = wrapper.getBoundingClientRect();
+          const screenX = window.innerWidth / 2;
+          const screenY = window.innerHeight / 2;
+          const tx = screenX - rect.left - rect.width / 2;
+          const ty = screenY - rect.top - rect.height / 2;
+          const scaleX = (window.innerWidth * 0.9) / rect.width;
+          const scaleY = (window.innerHeight * 0.9) / rect.height;
+          const scale = Math.min(scaleX, scaleY, 1.5);
+
+          el.style.transition = `transform ${EXPAND_DURATION}ms ${SPRING_1}, scale ${EXPAND_DURATION}ms ${SPRING_2}`;
+          el.style.setProperty("--display-rz", "0deg");
+          el.style.transform = `translate(${tx}px, ${ty}px) rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz)) rotateY(360deg)`;
+          el.style.scale = `${scale}`;
+          el.style.zIndex = "50";
+          setTimeout(() => {
+            if (el) el.style.transition = "";
+          }, EXPAND_DURATION);
+        }, []);
+
+        const resetCard = useCallback(() => {
+          const el = cardRef.current;
+          if (!el) return;
+          el.style.transition = `transform ${EXPAND_DURATION}ms ${SPRING_1}, scale ${EXPAND_DURATION}ms ${SPRING_2}`;
+          el.style.transform =
+            "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))";
+          el.style.scale = "1";
+          setTimeout(() => {
+            if (el) {
+              el.style.transition = "";
+              el.style.zIndex = "";
+            }
+          }, EXPAND_DURATION);
+        }, []);
+
+        const closeCard = useCallback(() => {
+          expandedRef.current = false;
+          setExpanded(false);
+          resetCard();
+        }, [resetCard]);
+
+        const onCardClick = useCallback(
+          (e) => {
+            e.stopPropagation();
+            if (expandedRef.current) {
+              closeCard();
+            } else {
+              expandedRef.current = true;
+              setExpanded(true);
+              centerCard();
+            }
+          },
+          [centerCard, closeCard],
+        );
+
+        // Close on outside click or keydown when expanded
+        useEffect(() => {
+          if (!expanded) return;
+          const onDocClick = (e) => {
+            if (!cardRef.current?.contains(e.target)) closeCard();
+          };
+          const onKeyDown = () => closeCard();
+          const onResize = () => {
+            if (expandedRef.current) centerCard();
+          };
+          document.addEventListener("click", onDocClick);
+          document.addEventListener("keydown", onKeyDown);
+          window.addEventListener("resize", onResize);
+          return () => {
+            document.removeEventListener("click", onDocClick);
+            document.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("resize", onResize);
+          };
+        }, [expanded, closeCard, centerCard]);
+
+        const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
+        const accentColor = bones.shiny ? theme.warning : rarityColor;
+
+        // Rarity-based glow for the card
+        const rarityGlowExtra = {
+          common: "",
+          uncommon: `, 0 0 20px ${rgbToRgba(accentColor, 0.2)}`,
+          rare: `, 0 0 30px ${rgbToRgba(accentColor, 0.25)}`,
+          epic: `, 0 0 40px ${rgbToRgba(accentColor, 0.35)}, 0 0 60px ${rgbToRgba(accentColor, 0.12)}`,
+          legendary: `, 0 0 50px ${rgbToRgba(accentColor, 0.4)}, 0 0 80px ${rgbToRgba(accentColor, 0.15)}`,
+        };
+        const cardBoxShadow = `0 2px 12px rgba(0,0,0,0.2)${rarityGlowExtra[bones.rarity] || ""}`;
+
+        // Use pretext to pick the best font size so the card fits nicely
+        const cardText = useMemo(
+          () => buildCardText(bones, seed, soul).join("\n"),
+          [bones, seed, soul],
+        );
+        const fontSize = useMemo(() => {
+          const family = "var(--font-monospace-code)";
+          for (let size = 16; size >= 10; size--) {
+            try {
+              const p = prepare(cardText, size + "px " + family);
+              const { height } = layout(p, 600, Math.round(size * 1.4));
+              // If it doesn't wrap (lineCount matches our line count), this size works
+              if (height <= cardText.split("\n").length * size * 1.4 + 4)
+                return size;
+            } catch {
+              continue;
+            }
+          }
+          return 12;
+        }, [cardText]);
+
+        // Build the animated version (sprite frame changes per tick)
+        const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
+        const frame = frameIdx === -1 ? 0 : frameIdx;
+        const animatedSprite = renderSprite(bones, frame);
+        const blinkSprite =
+          frameIdx === -1 ?
+            animatedSprite.map((l) => l.replaceAll(bones.eye, "-"))
+          : animatedSprite;
+
+        // Rebuild card lines with the animated sprite frame
+        const staticLines = useMemo(
+          () => buildCardText(bones, seed, soul),
+          [bones, seed, soul],
+        );
+        // Find the sprite region (between first and second separator)
+        const sepIndices = [];
+        staticLines.forEach((l, i) => {
+          if (l.startsWith(B.lt)) sepIndices.push(i);
+        });
+        const spriteStart = sepIndices[0] + 1;
+        const spriteEnd = sepIndices[1];
+        const inner = CARD_COLS - 2;
+
+        const displayLines = staticLines.map((line, i) => {
+          if (i >= spriteStart && i < spriteEnd) {
+            const si = i - spriteStart;
+            if (si < blinkSprite.length) {
+              const sl = blinkSprite[si];
+              const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
+              const rightPad = Math.max(0, inner - leftPad - sl.length);
+              return (
+                B.v
+                + " "
+                + " ".repeat(leftPad)
+                + sl
+                + " ".repeat(rightPad)
+                + " "
+                + B.v
+              );
+            }
+          }
+          return line;
+        });
+
+        // Color regions: header (lines 1-2), separators, sprite, stats, footer
+        const coloredLines = displayLines.map((line, i) => {
+          // Box chars in accent color, content varies
+          if (i === 0 || i === displayLines.length - 1) {
+            // Top/bottom border
+            return html`<span style=${{ color: accentColor }}>${line}</span>`;
+          }
+          if (line.startsWith(B.lt)) {
+            // Separator
+            return html`<span style=${{ color: accentColor }}>${line}</span>`;
+          }
+          if (i > 0 && i < sepIndices[0]) {
+            // Header lines: first line is rarity/species, following lines are personality/name.
+            const content = line.slice(1, -2);
+            const tail = line.slice(-2);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span
+                style=${
+                  i === 1 ?
+                    { color: accentColor, fontWeight: "bold" }
+                  : { color: theme.inactive }
+                }
+                >${content}</span
+              ><span style=${{ color: accentColor }}>${tail}</span>`;
+          }
+          if (i >= spriteStart && i < spriteEnd) {
+            // Sprite lines
+            const content = line.slice(1, -1);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: accentColor }}>${content}</span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+          }
+          if (i > sepIndices[1] && i < sepIndices[2]) {
+            // Stat lines: label dim, bar in accent, value bright
+            const raw = line.slice(2, -2); // inner content
+            const label = raw.slice(0, 10);
+            const bar = raw.slice(10, 28);
+            const val = raw.slice(28);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.inactive }}> ${label}</span
+              ><span style=${{ color: accentColor }}>${bar}</span
+              ><span style=${{ color: theme.text, fontWeight: "bold" }}
+                >${val}</span
+              ><span style=${{ color: accentColor }}> ${B.v}</span>`;
+          }
+          // Footer or other
+          const content = line.slice(1, -1);
+          return html`<span style=${{ color: accentColor }}>${B.v}</span
+            ><span style=${{ color: theme.inactive }}>${content}</span
+            ><span style=${{ color: accentColor }}>${B.v}</span>`;
+        });
+
+        return html`
+          <div
+            ref=${wrapperRef}
+            class="card-entrance"
+            style=${{ perspective: "800px", display: "inline-block" }}
+            onMouseEnter=${onMouseEnter}
+            onMouseMove=${onMouseMove}
+            onMouseLeave=${onMouseLeave}
+            onTouchStart=${onTouchStart}
+            onTouchMove=${onTouchMove}
+            onTouchEnd=${onTouchEnd}
+            onTouchCancel=${onTouchEnd}
+          >
+            <div
+              ref=${cardRef}
+              onClick=${onCardClick}
+              style=${{
+                "--display-rx": "0deg",
+                "--display-ry": "0deg",
+                "--display-rz": "0deg",
+                "--pointer-x": "50%",
+                "--pointer-y": "50%",
+                "--glare-opacity": "0",
+                transform:
+                  "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))",
+                transformOrigin: "center",
+                position: "relative",
+                borderRadius: "8px",
+                willChange: "transform",
+                cursor: "pointer",
+              }}
+            >
+              <pre
+                ref=${preRef}
+                class="leading-snug"
+                style=${{
+                  fontFamily: "var(--font-monospace-code)",
+                  fontSize: fontSize + "px",
+                  lineHeight: "1.4",
+                  color: theme.text,
+                  background: theme.userMessageBackground,
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  boxShadow: cardBoxShadow,
+                  transition: "box-shadow 500ms ease-out",
+                  display: "inline-block",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                }}
+              >
+${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
+              >
+              <div
+                style=${{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "8px",
+                  backgroundImage:
+                    "radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y), hsla(0,0%,100%,0.8) 10%, hsla(0,0%,100%,0.65) 20%, hsla(0,0%,0%,0.5) 90%)",
+                  mixBlendMode: "overlay",
+                  opacity: "var(--glare-opacity)",
+                  transition: "opacity 500ms ease-out",
+                  pointerEvents: "none",
+                }}
+              />
+              ${bones.shiny && html`<div class="shiny-overlay" />`}
+            </div>
+          </div>
+        `;
+      }
+
+      /**
+       * Copy card as plain text to clipboard
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @param {CompanionSoul} [soul]
+       * @returns {void}
+       */
+      function copyCardAsText(bones, seed, soul) {
+        const text = buildCopyCardText(bones, seed, soul).join("\n");
+        navigator.clipboard.writeText(text);
+      }
+
+      /**
+       * 10-char base32 random seed
+       * @returns {string}
+       */
+      function randomSeed() {
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        const bytes = crypto.getRandomValues(new Uint8Array(10));
+        return Array.from(bytes, (b) => alphabet[b & 31]).join("");
+      }
+
+      /**
+       * @param {Uint8Array} bytes
+       * @returns {string}
+       */
+      function bytesToBase64Url(bytes) {
+        return btoa(String.fromCharCode(...bytes))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      /**
+       * @param {string} encoded
+       * @returns {Uint8Array}
+       */
+      function base64UrlToBytes(encoded) {
+        const b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = b64 + "=".repeat((4 - (b64.length % 4 || 4)) % 4);
+        const raw = atob(padded);
+        return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+      }
+
+      /**
+       * @param {CompanionSoul} [soul]
+       * @returns {CompanionSoul|undefined}
+       */
+      function normalizeSoul(soul) {
+        const name = soul?.name?.trim() || "";
+        const personality = soul?.personality?.trim() || "";
+        if (!name && !personality) return undefined;
+        return {
+          ...(name ? { name } : {}),
+          ...(personality ? { personality } : {}),
+        };
+      }
+
+      /**
+       * @param {CompanionSoul} [soul]
+       * @returns {string}
+       */
+      function encodeSoul(soul) {
+        const normalized = normalizeSoul(soul);
+        if (!normalized) return "";
+        return bytesToBase64Url(
+          new TextEncoder().encode(JSON.stringify(normalized)),
+        );
+      }
+
+      /**
+       * @param {string} soulData
+       * @returns {CompanionSoul|undefined}
+       */
+      function decodeSoul(soulData) {
+        if (!soulData) return undefined;
+        try {
+          const parsed = JSON.parse(
+            new TextDecoder().decode(base64UrlToBytes(soulData)),
+          );
+          return normalizeSoul({
+            name: typeof parsed?.name === "string" ? parsed.name : "",
+            personality:
+              typeof parsed?.personality === "string" ? parsed.personality : "",
+          });
+        } catch {
+          return undefined;
+        }
+      }
+
+      // #region Germ encoding/decoding
+      // Pack bones into bits, base64url encode. Optional soul metadata rides in a
+      // second dot-delimited base64url segment so old bone-only germs still work.
+      // Layout (50 bits, 7 bytes padded):
+      // species:5 | eye:3 | hat:3 | rarity:3 | shiny:1 | stat*5:7each(=35) = 50 bits
+
+      /**
+       * @param {CompanionBones} bones
+       * @param {CompanionSoul} [soul]
+       * @returns {string}
+       */
+      function encodeGerm(bones, soul) {
+        const bits = [];
+        const push = (val, n) => {
+          for (let i = n - 1; i >= 0; i--) bits.push((val >> i) & 1);
+        };
+        push(SPECIES.indexOf(bones.species), 5);
+        push(EYES.indexOf(bones.eye), 3);
+        push(HATS.indexOf(bones.hat), 3);
+        push(RARITIES.indexOf(bones.rarity), 3);
+        push(bones.shiny ? 1 : 0, 1);
+        for (const n of STAT_NAMES)
+          push(Math.max(1, Math.min(100, bones.stats[n])), 7);
+        // Pad to full bytes
+        while (bits.length % 8) bits.push(0);
+        const bytes = new Uint8Array(bits.length / 8);
+        for (let i = 0; i < bytes.length; i++) {
+          let b = 0;
+          for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j];
+          bytes[i] = b;
+        }
+        const bonesData = bytesToBase64Url(bytes);
+        const soulData = encodeSoul(soul);
+        return soulData ? bonesData + "." + soulData : bonesData;
+      }
+
+      /**
+       * @param {string} germ
+       * @returns {{ bones: CompanionBones, soul?: CompanionSoul }|null}
+       */
+      function decodeGerm(germ) {
+        try {
+          const bits = [];
+          const separator = germ.indexOf(".");
+          const bonesData = separator === -1 ? germ : germ.slice(0, separator);
+          const soulData = separator === -1 ? "" : germ.slice(separator + 1);
+          const raw = base64UrlToBytes(bonesData);
+          for (let i = 0; i < raw.length; i++) {
+            const b = raw[i];
+            for (let j = 7; j >= 0; j--) bits.push((b >> j) & 1);
+          }
+          let pos = 0;
+          const read = (n) => {
+            let v = 0;
+            for (let i = 0; i < n; i++) v = (v << 1) | (bits[pos++] || 0);
+            return v;
+          };
+          const si = read(5),
+            ei = read(3),
+            hi = read(3),
+            ri = read(3),
+            sh = read(1);
+          if (
+            si >= SPECIES.length
+            || ei >= EYES.length
+            || hi >= HATS.length
+            || ri >= RARITIES.length
+          )
+            return null;
+          /** @type {Record<StatName, number>} */
+          const stats = {};
+          for (const n of STAT_NAMES)
+            stats[n] = Math.max(1, Math.min(100, read(7)));
+          const bones = {
+            species: SPECIES[si],
+            eye: EYES[ei],
+            hat: HATS[hi],
+            rarity: RARITIES[ri],
+            shiny: sh === 1,
+            stats,
+          };
+          const soul = decodeSoul(soulData);
+          return soul ? { bones, soul } : { bones };
+        } catch {
+          return null;
+        }
+      }
+      // #endregion
+
+      /** @returns {string} */
+      function getSeedFromURL() {
+        return new URLSearchParams(window.location.search).get("seed") || "";
+      }
+
+      /** @param {string} s */
+      function setSeedInURL(s) {
+        const url = new URL(window.location);
+        if (s) url.searchParams.set("seed", s);
+        else url.searchParams.delete("seed");
+        window.history.replaceState(null, "", url);
+      }
+
+      /**
+       * Try to extract bones from a seed. If it starts with "germ:" try decoding;
+       * on failure fall back to treating the whole string as a normal seed.
+       * @param {string} seed
+       * @returns {{ bones: CompanionBones, soul?: CompanionSoul, isGerm: boolean }}
+       */
+      function bonesFromSeed(seed) {
+        if (seed.startsWith("germ:")) {
+          const decoded = decodeGerm(seed.slice(5));
+          if (decoded) return { ...decoded, isGerm: true };
+        }
+        return { bones: roll(seed).bones, soul: undefined, isGerm: false };
+      }
+
+      /**
+       * Selector row — renders as two grid children (label + select)
+       * @param {{ inputId: string, label: string, options: string[], value: string, onChange: (v: string) => void, theme: Theme }} props
+       */
+      function Selector({ inputId, label, options, value, onChange, theme }) {
+        return html`
+          <label
+            for=${inputId}
+            class="font-mono text-sm self-center"
+            style=${{ color: theme.inactive }}
+            >${label}</label
+          >
+          <select
+            id=${inputId}
+            value=${value}
+            onChange=${(e) => onChange(e.target.value)}
+            class="px-2 py-1 rounded border text-sm transition-colors duration-300"
+            style=${{
+              gridColumn: "2 / -1",
+              backgroundColor: theme.userMessageBackground,
+              color: theme.text,
+              borderColor: theme.inactive,
+              fontFamily: "var(--font-monospace-code)",
+            }}
+          >
+            ${options.map(
+              (o) =>
+                html`<option
+                  key=${o}
+                  value=${o}
+                >
+                  ${o}
+                </option>`,
+            )}
+          </select>
+        `;
+      }
+
+      /**
+       * Stat slider row — renders as three grid children (label + slider + value)
+       * @param {{ inputId: string, name: string, value: number, onChange: (v: number) => void, theme: Theme }} props
+       */
+      function StatSlider({ inputId, name, value, onChange, theme }) {
+        return html`
+          <label
+            for=${inputId}
+            class="font-mono text-xs self-center"
+            style=${{ color: theme.inactive }}
+            >${name}</label
+          >
+          <input
+            id=${inputId}
+            type="range"
+            min="1"
+            max="100"
+            value=${value}
+            onInput=${(e) => onChange(Number(e.target.value))}
+          />
+          <span
+            class="font-mono text-xs self-center"
+            style=${{ color: theme.text, textAlign: "right" }}
+            >${value}</span
+          >
+        `;
+      }
+
+      function BuddyCreator() {
+        const initialSeed = useMemo(() => getSeedFromURL() || randomSeed(), []);
+        const initialParsed = useMemo(() => bonesFromSeed(initialSeed), []);
+
+        const [seed, setSeed] = useState(initialSeed);
+        const [result, setResult] = useState(() => ({
+          bones: initialParsed.bones,
+          soul: initialParsed.soul,
+          seed: initialSeed,
+        }));
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const [copied, setCopied] = useState(false);
+        const [germCopied, setGermCopied] = useState(false);
+        const seedInputId = "buddy-seed";
+        const nameInputId = "buddy-name";
+        const personalityInputId = "buddy-personality";
+        const shinyInputId = "buddy-shiny";
+
+        useEffect(() => {
+          setSeedInURL(initialSeed);
+        }, []);
+
+        /** Update creator output, syncing seed/URL to a germ */
+        const updateCompanion = useCallback((newBones, newSoul) => {
+          const soul = normalizeSoul(newSoul);
+          const germSeed = "germ:" + encodeGerm(newBones, soul);
+          setSeed(germSeed);
+          setSeedInURL(germSeed);
+          setResult({ bones: newBones, soul, seed: germSeed });
+          setCopied(false);
+          setGermCopied(false);
+        }, []);
+
+        const updateBones = useCallback(
+          (newBones) => {
+            updateCompanion(newBones, result.soul);
+          },
+          [result.soul, updateCompanion],
+        );
+
+        const updateSoul = useCallback(
+          (patch) => {
+            updateCompanion(result.bones, { ...(result.soul || {}), ...patch });
+          },
+          [result.bones, result.soul, updateCompanion],
+        );
+
+        const onSeedInput = useCallback(
+          (e) => {
+            const s = e.target.value;
+            setSeed(s);
+            const effective = s.trim() || initialSeed;
+            setSeedInURL(effective);
+            const { bones, soul } = bonesFromSeed(effective);
+            setResult({ bones, soul, seed: effective });
+            setCopied(false);
+            setGermCopied(false);
+          },
+          [initialSeed],
+        );
+
+        const randomize = useCallback(() => {
+          const s = randomSeed();
+          setSeed(s);
+          setSeedInURL(s);
+          const { bones, soul } = bonesFromSeed(s);
+          setResult({ bones, soul, seed: s });
+          setCopied(false);
+          setGermCopied(false);
+        }, []);
+
+        const onCopy = useCallback(() => {
+          if (!result) return;
+          copyCardAsText(result.bones, result.seed, result.soul);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }, [result]);
+
+        const exportGerm = useCallback(() => {
+          if (!result) return;
+          const germSeed = "germ:" + encodeGerm(result.bones, result.soul);
+          const url = new URL(window.location);
+          url.search = "";
+          url.searchParams.set("seed", germSeed);
+          navigator.clipboard.writeText(url.toString());
+          setGermCopied(true);
+          setTimeout(() => setGermCopied(false), 2000);
+        }, [result]);
+
+        // Creator controls derived from current bones
+        const bones = result.bones;
+        const soul = result.soul || {};
+
+        return html`
+          <div class="flex flex-col gap-2 text-sm">
+            <p>
+              Enter any seed to generate a buddy card. Same seed = same card.
+              Screenshot or copy to share.
+            </p>
+            <p>
+              Copied shamelessly from the
+              <code>/buddy</code> source code in the
+              <a
+                href="https://github.com/chatgptprojects/claude-code/tree/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline"
+                >2026-03-31 leak</a
+              >
+              of Anthropic's Claude Code.
+            </p>
+            <p>
+              The card component is made by the tired genius
+              <a
+                href="https://samwarnick.com/pokemon/"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline"
+                >Sam Warnick.</a
+              >
+            </p>
+            <p>
+              View the source code on
+              <a
+                href="https://github.com/carterworks/site/tree/main/src/pages/experiments/claude-code-buddy-creator.astro"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline"
+                >GitHub.</a
+              >
+            </p>
+
+            <label
+              for=${seedInputId}
+              class="sr-only"
+            >
+              Buddy seed
+            </label>
+            <div class="flex gap-2">
+              <input
+                id=${seedInputId}
+                type="text"
+                value=${seed}
+                onInput=${onSeedInput}
+                placeholder="Enter a seed"
+                class="flex-1 px-3 py-2 rounded border font-mono text-sm transition-colors duration-300 outline-none"
+                style=${{
+                  backgroundColor: theme.userMessageBackground,
+                  color: theme.text,
+                  borderColor: theme.inactive,
+                }}
+              />
+              <button
+                onClick=${randomize}
+                aria-label="Generate random seed"
+                class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
+                style=${{ borderColor: theme.inactive, color: theme.text }}
+                title="Random seed"
+              >
+                🎲
+              </button>
+            </div>
+
+            ${result
+            && html`
+              <div class="flex flex-col items-center gap-3">
+                <${TradingCard}
+                  key=${result.seed}
+                  bones=${result.bones}
+                  seed=${result.seed}
+                  soul=${result.soul}
+                />
+                <div class="flex gap-2 items-center flex-wrap justify-center">
+                  <button
+                    onClick=${onCopy}
+                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                  >
+                    ${copied ? "Copied!" : "Copy as text"}
+                  </button>
+                  <button
+                    onClick=${exportGerm}
+                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                  >
+                    ${germCopied ? "Link copied!" : "Copy share link"}
+                  </button>
+                  <span
+                    class="font-mono text-xs"
+                    style=${{ color: theme.inactive }}
+                  >
+                    seed:
+                    ${result.seed.length > 24 ?
+                      result.seed.slice(0, 24) + "..."
+                    : result.seed}
+                  </span>
+                </div>
+              </div>
+            `}
+
+            <details
+              class="mt-4"
+              open=${initialParsed.isGerm}
+            >
+              <summary
+                class="cursor-pointer font-mono text-sm select-none"
+                style=${{ color: theme.inactive }}
+              >
+                Card creator
+              </summary>
+              <div
+                class="grid gap-x-3 gap-y-2 mt-4 p-4 rounded border transition-colors duration-300 items-center"
+                style=${{
+                  borderColor: theme.subtle,
+                  backgroundColor: theme.subtle,
+                  gridTemplateColumns: "auto 1fr auto",
+                }}
+              >
+                <${Selector}
+                  inputId="buddy-species"
+                  label="Species"
+                  options=${SPECIES}
+                  value=${bones.species}
+                  onChange=${(v) => updateBones({ ...bones, species: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  inputId="buddy-eyes"
+                  label="Eyes"
+                  options=${EYES}
+                  value=${bones.eye}
+                  onChange=${(v) => updateBones({ ...bones, eye: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  inputId="buddy-hat"
+                  label="Hat"
+                  options=${HATS}
+                  value=${bones.hat}
+                  onChange=${(v) => updateBones({ ...bones, hat: v })}
+                  theme=${theme}
+                />
+                <${Selector}
+                  inputId="buddy-rarity"
+                  label="Rarity"
+                  options=${RARITIES}
+                  value=${bones.rarity}
+                  onChange=${(v) => updateBones({ ...bones, rarity: v })}
+                  theme=${theme}
+                />
+                <label
+                  for=${nameInputId}
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Name</label
+                >
+                <input
+                  id=${nameInputId}
+                  type="text"
+                  value=${soul.name || ""}
+                  onInput=${(e) => updateSoul({ name: e.target.value })}
+                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
+                  style=${{
+                    gridColumn: "2 / -1",
+                    backgroundColor: theme.userMessageBackground,
+                    color: theme.text,
+                    borderColor: theme.inactive,
+                    fontFamily: "var(--font-monospace-code)",
+                  }}
+                />
+                <label
+                  for=${personalityInputId}
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Personality</label
+                >
+                <input
+                  id=${personalityInputId}
+                  type="text"
+                  value=${soul.personality || ""}
+                  onInput=${(e) => updateSoul({ personality: e.target.value })}
+                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
+                  style=${{
+                    gridColumn: "2 / -1",
+                    backgroundColor: theme.userMessageBackground,
+                    color: theme.text,
+                    borderColor: theme.inactive,
+                    fontFamily: "var(--font-monospace-code)",
+                  }}
+                />
+                <label
+                  for=${shinyInputId}
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Shiny</label
+                >
+                <input
+                  id=${shinyInputId}
+                  type="checkbox"
+                  checked=${bones.shiny}
+                  onChange=${(e) =>
+                    updateBones({ ...bones, shiny: e.target.checked })}
+                  class="justify-self-start"
+                  style=${{ gridColumn: "2 / -1" }}
+                />
+                ${STAT_NAMES.map(
+                  (name) => html`
+                    <${StatSlider}
+                      key=${name}
+                      inputId=${`buddy-stat-${name.toLowerCase()}`}
+                      name=${name}
+                      value=${bones.stats[name]}
+                      onChange=${(v) =>
+                        updateBones({
+                          ...bones,
+                          stats: { ...bones.stats, [name]: v },
+                        })}
+                      theme=${theme}
+                    />
+                  `,
+                )}
+              </div>
+            </details>
+          </div>
+        `;
+      }
+
+      render(html`<${BuddyCreator} />`, document.getElementById("buddy-app"));
+      // #endregion
+    </script>
+    <style>
+      /* --- Atmosphere: subtle terminal dot-grid --- */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          radial-gradient(circle at 50% 50%, transparent 0%, var(--bg) 100%),
+          radial-gradient(
+            circle,
+            rgba(128, 128, 128, 0.18) 1px,
+            transparent 1px
+          );
+        background-size:
+          100% 100%,
+          18px 18px;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* --- Entrance choreography --- */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes cardMaterialize {
+        from {
+          opacity: 0;
+          transform: scale(0.96);
+          filter: blur(2px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+          filter: blur(0px);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      @keyframes subtleFloat {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-3px);
+        }
+      }
+
+      .animate-entrance {
+        animation: fadeUp 450ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+      .animate-entrance-1 {
+        animation-delay: 0ms;
+      }
+      .animate-entrance-2 {
+        animation-delay: 80ms;
+      }
+      .animate-entrance-3 {
+        animation-delay: 160ms;
+      }
+
+      .card-entrance {
+        animation: cardMaterialize 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+
+      /* --- Title glow --- */
+      .title-glow {
+        color: var(--claude, rgb(215, 119, 87));
+        text-shadow: 0 0 30px rgba(215, 119, 87, 0.35);
+        letter-spacing: -0.02em;
+      }
+
+      /* --- Button & control micro-interactions --- */
+      button,
+      select {
+        transition:
+          transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
+          box-shadow 200ms ease,
+          background-color 300ms ease,
+          border-color 300ms ease !important;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        button:hover,
+        select:hover {
+          box-shadow: 0 0 12px rgba(215, 119, 87, 0.18);
+        }
+      }
+
+      button:active {
+        transform: scale(0.97) !important;
+      }
+
+      /* --- Input focus ring --- */
+      input[type="text"]:focus {
+        box-shadow: 0 0 0 2px rgba(215, 119, 87, 0.25);
+        border-color: var(--claude, rgb(215, 119, 87)) !important;
+        outline: none;
+      }
+
+      /* --- Details/summary animation --- */
+      details[open] > :not(summary) {
+        animation: fadeUp 250ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+
+      summary {
+        transition: color 150ms ease;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        summary:hover {
+          color: var(--claude, rgb(215, 119, 87)) !important;
+        }
+      }
+
+      summary::marker {
+        color: var(--claude, rgb(215, 119, 87));
+      }
+
+      /* --- Shiny card holographic overlay --- */
+      .shiny-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+        background: linear-gradient(
+          105deg,
+          transparent 20%,
+          rgba(255, 200, 100, 0.1) 30%,
+          rgba(100, 200, 255, 0.1) 40%,
+          rgba(255, 100, 200, 0.1) 50%,
+          rgba(100, 255, 200, 0.1) 60%,
+          transparent 80%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 3s linear infinite;
+        pointer-events: none;
+        mix-blend-mode: overlay;
+      }
+
+      .shiny-badge {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        font-size: 14px;
+        animation: subtleFloat 2s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 2;
+        color: var(--claude, rgb(215, 119, 87));
+        text-shadow: 0 0 8px rgba(215, 119, 87, 0.6);
+      }
+
+      /* --- Range & checkbox accent --- */
+      input[type="range"] {
+        accent-color: var(--claude, rgb(215, 119, 87));
+      }
+      input[type="checkbox"] {
+        accent-color: var(--claude, rgb(215, 119, 87));
+      }
+
+      /* --- Link hover --- */
+      a {
+        transition:
+          color 150ms ease,
+          text-shadow 150ms ease;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        a:hover {
+          text-shadow: 0 0 10px currentColor;
+        }
+      }
+
+      /* --- Scrollbar --- */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--inactive, rgb(102, 102, 102));
+        border-radius: 3px;
+      }
+
+      /* --- Accessibility: respect reduced motion --- */
+      @media (prefers-reduced-motion: reduce) {
+        .animate-entrance,
+        .card-entrance,
+        details[open] > :not(summary) {
+          animation: none;
+        }
+        .shiny-overlay,
+        .shiny-badge {
+          animation: none;
+        }
+        button,
+        select,
+        a,
+        summary,
+        input[type="text"] {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="transition-colors duration-300 min-h-screen"
+    style="background-color: var(--bg); color: var(--text);"
+  >
+    <nav class="p-4 animate-entrance animate-entrance-1">
+      <a
+        href="/experiments"
+        class="inline-flex items-center gap-1 transition-colors duration-300"
+        style="color: var(--text);"
+        ><Experimental />Back to /experiments</a
+      >
+    </nav>
+    <main class="max-w-2xl mx-auto p-4">
+      <div
+        class="flex items-baseline justify-between gap-4 mb-6 animate-entrance animate-entrance-2"
+      >
+        <h1 class="text-2xl font-bold title-glow">Claude Code Buddy Creator</h1>
+        <div id="theme-switcher"></div>
+      </div>
+      <div
+        id="buddy-app"
+        class="animate-entrance animate-entrance-3"
+      >
+      </div>
+    </main>
+  </body>
+</html>
