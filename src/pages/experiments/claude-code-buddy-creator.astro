@@ -1576,7 +1576,7 @@ const { url } = Astro;
         "·": ".",
         "—": "-",
         "´": "'",
-        "ω": "w",
+        ω: "w",
       };
 
       /**
@@ -1585,8 +1585,10 @@ const { url } = Astro;
        * @returns {string}
        */
       function toCopySafeText(str) {
-        return Array.from(str, (char) => TEXT_EXPORT_REPLACEMENTS[char] || char)
-          .join("");
+        return Array.from(
+          str,
+          (char) => TEXT_EXPORT_REPLACEMENTS[char] || char,
+        ).join("");
       }
 
       /**
@@ -2006,13 +2008,18 @@ const { url } = Astro;
             // Species + stars line
             const content = line.slice(1, -2);
             const tail = line.slice(-2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor, fontWeight: "bold" }}>${content}</span><span style=${{ color: accentColor }}>${tail}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: accentColor, fontWeight: "bold" }}
+                >${content}</span
+              ><span style=${{ color: accentColor }}>${tail}</span>`;
           }
           if (i === 2) {
             // Rarity + traits line
             const content = line.slice(1, -2);
             const tail = line.slice(-2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}>${content}</span><span style=${{ color: accentColor }}>${tail}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.inactive }}>${content}</span
+              ><span style=${{ color: accentColor }}>${tail}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             // Sprite lines
@@ -2246,16 +2253,18 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
       /**
        * Selector row — renders as two grid children (label + select)
-       * @param {{ label: string, options: string[], value: string, onChange: (v: string) => void, theme: Theme }} props
+       * @param {{ inputId: string, label: string, options: string[], value: string, onChange: (v: string) => void, theme: Theme }} props
        */
-      function Selector({ label, options, value, onChange, theme }) {
+      function Selector({ inputId, label, options, value, onChange, theme }) {
         return html`
-          <span
+          <label
+            for=${inputId}
             class="font-mono text-sm self-center"
             style=${{ color: theme.inactive }}
-            >${label}</span
+            >${label}</label
           >
           <select
+            id=${inputId}
             value=${value}
             onChange=${(e) => onChange(e.target.value)}
             class="px-2 py-1 rounded border text-sm transition-colors duration-300"
@@ -2282,16 +2291,18 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
       /**
        * Stat slider row — renders as three grid children (label + slider + value)
-       * @param {{ name: string, value: number, onChange: (v: number) => void, theme: Theme }} props
+       * @param {{ inputId: string, name: string, value: number, onChange: (v: number) => void, theme: Theme }} props
        */
-      function StatSlider({ name, value, onChange, theme }) {
+      function StatSlider({ inputId, name, value, onChange, theme }) {
         return html`
-          <span
+          <label
+            for=${inputId}
             class="font-mono text-xs self-center"
             style=${{ color: theme.inactive }}
-            >${name}</span
+            >${name}</label
           >
           <input
+            id=${inputId}
             type="range"
             min="1"
             max="100"
@@ -2319,6 +2330,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         const theme = getTheme(themeName);
         const [copied, setCopied] = useState(false);
         const [germCopied, setGermCopied] = useState(false);
+        const seedInputId = "buddy-seed";
+        const shinyInputId = "buddy-shiny";
 
         useEffect(() => {
           setSeedInURL(initialSeed);
@@ -2384,12 +2397,12 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             </p>
             <p>
               Copied shamelessly from the
-              <code>/buddy</code> source code from
+              <code>/buddy</code> source code in the
               <a
                 href="https://github.com/chatgptprojects/claude-code/tree/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy"
                 rel="noopener noreferrer"
                 class="mx-[0.5ch] underline"
-                >the 2026-03-31 leak</a
+                >2026-03-31 leak</a
               >
               of Anthropic's Claude Code.
             </p>
@@ -2408,12 +2421,19 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 href="https://github.com/carterworks/site/tree/main/src/pages/experiments/claude-code-buddy-creator.astro"
                 rel="noopener noreferrer"
                 class="mx-[0.5ch] underline"
-                >GitHub</a
-              >.
+                >GitHub.</a
+              >
             </p>
 
+            <label
+              for=${seedInputId}
+              class="sr-only"
+            >
+              Buddy seed
+            </label>
             <div class="flex gap-2">
               <input
+                id=${seedInputId}
                 type="text"
                 value=${seed}
                 onInput=${onSeedInput}
@@ -2427,6 +2447,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               />
               <button
                 onClick=${randomize}
+                aria-label="Generate random seed"
                 class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
                 style=${{ borderColor: theme.inactive, color: theme.text }}
                 title="Random seed"
@@ -2490,6 +2511,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                 }}
               >
                 <${Selector}
+                  inputId="buddy-species"
                   label="Species"
                   options=${SPECIES}
                   value=${bones.species}
@@ -2497,6 +2519,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   theme=${theme}
                 />
                 <${Selector}
+                  inputId="buddy-eyes"
                   label="Eyes"
                   options=${EYES}
                   value=${bones.eye}
@@ -2504,6 +2527,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   theme=${theme}
                 />
                 <${Selector}
+                  inputId="buddy-hat"
                   label="Hat"
                   options=${HATS}
                   value=${bones.hat}
@@ -2511,18 +2535,21 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   theme=${theme}
                 />
                 <${Selector}
+                  inputId="buddy-rarity"
                   label="Rarity"
                   options=${RARITIES}
                   value=${bones.rarity}
                   onChange=${(v) => updateBones({ ...bones, rarity: v })}
                   theme=${theme}
                 />
-                <span
+                <label
+                  for=${shinyInputId}
                   class="font-mono text-sm"
                   style=${{ color: theme.inactive }}
-                  >Shiny</span
+                  >Shiny</label
                 >
                 <input
+                  id=${shinyInputId}
                   type="checkbox"
                   checked=${bones.shiny}
                   onChange=${(e) =>
@@ -2534,6 +2561,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   (name) => html`
                     <${StatSlider}
                       key=${name}
+                      inputId=${`buddy-stat-${name.toLowerCase()}`}
                       name=${name}
                       value=${bones.stats[name]}
                       onChange=${(v) =>
