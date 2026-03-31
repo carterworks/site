@@ -1115,7 +1115,11 @@ const { url } = Astro;
       // #endregion
 
       // #region Companion Generation
-      /** Mulberry32 — tiny seeded PRNG */
+      /**
+       * Mulberry32 — tiny seeded PRNG
+       * @param {number} seed
+       * @returns {() => number}
+       */
       function mulberry32(seed) {
         let a = seed >>> 0;
         return function () {
@@ -1127,6 +1131,11 @@ const { url } = Astro;
         };
       }
 
+      /**
+       * FNV-1a hash
+       * @param {string} s
+       * @returns {number}
+       */
       function hashString(s) {
         let h = 2166136261;
         for (let i = 0; i < s.length; i++) {
@@ -1136,11 +1145,20 @@ const { url } = Astro;
         return h >>> 0;
       }
 
+      /**
+       * @template T
+       * @param {() => number} rng
+       * @param {T[]} arr
+       * @returns {T}
+       */
       function pick(rng, arr) {
         return arr[Math.floor(rng() * arr.length)];
       }
 
-      /** @returns {Rarity} */
+      /**
+       * @param {() => number} rng
+       * @returns {Rarity}
+       */
       function rollRarity(rng) {
         const total = Object.values(RARITY_WEIGHTS).reduce((a, b) => a + b, 0);
         let roll = rng() * total;
@@ -1159,6 +1177,11 @@ const { url } = Astro;
         legendary: 50,
       };
 
+      /**
+       * @param {() => number} rng
+       * @param {Rarity} rarity
+       * @returns {Record<StatName, number>}
+       */
       function rollStats(rng, rarity) {
         const floor = RARITY_FLOOR[rarity];
         const peak = pick(rng, STAT_NAMES);
@@ -1249,7 +1272,10 @@ const { url } = Astro;
         },
       };
 
-      /** Hook: subscribe a Preact component to the theme signal */
+      /**
+       * Hook: subscribe a Preact component to the theme signal
+       * @returns {[ThemeName, (v: ThemeName) => void]}
+       */
       function useTheme() {
         const [value, setValue] = useState(themeSignal.get);
         useEffect(() => themeSignal.subscribe(setValue), []);
@@ -1265,6 +1291,7 @@ const { url } = Astro;
         "light-daltonized": "Light (colorblind)",
       };
 
+      /** @param {ThemeName} themeName */
       function applyTheme(themeName) {
         const theme = getTheme(themeName);
         const root = document.documentElement;
@@ -1341,6 +1368,10 @@ const { url } = Astro;
       /**
        * Use pretext to find max chars of `text` that fit in `maxPx` at given font.
        * Returns a truncated string (with ellipsis if needed).
+       * @param {string} text
+       * @param {string} font
+       * @param {number} maxPx
+       * @returns {string}
        */
       function truncateToFit(text, font, maxPx) {
         try {
@@ -1366,19 +1397,29 @@ const { url } = Astro;
         }
       }
 
-      /** Pad/truncate string to exactly `n` chars */
+      /**
+       * Pad/truncate string to exactly `n` chars
+       * @param {string} str
+       * @param {number} n
+       * @returns {string}
+       */
       function pad(str, n) {
         if (str.length > n) return str.slice(0, n - 1) + "…";
         return str.padEnd(n);
       }
 
-      /** Build the plain-text card lines (no color). Used for copy and as render source. */
+      /**
+       * Build the plain-text card lines (no color). Used for copy and as render source.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @returns {string[]}
+       */
       function buildCardText(bones, seed) {
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
         const stars = RARITY_STARS[bones.rarity];
         const species =
-          bones.species.toUpperCase() + (bones.shiny ? " ✨" : "");
+          bones.species.toUpperCase() + (bones.shiny ? " *" : "");
         const hatLabel = bones.hat !== "none" ? bones.hat : "—";
         const spriteLines = renderSprite(bones, 0);
         const totalStats = Object.values(bones.stats).reduce(
@@ -1391,7 +1432,7 @@ const { url } = Astro;
         lines.push(B.tl + B.h.repeat(w) + B.tr);
         // Species + stars
         lines.push(
-          B.v + " " + pad(species, inner - stars.length) + stars + " " + B.v,
+          B.v + "  " + pad(species, inner - stars.length) + stars + " " + B.v,
         );
         // Rarity + traits
         const rarity = bones.rarity.toUpperCase();
@@ -1452,7 +1493,10 @@ const { url } = Astro;
         return lines;
       }
 
-      /** Animated card — renders box-drawing text with colored spans */
+      /**
+       * Animated card — renders box-drawing text with colored spans
+       * @param {{ bones: CompanionBones, seed: string }} props
+       */
       function TradingCard({ bones, seed }) {
         const [tick, setTick] = useState(0);
         const [themeName] = useTheme();
@@ -1473,7 +1517,7 @@ const { url } = Astro;
           [bones, seed],
         );
         const fontSize = useMemo(() => {
-          const family = '"Courier New", Consolas, monospace';
+          const family = "var(--font-monospace-code)";
           for (let size = 16; size >= 10; size--) {
             try {
               const p = prepare(cardText, size + "px " + family);
@@ -1590,7 +1634,7 @@ const { url } = Astro;
             ref=${preRef}
             class="select-all leading-snug"
             style=${{
-              fontFamily: '"Courier New", Consolas, monospace',
+              fontFamily: "var(--font-monospace-code)",
               fontSize: fontSize + "px",
               lineHeight: "1.4",
               color: theme.text,
@@ -1606,24 +1650,33 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         `;
       }
 
-      /** Copy card as plain text to clipboard */
+      /**
+       * Copy card as plain text to clipboard
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @returns {void}
+       */
       function copyCardAsText(bones, seed) {
         const text = buildCardText(bones, seed).join("\n");
         navigator.clipboard.writeText(text);
       }
 
-      /** 10-char base32 random seed */
+      /**
+       * 10-char base32 random seed
+       * @returns {string}
+       */
       function randomSeed() {
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         const bytes = crypto.getRandomValues(new Uint8Array(10));
         return Array.from(bytes, (b) => alphabet[b & 31]).join("");
       }
 
-      /** Main app */
+      /** @returns {string} */
       function getSeedFromURL() {
         return new URLSearchParams(window.location.search).get("seed") || "";
       }
 
+      /** @param {string} s */
       function setSeedInURL(s) {
         const url = new URL(window.location);
         if (s) url.searchParams.set("seed", s);
@@ -1686,6 +1739,17 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             >
               Enter any seed to generate a buddy card. Same seed = same card.
               Screenshot or copy to share.
+            </p>
+            <p class="text-sm">
+              Copied shamelessly from the
+              <code>/buddy</code> source code from
+              <a
+                href="https://github.com/chatgptprojects/claude-code/tree/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy"
+                rel="noopener noreferrer"
+                class="mx-[0.5ch] underline hover:text-[--"
+                >the 2026-03-31 leak</a
+              >
+              of Anthropic's Claude Code.
             </p>
 
             <div class="flex gap-2">
