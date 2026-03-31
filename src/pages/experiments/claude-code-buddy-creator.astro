@@ -1567,30 +1567,57 @@ const { url } = Astro;
         }
       }
 
+      const TEXT_EXPORT_REPLACEMENTS = {
+        "★": "*",
+        "✦": "*",
+        "×": "x",
+        "◉": "O",
+        "°": "o",
+        "·": ".",
+        "—": "-",
+        "´": "'",
+        "ω": "w",
+      };
+
       /**
-       * Pad/truncate string to exactly `n` chars
+       * Keep copied cards aligned in terminals that render some decorative glyphs wider.
        * @param {string} str
-       * @param {number} n
        * @returns {string}
        */
-      function pad(str, n) {
-        if (str.length > n) return str.slice(0, n - 1) + "…";
-        return str.padEnd(n);
+      function toCopySafeText(str) {
+        return Array.from(str, (char) => TEXT_EXPORT_REPLACEMENTS[char] || char)
+          .join("");
       }
 
       /**
-       * Build the plain-text card lines (no color). Used for copy and as render source.
+       * @param {string} left
+       * @param {string} right
+       * @param {number} width
+       * @returns {string}
+       */
+      function fillBetween(left, right, width) {
+        const gap = Math.max(0, width - left.length - right.length);
+        return left + " ".repeat(gap) + right;
+      }
+
+      /**
+       * Build the card lines with configurable text shaping for display vs copy.
        * @param {CompanionBones} bones
        * @param {string} seed
+       * @param {(text: string) => string} [formatText]
        * @returns {string[]}
        */
-      function buildCardText(bones, seed) {
+      function buildCardTextInternal(bones, seed, formatText = (text) => text) {
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
-        const stars = RARITY_STARS[bones.rarity];
-        const species = bones.species.toUpperCase() + (bones.shiny ? " *" : "");
-        const hatLabel = bones.hat !== "none" ? bones.hat : "—";
-        const spriteLines = renderSprite(bones, 0);
+        const stars = formatText(RARITY_STARS[bones.rarity]);
+        const species = formatText(
+          bones.species.toUpperCase() + (bones.shiny ? " *" : ""),
+        );
+        const rarity = formatText(bones.rarity.toUpperCase());
+        const hatLabel = formatText(bones.hat !== "none" ? bones.hat : "—");
+        const traits = formatText(bones.eye) + " / " + hatLabel;
+        const spriteLines = renderSprite(bones, 0).map(formatText);
         const totalStats = Object.values(bones.stats).reduce(
           (a, b) => a + b,
           0,
@@ -1600,15 +1627,9 @@ const { url } = Astro;
         // Top
         lines.push(B.tl + B.h.repeat(w) + B.tr);
         // Species + stars
-        lines.push(
-          B.v + "  " + pad(species, inner - stars.length) + stars + " " + B.v,
-        );
+        lines.push(B.v + fillBetween(" " + species, stars + " ", w) + B.v);
         // Rarity + traits
-        const rarity = bones.rarity.toUpperCase();
-        const traits = bones.eye + " / " + hatLabel;
-        lines.push(
-          B.v + " " + pad(rarity, inner - traits.length) + traits + " " + B.v,
-        );
+        lines.push(B.v + fillBetween(" " + rarity, traits + " ", w) + B.v);
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Sprite
@@ -1660,6 +1681,26 @@ const { url } = Astro;
         lines.push(B.bl + B.h.repeat(w) + B.br);
 
         return lines;
+      }
+
+      /**
+       * Build the on-screen card lines (no color). Used as the render source.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @returns {string[]}
+       */
+      function buildCardText(bones, seed) {
+        return buildCardTextInternal(bones, seed);
+      }
+
+      /**
+       * Build a terminal-stable copy of the card text.
+       * @param {CompanionBones} bones
+       * @param {string} seed
+       * @returns {string[]}
+       */
+      function buildCopyCardText(bones, seed) {
+        return buildCardTextInternal(bones, seed, toCopySafeText);
       }
 
       /**
@@ -1963,18 +2004,15 @@ const { url } = Astro;
           }
           if (i === 1) {
             // Species + stars line
-            const content = line.slice(2, -2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: accentColor, fontWeight: "bold" }}>
-                ${content} </span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+            const content = line.slice(1, -2);
+            const tail = line.slice(-2);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor, fontWeight: "bold" }}>${content}</span><span style=${{ color: accentColor }}>${tail}</span>`;
           }
           if (i === 2) {
             // Rarity + traits line
-            const content = line.slice(2, -2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: theme.inactive }}> ${content} </span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+            const content = line.slice(1, -2);
+            const tail = line.slice(-2);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}>${content}</span><span style=${{ color: accentColor }}>${tail}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             // Sprite lines
@@ -2081,7 +2119,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        * @returns {void}
        */
       function copyCardAsText(bones, seed) {
-        const text = buildCardText(bones, seed).join("\n");
+        const text = buildCopyCardText(bones, seed).join("\n");
         navigator.clipboard.writeText(text);
       }
 
