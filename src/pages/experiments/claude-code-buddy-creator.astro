@@ -172,6 +172,8 @@ const { url } = Astro;
         "light",
         "light-daltonized",
         "dark-daltonized",
+        "solarized-dark",
+        "solarized-light",
       ];
 
       /** @typedef {(typeof THEME_NAMES)[number]} ThemeName - A renderable theme. Always resolvable to a concrete color palette. */
@@ -514,6 +516,158 @@ const { url } = Astro;
       };
 
       /**
+       * Solarized Dark — Ethan Schoonover's palette on base03 background
+       */
+      /** @type {Theme} */
+      const solarizedDarkTheme = {
+        autoAccept: "rgb(108,113,196)", // Violet
+        bashBorder: "rgb(211,54,130)", // Magenta
+        claude: "rgb(203,75,22)", // Solarized orange
+        claudeShimmer: "rgb(233,105,52)", // Lighter orange
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(38,139,210)", // Blue
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(68,169,240)", // Lighter blue
+        permission: "rgb(38,139,210)", // Blue
+        permissionShimmer: "rgb(88,169,230)", // Lighter blue
+        planMode: "rgb(42,161,152)", // Cyan
+        ide: "rgb(38,139,210)", // Blue
+        promptBorder: "rgb(88,110,117)", // Base01
+        promptBorderShimmer: "rgb(101,123,131)", // Base00
+        text: "rgb(131,148,150)", // Base0
+        inverseText: "rgb(0,43,54)", // Base03
+        inactive: "rgb(88,110,117)", // Base01
+        inactiveShimmer: "rgb(101,123,131)", // Base00
+        subtle: "rgb(7,54,66)", // Base02
+        suggestion: "rgb(38,139,210)", // Blue
+        remember: "rgb(108,113,196)", // Violet
+        background: "rgb(42,161,152)", // Cyan
+        success: "rgb(133,153,0)", // Green
+        error: "rgb(220,50,47)", // Red
+        warning: "rgb(181,137,0)", // Yellow
+        merged: "rgb(108,113,196)", // Violet
+        warningShimmer: "rgb(211,167,30)", // Lighter yellow
+        diffAdded: "rgb(23,69,23)", // Dark green
+        diffRemoved: "rgb(100,30,30)", // Dark red
+        diffAddedDimmed: "rgb(15,55,30)", // Very dark green
+        diffRemovedDimmed: "rgb(70,25,25)", // Very dark red
+        diffAddedWord: "rgb(133,153,0)", // Green
+        diffRemovedWord: "rgb(220,50,47)", // Red
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,50,47)",
+        blue_FOR_SUBAGENTS_ONLY: "rgb(38,139,210)",
+        green_FOR_SUBAGENTS_ONLY: "rgb(133,153,0)",
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(181,137,0)",
+        purple_FOR_SUBAGENTS_ONLY: "rgb(108,113,196)",
+        orange_FOR_SUBAGENTS_ONLY: "rgb(203,75,22)",
+        pink_FOR_SUBAGENTS_ONLY: "rgb(211,54,130)",
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(42,161,152)",
+        professionalBlue: "rgb(38,139,210)",
+        chromeYellow: "rgb(181,137,0)",
+        clawd_body: "rgb(203,75,22)",
+        clawd_background: "rgb(0,43,54)",
+        userMessageBackground: "rgb(7,54,66)", // Base02
+        userMessageBackgroundHover: "rgb(18,65,77)",
+        messageActionsBackground: "rgb(12,60,72)",
+        selectionBg: "rgb(7,54,66)", // Base02
+        bashMessageBackgroundColor: "rgb(12,58,70)",
+        memoryBackgroundColor: "rgb(10,56,68)",
+        rate_limit_fill: "rgb(38,139,210)", // Blue
+        rate_limit_empty: "rgb(7,54,66)", // Base02
+        fastMode: "rgb(203,75,22)", // Orange
+        fastModeShimmer: "rgb(233,105,52)",
+        briefLabelYou: "rgb(38,139,210)", // Blue
+        briefLabelClaude: "rgb(203,75,22)", // Orange
+        rainbow_red: "rgb(220,50,47)",
+        rainbow_orange: "rgb(203,75,22)",
+        rainbow_yellow: "rgb(181,137,0)",
+        rainbow_green: "rgb(133,153,0)",
+        rainbow_blue: "rgb(38,139,210)",
+        rainbow_indigo: "rgb(108,113,196)",
+        rainbow_violet: "rgb(211,54,130)",
+        rainbow_red_shimmer: "rgb(240,90,87)",
+        rainbow_orange_shimmer: "rgb(233,115,62)",
+        rainbow_yellow_shimmer: "rgb(211,167,30)",
+        rainbow_green_shimmer: "rgb(163,183,30)",
+        rainbow_blue_shimmer: "rgb(68,169,240)",
+        rainbow_indigo_shimmer: "rgb(138,143,226)",
+        rainbow_violet_shimmer: "rgb(231,84,160)",
+      };
+
+      /**
+       * Solarized Light — Ethan Schoonover's palette on base3 background
+       */
+      /** @type {Theme} */
+      const solarizedLightTheme = {
+        autoAccept: "rgb(108,113,196)", // Violet
+        bashBorder: "rgb(211,54,130)", // Magenta
+        claude: "rgb(203,75,22)", // Solarized orange
+        claudeShimmer: "rgb(233,105,52)", // Lighter orange
+        claudeBlue_FOR_SYSTEM_SPINNER: "rgb(38,139,210)", // Blue
+        claudeBlueShimmer_FOR_SYSTEM_SPINNER: "rgb(68,169,240)", // Lighter blue
+        permission: "rgb(38,139,210)", // Blue
+        permissionShimmer: "rgb(88,169,230)", // Lighter blue
+        planMode: "rgb(42,161,152)", // Cyan
+        ide: "rgb(38,139,210)", // Blue
+        promptBorder: "rgb(147,161,161)", // Base1
+        promptBorderShimmer: "rgb(131,148,150)", // Base0
+        text: "rgb(101,123,131)", // Base00
+        inverseText: "rgb(253,246,227)", // Base3
+        inactive: "rgb(147,161,161)", // Base1
+        inactiveShimmer: "rgb(131,148,150)", // Base0
+        subtle: "rgb(238,232,213)", // Base2
+        suggestion: "rgb(38,139,210)", // Blue
+        remember: "rgb(108,113,196)", // Violet
+        background: "rgb(42,161,152)", // Cyan
+        success: "rgb(133,153,0)", // Green
+        error: "rgb(220,50,47)", // Red
+        warning: "rgb(181,137,0)", // Yellow
+        merged: "rgb(108,113,196)", // Violet
+        warningShimmer: "rgb(211,167,30)", // Lighter yellow
+        diffAdded: "rgb(200,230,170)", // Light green
+        diffRemoved: "rgb(255,195,190)", // Light red
+        diffAddedDimmed: "rgb(225,240,210)", // Very light green
+        diffRemovedDimmed: "rgb(255,225,220)", // Very light red
+        diffAddedWord: "rgb(133,153,0)", // Green
+        diffRemovedWord: "rgb(220,50,47)", // Red
+        red_FOR_SUBAGENTS_ONLY: "rgb(220,50,47)",
+        blue_FOR_SUBAGENTS_ONLY: "rgb(38,139,210)",
+        green_FOR_SUBAGENTS_ONLY: "rgb(133,153,0)",
+        yellow_FOR_SUBAGENTS_ONLY: "rgb(181,137,0)",
+        purple_FOR_SUBAGENTS_ONLY: "rgb(108,113,196)",
+        orange_FOR_SUBAGENTS_ONLY: "rgb(203,75,22)",
+        pink_FOR_SUBAGENTS_ONLY: "rgb(211,54,130)",
+        cyan_FOR_SUBAGENTS_ONLY: "rgb(42,161,152)",
+        professionalBlue: "rgb(38,139,210)",
+        chromeYellow: "rgb(181,137,0)",
+        clawd_body: "rgb(203,75,22)",
+        clawd_background: "rgb(253,246,227)",
+        userMessageBackground: "rgb(238,232,213)", // Base2
+        userMessageBackgroundHover: "rgb(248,242,223)",
+        messageActionsBackground: "rgb(230,224,206)",
+        selectionBg: "rgb(238,232,213)", // Base2
+        bashMessageBackgroundColor: "rgb(243,237,218)",
+        memoryBackgroundColor: "rgb(235,230,210)",
+        rate_limit_fill: "rgb(38,139,210)", // Blue
+        rate_limit_empty: "rgb(7,54,66)", // Base03
+        fastMode: "rgb(203,75,22)", // Orange
+        fastModeShimmer: "rgb(233,105,52)",
+        briefLabelYou: "rgb(38,139,210)", // Blue
+        briefLabelClaude: "rgb(203,75,22)", // Orange
+        rainbow_red: "rgb(220,50,47)",
+        rainbow_orange: "rgb(203,75,22)",
+        rainbow_yellow: "rgb(181,137,0)",
+        rainbow_green: "rgb(133,153,0)",
+        rainbow_blue: "rgb(38,139,210)",
+        rainbow_indigo: "rgb(108,113,196)",
+        rainbow_violet: "rgb(211,54,130)",
+        rainbow_red_shimmer: "rgb(240,90,87)",
+        rainbow_orange_shimmer: "rgb(233,115,62)",
+        rainbow_yellow_shimmer: "rgb(211,167,30)",
+        rainbow_green_shimmer: "rgb(163,183,30)",
+        rainbow_blue_shimmer: "rgb(68,169,240)",
+        rainbow_indigo_shimmer: "rgb(138,143,226)",
+        rainbow_violet_shimmer: "rgb(231,84,160)",
+      };
+
+      /**
        * @param {ThemeName} themeName
        * @returns {Theme}
        */
@@ -525,6 +679,10 @@ const { url } = Astro;
             return lightDaltonizedTheme;
           case "dark-daltonized":
             return darkDaltonizedTheme;
+          case "solarized-dark":
+            return solarizedDarkTheme;
+          case "solarized-light":
+            return solarizedLightTheme;
           default:
             return darkTheme;
         }
@@ -1112,6 +1270,16 @@ const { url } = Astro;
       function spriteFrameCount(species) {
         return BODIES[species].length;
       }
+
+      /**
+       * Convert "rgb(r,g,b)" to "rgba(r,g,b,a)"
+       * @param {string} rgb
+       * @param {number} alpha
+       * @returns {string}
+       */
+      function rgbToRgba(rgb, alpha) {
+        return rgb.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+      }
       // #endregion
 
       // #region Companion Generation
@@ -1289,6 +1457,8 @@ const { url } = Astro;
         light: "Light",
         "dark-daltonized": "Dark (colorblind)",
         "light-daltonized": "Light (colorblind)",
+        "solarized-dark": "Solarized Dark",
+        "solarized-light": "Solarized Light",
       };
 
       /** @param {ThemeName} themeName */
@@ -1705,6 +1875,16 @@ const { url } = Astro;
         const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
         const accentColor = bones.shiny ? theme.warning : rarityColor;
 
+        // Rarity-based glow for the card
+        const rarityGlowExtra = {
+          common: "",
+          uncommon: `, 0 0 20px ${rgbToRgba(accentColor, 0.2)}`,
+          rare: `, 0 0 30px ${rgbToRgba(accentColor, 0.25)}`,
+          epic: `, 0 0 40px ${rgbToRgba(accentColor, 0.35)}, 0 0 60px ${rgbToRgba(accentColor, 0.12)}`,
+          legendary: `, 0 0 50px ${rgbToRgba(accentColor, 0.4)}, 0 0 80px ${rgbToRgba(accentColor, 0.15)}`,
+        };
+        const cardBoxShadow = `0 2px 12px rgba(0,0,0,0.2)${rarityGlowExtra[bones.rarity] || ""}`;
+
         // Use pretext to pick the best font size so the card fits nicely
         const cardText = useMemo(
           () => buildCardText(bones, seed).join("\n"),
@@ -1826,6 +2006,7 @@ const { url } = Astro;
         return html`
           <div
             ref=${wrapperRef}
+            class="card-entrance"
             style=${{ perspective: "800px", display: "inline-block" }}
             onMouseEnter=${onMouseEnter}
             onMouseMove=${onMouseMove}
@@ -1865,7 +2046,8 @@ const { url } = Astro;
                   background: theme.userMessageBackground,
                   padding: "12px 16px",
                   borderRadius: "8px",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                  boxShadow: cardBoxShadow,
+                  transition: "box-shadow 500ms ease-out",
                   display: "inline-block",
                   userSelect: "none",
                   WebkitUserSelect: "none",
@@ -1886,6 +2068,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   pointerEvents: "none",
                 }}
               />
+              ${bones.shiny && html`<div class="shiny-overlay" />`}
+              ${bones.shiny && html`<div class="shiny-badge">✦</div>`}
             </div>
           </div>
         `;
@@ -2218,6 +2402,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             && html`
               <div class="flex flex-col items-center gap-3">
                 <${TradingCard}
+                  key=${result.seed}
                   bones=${result.bones}
                   seed=${result.seed}
                 />
@@ -2332,12 +2517,227 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       render(html`<${BuddyCreator} />`, document.getElementById("buddy-app"));
       // #endregion
     </script>
+    <style>
+      /* --- Atmosphere: subtle terminal dot-grid --- */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          radial-gradient(circle at 50% 50%, transparent 0%, var(--bg) 100%),
+          radial-gradient(circle, rgba(128, 128, 128, 0.18) 1px, transparent 1px);
+        background-size:
+          100% 100%,
+          18px 18px;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* --- Entrance choreography --- */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes cardMaterialize {
+        from {
+          opacity: 0;
+          transform: scale(0.96);
+          filter: blur(2px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+          filter: blur(0px);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      @keyframes subtleFloat {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-3px);
+        }
+      }
+
+      .animate-entrance {
+        animation: fadeUp 450ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+      .animate-entrance-1 {
+        animation-delay: 0ms;
+      }
+      .animate-entrance-2 {
+        animation-delay: 80ms;
+      }
+      .animate-entrance-3 {
+        animation-delay: 160ms;
+      }
+
+      .card-entrance {
+        animation: cardMaterialize 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+
+      /* --- Title glow --- */
+      .title-glow {
+        color: var(--claude, rgb(215, 119, 87));
+        text-shadow: 0 0 30px rgba(215, 119, 87, 0.35);
+        letter-spacing: -0.02em;
+      }
+
+      /* --- Button & control micro-interactions --- */
+      button,
+      select {
+        transition:
+          transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
+          box-shadow 200ms ease,
+          background-color 300ms ease,
+          border-color 300ms ease !important;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        button:hover,
+        select:hover {
+          box-shadow: 0 0 12px rgba(215, 119, 87, 0.18);
+        }
+      }
+
+      button:active {
+        transform: scale(0.97) !important;
+      }
+
+      /* --- Input focus ring --- */
+      input[type="text"]:focus {
+        box-shadow: 0 0 0 2px rgba(215, 119, 87, 0.25);
+        border-color: var(--claude, rgb(215, 119, 87)) !important;
+        outline: none;
+      }
+
+      /* --- Details/summary animation --- */
+      details[open] > :not(summary) {
+        animation: fadeUp 250ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      }
+
+      summary {
+        transition: color 150ms ease;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        summary:hover {
+          color: var(--claude, rgb(215, 119, 87)) !important;
+        }
+      }
+
+      summary::marker {
+        color: var(--claude, rgb(215, 119, 87));
+      }
+
+      /* --- Shiny card holographic overlay --- */
+      .shiny-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+        background: linear-gradient(
+          105deg,
+          transparent 20%,
+          rgba(255, 200, 100, 0.1) 30%,
+          rgba(100, 200, 255, 0.1) 40%,
+          rgba(255, 100, 200, 0.1) 50%,
+          rgba(100, 255, 200, 0.1) 60%,
+          transparent 80%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 3s linear infinite;
+        pointer-events: none;
+        mix-blend-mode: overlay;
+      }
+
+      .shiny-badge {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        font-size: 14px;
+        animation: subtleFloat 2s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 2;
+        color: var(--claude, rgb(215, 119, 87));
+        text-shadow: 0 0 8px rgba(215, 119, 87, 0.6);
+      }
+
+      /* --- Range & checkbox accent --- */
+      input[type="range"] {
+        accent-color: var(--claude, rgb(215, 119, 87));
+      }
+      input[type="checkbox"] {
+        accent-color: var(--claude, rgb(215, 119, 87));
+      }
+
+      /* --- Link hover --- */
+      a {
+        transition:
+          color 150ms ease,
+          text-shadow 150ms ease;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        a:hover {
+          text-shadow: 0 0 10px currentColor;
+        }
+      }
+
+      /* --- Scrollbar --- */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--inactive, rgb(102, 102, 102));
+        border-radius: 3px;
+      }
+
+      /* --- Accessibility: respect reduced motion --- */
+      @media (prefers-reduced-motion: reduce) {
+        .animate-entrance,
+        .card-entrance,
+        details[open] > :not(summary) {
+          animation: none;
+        }
+        .shiny-overlay,
+        .shiny-badge {
+          animation: none;
+        }
+        button,
+        select,
+        a,
+        summary,
+        input[type="text"] {
+          transition: none !important;
+        }
+      }
+    </style>
   </head>
   <body
-    class="transition-colors duration-300"
+    class="transition-colors duration-300 min-h-screen"
     style="background-color: var(--bg); color: var(--text);"
   >
-    <nav class="p-4">
+    <nav class="p-4 animate-entrance animate-entrance-1">
       <a
         href="/experiments"
         class="inline-flex items-center gap-1 transition-colors duration-300"
@@ -2346,11 +2746,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       >
     </nav>
     <main class="max-w-2xl mx-auto p-4">
-      <div class="flex items-baseline justify-between gap-4 mb-6">
-        <h1 class="text-2xl font-bold">Claude Code Buddy Creator</h1>
+      <div class="flex items-baseline justify-between gap-4 mb-6 animate-entrance animate-entrance-2">
+        <h1 class="text-2xl font-bold title-glow">Claude Code Buddy Creator</h1>
         <div id="theme-switcher"></div>
       </div>
-      <div id="buddy-app"></div>
+      <div id="buddy-app" class="animate-entrance animate-entrance-3"></div>
     </main>
   </body>
 </html>
