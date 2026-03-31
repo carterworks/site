@@ -1,7 +1,8 @@
 ---
 import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import heartInABoxHalftone from "../../content/blog/assets/heart-in-a-box-halftone.png";
+import claudeCodeBuddyCreator from "../../content/blog/assets/claude-code-buddy-creator.png";
+import halftonePaintingApp from "../../content/blog/assets/halftone-painting-app.jpeg";
 ---
 
 <BaseLayout title="Experiments | carter.works">
@@ -11,6 +12,116 @@ import heartInABoxHalftone from "../../content/blog/assets/heart-in-a-box-halfto
       property="og:description"
       content="Little things"
     />
+    <style>
+      .experiment-grid {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        margin-block-start: 1.5rem;
+      }
+
+      .experiment-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+        padding: 0.85rem;
+        border: 0.5px solid color-mix(in srgb, currentColor 18%, transparent);
+        border-radius: 1rem;
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, currentColor 5%, transparent),
+            transparent 34%
+          ),
+          color-mix(in srgb, currentColor 2%, transparent);
+        box-shadow: 0 20px 45px -36px rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(4px);
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease,
+          background-color 180ms ease;
+      }
+
+      .experiment-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, currentColor 30%, transparent);
+      }
+
+      .experiment-link {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 0.9rem;
+      }
+
+      .experiment-shot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+        border-radius: 0.65rem;
+      }
+
+      .experiment-shot :global(img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+        transition: transform 220ms ease;
+      }
+
+      .experiment-card:hover .experiment-shot :global(img) {
+        transform: scale(1.02);
+      }
+
+      .experiment-shot--buddy :global(img) {
+        transform: scale(1.04);
+      }
+
+      .experiment-card:hover .experiment-shot--buddy :global(img) {
+        transform: scale(1.07);
+      }
+
+      .experiment-shot--halftone :global(img) {
+        transform: scale(1.03);
+        object-position: center 28%;
+      }
+
+      .experiment-card:hover .experiment-shot--halftone :global(img) {
+        transform: scale(1.06);
+      }
+
+      .experiment-copy h3 {
+        margin-block-end: 0.3rem;
+        line-height: 1.1;
+      }
+
+      .experiment-copy p {
+        font-size: 0.95rem;
+        line-height: 1.55;
+        opacity: 0.84;
+      }
+
+      .experiment-meta {
+        display: flex;
+        align-items: center;
+        margin-block-start: 0.95rem;
+        padding-block-start: 0.75rem;
+        border-top: 0.5px solid color-mix(in srgb, currentColor 12%, transparent);
+        font-size: 0.85rem;
+        opacity: 0.68;
+      }
+
+      .experiment-meta a {
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+      }
+    </style>
   </Fragment>
   <header>
     <h2>Experiments</h2>
@@ -23,26 +134,51 @@ import heartInABoxHalftone from "../../content/blog/assets/heart-in-a-box-halfto
     </p>
   </header>
   <main>
-    <ul
-      class="flex flex-row flex-wrap gap-4 *:border-tx/30 *:border-[0.5px] *:p-2 *:rounded-md *:w-64"
-    >
-      <!-- cards -->
-      <li>
-        <a href="/experiments/halftone-painting">
-          <div class="w-full h-auto aspect-[4/3] object-cover">
+    <ul class="experiment-grid">
+      <li class="experiment-card">
+        <a
+          class="experiment-link"
+          href="/experiments/halftone-painting"
+        >
+          <div class="experiment-shot experiment-shot--halftone">
             <Image
-              src={heartInABoxHalftone}
-              alt="Halftone painting"
+              src={halftonePaintingApp}
+              alt="Halftone Painting interface screenshot"
             />
           </div>
-          <h3>Halftone Painting</h3>
-          <p>A small painting toy for creating halftone images.</p>
+          <div class="experiment-copy">
+            <h3>Halftone Painting</h3>
+            <p>Paint with variable dot grids and export tiny halftone studies.</p>
+          </div>
         </a>
+        <div class="experiment-meta">
+          <a
+            href="/blog/2025-08-14-experiments-and-halftone"
+            >read note</a
+          >
+        </div>
+      </li>
+      <li class="experiment-card">
         <a
-          class="text-sm underline"
-          href="/blog/2025-08-14-experiments-and-halftone"
-          >Blog post</a
+          class="experiment-link"
+          href="/experiments/claude-code-buddy-creator"
         >
+          <div class="experiment-shot experiment-shot--buddy">
+            <Image
+              src={claudeCodeBuddyCreator}
+              alt="Claude Code Buddy Creator screenshot"
+            />
+          </div>
+          <div class="experiment-copy">
+            <h3>Claude Code Buddy Creator</h3>
+            <p>Generate, remix, and share a Claude Code-style buddy card from any seed.</p>
+          </div>
+        </a>
+        <div class="experiment-meta">
+          <a href="https://github.com/carterworks/site/blob/main/src/pages/experiments/claude-code-buddy-creator.astro"
+            >view source</a
+          >
+        </div>
       </li>
     </ul>
   </main>
