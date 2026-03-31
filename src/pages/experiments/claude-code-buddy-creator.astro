@@ -77,8 +77,17 @@ const { url } = Astro;
 
     <script type="module" is:inline>
       import { h, render } from "https://esm.sh/preact@10";
-      import { useState, useEffect, useMemo, useRef, useCallback } from "https://esm.sh/preact@10/hooks";
-      import { prepare, layout } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
+      import {
+        useState,
+        useEffect,
+        useMemo,
+        useRef,
+        useCallback,
+      } from "https://esm.sh/preact@10/hooks";
+      import {
+        prepare,
+        layout,
+      } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
 
@@ -651,107 +660,431 @@ const { url } = Astro;
       /** @type {Record<Species, string[][]>} */
       const BODIES = {
         [duck]: [
-          ['            ', '    __      ', '  <({E} )___  ', '   (  ._>   ', '    `--´    '],
-          ['            ', '    __      ', '  <({E} )___  ', '   (  ._>   ', '    `--´~   '],
-          ['            ', '    __      ', '  <({E} )___  ', '   (  .__>  ', '    `--´    '],
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  ._>   ",
+            "    `--´    ",
+          ],
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  ._>   ",
+            "    `--´~   ",
+          ],
+          [
+            "            ",
+            "    __      ",
+            "  <({E} )___  ",
+            "   (  .__>  ",
+            "    `--´    ",
+          ],
         ],
         [goose]: [
-          ['            ', '     ({E}>    ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
-          ['            ', '    ({E}>     ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
-          ['            ', '     ({E}>>   ', '     ||     ', '   _(__)_   ', '    ^^^^    '],
+          [
+            "            ",
+            "     ({E}>    ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
+          [
+            "            ",
+            "    ({E}>     ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
+          [
+            "            ",
+            "     ({E}>>   ",
+            "     ||     ",
+            "   _(__)_   ",
+            "    ^^^^    ",
+          ],
         ],
         [blob]: [
-          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (      )  ', '   `----´   '],
-          ['            ', '  .------.  ', ' (  {E}  {E}  ) ', ' (        ) ', '  `------´  '],
-          ['            ', '    .--.    ', '   ({E}  {E})   ', '   (    )   ', '    `--´    '],
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (      )  ",
+            "   `----´   ",
+          ],
+          [
+            "            ",
+            "  .------.  ",
+            " (  {E}  {E}  ) ",
+            " (        ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "    .--.    ",
+            "   ({E}  {E})   ",
+            "   (    )   ",
+            "    `--´    ",
+          ],
         ],
         [cat]: [
-          ['            ', '   /\\_/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")   '],
-          ['            ', '   /\\_/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")~  '],
-          ['            ', '   /\\-/\\    ', '  ( {E}   {E})  ', '  (  ω  )   ', '  (")_(")   '],
+          [
+            "            ",
+            "   /\\_/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")   ',
+          ],
+          [
+            "            ",
+            "   /\\_/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")~  ',
+          ],
+          [
+            "            ",
+            "   /\\-/\\    ",
+            "  ( {E}   {E})  ",
+            "  (  ω  )   ",
+            '  (")_(")   ',
+          ],
         ],
         [dragon]: [
-          ['            ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (   ~~   ) ', '  `-vvvv-´  '],
-          ['            ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (        ) ', '  `-vvvv-´  '],
-          ['   ~    ~   ', '  /^\\  /^\\  ', ' <  {E}  {E}  > ', ' (   ~~   ) ', '  `-vvvv-´  '],
+          [
+            "            ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (   ~~   ) ",
+            "  `-vvvv-´  ",
+          ],
+          [
+            "            ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (        ) ",
+            "  `-vvvv-´  ",
+          ],
+          [
+            "   ~    ~   ",
+            "  /^\\  /^\\  ",
+            " <  {E}  {E}  > ",
+            " (   ~~   ) ",
+            "  `-vvvv-´  ",
+          ],
         ],
         [octopus]: [
-          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  /\\/\\/\\/\\  '],
-          ['            ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  \\/\\/\\/\\/  '],
-          ['     o      ', '   .----.   ', '  ( {E}  {E} )  ', '  (______)  ', '  /\\/\\/\\/\\  '],
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  /\\/\\/\\/\\  ",
+          ],
+          [
+            "            ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  \\/\\/\\/\\/  ",
+          ],
+          [
+            "     o      ",
+            "   .----.   ",
+            "  ( {E}  {E} )  ",
+            "  (______)  ",
+            "  /\\/\\/\\/\\  ",
+          ],
         ],
         [owl]: [
-          ['            ', '   /\\  /\\   ', '  (({E})({E}))  ', '  (  ><  )  ', '   `----´   '],
-          ['            ', '   /\\  /\\   ', '  (({E})({E}))  ', '  (  ><  )  ', '   .----.   '],
-          ['            ', '   /\\  /\\   ', '  (({E})(-))  ', '  (  ><  )  ', '   `----´   '],
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})({E}))  ",
+            "  (  ><  )  ",
+            "   `----´   ",
+          ],
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})({E}))  ",
+            "  (  ><  )  ",
+            "   .----.   ",
+          ],
+          [
+            "            ",
+            "   /\\  /\\   ",
+            "  (({E})(-))  ",
+            "  (  ><  )  ",
+            "   `----´   ",
+          ],
         ],
         [penguin]: [
-          ['            ', '  .---.     ', '  ({E}>{E})     ', ' /(   )\\    ', '  `---´     '],
-          ['            ', '  .---.     ', '  ({E}>{E})     ', ' |(   )|    ', '  `---´     '],
-          ['  .---.     ', '  ({E}>{E})     ', ' /(   )\\    ', '  `---´     ', '   ~ ~      '],
+          [
+            "            ",
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " /(   )\\    ",
+            "  `---´     ",
+          ],
+          [
+            "            ",
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " |(   )|    ",
+            "  `---´     ",
+          ],
+          [
+            "  .---.     ",
+            "  ({E}>{E})     ",
+            " /(   )\\    ",
+            "  `---´     ",
+            "   ~ ~      ",
+          ],
         ],
         [turtle]: [
-          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[______]\\ ', '  ``    ``  '],
-          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[______]\\ ', '   ``  ``   '],
-          ['            ', '   _,--._   ', '  ( {E}  {E} )  ', ' /[======]\\ ', '  ``    ``  '],
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[______]\\ ",
+            "  ``    ``  ",
+          ],
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[______]\\ ",
+            "   ``  ``   ",
+          ],
+          [
+            "            ",
+            "   _,--._   ",
+            "  ( {E}  {E} )  ",
+            " /[======]\\ ",
+            "  ``    ``  ",
+          ],
         ],
         [snail]: [
-          ['            ', ' {E}    .--.  ', '  \\  ( @ )  ', '   \\_`--´   ', '  ~~~~~~~   '],
-          ['            ', '  {E}   .--.  ', '  |  ( @ )  ', '   \\_`--´   ', '  ~~~~~~~   '],
-          ['            ', ' {E}    .--.  ', '  \\  ( @  ) ', '   \\_`--´   ', '   ~~~~~~   '],
+          [
+            "            ",
+            " {E}    .--.  ",
+            "  \\  ( @ )  ",
+            "   \\_`--´   ",
+            "  ~~~~~~~   ",
+          ],
+          [
+            "            ",
+            "  {E}   .--.  ",
+            "  |  ( @ )  ",
+            "   \\_`--´   ",
+            "  ~~~~~~~   ",
+          ],
+          [
+            "            ",
+            " {E}    .--.  ",
+            "  \\  ( @  ) ",
+            "   \\_`--´   ",
+            "   ~~~~~~   ",
+          ],
         ],
         [ghost]: [
-          ['            ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  ~`~``~`~  '],
-          ['            ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  `~`~~`~`  '],
-          ['    ~  ~    ', '   .----.   ', '  / {E}  {E} \\  ', '  |      |  ', '  ~~`~~`~~  '],
+          [
+            "            ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  ~`~``~`~  ",
+          ],
+          [
+            "            ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  `~`~~`~`  ",
+          ],
+          [
+            "    ~  ~    ",
+            "   .----.   ",
+            "  / {E}  {E} \\  ",
+            "  |      |  ",
+            "  ~~`~~`~~  ",
+          ],
         ],
         [axolotl]: [
-          ['            ', '}~(______)~{', '}~({E} .. {E})~{', '  ( .--. )  ', '  (_/  \\_)  '],
-          ['            ', '~}(______){~', '~}({E} .. {E}){~', '  ( .--. )  ', '  (_/  \\_)  '],
-          ['            ', '}~(______)~{', '}~({E} .. {E})~{', '  (  --  )  ', '  ~_/  \\_~  '],
+          [
+            "            ",
+            "}~(______)~{",
+            "}~({E} .. {E})~{",
+            "  ( .--. )  ",
+            "  (_/  \\_)  ",
+          ],
+          [
+            "            ",
+            "~}(______){~",
+            "~}({E} .. {E}){~",
+            "  ( .--. )  ",
+            "  (_/  \\_)  ",
+          ],
+          [
+            "            ",
+            "}~(______)~{",
+            "}~({E} .. {E})~{",
+            "  (  --  )  ",
+            "  ~_/  \\_~  ",
+          ],
         ],
         [capybara]: [
-          ['            ', '  n______n  ', ' ( {E}    {E} ) ', ' (   oo   ) ', '  `------´  '],
-          ['            ', '  n______n  ', ' ( {E}    {E} ) ', ' (   Oo   ) ', '  `------´  '],
-          ['    ~  ~    ', '  u______n  ', ' ( {E}    {E} ) ', ' (   oo   ) ', '  `------´  '],
+          [
+            "            ",
+            "  n______n  ",
+            " ( {E}    {E} ) ",
+            " (   oo   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  n______n  ",
+            " ( {E}    {E} ) ",
+            " (   Oo   ) ",
+            "  `------´  ",
+          ],
+          [
+            "    ~  ~    ",
+            "  u______n  ",
+            " ( {E}    {E} ) ",
+            " (   oo   ) ",
+            "  `------´  ",
+          ],
         ],
         [cactus]: [
-          ['            ', ' n  ____  n ', ' | |{E}  {E}| | ', ' |_|    |_| ', '   |    |   '],
-          ['            ', '    ____    ', ' n |{E}  {E}| n ', ' |_|    |_| ', '   |    |   '],
-          [' n        n ', ' |  ____  | ', ' | |{E}  {E}| | ', ' |_|    |_| ', '   |    |   '],
+          [
+            "            ",
+            " n  ____  n ",
+            " | |{E}  {E}| | ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
+          [
+            "            ",
+            "    ____    ",
+            " n |{E}  {E}| n ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
+          [
+            " n        n ",
+            " |  ____  | ",
+            " | |{E}  {E}| | ",
+            " |_|    |_| ",
+            "   |    |   ",
+          ],
         ],
         [robot]: [
-          ['            ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ ==== ]  ', '  `------´  '],
-          ['            ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ -==- ]  ', '  `------´  '],
-          ['     *      ', '   .[||].   ', '  [ {E}  {E} ]  ', '  [ ==== ]  ', '  `------´  '],
+          [
+            "            ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ ==== ]  ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ -==- ]  ",
+            "  `------´  ",
+          ],
+          [
+            "     *      ",
+            "   .[||].   ",
+            "  [ {E}  {E} ]  ",
+            "  [ ==== ]  ",
+            "  `------´  ",
+          ],
         ],
         [rabbit]: [
-          ['            ', '   (\\__/)   ', '  ( {E}  {E} )  ', ' =(  ..  )= ', '  (")__(")  '],
-          ['            ', '   (|__/)   ', '  ( {E}  {E} )  ', ' =(  ..  )= ', '  (")__(")  '],
-          ['            ', '   (\\__/)   ', '  ( {E}  {E} )  ', ' =( .  . )= ', '  (")__(")  '],
+          [
+            "            ",
+            "   (\\__/)   ",
+            "  ( {E}  {E} )  ",
+            " =(  ..  )= ",
+            '  (")__(")  ',
+          ],
+          [
+            "            ",
+            "   (|__/)   ",
+            "  ( {E}  {E} )  ",
+            " =(  ..  )= ",
+            '  (")__(")  ',
+          ],
+          [
+            "            ",
+            "   (\\__/)   ",
+            "  ( {E}  {E} )  ",
+            " =( .  . )= ",
+            '  (")__(")  ',
+          ],
         ],
         [mushroom]: [
-          ['            ', ' .-o-OO-o-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
-          ['            ', ' .-O-oo-O-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
-          ['   . o  .   ', ' .-o-OO-o-. ', '(__________)', '   |{E}  {E}|   ', '   |____|   '],
+          [
+            "            ",
+            " .-o-OO-o-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
+          [
+            "            ",
+            " .-O-oo-O-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
+          [
+            "   . o  .   ",
+            " .-o-OO-o-. ",
+            "(__________)",
+            "   |{E}  {E}|   ",
+            "   |____|   ",
+          ],
         ],
         [chonk]: [
-          ['            ', '  /\\    /\\  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´  '],
-          ['            ', '  /\\    /|  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´  '],
-          ['            ', '  /\\    /\\  ', ' ( {E}    {E} ) ', ' (   ..   ) ', '  `------´~ '],
+          [
+            "            ",
+            "  /\\    /\\  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  /\\    /|  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´  ",
+          ],
+          [
+            "            ",
+            "  /\\    /\\  ",
+            " ( {E}    {E} ) ",
+            " (   ..   ) ",
+            "  `------´~ ",
+          ],
         ],
       };
 
       /** @type {Record<Hat, string>} */
       const HAT_LINES = {
-        none: '',
-        crown: '   \\^^^/    ',
-        tophat: '   [___]    ',
-        propeller: '    -+-     ',
-        halo: '   (   )    ',
-        wizard: '    /^\\     ',
-        beanie: '   (___)    ',
-        tinyduck: '    ,>      ',
+        none: "",
+        crown: "   \\^^^/    ",
+        tophat: "   [___]    ",
+        propeller: "    -+-     ",
+        halo: "   (   )    ",
+        wizard: "    /^\\     ",
+        beanie: "   (___)    ",
+        tinyduck: "    ,>      ",
       };
 
       /**
@@ -761,14 +1094,14 @@ const { url } = Astro;
        */
       function renderSprite(bones, frame = 0) {
         const frames = BODIES[bones.species];
-        const body = frames[frame % frames.length].map(line =>
-          line.replaceAll('{E}', bones.eye),
+        const body = frames[frame % frames.length].map((line) =>
+          line.replaceAll("{E}", bones.eye),
         );
         const lines = [...body];
-        if (bones.hat !== 'none' && !lines[0].trim()) {
+        if (bones.hat !== "none" && !lines[0].trim()) {
           lines[0] = HAT_LINES[bones.hat];
         }
-        if (!lines[0].trim() && frames.every(f => !f[0].trim())) lines.shift();
+        // Keep line 0 even when blank so every sprite is the same height.
         return lines;
       }
 
@@ -815,7 +1148,7 @@ const { url } = Astro;
           roll -= RARITY_WEIGHTS[rarity];
           if (roll < 0) return rarity;
         }
-        return 'common';
+        return "common";
       }
 
       const RARITY_FLOOR = {
@@ -846,7 +1179,7 @@ const { url } = Astro;
         return stats;
       }
 
-      const SALT = 'friend-2026-401';
+      const SALT = "friend-2026-401";
 
       /**
        * @param {() => number} rng
@@ -859,7 +1192,7 @@ const { url } = Astro;
           rarity,
           species: pick(rng, SPECIES),
           eye: pick(rng, EYES),
-          hat: rarity === 'common' ? 'none' : pick(rng, HATS),
+          hat: rarity === "common" ? "none" : pick(rng, HATS),
           shiny: rng() < 0.01,
           stats: rollStats(rng, rarity),
         };
@@ -905,7 +1238,9 @@ const { url } = Astro;
         set: (/** @type {ThemeName} */ v) => {
           if (v === _themeValue) return;
           _themeValue = v;
-          try { localStorage.setItem(STORAGE_KEY, v); } catch {}
+          try {
+            localStorage.setItem(STORAGE_KEY, v);
+          } catch {}
           for (const fn of _themeListeners) fn(v);
         },
         subscribe: (/** @type {(value: ThemeName) => void} */ fn) => {
@@ -993,8 +1328,14 @@ const { url } = Astro;
 
       // Box-drawing chars
       const B = {
-        tl: '┌', tr: '┐', bl: '└', br: '┘',
-        h: '─', v: '│', lt: '├', rt: '┤',
+        tl: "┌",
+        tr: "┐",
+        bl: "└",
+        br: "┘",
+        h: "─",
+        v: "│",
+        lt: "├",
+        rt: "┤",
       };
 
       /**
@@ -1007,24 +1348,27 @@ const { url } = Astro;
           const { lineCount } = layout(prepared, maxPx, 100);
           if (lineCount <= 1) return text;
           // Binary search for the longest prefix that fits in one line
-          let lo = 0, hi = text.length;
+          let lo = 0,
+            hi = text.length;
           while (lo < hi) {
             const mid = (lo + hi + 1) >> 1;
-            const sub = text.slice(0, mid) + '…';
+            const sub = text.slice(0, mid) + "…";
             const p = prepare(sub, font);
             if (layout(p, maxPx, 100).lineCount <= 1) lo = mid;
             else hi = mid - 1;
           }
-          return text.slice(0, lo) + '…';
+          return text.slice(0, lo) + "…";
         } catch {
           // Fallback: simple char truncation
-          return text.length > CARD_COLS - 4 ? text.slice(0, CARD_COLS - 5) + '…' : text;
+          return text.length > CARD_COLS - 4 ?
+              text.slice(0, CARD_COLS - 5) + "…"
+            : text;
         }
       }
 
       /** Pad/truncate string to exactly `n` chars */
       function pad(str, n) {
-        if (str.length > n) return str.slice(0, n - 1) + '…';
+        if (str.length > n) return str.slice(0, n - 1) + "…";
         return str.padEnd(n);
       }
 
@@ -1033,20 +1377,28 @@ const { url } = Astro;
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
         const stars = RARITY_STARS[bones.rarity];
-        const species = bones.species.toUpperCase() + (bones.shiny ? ' ✨' : '');
-        const hatLabel = bones.hat !== 'none' ? bones.hat : '—';
+        const species =
+          bones.species.toUpperCase() + (bones.shiny ? " ✨" : "");
+        const hatLabel = bones.hat !== "none" ? bones.hat : "—";
         const spriteLines = renderSprite(bones, 0);
-        const totalStats = Object.values(bones.stats).reduce((a, b) => a + b, 0);
+        const totalStats = Object.values(bones.stats).reduce(
+          (a, b) => a + b,
+          0,
+        );
 
         const lines = [];
         // Top
         lines.push(B.tl + B.h.repeat(w) + B.tr);
         // Species + stars
-        lines.push(B.v + ' ' + pad(species, inner - stars.length) + stars + ' ' + B.v);
+        lines.push(
+          B.v + " " + pad(species, inner - stars.length) + stars + " " + B.v,
+        );
         // Rarity + traits
         const rarity = bones.rarity.toUpperCase();
-        const traits = bones.eye + ' eyes / ' + hatLabel;
-        lines.push(B.v + ' ' + pad(rarity, inner - traits.length) + traits + ' ' + B.v);
+        const traits = bones.eye + " / " + hatLabel;
+        lines.push(
+          B.v + " " + pad(rarity, inner - traits.length) + traits + " " + B.v,
+        );
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Sprite
@@ -1054,7 +1406,15 @@ const { url } = Astro;
           // Center the sprite (sprites are ~12 wide)
           const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
           const rightPad = Math.max(0, inner - leftPad - sl.length);
-          lines.push(B.v + ' ' + ' '.repeat(leftPad) + sl + ' '.repeat(rightPad) + ' ' + B.v);
+          lines.push(
+            B.v
+              + " "
+              + " ".repeat(leftPad)
+              + sl
+              + " ".repeat(rightPad)
+              + " "
+              + B.v,
+          );
         }
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
@@ -1062,19 +1422,30 @@ const { url } = Astro;
         const BAR_W = 18;
         for (const name of STAT_NAMES) {
           const v = bones.stats[name];
-          const filled = Math.round(v * BAR_W / 100);
-          const bar = '█'.repeat(filled) + '░'.repeat(BAR_W - filled);
+          const filled = Math.round((v * BAR_W) / 100);
+          const bar = "█".repeat(filled) + "░".repeat(BAR_W - filled);
           const label = name.padEnd(10);
-          lines.push(B.v + ' ' + label + bar + String(v).padStart(4) + ' ' + B.v);
+          lines.push(
+            B.v + " " + label + bar + String(v).padStart(4) + " " + B.v,
+          );
         }
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Footer
-        const tot = 'TOT ' + totalStats;
-        const seedStr = seed.length > inner - tot.length - 2
-          ? seed.slice(0, inner - tot.length - 3) + '…'
+        const tot = "TOT " + totalStats;
+        const seedStr =
+          seed.length > inner - tot.length - 2 ?
+            seed.slice(0, inner - tot.length - 3) + "…"
           : seed;
-        lines.push(B.v + ' ' + tot + ' '.repeat(inner - tot.length - seedStr.length) + seedStr + ' ' + B.v);
+        lines.push(
+          B.v
+            + " "
+            + tot
+            + " ".repeat(inner - tot.length - seedStr.length)
+            + seedStr
+            + " "
+            + B.v,
+        );
         // Bottom
         lines.push(B.bl + B.h.repeat(w) + B.br);
 
@@ -1089,7 +1460,7 @@ const { url } = Astro;
         const preRef = useRef(null);
 
         useEffect(() => {
-          const id = setInterval(() => setTick(t => t + 1), TICK_MS);
+          const id = setInterval(() => setTick((t) => t + 1), TICK_MS);
           return () => clearInterval(id);
         }, []);
 
@@ -1097,16 +1468,22 @@ const { url } = Astro;
         const accentColor = bones.shiny ? theme.warning : rarityColor;
 
         // Use pretext to pick the best font size so the card fits nicely
-        const cardText = useMemo(() => buildCardText(bones, seed).join('\n'), [bones, seed]);
+        const cardText = useMemo(
+          () => buildCardText(bones, seed).join("\n"),
+          [bones, seed],
+        );
         const fontSize = useMemo(() => {
           const family = '"Courier New", Consolas, monospace';
           for (let size = 16; size >= 10; size--) {
             try {
-              const p = prepare(cardText, size + 'px ' + family);
+              const p = prepare(cardText, size + "px " + family);
               const { height } = layout(p, 600, Math.round(size * 1.4));
               // If it doesn't wrap (lineCount matches our line count), this size works
-              if (height <= cardText.split('\n').length * size * 1.4 + 4) return size;
-            } catch { continue; }
+              if (height <= cardText.split("\n").length * size * 1.4 + 4)
+                return size;
+            } catch {
+              continue;
+            }
           }
           return 12;
         }, [cardText]);
@@ -1115,15 +1492,21 @@ const { url } = Astro;
         const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
         const frame = frameIdx === -1 ? 0 : frameIdx;
         const animatedSprite = renderSprite(bones, frame);
-        const blinkSprite = frameIdx === -1
-          ? animatedSprite.map(l => l.replaceAll(bones.eye, '-'))
+        const blinkSprite =
+          frameIdx === -1 ?
+            animatedSprite.map((l) => l.replaceAll(bones.eye, "-"))
           : animatedSprite;
 
         // Rebuild card lines with the animated sprite frame
-        const staticLines = useMemo(() => buildCardText(bones, seed), [bones, seed]);
+        const staticLines = useMemo(
+          () => buildCardText(bones, seed),
+          [bones, seed],
+        );
         // Find the sprite region (between first and second separator)
         const sepIndices = [];
-        staticLines.forEach((l, i) => { if (l.startsWith(B.lt)) sepIndices.push(i); });
+        staticLines.forEach((l, i) => {
+          if (l.startsWith(B.lt)) sepIndices.push(i);
+        });
         const spriteStart = sepIndices[0] + 1;
         const spriteEnd = sepIndices[1];
         const inner = CARD_COLS - 2;
@@ -1135,7 +1518,15 @@ const { url } = Astro;
               const sl = blinkSprite[si];
               const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
               const rightPad = Math.max(0, inner - leftPad - sl.length);
-              return B.v + ' ' + ' '.repeat(leftPad) + sl + ' '.repeat(rightPad) + ' ' + B.v;
+              return (
+                B.v
+                + " "
+                + " ".repeat(leftPad)
+                + sl
+                + " ".repeat(rightPad)
+                + " "
+                + B.v
+              );
             }
           }
           return line;
@@ -1155,17 +1546,24 @@ const { url } = Astro;
           if (i === 1) {
             // Species + stars line
             const content = line.slice(2, -2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor, fontWeight: 'bold' }}> ${content} </span><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: accentColor, fontWeight: "bold" }}>
+                ${content} </span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
           if (i === 2) {
             // Rarity + traits line
             const content = line.slice(2, -2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}> ${content} </span><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.inactive }}> ${content} </span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             // Sprite lines
             const content = line.slice(1, -1);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor }}>${content}</span><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: accentColor }}>${content}</span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
           if (i > sepIndices[1] && i < sepIndices[2]) {
             // Stat lines: label dim, bar in accent, value bright
@@ -1173,11 +1571,18 @@ const { url } = Astro;
             const label = raw.slice(0, 10);
             const bar = raw.slice(10, 28);
             const val = raw.slice(28);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}> ${label}</span><span style=${{ color: accentColor }}>${bar}</span><span style=${{ color: theme.text, fontWeight: 'bold' }}>${val}</span><span style=${{ color: accentColor }}> ${B.v}</span>`;
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.inactive }}> ${label}</span
+              ><span style=${{ color: accentColor }}>${bar}</span
+              ><span style=${{ color: theme.text, fontWeight: "bold" }}
+                >${val}</span
+              ><span style=${{ color: accentColor }}> ${B.v}</span>`;
           }
           // Footer or other
           const content = line.slice(1, -1);
-          return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}>${content}</span><span style=${{ color: accentColor }}>${B.v}</span>`;
+          return html`<span style=${{ color: accentColor }}>${B.v}</span
+            ><span style=${{ color: theme.inactive }}>${content}</span
+            ><span style=${{ color: accentColor }}>${B.v}</span>`;
         });
 
         return html`
@@ -1186,42 +1591,44 @@ const { url } = Astro;
             class="select-all leading-snug"
             style=${{
               fontFamily: '"Courier New", Consolas, monospace',
-              fontSize: fontSize + 'px',
-              lineHeight: '1.4',
+              fontSize: fontSize + "px",
+              lineHeight: "1.4",
               color: theme.text,
               background: theme.userMessageBackground,
-              padding: '12px 16px',
-              borderRadius: '8px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-              display: 'inline-block',
+              padding: "12px 16px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+              display: "inline-block",
             }}
-          >${coloredLines.map((l, i) => html`${i > 0 ? '\n' : ''}${l}`)}</pre>
+          >
+${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
+          >
         `;
       }
 
       /** Copy card as plain text to clipboard */
       function copyCardAsText(bones, seed) {
-        const text = buildCardText(bones, seed).join('\n');
+        const text = buildCardText(bones, seed).join("\n");
         navigator.clipboard.writeText(text);
       }
 
       /** 10-char base32 random seed */
       function randomSeed() {
-        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         const bytes = crypto.getRandomValues(new Uint8Array(10));
-        return Array.from(bytes, b => alphabet[b & 31]).join('');
+        return Array.from(bytes, (b) => alphabet[b & 31]).join("");
       }
 
       /** Main app */
       function getSeedFromURL() {
-        return new URLSearchParams(window.location.search).get('seed') || '';
+        return new URLSearchParams(window.location.search).get("seed") || "";
       }
 
       function setSeedInURL(s) {
         const url = new URL(window.location);
-        if (s) url.searchParams.set('seed', s);
-        else url.searchParams.delete('seed');
-        window.history.replaceState(null, '', url);
+        if (s) url.searchParams.set("seed", s);
+        else url.searchParams.delete("seed");
+        window.history.replaceState(null, "", url);
       }
 
       function BuddyCreator() {
@@ -1235,7 +1642,9 @@ const { url } = Astro;
         const theme = getTheme(themeName);
         const [copied, setCopied] = useState(false);
 
-        useEffect(() => { setSeedInURL(initialSeed); }, []);
+        useEffect(() => {
+          setSeedInURL(initialSeed);
+        }, []);
 
         const generate = useCallback(() => {
           const s = seed.trim() || randomSeed();
@@ -1255,9 +1664,12 @@ const { url } = Astro;
           setCopied(false);
         }, []);
 
-        const onKeyDown = useCallback((e) => {
-          if (e.key === 'Enter') generate();
-        }, [generate]);
+        const onKeyDown = useCallback(
+          (e) => {
+            if (e.key === "Enter") generate();
+          },
+          [generate],
+        );
 
         const onCopy = useCallback(() => {
           if (!result) return;
@@ -1268,8 +1680,12 @@ const { url } = Astro;
 
         return html`
           <div class="flex flex-col gap-6">
-            <p class="text-sm" style=${{ color: theme.inactive }}>
-              Enter any seed to generate a buddy card. Same seed = same card. Screenshot or copy to share.
+            <p
+              class="text-sm"
+              style=${{ color: theme.inactive }}
+            >
+              Enter any seed to generate a buddy card. Same seed = same card.
+              Screenshot or copy to share.
             </p>
 
             <div class="flex gap-2">
@@ -1289,27 +1705,46 @@ const { url } = Astro;
               <button
                 onClick=${generate}
                 class="px-4 py-2 rounded font-mono text-sm font-bold transition-colors duration-300 cursor-pointer"
-                style=${{ backgroundColor: theme.claude, color: theme.inverseText }}
-              >Hatch</button>
+                style=${{
+                  backgroundColor: theme.claude,
+                  color: theme.inverseText,
+                }}
+              >
+                Hatch
+              </button>
               <button
                 onClick=${randomize}
                 class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
                 style=${{ borderColor: theme.inactive, color: theme.text }}
                 title="Random seed"
-              >🎲</button>
+              >
+                🎲
+              </button>
             </div>
 
-            ${result && html`
+            ${result
+            && html`
               <div class="flex flex-col items-center gap-3">
-                <${TradingCard} bones=${result.bones} seed=${result.seed} />
+                <${TradingCard}
+                  bones=${result.bones}
+                  seed=${result.seed}
+                />
                 <div class="flex gap-2 items-center">
                   <button
                     onClick=${onCopy}
                     class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
                     style=${{ borderColor: theme.inactive, color: theme.text }}
-                  >${copied ? 'Copied!' : 'Copy as text'}</button>
-                  <span class="font-mono text-xs" style=${{ color: theme.inactive }}>
-                    seed: ${result.seed.length > 24 ? result.seed.slice(0, 24) + '...' : result.seed}
+                  >
+                    ${copied ? "Copied!" : "Copy as text"}
+                  </button>
+                  <span
+                    class="font-mono text-xs"
+                    style=${{ color: theme.inactive }}
+                  >
+                    seed:
+                    ${result.seed.length > 24 ?
+                      result.seed.slice(0, 24) + "..."
+                    : result.seed}
                   </span>
                 </div>
               </div>
@@ -1319,22 +1754,46 @@ const { url } = Astro;
               <summary
                 class="cursor-pointer font-mono text-sm select-none"
                 style=${{ color: theme.inactive }}
-              >Browse all species</summary>
+              >
+                Browse all species
+              </summary>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                ${SPECIES.map(species => {
-                  const previewBones = { species, eye: '·', hat: 'none', rarity: 'common', shiny: false, stats: {} };
+                ${SPECIES.map((species) => {
+                  const previewBones = {
+                    species,
+                    eye: "·",
+                    hat: "none",
+                    rarity: "common",
+                    shiny: false,
+                    stats: {},
+                  };
                   return html`
                     <div
                       key=${species}
                       class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300 cursor-pointer"
-                      style=${{ borderColor: theme.subtle, backgroundColor: theme.subtle }}
-                      onClick=${() => { setSeed(species); setSeedInURL(species); const { bones } = roll(species); setResult({ bones, seed: species }); setCopied(false); }}
+                      style=${{
+                        borderColor: theme.subtle,
+                        backgroundColor: theme.subtle,
+                      }}
+                      onClick=${() => {
+                        setSeed(species);
+                        setSeedInURL(species);
+                        const { bones } = roll(species);
+                        setResult({ bones, seed: species });
+                        setCopied(false);
+                      }}
                     >
                       <pre
                         class="font-mono text-xs leading-tight select-none"
                         style=${{ color: theme.text }}
-                      >${renderSprite(previewBones, 0).join('\n')}</pre>
-                      <span class="font-mono text-xs" style=${{ color: theme.inactive }}>${species}</span>
+                      >
+${renderSprite(previewBones, 0).join("\n")}</pre
+                      >
+                      <span
+                        class="font-mono text-xs"
+                        style=${{ color: theme.inactive }}
+                        >${species}</span
+                      >
                     </div>
                   `;
                 })}
@@ -1344,10 +1803,7 @@ const { url } = Astro;
         `;
       }
 
-      render(
-        html`<${BuddyCreator} />`,
-        document.getElementById("buddy-app"),
-      );
+      render(html`<${BuddyCreator} />`, document.getElementById("buddy-app"));
       // #endregion
     </script>
   </head>
@@ -1370,6 +1826,5 @@ const { url } = Astro;
       </div>
       <div id="buddy-app"></div>
     </main>
-
   </body>
 </html>
