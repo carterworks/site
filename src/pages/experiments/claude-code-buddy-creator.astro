@@ -77,12 +77,12 @@ const { url } = Astro;
 
     <script type="module" is:inline>
       import { h, render } from "https://esm.sh/preact@10";
-      import { useState, useMemo } from "https://esm.sh/preact@10/hooks";
+      import { useState, useEffect, useMemo } from "https://esm.sh/preact@10/hooks";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
 
       // Port of
-      // #region:theme
+      // #region Theme
 
       /**
        * @typedef {Object} Theme
@@ -521,7 +521,7 @@ const { url } = Astro;
       }
       // #endregion
       // Port of https://github.com/chatgptprojects/claude-code/blob/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy/types.ts ---
-      // #region:data
+      // #region DATA
       const RARITIES = ["common", "uncommon", "rare", "epic", "legendary"];
       /** @typedef {(typeof RARITIES)[number]} Rarity */
 
@@ -643,6 +643,46 @@ const { url } = Astro;
       };
       // #endregion
 
+      // #region Theme Switcher
+
+      // --- localStorage-backed signal abstraction ---
+      const STORAGE_KEY = "buddy-creator-theme";
+      const DEFAULT_THEME = "dark";
+
+      /** @type {Set<(value: ThemeName) => void>} */
+      const _themeListeners = new Set();
+      let _themeValue = (() => {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          return THEME_NAMES.includes(stored) ? stored : DEFAULT_THEME;
+        } catch {
+          return DEFAULT_THEME;
+        }
+      })();
+
+      const themeSignal = {
+        get: () => _themeValue,
+        set: (/** @type {ThemeName} */ v) => {
+          if (v === _themeValue) return;
+          _themeValue = v;
+          try { localStorage.setItem(STORAGE_KEY, v); } catch {}
+          for (const fn of _themeListeners) fn(v);
+        },
+        subscribe: (/** @type {(value: ThemeName) => void} */ fn) => {
+          _themeListeners.add(fn);
+          return () => _themeListeners.delete(fn);
+        },
+      };
+
+      /** Hook: subscribe a Preact component to the theme signal */
+      function useTheme() {
+        const [value, setValue] = useState(themeSignal.get);
+        useEffect(() => themeSignal.subscribe(setValue), []);
+        return [value, themeSignal.set];
+      }
+
+      // --- end signal abstraction ---
+
       const THEME_LABELS = {
         dark: "Dark",
         light: "Light",
@@ -661,7 +701,7 @@ const { url } = Astro;
       }
 
       function ThemeSwitcher() {
-        const [selected, setSelected] = useState("dark");
+        const [selected, setSelected] = useTheme();
 
         const onChange = (e) => {
           const name = e.target.value;
@@ -692,11 +732,17 @@ const { url } = Astro;
         `;
       }
 
-      applyTheme("dark");
+      // Apply saved (or default) theme immediately
+      applyTheme(themeSignal.get());
+      // Also react to future signal changes (e.g. from other tabs)
+      themeSignal.subscribe(applyTheme);
+
       render(
         html`<${ThemeSwitcher} />`,
         document.getElementById("theme-switcher"),
       );
+      // #endregion
+      // #theme
     </script>
   </head>
   <body
