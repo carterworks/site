@@ -78,6 +78,7 @@ const { url } = Astro;
     <script type="module" is:inline>
       import { h, render } from "https://esm.sh/preact@10";
       import { useState, useEffect, useMemo, useRef, useCallback } from "https://esm.sh/preact@10/hooks";
+      import { prepare, layout } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
 
@@ -987,95 +988,221 @@ const { url } = Astro;
       const IDLE_SEQUENCE = [0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 2, 0, 0, 0];
       const TICK_MS = 500;
 
-      /** Animated sprite display */
-      function SpriteDisplay({ bones }) {
+      // Card inner width in monospace columns (inner = CARD_COLS, total = CARD_COLS + 2 for │ │)
+      const CARD_COLS = 34;
+
+      // Box-drawing chars
+      const B = {
+        tl: '┌', tr: '┐', bl: '└', br: '┘',
+        h: '─', v: '│', lt: '├', rt: '┤',
+      };
+
+      /**
+       * Use pretext to find max chars of `text` that fit in `maxPx` at given font.
+       * Returns a truncated string (with ellipsis if needed).
+       */
+      function truncateToFit(text, font, maxPx) {
+        try {
+          const prepared = prepare(text, font);
+          const { lineCount } = layout(prepared, maxPx, 100);
+          if (lineCount <= 1) return text;
+          // Binary search for the longest prefix that fits in one line
+          let lo = 0, hi = text.length;
+          while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            const sub = text.slice(0, mid) + '…';
+            const p = prepare(sub, font);
+            if (layout(p, maxPx, 100).lineCount <= 1) lo = mid;
+            else hi = mid - 1;
+          }
+          return text.slice(0, lo) + '…';
+        } catch {
+          // Fallback: simple char truncation
+          return text.length > CARD_COLS - 4 ? text.slice(0, CARD_COLS - 5) + '…' : text;
+        }
+      }
+
+      /** Pad/truncate string to exactly `n` chars */
+      function pad(str, n) {
+        if (str.length > n) return str.slice(0, n - 1) + '…';
+        return str.padEnd(n);
+      }
+
+      /** Build the plain-text card lines (no color). Used for copy and as render source. */
+      function buildCardText(bones, seed) {
+        const w = CARD_COLS;
+        const inner = w - 2; // inside the │ │
+        const stars = RARITY_STARS[bones.rarity];
+        const species = bones.species.toUpperCase() + (bones.shiny ? ' ✨' : '');
+        const hatLabel = bones.hat !== 'none' ? bones.hat : '—';
+        const spriteLines = renderSprite(bones, 0);
+        const totalStats = Object.values(bones.stats).reduce((a, b) => a + b, 0);
+
+        const lines = [];
+        // Top
+        lines.push(B.tl + B.h.repeat(w) + B.tr);
+        // Species + stars
+        lines.push(B.v + ' ' + pad(species, inner - stars.length) + stars + ' ' + B.v);
+        // Rarity + traits
+        const rarity = bones.rarity.toUpperCase();
+        const traits = bones.eye + ' eyes / ' + hatLabel;
+        lines.push(B.v + ' ' + pad(rarity, inner - traits.length) + traits + ' ' + B.v);
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Sprite
+        for (const sl of spriteLines) {
+          // Center the sprite (sprites are ~12 wide)
+          const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
+          const rightPad = Math.max(0, inner - leftPad - sl.length);
+          lines.push(B.v + ' ' + ' '.repeat(leftPad) + sl + ' '.repeat(rightPad) + ' ' + B.v);
+        }
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Stats
+        const BAR_W = 18;
+        for (const name of STAT_NAMES) {
+          const v = bones.stats[name];
+          const filled = Math.round(v * BAR_W / 100);
+          const bar = '█'.repeat(filled) + '░'.repeat(BAR_W - filled);
+          const label = name.padEnd(10);
+          lines.push(B.v + ' ' + label + bar + String(v).padStart(4) + ' ' + B.v);
+        }
+        // Separator
+        lines.push(B.lt + B.h.repeat(w) + B.rt);
+        // Footer
+        const tot = 'TOT ' + totalStats;
+        const seedStr = seed.length > inner - tot.length - 2
+          ? seed.slice(0, inner - tot.length - 3) + '…'
+          : seed;
+        lines.push(B.v + ' ' + tot + ' '.repeat(inner - tot.length - seedStr.length) + seedStr + ' ' + B.v);
+        // Bottom
+        lines.push(B.bl + B.h.repeat(w) + B.br);
+
+        return lines;
+      }
+
+      /** Animated card — renders box-drawing text with colored spans */
+      function TradingCard({ bones, seed }) {
         const [tick, setTick] = useState(0);
+        const [themeName] = useTheme();
+        const theme = getTheme(themeName);
+        const preRef = useRef(null);
+
         useEffect(() => {
           const id = setInterval(() => setTick(t => t + 1), TICK_MS);
           return () => clearInterval(id);
         }, []);
 
+        const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
+        const accentColor = bones.shiny ? theme.warning : rarityColor;
+
+        // Use pretext to pick the best font size so the card fits nicely
+        const cardText = useMemo(() => buildCardText(bones, seed).join('\n'), [bones, seed]);
+        const fontSize = useMemo(() => {
+          const family = '"Courier New", Consolas, monospace';
+          for (let size = 16; size >= 10; size--) {
+            try {
+              const p = prepare(cardText, size + 'px ' + family);
+              const { height } = layout(p, 600, Math.round(size * 1.4));
+              // If it doesn't wrap (lineCount matches our line count), this size works
+              if (height <= cardText.split('\n').length * size * 1.4 + 4) return size;
+            } catch { continue; }
+          }
+          return 12;
+        }, [cardText]);
+
+        // Build the animated version (sprite frame changes per tick)
         const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
         const frame = frameIdx === -1 ? 0 : frameIdx;
-        const lines = renderSprite(bones, frame);
+        const animatedSprite = renderSprite(bones, frame);
+        const blinkSprite = frameIdx === -1
+          ? animatedSprite.map(l => l.replaceAll(bones.eye, '-'))
+          : animatedSprite;
 
-        // Blink: replace eyes with - on frame -1
-        const displayLines = frameIdx === -1
-          ? lines.map(l => l.replaceAll(bones.eye, '-'))
-          : lines;
+        // Rebuild card lines with the animated sprite frame
+        const staticLines = useMemo(() => buildCardText(bones, seed), [bones, seed]);
+        // Find the sprite region (between first and second separator)
+        const sepIndices = [];
+        staticLines.forEach((l, i) => { if (l.startsWith(B.lt)) sepIndices.push(i); });
+        const spriteStart = sepIndices[0] + 1;
+        const spriteEnd = sepIndices[1];
+        const inner = CARD_COLS - 2;
 
-        const [themeName] = useTheme();
-        const theme = getTheme(themeName);
-        const rarityColor = theme[RARITY_COLORS[bones.rarity]] || theme.text;
-        const spriteColor = bones.shiny ? theme.warning : rarityColor;
+        const displayLines = staticLines.map((line, i) => {
+          if (i >= spriteStart && i < spriteEnd) {
+            const si = i - spriteStart;
+            if (si < blinkSprite.length) {
+              const sl = blinkSprite[si];
+              const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
+              const rightPad = Math.max(0, inner - leftPad - sl.length);
+              return B.v + ' ' + ' '.repeat(leftPad) + sl + ' '.repeat(rightPad) + ' ' + B.v;
+            }
+          }
+          return line;
+        });
+
+        // Color regions: header (lines 1-2), separators, sprite, stats, footer
+        const coloredLines = displayLines.map((line, i) => {
+          // Box chars in accent color, content varies
+          if (i === 0 || i === displayLines.length - 1) {
+            // Top/bottom border
+            return html`<span style=${{ color: accentColor }}>${line}</span>`;
+          }
+          if (line.startsWith(B.lt)) {
+            // Separator
+            return html`<span style=${{ color: accentColor }}>${line}</span>`;
+          }
+          if (i === 1) {
+            // Species + stars line
+            const content = line.slice(2, -2);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor, fontWeight: 'bold' }}> ${content} </span><span style=${{ color: accentColor }}>${B.v}</span>`;
+          }
+          if (i === 2) {
+            // Rarity + traits line
+            const content = line.slice(2, -2);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}> ${content} </span><span style=${{ color: accentColor }}>${B.v}</span>`;
+          }
+          if (i >= spriteStart && i < spriteEnd) {
+            // Sprite lines
+            const content = line.slice(1, -1);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: accentColor }}>${content}</span><span style=${{ color: accentColor }}>${B.v}</span>`;
+          }
+          if (i > sepIndices[1] && i < sepIndices[2]) {
+            // Stat lines: label dim, bar in accent, value bright
+            const raw = line.slice(2, -2); // inner content
+            const label = raw.slice(0, 10);
+            const bar = raw.slice(10, 28);
+            const val = raw.slice(28);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}> ${label}</span><span style=${{ color: accentColor }}>${bar}</span><span style=${{ color: theme.text, fontWeight: 'bold' }}>${val}</span><span style=${{ color: accentColor }}> ${B.v}</span>`;
+          }
+          // Footer or other
+          const content = line.slice(1, -1);
+          return html`<span style=${{ color: accentColor }}>${B.v}</span><span style=${{ color: theme.inactive }}>${content}</span><span style=${{ color: accentColor }}>${B.v}</span>`;
+        });
 
         return html`
           <pre
-            class="font-mono text-base leading-tight select-none text-center"
-            style=${{ color: spriteColor }}
-          >${displayLines.join('\n')}</pre>
-        `;
-      }
-
-      /** Stat bar */
-      function StatBar({ name, value, theme }) {
-        const filled = Math.round(value / 5);
-        const bar = '█'.repeat(filled) + '░'.repeat(20 - filled);
-        return html`
-          <div class="flex items-center gap-2 font-mono text-xs">
-            <span class="w-24 text-right" style=${{ color: theme.inactive }}>${name}</span>
-            <span style=${{ color: theme.claude }}>${bar}</span>
-            <span class="w-8 text-right" style=${{ color: theme.text }}>${value}</span>
-          </div>
-        `;
-      }
-
-      /** Rarity badge */
-      function RarityBadge({ rarity }) {
-        const [themeName] = useTheme();
-        const theme = getTheme(themeName);
-        const color = theme[RARITY_COLORS[rarity]] || theme.text;
-        const stars = RARITY_STARS[rarity];
-        return html`
-          <span
-            class="font-mono text-sm font-bold uppercase tracking-wider"
-            style=${{ color }}
-          >${rarity} ${stars}</span>
-        `;
-      }
-
-      /** Card for a generated buddy */
-      function BuddyCard({ bones }) {
-        const [themeName] = useTheme();
-        const theme = getTheme(themeName);
-
-        return html`
-          <div
-            class="rounded-lg border p-6 transition-colors duration-300 flex flex-col items-center gap-4"
+            ref=${preRef}
+            class="select-all leading-snug"
             style=${{
-              borderColor: theme.inactive,
-              backgroundColor: theme.subtle,
+              fontFamily: '"Courier New", Consolas, monospace',
+              fontSize: fontSize + 'px',
+              lineHeight: '1.4',
+              color: theme.text,
+              background: theme.userMessageBackground,
+              padding: '12px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+              display: 'inline-block',
             }}
-          >
-            <${SpriteDisplay} bones=${bones} />
-
-            <div class="flex flex-col items-center gap-1">
-              <span class="font-mono text-xs uppercase tracking-wider" style=${{ color: theme.inactive }}>
-                ${bones.species}${bones.shiny ? ' ✨ SHINY' : ''}
-              </span>
-              <${RarityBadge} rarity=${bones.rarity} />
-              <span class="font-mono text-xs" style=${{ color: theme.inactive }}>
-                eyes: ${bones.eye}${' '}hat: ${bones.hat}
-              </span>
-            </div>
-
-            <div class="w-full flex flex-col gap-1 mt-2">
-              ${STAT_NAMES.map(name => html`
-                <${StatBar} key=${name} name=${name} value=${bones.stats[name]} theme=${theme} />
-              `)}
-            </div>
-          </div>
+          >${coloredLines.map((l, i) => html`${i > 0 ? '\n' : ''}${l}`)}</pre>
         `;
+      }
+
+      /** Copy card as plain text to clipboard */
+      function copyCardAsText(bones, seed) {
+        const text = buildCardText(bones, seed).join('\n');
+        navigator.clipboard.writeText(text);
       }
 
       /** Main app */
@@ -1084,13 +1211,14 @@ const { url } = Astro;
         const [result, setResult] = useState(null);
         const [themeName] = useTheme();
         const theme = getTheme(themeName);
-        const inputRef = useRef(null);
+        const [copied, setCopied] = useState(false);
 
         const generate = useCallback(() => {
           const s = seed.trim() || crypto.randomUUID();
           if (!seed.trim()) setSeed(s);
           const { bones } = roll(s);
           setResult({ bones, seed: s });
+          setCopied(false);
         }, [seed]);
 
         const randomize = useCallback(() => {
@@ -1098,22 +1226,28 @@ const { url } = Astro;
           setSeed(s);
           const { bones } = roll(s);
           setResult({ bones, seed: s });
+          setCopied(false);
         }, []);
 
-        // Generate on Enter
         const onKeyDown = useCallback((e) => {
           if (e.key === 'Enter') generate();
         }, [generate]);
 
+        const onCopy = useCallback(() => {
+          if (!result) return;
+          copyCardAsText(result.bones, result.seed);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }, [result]);
+
         return html`
           <div class="flex flex-col gap-6">
             <p class="text-sm" style=${{ color: theme.inactive }}>
-              Enter any seed text to deterministically generate a buddy. Same seed always produces the same companion.
+              Enter any seed to generate a buddy card. Same seed = same card. Screenshot or copy to share.
             </p>
 
             <div class="flex gap-2">
               <input
-                ref=${inputRef}
                 type="text"
                 value=${seed}
                 onInput=${(e) => setSeed(e.target.value)}
@@ -1129,31 +1263,32 @@ const { url } = Astro;
               <button
                 onClick=${generate}
                 class="px-4 py-2 rounded font-mono text-sm font-bold transition-colors duration-300 cursor-pointer"
-                style=${{
-                  backgroundColor: theme.claude,
-                  color: theme.inverseText,
-                }}
+                style=${{ backgroundColor: theme.claude, color: theme.inverseText }}
               >Hatch</button>
               <button
                 onClick=${randomize}
                 class="px-4 py-2 rounded font-mono text-sm transition-colors duration-300 cursor-pointer border"
-                style=${{
-                  borderColor: theme.inactive,
-                  color: theme.text,
-                }}
+                style=${{ borderColor: theme.inactive, color: theme.text }}
+                title="Random seed"
               >🎲</button>
             </div>
 
             ${result && html`
-              <div class="flex flex-col gap-2">
-                <div class="text-xs font-mono" style=${{ color: theme.inactive }}>
-                  seed: ${result.seed}
+              <div class="flex flex-col items-center gap-3">
+                <${TradingCard} bones=${result.bones} seed=${result.seed} />
+                <div class="flex gap-2 items-center">
+                  <button
+                    onClick=${onCopy}
+                    class="px-3 py-1.5 rounded font-mono text-xs transition-colors duration-300 cursor-pointer border"
+                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                  >${copied ? 'Copied!' : 'Copy as text'}</button>
+                  <span class="font-mono text-xs" style=${{ color: theme.inactive }}>
+                    seed: ${result.seed.length > 24 ? result.seed.slice(0, 24) + '...' : result.seed}
+                  </span>
                 </div>
-                <${BuddyCard} bones=${result.bones} />
               </div>
             `}
 
-            <!-- Species gallery -->
             <details class="mt-4">
               <summary
                 class="cursor-pointer font-mono text-sm select-none"
@@ -1161,17 +1296,18 @@ const { url } = Astro;
               >Browse all species</summary>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                 ${SPECIES.map(species => {
-                  const bones = { species, eye: '·', hat: 'none', rarity: 'common', shiny: false, stats: {} };
+                  const previewBones = { species, eye: '·', hat: 'none', rarity: 'common', shiny: false, stats: {} };
                   return html`
                     <div
                       key=${species}
-                      class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300"
+                      class="rounded border p-3 flex flex-col items-center gap-1 transition-colors duration-300 cursor-pointer"
                       style=${{ borderColor: theme.subtle, backgroundColor: theme.subtle }}
+                      onClick=${() => { setSeed(species); const { bones } = roll(species); setResult({ bones, seed: species }); setCopied(false); }}
                     >
                       <pre
                         class="font-mono text-xs leading-tight select-none"
                         style=${{ color: theme.text }}
-                      >${renderSprite(bones, 0).join('\n')}</pre>
+                      >${renderSprite(previewBones, 0).join('\n')}</pre>
                       <span class="font-mono text-xs" style=${{ color: theme.inactive }}>${species}</span>
                     </div>
                   `;
