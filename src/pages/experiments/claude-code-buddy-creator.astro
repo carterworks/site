@@ -1614,6 +1614,39 @@ const { url } = Astro;
       }
 
       /**
+       * Wrap header text inside the card, preferring word boundaries.
+       * Continuation lines can use a different width than the first line.
+       * @param {string} text
+       * @param {number} firstWidth
+       * @param {number} continuationWidth
+       * @returns {string[]}
+       */
+      function wrapCardSegment(text, firstWidth, continuationWidth = firstWidth) {
+        const source = text.trim();
+        if (!source) return [" "];
+
+        const lines = [];
+        let remaining = source;
+        let width = Math.max(1, firstWidth - 1);
+
+        while (remaining.length > 0) {
+          if (remaining.length <= width) {
+            lines.push(" " + remaining);
+            break;
+          }
+
+          let breakAt = remaining.lastIndexOf(" ", width);
+          if (breakAt <= 0) breakAt = width;
+
+          lines.push(" " + remaining.slice(0, breakAt).trimEnd());
+          remaining = remaining.slice(breakAt).trimStart();
+          width = Math.max(1, continuationWidth - 1);
+        }
+
+        return lines;
+      }
+
+      /**
        * Build the card lines with configurable text shaping for display vs copy.
        * @param {CompanionBones} bones
        * @param {string} seed
@@ -1650,9 +1683,10 @@ const { url } = Astro;
         );
         const headerRight = stars + " ";
         const traitRight = traits + " ";
-        const headerLeft = truncateCardSegment(
-          " " + personalityAndName,
-          w - headerRight.length,
+        const personalityLines = wrapCardSegment(
+          personalityAndName,
+          w - traitRight.length,
+          w - traitRight.length,
         );
         const rarityLeft = truncateCardSegment(
           " " + rarityAndSpecies,
@@ -1664,7 +1698,10 @@ const { url } = Astro;
         lines.push(B.tl + B.h.repeat(w) + B.tr);
         // Personality + name, then rarity + species
         lines.push(B.v + fillBetween(rarityLeft, headerRight, w) + B.v);
-        lines.push(B.v + fillBetween(headerLeft, traitRight, w) + B.v);
+        lines.push(B.v + fillBetween(personalityLines[0], traitRight, w) + B.v);
+        for (const continuation of personalityLines.slice(1)) {
+          lines.push(B.v + fillBetween(continuation, "", w) + B.v);
+        }
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Sprite
@@ -2039,28 +2076,19 @@ const { url } = Astro;
             // Separator
             return html`<span style=${{ color: accentColor }}>${line}</span>`;
           }
-          if (i === 1) {
-            // Species + stars line
+          if (i > 0 && i < sepIndices[0]) {
+            // Header lines: first line is rarity/species, following lines are personality/name.
             const content = line.slice(1, -2);
             const tail = line.slice(-2);
             return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: accentColor, fontWeight: "bold" }}
+              ><span
+                style=${
+                  i === 1 ?
+                    { color: accentColor, fontWeight: "bold" }
+                  : { color: theme.inactive }
+                }
                 >${content}</span
               ><span style=${{ color: accentColor }}>${tail}</span>`;
-          }
-          if (i === 2) {
-            // Rarity + traits line
-            const content = line.slice(1, -2);
-            const tail = line.slice(-2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: theme.inactive }}>${content}</span
-              ><span style=${{ color: accentColor }}>${tail}</span>`;
-          }
-          if (i > 2 && i < sepIndices[0]) {
-            const content = line.slice(1, -1);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: theme.text }}>${content}</span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             // Sprite lines

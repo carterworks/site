@@ -6,7 +6,8 @@ draft: false
 tags:
   - llms
 ---
-Correctly packaging an `npm` package is hard. It's certainly something that I've struggled with at work and spent many hours on. So it's understandable that even Anthropic and Claude could do it wrong. Xitter user @fried_rice [noticed that Claude Code accidentally distributed the source map.](https://x.com/Fried_rice/status/2038894956459290963). Revealed in the source code were lots of interesting things, including leaks to upcoming model with fun animal-themed code names and the full list of verbs that Claude Code may show when "reticulating".
+
+Correctly packaging an `npm` package is hard. It's certainly something that I've struggled with at work and spent many hours on. So it's understandable that even Anthropic and Claude could do it wrong. Xitter user @fried_rice [noticed that Anthropic accidentally distributed the source map.](https://x.com/Fried_rice/status/2038894956459290963). Revealed in the source code were lots of interesting things, including leaks to upcoming model with fun animal-themed code names and the full list of verbs that Claude Code may show when "reticulating".
 
 But m my favorite is Anthropic's upcoming April Fool's Day project: buddies. You run `/buddy` in Claude Code and a little ASCII friend is generated for you. He has a name, a personality, some stats, a species, a hat, some eyes, and a rarity. they can even be shiny, just like Pokémon.
 
