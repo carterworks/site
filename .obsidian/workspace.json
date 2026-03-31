@@ -13,13 +13,13 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "src/content/blog/2025-10-29-24-ish-hours-with-an-iphone.md",
+                "file": "src/content/blog/2026-03-31-claude-code-buddies-experiement.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": false
               },
               "icon": "lucide-file",
-              "title": "2025-10-29-24-ish-hours-with-an-iphone"
+              "title": "2026-03-31-claude-code-buddies-experiement"
             }
           }
         ]
@@ -79,8 +79,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "4850dfacf9999f69",
@@ -146,8 +145,10 @@
       "daily-notes:Open today's daily note": false
     }
   },
-  "active": "e1e6a22b0acb4475",
+  "active": "8cee85a6372b2d5c",
   "lastOpenFiles": [
+    "src/content/blog/2025-10-29-24-ish-hours-with-an-iphone.md",
+    "src/content/blog/2026-03-31-claude-code-buddies-experiement.md",
     "public/assets/niagara.avif",
     "public/assets/airdrop.avif",
     "public/assets/airdrop.webm",
@@ -164,7 +165,6 @@
     "src/content/blog/assets/niagara.mp4",
     "src/content/blog/assets/airdrop.gif",
     "src/content/blog/assets/liquid-glass.png",
-    "src/content/blog/2025-10-29-24-ish-hours-with-an-iphone.md",
     "src/content/blog/assets/old-android-and-new-iphone.png",
     "src/content/blog/2025-09-23-to-create-is-to-recreate.md",
     "src/content/blog/2025-08-14-experiments-and-halftone.md",
@@ -175,7 +175,6 @@
     "src/content/blog/2025-07-07-context-engineering.md",
     "src/content/blog/assets/samdape-the-creation-of-projects.png",
     "src/content/blog/assets/openai-halftone-internet-dots.png",
-    "src/content/blog/assets/heart-in-a-box-halftone.png",
     "Untitled.md",
     "src/content/blog/2025-06-27-simon-willison-link-blog.md",
     "2025-07-07.md",
