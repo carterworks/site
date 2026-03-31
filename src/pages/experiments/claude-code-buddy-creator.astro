@@ -771,10 +771,10 @@ const { url } = Astro;
        */
 
       /**
-       * Model-generated soul — stored in config after first hatch
+       * Optional soul metadata carried by creator germs.
        * @typedef {Object} CompanionSoul
-       * @property {string} name
-       * @property {string} personality
+       * @property {string} [name]
+       * @property {string} [personality]
        */
 
       /** @typedef {CompanionBones & CompanionSoul & { hatchedAt: number }} Companion */
@@ -1603,13 +1603,30 @@ const { url } = Astro;
       }
 
       /**
+       * @param {string} text
+       * @param {number} width
+       * @returns {string}
+       */
+      function truncateCardSegment(text, maxWidth) {
+        if (maxWidth <= 0) return "";
+        if (text.length <= maxWidth) return text;
+        return maxWidth === 1 ? "…" : text.slice(0, maxWidth - 1) + "…";
+      }
+
+      /**
        * Build the card lines with configurable text shaping for display vs copy.
        * @param {CompanionBones} bones
        * @param {string} seed
+       * @param {CompanionSoul} [soul]
        * @param {(text: string) => string} [formatText]
        * @returns {string[]}
        */
-      function buildCardTextInternal(bones, seed, formatText = (text) => text) {
+      function buildCardTextInternal(
+        bones,
+        seed,
+        soul,
+        formatText = (text) => text,
+      ) {
         const w = CARD_COLS;
         const inner = w - 2; // inside the │ │
         const stars = formatText(RARITY_STARS[bones.rarity]);
@@ -1619,19 +1636,35 @@ const { url } = Astro;
         const rarity = formatText(bones.rarity.toUpperCase());
         const hatLabel = formatText(bones.hat !== "none" ? bones.hat : "—");
         const traits = formatText(bones.eye) + " / " + hatLabel;
+        const personalityAndName = formatText(
+          [soul?.personality?.trim(), soul?.name?.trim()]
+            .filter(Boolean)
+            .join(" ")
+            .toUpperCase(),
+        );
+        const rarityAndSpecies = [rarity, species].join(" ");
         const spriteLines = renderSprite(bones, 0).map(formatText);
         const totalStats = Object.values(bones.stats).reduce(
           (a, b) => a + b,
           0,
         );
+        const headerRight = stars + " ";
+        const traitRight = traits + " ";
+        const headerLeft = truncateCardSegment(
+          " " + personalityAndName,
+          w - headerRight.length,
+        );
+        const rarityLeft = truncateCardSegment(
+          " " + rarityAndSpecies,
+          w - traitRight.length,
+        );
 
         const lines = [];
         // Top
         lines.push(B.tl + B.h.repeat(w) + B.tr);
-        // Species + stars
-        lines.push(B.v + fillBetween(" " + species, stars + " ", w) + B.v);
-        // Rarity + traits
-        lines.push(B.v + fillBetween(" " + rarity, traits + " ", w) + B.v);
+        // Personality + name, then rarity + species
+        lines.push(B.v + fillBetween(rarityLeft, headerRight, w) + B.v);
+        lines.push(B.v + fillBetween(headerLeft, traitRight, w) + B.v);
         // Separator
         lines.push(B.lt + B.h.repeat(w) + B.rt);
         // Sprite
@@ -1689,28 +1722,30 @@ const { url } = Astro;
        * Build the on-screen card lines (no color). Used as the render source.
        * @param {CompanionBones} bones
        * @param {string} seed
+       * @param {CompanionSoul} [soul]
        * @returns {string[]}
        */
-      function buildCardText(bones, seed) {
-        return buildCardTextInternal(bones, seed);
+      function buildCardText(bones, seed, soul) {
+        return buildCardTextInternal(bones, seed, soul);
       }
 
       /**
        * Build a terminal-stable copy of the card text.
        * @param {CompanionBones} bones
        * @param {string} seed
+       * @param {CompanionSoul} [soul]
        * @returns {string[]}
        */
-      function buildCopyCardText(bones, seed) {
-        return buildCardTextInternal(bones, seed, toCopySafeText);
+      function buildCopyCardText(bones, seed, soul) {
+        return buildCardTextInternal(bones, seed, soul, toCopySafeText);
       }
 
       /**
        * Animated card — renders box-drawing text with colored spans,
        * wrapped in a 3D tilt/glare container inspired by Sam Warnick's tcg-card.
-       * @param {{ bones: CompanionBones, seed: string }} props
+       * @param {{ bones: CompanionBones, seed: string, soul?: CompanionSoul }} props
        */
-      function TradingCard({ bones, seed }) {
+      function TradingCard({ bones, seed, soul }) {
         const [tick, setTick] = useState(0);
         const [themeName] = useTheme();
         const theme = getTheme(themeName);
@@ -1930,8 +1965,8 @@ const { url } = Astro;
 
         // Use pretext to pick the best font size so the card fits nicely
         const cardText = useMemo(
-          () => buildCardText(bones, seed).join("\n"),
-          [bones, seed],
+          () => buildCardText(bones, seed, soul).join("\n"),
+          [bones, seed, soul],
         );
         const fontSize = useMemo(() => {
           const family = "var(--font-monospace-code)";
@@ -1960,8 +1995,8 @@ const { url } = Astro;
 
         // Rebuild card lines with the animated sprite frame
         const staticLines = useMemo(
-          () => buildCardText(bones, seed),
-          [bones, seed],
+          () => buildCardText(bones, seed, soul),
+          [bones, seed, soul],
         );
         // Find the sprite region (between first and second separator)
         const sepIndices = [];
@@ -2020,6 +2055,12 @@ const { url } = Astro;
             return html`<span style=${{ color: accentColor }}>${B.v}</span
               ><span style=${{ color: theme.inactive }}>${content}</span
               ><span style=${{ color: accentColor }}>${tail}</span>`;
+          }
+          if (i > 2 && i < sepIndices[0]) {
+            const content = line.slice(1, -1);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.text }}>${content}</span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             // Sprite lines
@@ -2123,10 +2164,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        * Copy card as plain text to clipboard
        * @param {CompanionBones} bones
        * @param {string} seed
+       * @param {CompanionSoul} [soul]
        * @returns {void}
        */
-      function copyCardAsText(bones, seed) {
-        const text = buildCopyCardText(bones, seed).join("\n");
+      function copyCardAsText(bones, seed, soul) {
+        const text = buildCopyCardText(bones, seed, soul).join("\n");
         navigator.clipboard.writeText(text);
       }
 
@@ -2140,15 +2182,86 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         return Array.from(bytes, (b) => alphabet[b & 31]).join("");
       }
 
+      /**
+       * @param {Uint8Array} bytes
+       * @returns {string}
+       */
+      function bytesToBase64Url(bytes) {
+        return btoa(String.fromCharCode(...bytes))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      /**
+       * @param {string} encoded
+       * @returns {Uint8Array}
+       */
+      function base64UrlToBytes(encoded) {
+        const b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = b64 + "=".repeat((4 - (b64.length % 4 || 4)) % 4);
+        const raw = atob(padded);
+        return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+      }
+
+      /**
+       * @param {CompanionSoul} [soul]
+       * @returns {CompanionSoul|undefined}
+       */
+      function normalizeSoul(soul) {
+        const name = soul?.name?.trim() || "";
+        const personality = soul?.personality?.trim() || "";
+        if (!name && !personality) return undefined;
+        return {
+          ...(name ? { name } : {}),
+          ...(personality ? { personality } : {}),
+        };
+      }
+
+      /**
+       * @param {CompanionSoul} [soul]
+       * @returns {string}
+       */
+      function encodeSoul(soul) {
+        const normalized = normalizeSoul(soul);
+        if (!normalized) return "";
+        return bytesToBase64Url(
+          new TextEncoder().encode(JSON.stringify(normalized)),
+        );
+      }
+
+      /**
+       * @param {string} soulData
+       * @returns {CompanionSoul|undefined}
+       */
+      function decodeSoul(soulData) {
+        if (!soulData) return undefined;
+        try {
+          const parsed = JSON.parse(
+            new TextDecoder().decode(base64UrlToBytes(soulData)),
+          );
+          return normalizeSoul({
+            name: typeof parsed?.name === "string" ? parsed.name : "",
+            personality:
+              typeof parsed?.personality === "string" ? parsed.personality : "",
+          });
+        } catch {
+          return undefined;
+        }
+      }
+
       // #region Germ encoding/decoding
-      // Pack bones into bits, base64url encode. Layout (50 bits, 7 bytes padded):
+      // Pack bones into bits, base64url encode. Optional soul metadata rides in a
+      // second dot-delimited base64url segment so old bone-only germs still work.
+      // Layout (50 bits, 7 bytes padded):
       // species:5 | eye:3 | hat:3 | rarity:3 | shiny:1 | stat*5:7each(=35) = 50 bits
 
       /**
        * @param {CompanionBones} bones
+       * @param {CompanionSoul} [soul]
        * @returns {string}
        */
-      function encodeGerm(bones) {
+      function encodeGerm(bones, soul) {
         const bits = [];
         const push = (val, n) => {
           for (let i = n - 1; i >= 0; i--) bits.push((val >> i) & 1);
@@ -2168,24 +2281,24 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j];
           bytes[i] = b;
         }
-        // base64url (no padding)
-        return btoa(String.fromCharCode(...bytes))
-          .replace(/\+/g, "-")
-          .replace(/\//g, "_")
-          .replace(/=+$/, "");
+        const bonesData = bytesToBase64Url(bytes);
+        const soulData = encodeSoul(soul);
+        return soulData ? bonesData + "." + soulData : bonesData;
       }
 
       /**
        * @param {string} germ
-       * @returns {CompanionBones|null}
+       * @returns {{ bones: CompanionBones, soul?: CompanionSoul }|null}
        */
       function decodeGerm(germ) {
         try {
-          const b64 = germ.replace(/-/g, "+").replace(/_/g, "/");
-          const raw = atob(b64);
           const bits = [];
+          const separator = germ.indexOf(".");
+          const bonesData = separator === -1 ? germ : germ.slice(0, separator);
+          const soulData = separator === -1 ? "" : germ.slice(separator + 1);
+          const raw = base64UrlToBytes(bonesData);
           for (let i = 0; i < raw.length; i++) {
-            const b = raw.charCodeAt(i);
+            const b = raw[i];
             for (let j = 7; j >= 0; j--) bits.push((b >> j) & 1);
           }
           let pos = 0;
@@ -2210,7 +2323,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           const stats = {};
           for (const n of STAT_NAMES)
             stats[n] = Math.max(1, Math.min(100, read(7)));
-          return {
+          const bones = {
             species: SPECIES[si],
             eye: EYES[ei],
             hat: HATS[hi],
@@ -2218,6 +2331,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             shiny: sh === 1,
             stats,
           };
+          const soul = decodeSoul(soulData);
+          return soul ? { bones, soul } : { bones };
         } catch {
           return null;
         }
@@ -2241,14 +2356,14 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        * Try to extract bones from a seed. If it starts with "germ:" try decoding;
        * on failure fall back to treating the whole string as a normal seed.
        * @param {string} seed
-       * @returns {{ bones: CompanionBones, isGerm: boolean }}
+       * @returns {{ bones: CompanionBones, soul?: CompanionSoul, isGerm: boolean }}
        */
       function bonesFromSeed(seed) {
         if (seed.startsWith("germ:")) {
           const decoded = decodeGerm(seed.slice(5));
-          if (decoded) return { bones: decoded, isGerm: true };
+          if (decoded) return { ...decoded, isGerm: true };
         }
-        return { bones: roll(seed).bones, isGerm: false };
+        return { bones: roll(seed).bones, soul: undefined, isGerm: false };
       }
 
       /**
@@ -2324,6 +2439,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         const [seed, setSeed] = useState(initialSeed);
         const [result, setResult] = useState(() => ({
           bones: initialParsed.bones,
+          soul: initialParsed.soul,
           seed: initialSeed,
         }));
         const [themeName] = useTheme();
@@ -2331,20 +2447,38 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         const [copied, setCopied] = useState(false);
         const [germCopied, setGermCopied] = useState(false);
         const seedInputId = "buddy-seed";
+        const nameInputId = "buddy-name";
+        const personalityInputId = "buddy-personality";
         const shinyInputId = "buddy-shiny";
 
         useEffect(() => {
           setSeedInURL(initialSeed);
         }, []);
 
-        /** Update bones via the creator, syncing seed/URL to a germ */
-        const updateBones = useCallback((newBones) => {
-          const germSeed = "germ:" + encodeGerm(newBones);
+        /** Update creator output, syncing seed/URL to a germ */
+        const updateCompanion = useCallback((newBones, newSoul) => {
+          const soul = normalizeSoul(newSoul);
+          const germSeed = "germ:" + encodeGerm(newBones, soul);
           setSeed(germSeed);
           setSeedInURL(germSeed);
-          setResult({ bones: newBones, seed: germSeed });
+          setResult({ bones: newBones, soul, seed: germSeed });
           setCopied(false);
+          setGermCopied(false);
         }, []);
+
+        const updateBones = useCallback(
+          (newBones) => {
+            updateCompanion(newBones, result.soul);
+          },
+          [result.soul, updateCompanion],
+        );
+
+        const updateSoul = useCallback(
+          (patch) => {
+            updateCompanion(result.bones, { ...(result.soul || {}), ...patch });
+          },
+          [result.bones, result.soul, updateCompanion],
+        );
 
         const onSeedInput = useCallback(
           (e) => {
@@ -2352,9 +2486,10 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             setSeed(s);
             const effective = s.trim() || initialSeed;
             setSeedInURL(effective);
-            const { bones } = bonesFromSeed(effective);
-            setResult({ bones, seed: effective });
+            const { bones, soul } = bonesFromSeed(effective);
+            setResult({ bones, soul, seed: effective });
             setCopied(false);
+            setGermCopied(false);
           },
           [initialSeed],
         );
@@ -2363,21 +2498,22 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           const s = randomSeed();
           setSeed(s);
           setSeedInURL(s);
-          const { bones } = bonesFromSeed(s);
-          setResult({ bones, seed: s });
+          const { bones, soul } = bonesFromSeed(s);
+          setResult({ bones, soul, seed: s });
           setCopied(false);
+          setGermCopied(false);
         }, []);
 
         const onCopy = useCallback(() => {
           if (!result) return;
-          copyCardAsText(result.bones, result.seed);
+          copyCardAsText(result.bones, result.seed, result.soul);
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }, [result]);
 
         const exportGerm = useCallback(() => {
           if (!result) return;
-          const germSeed = "germ:" + encodeGerm(result.bones);
+          const germSeed = "germ:" + encodeGerm(result.bones, result.soul);
           const url = new URL(window.location);
           url.search = "";
           url.searchParams.set("seed", germSeed);
@@ -2388,6 +2524,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
         // Creator controls derived from current bones
         const bones = result.bones;
+        const soul = result.soul || {};
 
         return html`
           <div class="flex flex-col gap-2 text-sm">
@@ -2463,6 +2600,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   key=${result.seed}
                   bones=${result.bones}
                   seed=${result.seed}
+                  soul=${result.soul}
                 />
                 <div class="flex gap-2 items-center flex-wrap justify-center">
                   <button
@@ -2541,6 +2679,46 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   value=${bones.rarity}
                   onChange=${(v) => updateBones({ ...bones, rarity: v })}
                   theme=${theme}
+                />
+                <label
+                  for=${nameInputId}
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Name</label
+                >
+                <input
+                  id=${nameInputId}
+                  type="text"
+                  value=${soul.name || ""}
+                  onInput=${(e) => updateSoul({ name: e.target.value })}
+                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
+                  style=${{
+                    gridColumn: "2 / -1",
+                    backgroundColor: theme.userMessageBackground,
+                    color: theme.text,
+                    borderColor: theme.inactive,
+                    fontFamily: "var(--font-monospace-code)",
+                  }}
+                />
+                <label
+                  for=${personalityInputId}
+                  class="font-mono text-sm"
+                  style=${{ color: theme.inactive }}
+                  >Personality</label
+                >
+                <input
+                  id=${personalityInputId}
+                  type="text"
+                  value=${soul.personality || ""}
+                  onInput=${(e) => updateSoul({ personality: e.target.value })}
+                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
+                  style=${{
+                    gridColumn: "2 / -1",
+                    backgroundColor: theme.userMessageBackground,
+                    color: theme.text,
+                    borderColor: theme.inactive,
+                    fontFamily: "var(--font-monospace-code)",
+                  }}
                 />
                 <label
                   for=${shinyInputId}
