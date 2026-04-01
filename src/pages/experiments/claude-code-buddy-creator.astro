@@ -1532,7 +1532,7 @@ const { url } = Astro;
       const PRETEXT_MEASURE_SCALE_PX = 16;
 
       // Card inner width in monospace columns (inner = CARD_COLS, total = CARD_COLS + 2 for │ │)
-      const CARD_COLS = 34;
+      const CARD_COLS = 38;
 
       // Box-drawing chars
       const B = {
@@ -1590,6 +1590,45 @@ const { url } = Astro;
       function fillBetween(left, right, width) {
         const gap = Math.max(0, width - left.length - right.length);
         return left + " ".repeat(gap) + right;
+      }
+
+      /**
+       * @param {number} width
+       * @returns {string}
+       */
+      function blankCardBody(width) {
+        return " ".repeat(width);
+      }
+
+      /**
+       * @param {string} text
+       * @param {number} width
+       * @returns {string}
+       */
+      function padCardBody(text, width) {
+        return text.slice(0, width).padEnd(width, " ");
+      }
+
+      /**
+       * Wrap plain body text to a fixed monospace width.
+       * @param {string} text
+       * @param {number} width
+       * @returns {string[]}
+       */
+      function wrapCardBodyText(text, width) {
+        const source = text.trim();
+        if (!source) return [""];
+
+        const lines = [];
+        let remaining = source;
+        while (remaining.length > width) {
+          let breakAt = remaining.lastIndexOf(" ", width);
+          if (breakAt <= 0) breakAt = width;
+          lines.push(remaining.slice(0, breakAt).trimEnd());
+          remaining = remaining.slice(breakAt).trimStart();
+        }
+        lines.push(remaining);
+        return lines;
       }
 
       /**
@@ -1698,98 +1737,77 @@ const { url } = Astro;
        * @param {CompanionSoul} [soul]
        * @returns {string[]}
        */
-      function buildCardTextInternal(bones, seed, soul) {
-        const w = CARD_COLS;
-        const inner = w - 2; // inside the │ │
+       function buildCardTextInternal(bones, seed, soul) {
+         void seed;
+         const w = CARD_COLS;
+        const body = w - 4;
         const layoutFont = getCardLayoutFont();
         const stars = RARITY_STARS[bones.rarity];
         const species = bones.species.toUpperCase() + (bones.shiny ? " *" : "");
         const rarity = bones.rarity.toUpperCase();
-        const hatLabel = bones.hat !== "none" ? bones.hat : "—";
-        const traits = bones.eye + " / " + hatLabel;
-        const personalityAndName =
-          [soul?.personality?.trim(), soul?.name?.trim()]
-            .filter(Boolean)
-            .join(" ")
-            .toUpperCase();
-        const rarityAndSpecies = [rarity, species].join(" ");
+        const name = soul?.name?.trim() || "";
+        const personality = soul?.personality?.trim() || "";
+        const titleLeft = `${stars} ${rarity}`;
+        const quotedPersonality = personality ? `"${personality}"` : "";
         const spriteLines = renderSprite(bones, 0);
-        const totalStats = Object.values(bones.stats).reduce(
-          (a, b) => a + b,
-          0,
-        );
-        const headerRight = stars + " ";
-        const traitRight = traits + " ";
-        const personalityLines = wrapCardSegment(
-          personalityAndName,
-          w - traitRight.length,
-          w - traitRight.length,
-          layoutFont,
-        );
-        const rarityLeft = truncateCardSegment(
-          " " + rarityAndSpecies,
-          w - headerRight.length,
-          layoutFont,
-        );
+        const quoteLines = quotedPersonality ? wrapCardBodyText(quotedPersonality, body) : [];
 
         const lines = [];
-        // Top
         lines.push(B.tl + B.h.repeat(w) + B.tr);
-        // Personality + name, then rarity + species
-        lines.push(B.v + fillBetween(rarityLeft, headerRight, w) + B.v);
-        lines.push(B.v + fillBetween(personalityLines[0], traitRight, w) + B.v);
-        for (const continuation of personalityLines.slice(1)) {
-          lines.push(B.v + fillBetween(continuation, "", w) + B.v);
-        }
-        // Separator
-        lines.push(B.lt + B.h.repeat(w) + B.rt);
-        // Sprite
+        lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
+        lines.push(
+          B.v
+            + "  "
+            + fillBetween(
+              truncateCardSegment(titleLeft, body - species.length, layoutFont),
+              species,
+              body,
+            )
+            + "  "
+            + B.v,
+        );
+        lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
         for (const sl of spriteLines) {
-          // Center the sprite (sprites are ~12 wide)
-          const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
-          const rightPad = Math.max(0, inner - leftPad - sl.length);
+          const leftPad = Math.max(0, Math.floor((body - sl.length) / 2));
+          const rightPad = Math.max(0, body - leftPad - sl.length);
           lines.push(
             B.v
-              + " "
+              + "  "
               + " ".repeat(leftPad)
               + sl
               + " ".repeat(rightPad)
-              + " "
+              + "  "
               + B.v,
           );
         }
-        // Separator
-        lines.push(B.lt + B.h.repeat(w) + B.rt);
-        // Stats
-        const BAR_W = 18;
+        lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
+        if (name) {
+          lines.push(B.v + "  " + padCardBody(name, body) + "  " + B.v);
+        }
+        if (quoteLines.length > 0) {
+          if (name) {
+            lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
+          }
+          for (const quoteLine of quoteLines) {
+            lines.push(B.v + "  " + padCardBody(quoteLine, body) + "  " + B.v);
+          }
+        }
+        lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
+
+        const BAR_W = 10;
         for (const name of STAT_NAMES) {
           const v = bones.stats[name];
           const filled = Math.round((v * BAR_W) / 100);
           const bar = "█".repeat(filled) + "░".repeat(BAR_W - filled);
           const label = name.padEnd(10);
           lines.push(
-            B.v + " " + label + bar + String(v).padStart(4) + " " + B.v,
+            B.v
+              + "  "
+              + padCardBody(label + " " + bar + " " + String(v).padStart(3), body)
+              + "  "
+              + B.v,
           );
         }
-        // Separator
-        lines.push(B.lt + B.h.repeat(w) + B.rt);
-        // Footer
-        const tot = "TOT " + totalStats;
-        const seedStr = truncateCardSegment(
-          seed,
-          inner - tot.length - 1,
-          layoutFont,
-        );
-        lines.push(
-          B.v
-            + " "
-            + tot
-            + " ".repeat(inner - tot.length - seedStr.length)
-            + seedStr
-            + " "
-            + B.v,
-        );
-        // Bottom
         lines.push(B.bl + B.h.repeat(w) + B.br);
 
         return lines;
@@ -2087,29 +2105,24 @@ const { url } = Astro;
           () => buildCardText(bones, seed, soul),
           [bones, seed, soul],
         );
-        // Find the sprite region (between first and second separator)
-        const sepIndices = [];
-        staticLines.forEach((l, i) => {
-          if (l.startsWith(B.lt)) sepIndices.push(i);
-        });
-        const spriteStart = sepIndices[0] + 1;
-        const spriteEnd = sepIndices[1];
-        const inner = CARD_COLS - 2;
+        const spriteStart = 4;
+        const spriteEnd = spriteStart + blinkSprite.length;
+        const body = CARD_COLS - 4;
 
         const displayLines = staticLines.map((line, i) => {
           if (i >= spriteStart && i < spriteEnd) {
             const si = i - spriteStart;
             if (si < blinkSprite.length) {
               const sl = blinkSprite[si];
-              const leftPad = Math.max(0, Math.floor((inner - sl.length) / 2));
-              const rightPad = Math.max(0, inner - leftPad - sl.length);
+              const leftPad = Math.max(0, Math.floor((body - sl.length) / 2));
+              const rightPad = Math.max(0, body - leftPad - sl.length);
               return (
                 B.v
-                + " "
+                + "  "
                 + " ".repeat(leftPad)
                 + sl
                 + " ".repeat(rightPad)
-                + " "
+                + "  "
                 + B.v
               );
             }
@@ -2117,53 +2130,42 @@ const { url } = Astro;
           return line;
         });
 
-        // Color regions: header (lines 1-2), separators, sprite, stats, footer
         const coloredLines = displayLines.map((line, i) => {
-          // Box chars in accent color, content varies
           if (i === 0 || i === displayLines.length - 1) {
-            // Top/bottom border
             return html`<span style=${{ color: accentColor }}>${line}</span>`;
           }
-          if (line.startsWith(B.lt)) {
-            // Separator
-            return html`<span style=${{ color: accentColor }}>${line}</span>`;
-          }
-          if (i > 0 && i < sepIndices[0]) {
-            // Header lines: first line is rarity/species, following lines are personality/name.
-            const content = line.slice(1, -2);
-            const tail = line.slice(-2);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span
-                style=${i === 1 ?
-                  { color: accentColor }
-                : { color: theme.inactive }}
-                >${content}</span
-              ><span style=${{ color: accentColor }}>${tail}</span>`;
-          }
-          if (i >= spriteStart && i < spriteEnd) {
-            // Sprite lines
+          if (i === 2) {
             const content = line.slice(1, -1);
             return html`<span style=${{ color: accentColor }}>${B.v}</span
               ><span style=${{ color: accentColor }}>${content}</span
               ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
-          if (i > sepIndices[1] && i < sepIndices[2]) {
-            // Stat lines: label dim, bar in accent, value bright
-            const raw = line.slice(2, -2); // inner content
-            const label = raw.slice(0, 10);
-            const bar = raw.slice(10, 28);
-            const val = raw.slice(28);
+          if (i >= spriteStart && i < spriteEnd) {
+            const content = line.slice(1, -1);
             return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: theme.inactive }}> ${label}</span
+              ><span style=${{ color: accentColor }}>${content}</span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+          }
+          if (STAT_NAMES.some((name) => line.includes(name))) {
+            const outerPad = line.slice(1, 3);
+            const raw = line.slice(3, -3);
+            const label = raw.slice(0, 11);
+            const bar = raw.slice(11, 22);
+            const val = raw.slice(22, 25);
+            const tail = raw.slice(25);
+            const outerPadRight = line.slice(-3, -1);
+            return html`<span style=${{ color: accentColor }}>${B.v}</span
+              ><span style=${{ color: theme.inactive }}>${outerPad + label}</span
               ><span style=${{ color: accentColor }}>${bar}</span
               ><span style=${{ color: theme.text }}
                 >${val}</span
-              ><span style=${{ color: accentColor }}> ${B.v}</span>`;
+              ><span style=${{ color: theme.inactive }}>${tail + outerPadRight}</span
+              ><span style=${{ color: accentColor }}>${B.v}</span>`;
           }
-          // Footer or other
           const content = line.slice(1, -1);
+          const isNameLine = !!name && content.trim() === name;
           return html`<span style=${{ color: accentColor }}>${B.v}</span
-            ><span style=${{ color: theme.inactive }}>${content}</span
+            ><span style=${{ color: isNameLine ? theme.text : theme.inactive }}>${content}</span
             ><span style=${{ color: accentColor }}>${B.v}</span>`;
         });
 

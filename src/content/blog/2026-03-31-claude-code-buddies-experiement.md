@@ -17,3 +17,35 @@ I wanted to see all the permutations, so I copied the source code and vibed a ne
 
 ![](assets/Pasted%20image%2020260331123901.png)
 DDRRAMS–a certified lil' guy.
+
+Update 2026-04-01: the official `/buddy` cards are out now, so I refreshed this experiment to match the new card contents as close as possible
+
+My buddy:
+
+```
+╭──────────────────────────────────────╮
+│                                      │
+│  ★ COMMON                       OWL  │
+│                                      │
+│     /\  /\                           │
+│    ((×)(×))                          │
+│    (  ><  )                          │
+│     `----´                           │
+│                                      │
+│  Cobblewick                          │
+│                                      │
+│  "A methodical night-shifter with a  │
+│   steel-wool tongue, quick to point  │
+│   out logical gaps but patient       │
+│  enough to sit through your entire   │
+│  rubber-duck session without flying  │
+│   off."                              │
+│                                      │
+│  DEBUGGING  █░░░░░░░░░   8           │
+│  PATIENCE   ███████░░░  67           │
+│  CHAOS      ███░░░░░░░  33           │
+│  WISDOM     ██░░░░░░░░  22           │
+│  SNARK      ████░░░░░░  36           │
+│                                      │
+╰──────────────────────────────────────╯
+```
