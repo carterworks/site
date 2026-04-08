@@ -1,11 +1,6 @@
 ---
 title: Context isn't just for LLMs
 pubDate: 2025-07-07
-description: A file-based workflow
-tags:
-  - links
-  - git
-  - llms
 ---
 
 [Matt Pocock shares "one weird git thing for local development"](https://x.com/mattpocockuk/status/1941907646161777072)

@@ -1,10 +1,6 @@
 ---
 title: CARTER_RULES.md
 pubDate: 2025-08-04
-tags:
-  - style
-  - programming
-  - css
 ---
 
 _Last updated: 2025-08-04._

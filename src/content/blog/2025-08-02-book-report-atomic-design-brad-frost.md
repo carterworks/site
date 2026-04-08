@@ -2,10 +2,6 @@
 title: Book Report—Atomic Design by Brad Frost
 pubDate: 2025-08-02
 draft: true
-tags:
-  - book-report
-  - design
-  - tailwind
 ---
 
 This is a book report on [_Atomic Design_ by Brad Frost](https://atomicdesign.bradfrost.com/)

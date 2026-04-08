@@ -1,10 +1,6 @@
 ---
 title:
 pubDate: 2025-06-27
-description:
-tags:
-  - links
-  - blogging
 ---
 
 [Simon Willison, "My approach to running a link blog", 2024-12-22](https://simonwillison.net/2024/Dec/22/link-blog/)

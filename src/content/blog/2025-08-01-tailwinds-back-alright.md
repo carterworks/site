@@ -1,11 +1,6 @@
 ---
 title: Tailwind's back, alright!
 pubDate: 2025-08-01
-tags:
-  - personal-site
-  - tailwind
-  - css
-  - design
 ---
 
 It happened again. The desire to change up the design of my site hit me. But...

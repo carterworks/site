@@ -1,10 +1,7 @@
 ---
 title: 24-ish hours with an iPhone
 pubDate: 2025-10-29
-description:
 draft: false
-tags:
-  - apple
 ---
 
 I've always loved Android and Google. Even before I had a smartphone, I downloaded Android Studio onto the family computer just so I could run the emulator. I thought [Randall Monroe's random 2010 blog post about Android bugs he encountered](https://blog.xkcd.com/2010/02/08/android-bug-reports-songs-rovers/) was bizarre—how could the company that is not evil produce anything less than perfect? For the past 10 years and from the first smartphone, they have all been Android. A few budget Samsungs, a Nexus 5, and an LG G6 (the 2:1 aspect ratio was fantastic) were all important and beloved parts of my life. I enjoyed flexing my script kiddie muscles and downloading custom ROMs and tweaking everything to be the most efficient and most custom.
@@ -31,7 +28,7 @@ Look at the chromatic aberration on the edges of the notification shade! The edg
 
 Meanwhile, Google made some different shapes, like a sawtooth clock. How funky of them.
 
-<video autoplay disablepictureinpicture playsinline loop muted width="300px">
+<video autoplay disablepictureinpicture playsinline loop muted>
   <source src="/assets/airdrop.webm" type="video/webm"/>
   <source src="/assets/airdrop.mp4" type="video/mp4"/>
 </video>
@@ -64,7 +61,7 @@ The overall user interface presented by One UI 5.1 on Android 13 was fairly inco
 
 Honestly, not as much as I thought I was going to! I thought I was going to miss Syncthing as a way of syncing my Obsidian vault around, but [Möbius Sync](https://mobiussync.com/) works really well.
 
-<video autoplay disablepictureinpicture playsinline loop muted width="300px">
+<video autoplay disablepictureinpicture playsinline loop muted>
   <source src="/assets/niagara.webm" type="video/webm"/>
   <source src="/assets/niagara.mp4" type="video/mp4"/>
 </video>

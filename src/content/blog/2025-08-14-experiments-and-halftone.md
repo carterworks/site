@@ -1,11 +1,7 @@
 ---
 title: Experiments and halftone
 pubDate: 2025-08-14
-description:
 draft: false
-tags:
-  - css
-  - diy
 ---
 
 I am devoting a section of my site to "experiments"—little "what if's" and prototypes of ideas. They aren't big enough to turn into apps or tools, nor do I want to spend the time to fully integrate them into my main site. They are independent, atomic, and fun. The point is to be non-committal and give me a chance to try out new things then throw them away. You can see them all [on my Experiments page](/experiements).
@@ -20,14 +16,18 @@ Ever since then, I've kind of been obsessed with the visual style. I love things
 
 Some of my other favorite examples:
 
-From the Private mode new tab page of Perplexity's Comet
 ![A halftone image of a hand, holding the Perplexity logo into the air](./assets/perplexity.png)
 
-[From designer Sam Peitz](https://x.com/samdape/status/1859945404806451494/photo/1)
+From the Private mode new tab page of Perplexity's Comet
+
 ![A halftone image of two hands, reaching towards each other. A blue folder labelled "projects" lies between them. It is modeled after Michelangelo's "Creation of Adam" painting from the Sistine Chapel ceiling.](./assets/samdape-the-creation-of-projects.png)
 
-A bad heart in a box, by me.
+[From designer Sam Peitz](https://x.com/samdape/status/1859945404806451494/photo/1)
+
 ![a heart in a box](./assets/Halftone%20Painting%20Aug%2014%202025.png)
 
+A bad heart in a box, by me.
+
 In that vein, [I built a little tool to create them](/experiments/halftone-painting). I might refine it later. I'm not an artist, so I don't have any examples of my own creations. You can save them as pngs. Send them to me with the `@carter.works` halftone address! Make sure to mark it "fit to print"!
+
 [![A screenshot of a webpage for creating halftone images](./assets/halftone-painting-app.jpeg)](/experiments/halftone-painting)

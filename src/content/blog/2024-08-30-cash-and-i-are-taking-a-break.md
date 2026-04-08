@@ -1,9 +1,6 @@
 ---
 title: Cash and I are taking a break.
 pubDate: 2024-08-30
-description: Sorry cash, the grass looks greener with money market funds.
-tags:
-  - finances
 ---
 
 Recently, I've been working on moving my family's banking strategy from traditional checking and savings account to money market funds in a (Fidelity) cash management account. The migration has started, but I'm pretty happy with what I think will be the result.

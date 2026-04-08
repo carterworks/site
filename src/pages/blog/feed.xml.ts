@@ -40,8 +40,6 @@ export async function GET(context: { site: string }) {
           title: post.data.title ?? "A post from Carter's blog",
           pubDate: post.data.pubDate,
           link: `/blog/${post.id}`,
-          description: post.data.description ?? "",
-          categories: post.data.tags ?? [],
           content: sanitizeHtml(absoluteContent, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
           }),

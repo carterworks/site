@@ -2,12 +2,6 @@
 title: "Inside of me there are two wolves"
 pubDate: "2025-08-06"
 draft: false
-tags:
-  - personal
-  - site
-  - yazzy
-  - linux
-  - diy
 ---
 
 Inside of me there are two wolves. One of them is named DIY, who says "build everything from scratch. Only you know what you need. You will learn the most this way." The other wolf is the do-work wolf, who says "use what's already been built. It's easier and you can focus on the important stuff. 'You're not a beautiful and unique snowflake'... By giving up vain individuality, you can leapfrog the toils of mundane decisions, and make faster progress in areas that really matter" (from [The Ruby on Rails Doctrine](https://rubyonrails.org/doctrine#convention-over-configuration)).
