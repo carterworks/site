@@ -1,6 +1,5 @@
 ---
 import { getPublishedPosts } from "../../lib/blog";
-import Rss from "../../icons/Rss.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ArticlePreview from "../../components/ArticlePreview.astro";
 
@@ -16,23 +15,17 @@ const posts = await getPublishedPosts();
     />
   </Fragment>
   <main>
-    <h2 class="text-xl">
+    <h2>
       <a
         href="/blog/feed.xml"
         title="RSS feed"
         aria-label="RSS feed"
       >
-        <Rss
-          label="RSS feed"
-          class="inline-block align-middle"
-        />
+        RSS
       </a>
       <a href="/blog/">All blog posts</a>
     </h2>
-    <ul
-      role="list"
-      class="space-y-4"
-    >
+    <ul role="list">
       {
         posts.map((post) => (
           <li role="listitem">

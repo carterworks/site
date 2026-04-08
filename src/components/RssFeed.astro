@@ -2,22 +2,14 @@
 interface Props {
   url: string;
   count?: number;
-  class?: string;
 }
-const { url, count = 2, class: extraClasses } = Astro.props;
+const { url, count = 2 } = Astro.props;
 ---
 
 <!-- <script
 	type="text/javascript"
 	src="https://catskull.net/public/js/components/rss-feed.js"
 	async></script> -->
-<style>
-  @layer overrides {
-    a {
-      @apply transition-opacity hover:opacity-30 underline;
-    }
-  }
-</style>
 <script>
   // From https://github.com/catskull/rss-feed (MIT License)
   class RSS extends HTMLElement {
@@ -107,10 +99,7 @@ const { url, count = 2, class: extraClasses } = Astro.props;
   // Define the custom element
   customElements.define("rss-feed", RSS);
 </script>
-<div class="prose">
-  <rss-feed
-    url={url}
-    count={count}
-    class={extraClasses}
-  ></rss-feed>
-</div>
+<rss-feed
+  url={url}
+  count={count}
+></rss-feed>

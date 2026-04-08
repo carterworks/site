@@ -1,16 +1,10 @@
 ---
 import { getPublishedPosts } from "../lib/blog";
-import Mastodon from "../icons/Mastodon.astro";
 import RssFeed from "../components/RssFeed.astro";
-import Book from "../icons/Book.astro";
-import Rss from "../icons/Rss.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Yazzy from "../icons/Yazzy.astro";
-import RssReader from "../icons/RssReader.astro";
 import ArticlePreview from "../components/ArticlePreview.astro";
-import Experimental from "../icons/Experimental.astro";
 
-const recentPosts = (await getPublishedPosts()).slice(0, 10);
+const recentPosts = await getPublishedPosts();
 ---
 
 <BaseLayout title="👋 I'm Carter.">
@@ -21,9 +15,9 @@ const recentPosts = (await getPublishedPosts()).slice(0, 10);
       content="Front-end dev. Father. Young grump. Simple things enjoyer."
     />
   </Fragment>
-  <main class="space-y-8">
+  <main>
     <section>
-      <h2 class="text-xl">Who?</h2>
+      <h2>Who?</h2>
       Still figuring things out. Right now: a dad, a tired man, a code plumber on
       the Web, <a href="https://youtu.be/SxdOUGdseq4">a complector</a>, a
       researcher, a homebody, a reader, a eater (not a foodie), and <a
@@ -31,43 +25,35 @@ const recentPosts = (await getPublishedPosts()).slice(0, 10);
       >.
     </section>
     <section>
-      <h2 class="text-xl">Some things I made</h2>
+      <h2>Some things I made</h2>
       <ul role="list">
         <li role="listitem">
           <a href="https://yazzy.carter.works">
-            <Yazzy class="inline-block align-middle" />
             Yazzy, a site to bring reader mode to all the web.
           </a>
         </li>
         <li role="listitem">
           <a href="https://carterworks.github.io/rss-reader/">
-            <RssReader class="inline-block align-middle" />
             My personal RSS reader
           </a>
         </li>
         <li role="listitem">
           <a href="https://github.com/carterworks/substack-to-epub">
-            <Book class="inline-block align-middle" />
             Substack-to-epub scraper
           </a>
         </li>
         <li role="listitem">
           <a href="/experiments/">
-            <Experimental class="inline-block align-middle" />
             Experiments, what ifs, and prototypes
           </a>
         </li>
       </ul>
     </section>
     <section>
-      <h2 class="text-xl">
-        <a href="https://mastodon.social/@literallyacar">
-          <Mastodon class="text-xl inline-block align-text-top" />
-          Mastodon
-        </a>
+      <h2>
+        <a href="https://mastodon.social/@literallyacar">Mastodon</a>
       </h2>
       <RssFeed
-        class="overflow-y-auto max-h-64 space-y-4"
         url="https://mastodon.social/@literallyacar.rss"
         count={2}
       />
@@ -75,32 +61,20 @@ const recentPosts = (await getPublishedPosts()).slice(0, 10);
     {
       recentPosts.length > 0 && (
         <section>
-          <h2 class="text-xl">
+          <h2>
             <a
               href="/blog/feed.xml"
               title="RSS feed"
               aria-label="RSS feed"
             >
-              <Rss
-                label="RSS feed"
-                class="inline-block align-middle"
-              />
+              RSS
             </a>
             <a href="/blog/">Blog posts</a>
           </h2>
-          <ul
-            role="list"
-            class="space-y-2"
-          >
+          <ul role="list">
             {recentPosts.map((post) => (
-              <li
-                role="listitem"
-                class=""
-              >
-                <ArticlePreview
-                  post={post}
-                  className=""
-                />
+              <li role="listitem">
+                <ArticlePreview post={post} />
               </li>
             ))}
           </ul>

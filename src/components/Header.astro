@@ -1,9 +1,5 @@
 ---
 import { DEV } from "astro:env/client";
-import WavingHand from "../icons/WavingHand.astro";
-import Mastodon from "../icons/Mastodon.astro";
-import Github from "../icons/Github.astro";
-import LinkedIn from "../icons/LinkedIn.astro";
 const possibleSubtitles = [
   "A software developer.",
   "A dad.",
@@ -27,15 +23,16 @@ const possibleSubtitles = [
   }
   randomSubtitle();
 </script>
-<header class="flex flex-row justify-between items-center">
+<header>
   <hgroup>
+    <a
+      href="https://css-naked-day.org/"
+      rel="noopener noreferrer"
+    >
+      #CSSNakedDay2026
+    </a>
     <a href="/">
-      <h1 class="text-3xl">
-        <WavingHand
-          label="Hello"
-          class="inline-block"
-          verticalAlign="text-top"
-        />
+      <h1>
         I'm {DEV && "(dev mode) "}Carter.
       </h1>
       <p id="heading-subtitle">
@@ -47,30 +44,27 @@ const possibleSubtitles = [
       </p>
     </a>
   </hgroup>
-  <ul
-    role="list"
-    class="flex flex-row gap-2"
-  >
+  <ul role="list">
     <li role="listitem">
       <a
         href="https://mastodon.social/@literallyacar"
         rel="me"
         aria-label="Mastodon"
-        ><Mastodon class="text-lg" /></a
+        >Mastodon</a
       >
     </li>
     <li role="listitem">
       <a
         href="https://github.com/carterworks"
         aria-label="GitHub"
-        ><Github class="text-lg" /></a
+        >GitHub</a
       >
     </li>
     <li role="listitem">
       <a
         href="https://www.linkedin.com/in/thatcartermcbride/"
         aria-label="LinkedIn"
-        ><LinkedIn class="text-lg" /></a
+        >LinkedIn</a
       >
     </li>
   </ul>
