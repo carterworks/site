@@ -19,6 +19,7 @@
     "deploy": "wrangler types && astro build && wrangler pages deploy"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.8",
     "@cloudflare/workers-types": "^4.20250620.0",
     "astro": "^5.10.1",
     "bun-types": "latest",
@@ -27,7 +28,7 @@
     "wrangler": "^4.22.0"
   },
   "peerDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.12",
