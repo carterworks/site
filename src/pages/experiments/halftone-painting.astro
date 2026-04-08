@@ -1,7 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
-import "../../styles/global.css";
 import Experimental from "../../icons/Experimental.astro";
+import "../../styles/experiments.css";
 
 const { url } = Astro;
 ---
@@ -74,6 +74,106 @@ const { url } = Astro;
       property="og:type"
       content="website"
     />
+    <style>
+      body {
+        overflow: hidden;
+        color: var(--color-sepia);
+        background: var(--color-blackish);
+        font-family: var(--font-sans);
+        user-select: none;
+      }
+
+      .intro {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .intro h1 {
+        margin-bottom: 0.75rem;
+      }
+
+      .intro blockquote {
+        margin: 0 0 0.5rem;
+        padding-left: 1rem;
+        border-left: 2px solid color-mix(in srgb, var(--color-sepia) 60%, transparent);
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      #corner {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        opacity: 0.85;
+        transition: opacity 150ms ease;
+      }
+
+      #corner:hover {
+        opacity: 1;
+      }
+
+      .toolbar-button {
+        border: 1px solid rgb(255 255 255 / 0.1);
+        border-radius: 0.375rem;
+        padding: 0.375rem 0.625rem;
+        color: white;
+        background: rgb(255 255 255 / 0.1);
+        font-size: 0.75rem;
+      }
+
+      .toolbar-button:hover {
+        background: rgb(255 255 255 / 0.15);
+      }
+
+      #stage {
+        display: block;
+        width: 100vw;
+        height: 100dvh;
+        cursor: crosshair;
+        outline: none;
+      }
+
+      #hud {
+        position: fixed;
+        left: 50%;
+        bottom: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        border-radius: 999px;
+        color: white;
+        background: rgb(255 255 255 / 0.1);
+        backdrop-filter: blur(8px);
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        opacity: 0.85;
+        transform: translateX(-50%);
+      }
+
+      .hud-divider {
+        width: 1px;
+        height: 14px;
+        background: rgb(255 255 255 / 0.15);
+      }
+
+      .hud-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      #cellSize {
+        width: 8rem;
+        height: 1.25rem;
+      }
+    </style>
 
     <script type="module">
       const resolveCssColor = (colorString) => {
@@ -534,10 +634,8 @@ const { url } = Astro;
       editor.renderer.requestDraw();
     </script>
   </head>
-  <body
-    class="m-0 bg-blackish text-sepia overflow-hidden select-none font-sans"
-  >
-    <header class="prose mx-auto p-4">
+  <body>
+    <header class="intro">
       <h1>Halftone Painting</h1>
       <p>
         <blockquote>
@@ -555,26 +653,23 @@ const { url } = Astro;
       <p>
         <a
           href="/experiments"
-          class="inline-flex items-center gap-1"
+          class="back-link"
           ><Experimental /> Go back to experiments</a
         >
       </p>
     </header>
     <main>
-      <div
-        id="corner"
-        class="flex justify-center gap-2 opacity-[0.85] transition-opacity duration-150 hover:opacity-100"
-      >
+      <div id="corner">
         <button
           id="clearBtn"
           title="Clear (C)"
-          class="bg-white/10 text-white border border-white/10 px-2.5 py-1.5 rounded-md text-xs hover:bg-white/15"
+          class="toolbar-button"
           >Clear</button
         >
         <button
           id="saveBtn"
           title="Save PNG (S)"
-          class="bg-white/10 text-white border border-white/10 px-2.5 py-1.5 rounded-md text-xs hover:bg-white/15"
+          class="toolbar-button"
           >Save PNG</button
         >
       </div>
@@ -582,16 +677,12 @@ const { url } = Astro;
       <canvas
         id="stage"
         aria-label="Halftone editor"
-        class="block w-screen h-[100dvh] outline-none cursor-crosshair"
       ></canvas>
 
-      <div
-        id="hud"
-        class="fixed left-1/2 bottom-4 -translate-x-1/2 bg-white/10 backdrop-blur-sm text-white px-3 py-2 text-xs tracking-[0.02em] rounded-full border border-white/10 inline-flex items-center gap-3 opacity-[0.85] transition-all"
-      >
+      <div id="hud">
         <span>Click: full • Click again: half • Right click: clear circle</span>
-        <div class="w-px h-[14px] bg-white/15"></div>
-        <label class="inline-flex items-center gap-2">
+        <div class="hud-divider"></div>
+        <label class="hud-label">
           <span>Grid</span>
           <input
             id="cellSize"
@@ -601,7 +692,6 @@ const { url } = Astro;
             step="1"
             value="14"
             aria-label="Grid size"
-            class="w-32 h-5"
           />
         </label>
       </div>

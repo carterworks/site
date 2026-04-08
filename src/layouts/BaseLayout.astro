@@ -1,7 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
-import "../styles/global.css";
 interface Props {
   title: string;
 }
@@ -9,10 +8,7 @@ const { title } = Astro.props;
 const { url } = Astro;
 ---
 
-<html
-  lang="en"
-  data-color-scheme="carterworks-2025"
->
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta
@@ -81,23 +77,7 @@ const { url } = Astro;
     />
   </head>
 
-  <body
-    class="space-y-8
-    font-classical-humanist
-    color-scheme-carterworks-2025:bg-sepia
-    color-scheme-carterworks-2025:text-blackish
-    color-scheme-carterworks-2025:dark:bg-blackish
-    color-scheme-carterworks-2025:dark:text-sepia
-    bg-[url('/noise.svg')]
-    bg-size-[30%]
-    p-4
-    m-0
-    *:mx-auto
-    *:max-w-prose
-    min-h-screen
-    transition-all
-    reduced-motion:no-motion"
-  >
+  <body>
     <Header />
     <slot />
   </body>

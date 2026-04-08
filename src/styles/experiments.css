@@ -1,0 +1,55 @@
+:root {
+  --color-sepia: oklch(0.9735 0.026 90.1);
+  --color-blackish: oklch(25% 0.029 221.9);
+  --font-sans: Optima, Candara, "Noto Sans", source-sans-pro, sans-serif;
+  --font-serif:
+    Didot, "Bodoni MT", "Noto Serif Display", "URW Palladio L", P052, Sylfaen,
+    serif;
+  --font-mono:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    "DejaVu Sans Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+}
+
+a,
+a:visited {
+  color: inherit;
+}
+
+img,
+video,
+canvas,
+svg {
+  display: block;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+svg {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-serif);
+  font-weight: 400;
+}

@@ -1,7 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
-import "../../styles/global.css";
 import Experimental from "../../icons/Experimental.astro";
+import "../../styles/experiments.css";
 
 const { url } = Astro;
 ---
@@ -98,7 +98,7 @@ const { url } = Astro;
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
       const MONO_FONT_FAMILY =
-        '"Geist Mono", var(--font-monospace-code)';
+        '"Geist Mono", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 
       // Port of
       // #region Theme
@@ -1491,12 +1491,12 @@ const { url } = Astro;
         };
 
         return html`
-          <label class="flex items-center gap-2 text-sm">
+          <label class="theme-switcher-label">
             Theme
             <select
               value=${selected}
               onChange=${onChange}
-              class="bg-[var(--bg)] text-[var(--text)] border border-[var(--inactive)] rounded px-2 py-1 text-sm transition-colors duration-300"
+              class="theme-switcher-select"
             >
               ${THEME_NAMES.map(
                 (name) => html`
@@ -1563,7 +1563,11 @@ const { url } = Astro;
             whiteSpace: "pre-wrap",
           });
           const lineHeightPx = Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4);
-          const { lines } = layoutWithLines(prepared, Number.MAX_SAFE_INTEGER, lineHeightPx);
+          const { lines } = layoutWithLines(
+            prepared,
+            Number.MAX_SAFE_INTEGER,
+            lineHeightPx,
+          );
           return lines[0]?.width || 0;
         } catch {
           return text.length * PRETEXT_MEASURE_SCALE_PX;
@@ -1641,7 +1645,13 @@ const { url } = Astro;
         const maxWidthPx = getColumnWidthPx(maxWidth, font);
         try {
           const prepared = prepare(text, font, { whiteSpace: "pre-wrap" });
-          if (layout(prepared, maxWidthPx, Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4)).lineCount <= 1) {
+          if (
+            layout(
+              prepared,
+              maxWidthPx,
+              Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4),
+            ).lineCount <= 1
+          ) {
             return text;
           }
 
@@ -1649,12 +1659,19 @@ const { url } = Astro;
           let high = text.length;
           while (low < high) {
             const mid = (low + high + 1) >> 1;
-            const candidate = (mid >= text.length ? text : text.slice(0, mid) + "…").trimEnd();
+            const candidate = (
+              mid >= text.length ?
+                text
+              : text.slice(0, mid) + "…").trimEnd();
             const preparedCandidate = prepare(candidate, font, {
               whiteSpace: "pre-wrap",
             });
             if (
-              layout(preparedCandidate, maxWidthPx, Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4)).lineCount <= 1
+              layout(
+                preparedCandidate,
+                maxWidthPx,
+                Math.round(PRETEXT_MEASURE_SCALE_PX * 1.4),
+              ).lineCount <= 1
             ) {
               low = mid;
             } else {
@@ -1662,7 +1679,9 @@ const { url } = Astro;
             }
           }
 
-          return low >= text.length ? text : (text.slice(0, low) + "…").trimEnd();
+          return low >= text.length ?
+              text
+            : (text.slice(0, low) + "…").trimEnd();
         } catch {
           return maxWidth === 1 ? "…" : text.slice(0, maxWidth - 1) + "…";
         }
@@ -1689,7 +1708,10 @@ const { url } = Astro;
           const prepared = prepareWithSegments(source, font, {
             whiteSpace: "pre-wrap",
           });
-          const firstWidthPx = getColumnWidthPx(Math.max(1, firstWidth - 1), font);
+          const firstWidthPx = getColumnWidthPx(
+            Math.max(1, firstWidth - 1),
+            font,
+          );
           const continuationWidthPx = getColumnWidthPx(
             Math.max(1, continuationWidth - 1),
             font,
@@ -1737,9 +1759,9 @@ const { url } = Astro;
        * @param {CompanionSoul} [soul]
        * @returns {string[]}
        */
-       function buildCardTextInternal(bones, seed, soul) {
-         void seed;
-         const w = CARD_COLS;
+      function buildCardTextInternal(bones, seed, soul) {
+        void seed;
+        const w = CARD_COLS;
         const body = w - 4;
         const layoutFont = getCardLayoutFont();
         const stars = RARITY_STARS[bones.rarity];
@@ -1750,7 +1772,8 @@ const { url } = Astro;
         const titleLeft = `${stars} ${rarity}`;
         const quotedPersonality = personality ? `"${personality}"` : "";
         const spriteLines = renderSprite(bones, 0);
-        const quoteLines = quotedPersonality ? wrapCardBodyText(quotedPersonality, body) : [];
+        const quoteLines =
+          quotedPersonality ? wrapCardBodyText(quotedPersonality, body) : [];
 
         const lines = [];
         lines.push(B.tl + B.h.repeat(w) + B.tr);
@@ -1803,7 +1826,10 @@ const { url } = Astro;
           lines.push(
             B.v
               + "  "
-              + padCardBody(label + " " + bar + " " + String(v).padStart(3), body)
+              + padCardBody(
+                label + " " + bar + " " + String(v).padStart(3),
+                body,
+              )
               + "  "
               + B.v,
           );
@@ -1846,6 +1872,7 @@ const { url } = Astro;
         const theme = getTheme(themeName);
         const preRef = useRef(null);
         const cardRef = useRef(null);
+        const glareRef = useRef(null);
         const wrapperRef = useRef(null);
         const [expanded, setExpanded] = useState(false);
         const expandedRef = useRef(false);
@@ -2091,6 +2118,66 @@ const { url } = Astro;
           return 12;
         }, [cardText, preparedCardTextBySize]);
 
+        useEffect(() => {
+          const wrapper = wrapperRef.current;
+          const card = cardRef.current;
+          const pre = preRef.current;
+          const glare = glareRef.current;
+
+          if (wrapper) {
+            wrapper.style.perspective = "800px";
+            wrapper.style.display = "inline-block";
+          }
+
+          if (card) {
+            card.style.setProperty("--display-rx", card.style.getPropertyValue("--display-rx") || "0deg");
+            card.style.setProperty("--display-ry", card.style.getPropertyValue("--display-ry") || "0deg");
+            card.style.setProperty("--display-rz", card.style.getPropertyValue("--display-rz") || "0deg");
+            card.style.setProperty("--pointer-x", card.style.getPropertyValue("--pointer-x") || "50%");
+            card.style.setProperty("--pointer-y", card.style.getPropertyValue("--pointer-y") || "50%");
+            card.style.setProperty("--glare-opacity", card.style.getPropertyValue("--glare-opacity") || "0");
+            card.style.setProperty("--card-accent", accentColor);
+            card.style.setProperty("--card-inactive", theme.inactive);
+            card.style.setProperty("--card-text", theme.text);
+            card.style.position = "relative";
+            card.style.borderRadius = "8px";
+            card.style.willChange = "transform";
+            card.style.cursor = "pointer";
+            card.style.transformOrigin = "center";
+            if (!expandedRef.current) {
+              card.style.transform =
+                "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))";
+            }
+          }
+
+          if (pre) {
+            pre.style.fontFamily = MONO_FONT_FAMILY;
+            pre.style.fontSize = `${fontSize}px`;
+            pre.style.lineHeight = "1.4";
+            pre.style.color = theme.text;
+            pre.style.background = theme.userMessageBackground;
+            pre.style.padding = "12px 16px";
+            pre.style.borderRadius = "8px";
+            pre.style.boxShadow = cardBoxShadow;
+            pre.style.transition = "box-shadow 500ms ease-out";
+            pre.style.display = "inline-block";
+            pre.style.userSelect = "none";
+            pre.style.webkitUserSelect = "none";
+          }
+
+          if (glare) {
+            glare.style.position = "absolute";
+            glare.style.inset = "0";
+            glare.style.borderRadius = "8px";
+            glare.style.backgroundImage =
+              "radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y), hsla(0,0%,100%,0.8) 10%, hsla(0,0%,100%,0.65) 20%, hsla(0,0%,0%,0.5) 90%)";
+            glare.style.mixBlendMode = "overlay";
+            glare.style.opacity = "var(--glare-opacity)";
+            glare.style.transition = "opacity 500ms ease-out";
+            glare.style.pointerEvents = "none";
+          }
+        }, [accentColor, cardBoxShadow, fontSize, theme.inactive, theme.text, theme.userMessageBackground]);
+
         // Build the animated version (sprite frame changes per tick)
         const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
         const frame = frameIdx === -1 ? 0 : frameIdx;
@@ -2132,19 +2219,19 @@ const { url } = Astro;
 
         const coloredLines = displayLines.map((line, i) => {
           if (i === 0 || i === displayLines.length - 1) {
-            return html`<span style=${{ color: accentColor }}>${line}</span>`;
+            return html`<span class="card-accent">${line}</span>`;
           }
           if (i === 2) {
             const content = line.slice(1, -1);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: accentColor }}>${content}</span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span class="card-accent">${B.v}</span
+              ><span class="card-accent">${content}</span
+              ><span class="card-accent">${B.v}</span>`;
           }
           if (i >= spriteStart && i < spriteEnd) {
             const content = line.slice(1, -1);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: accentColor }}>${content}</span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span class="card-accent">${B.v}</span
+              ><span class="card-accent">${content}</span
+              ><span class="card-accent">${B.v}</span>`;
           }
           if (STAT_NAMES.some((name) => line.includes(name))) {
             const outerPad = line.slice(1, 3);
@@ -2154,26 +2241,27 @@ const { url } = Astro;
             const val = raw.slice(22, 25);
             const tail = raw.slice(25);
             const outerPadRight = line.slice(-3, -1);
-            return html`<span style=${{ color: accentColor }}>${B.v}</span
-              ><span style=${{ color: theme.inactive }}>${outerPad + label}</span
-              ><span style=${{ color: accentColor }}>${bar}</span
-              ><span style=${{ color: theme.text }}
-                >${val}</span
-              ><span style=${{ color: theme.inactive }}>${tail + outerPadRight}</span
-              ><span style=${{ color: accentColor }}>${B.v}</span>`;
+            return html`<span class="card-accent">${B.v}</span
+              ><span class="card-inactive"
+                >${outerPad + label}</span
+              ><span class="card-accent">${bar}</span
+              ><span class="card-text-color">${val}</span
+              ><span class="card-inactive"
+                >${tail + outerPadRight}</span
+              ><span class="card-accent">${B.v}</span>`;
           }
           const content = line.slice(1, -1);
           const isNameLine = !!name && content.trim() === name;
-          return html`<span style=${{ color: accentColor }}>${B.v}</span
-            ><span style=${{ color: isNameLine ? theme.text : theme.inactive }}>${content}</span
-            ><span style=${{ color: accentColor }}>${B.v}</span>`;
+          return html`<span class="card-accent">${B.v}</span
+            ><span class=${isNameLine ? "card-text-color" : "card-inactive"}
+              >${content}</span
+            ><span class="card-accent">${B.v}</span>`;
         });
 
         return html`
           <div
             ref=${wrapperRef}
-            class="card-entrance"
-            style=${{ perspective: "800px", display: "inline-block" }}
+            class="card-shell card-entrance"
             onMouseEnter=${onMouseEnter}
             onMouseMove=${onMouseMove}
             onMouseLeave=${onMouseLeave}
@@ -2184,56 +2272,16 @@ const { url } = Astro;
           >
             <div
               ref=${cardRef}
+              class="card-display"
               onClick=${onCardClick}
-              style=${{
-                "--display-rx": "0deg",
-                "--display-ry": "0deg",
-                "--display-rz": "0deg",
-                "--pointer-x": "50%",
-                "--pointer-y": "50%",
-                "--glare-opacity": "0",
-                transform:
-                  "rotateX(var(--display-rx)) rotateY(var(--display-ry)) rotate(var(--display-rz))",
-                transformOrigin: "center",
-                position: "relative",
-                borderRadius: "8px",
-                willChange: "transform",
-                cursor: "pointer",
-              }}
             >
               <pre
                 ref=${preRef}
-                class="leading-snug"
-                style=${{
-                  fontFamily: MONO_FONT_FAMILY,
-                  fontSize: fontSize + "px",
-                  lineHeight: "1.4",
-                  color: theme.text,
-                  background: theme.userMessageBackground,
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  boxShadow: cardBoxShadow,
-                  transition: "box-shadow 500ms ease-out",
-                  display: "inline-block",
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                }}
+                class="card-text"
               >
 ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               >
-              <div
-                style=${{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "8px",
-                  backgroundImage:
-                    "radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y), hsla(0,0%,100%,0.8) 10%, hsla(0,0%,100%,0.65) 20%, hsla(0,0%,0%,0.5) 90%)",
-                  mixBlendMode: "overlay",
-                  opacity: "var(--glare-opacity)",
-                  transition: "opacity 500ms ease-out",
-                  pointerEvents: "none",
-                }}
-              />
+              <div ref=${glareRef} class="card-glare"></div>
               ${bones.shiny && html`<div class="shiny-overlay" />`}
             </div>
           </div>
@@ -2448,28 +2496,18 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
       /**
        * Selector row — renders as two grid children (label + select)
-       * @param {{ inputId: string, label: string, options: string[], value: string, onChange: (v: string) => void, theme: Theme }} props
+       * @param {{ inputId: string, label: string, options: string[], value: string, onChange: (v: string) => void }} props
        */
-      function Selector({ inputId, label, options, value, onChange, theme }) {
+      function Selector({ inputId, label, options, value, onChange }) {
         return html`
-          <label
-            for=${inputId}
-            class="geist-mono text-sm self-center"
-            style=${{ color: theme.inactive }}
+          <label for=${inputId} class="control-label"
             >${label}</label
           >
           <select
             id=${inputId}
             value=${value}
             onChange=${(e) => onChange(e.target.value)}
-            class="px-2 py-1 rounded border text-sm transition-colors duration-300"
-            style=${{
-              gridColumn: "2 / -1",
-              backgroundColor: theme.userMessageBackground,
-              color: theme.text,
-              borderColor: theme.inactive,
-              fontFamily: MONO_FONT_FAMILY,
-            }}
+            class="control-select"
           >
             ${options.map(
               (o) =>
@@ -2486,14 +2524,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
       /**
        * Stat slider row — renders as three grid children (label + slider + value)
-       * @param {{ inputId: string, name: string, value: number, onChange: (v: number) => void, theme: Theme }} props
+       * @param {{ inputId: string, name: string, value: number, onChange: (v: number) => void }} props
        */
-      function StatSlider({ inputId, name, value, onChange, theme }) {
+      function StatSlider({ inputId, name, value, onChange }) {
         return html`
-          <label
-            for=${inputId}
-            class="geist-mono text-xs self-center"
-            style=${{ color: theme.inactive }}
+          <label for=${inputId} class="stat-label"
             >${name}</label
           >
           <input
@@ -2504,9 +2539,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             value=${value}
             onInput=${(e) => onChange(Number(e.target.value))}
           />
-          <span
-            class="geist-mono text-xs self-center"
-            style=${{ color: theme.text, textAlign: "right" }}
+          <span class="stat-value"
             >${value}</span
           >
         `;
@@ -2607,7 +2640,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         const soul = result.soul || {};
 
         return html`
-          <div class="flex flex-col gap-2 text-sm">
+          <div class="app-copy">
             <p>
               Enter any seed to generate a buddy card. Same seed = same card.
               Screenshot or copy to share.
@@ -2618,7 +2651,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               <a
                 href="https://github.com/chatgptprojects/claude-code/tree/642c7f944bbe5f7e57c05d756ab7fa7c9c5035cc/src/buddy"
                 rel="noopener noreferrer"
-                class="mx-[0.5ch] underline"
+                class="inline-link"
                 >2026-03-31 leak</a
               >
               of Anthropic's Claude Code.
@@ -2628,7 +2661,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               <a
                 href="https://samwarnick.com/pokemon/"
                 rel="noopener noreferrer"
-                class="mx-[0.5ch] underline"
+                class="inline-link"
                 >Sam Warnick.</a
               >
             </p>
@@ -2637,7 +2670,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               <a
                 href="https://github.com/carterworks/site/tree/main/src/pages/experiments/claude-code-buddy-creator.astro"
                 rel="noopener noreferrer"
-                class="mx-[0.5ch] underline"
+                class="inline-link"
                 >GitHub.</a
               >
             </p>
@@ -2648,25 +2681,19 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             >
               Buddy seed
             </label>
-            <div class="flex gap-2">
+            <div class="seed-row">
               <input
                 id=${seedInputId}
                 type="text"
                 value=${seed}
                 onInput=${onSeedInput}
                 placeholder="Enter a seed"
-                class="geist-mono flex-1 px-3 py-2 rounded border text-sm transition-colors duration-300 outline-none"
-                style=${{
-                  backgroundColor: theme.userMessageBackground,
-                  color: theme.text,
-                  borderColor: theme.inactive,
-                }}
+                class="geist-mono seed-input"
               />
               <button
                 onClick=${randomize}
                 aria-label="Generate random seed"
-                class="geist-mono px-4 py-2 rounded text-sm transition-colors duration-300 cursor-pointer border"
-                style=${{ borderColor: theme.inactive, color: theme.text }}
+                class="geist-mono icon-button"
                 title="Random seed"
               >
                 🎲
@@ -2675,32 +2702,27 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
 
             ${result
             && html`
-              <div class="flex flex-col items-center gap-3">
+              <div class="result-block">
                 <${TradingCard}
                   key=${result.seed}
                   bones=${result.bones}
                   seed=${result.seed}
                   soul=${result.soul}
                 />
-                <div class="flex gap-2 items-center flex-wrap justify-center">
+                <div class="card-actions">
                   <button
                     onClick=${onCopy}
-                    class="geist-mono px-3 py-1.5 rounded text-xs transition-colors duration-300 cursor-pointer border"
-                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                    class="geist-mono small-button"
                   >
                     ${copied ? "Copied!" : "Copy as text"}
                   </button>
                   <button
                     onClick=${exportGerm}
-                    class="geist-mono px-3 py-1.5 rounded text-xs transition-colors duration-300 cursor-pointer border"
-                    style=${{ borderColor: theme.inactive, color: theme.text }}
+                    class="geist-mono small-button"
                   >
                     ${germCopied ? "Link copied!" : "Copy share link"}
                   </button>
-                  <span
-                    class="geist-mono text-xs"
-                    style=${{ color: theme.inactive }}
-                  >
+                  <span class="geist-mono seed-note">
                     seed:
                     ${result.seed.length > 24 ?
                       result.seed.slice(0, 24) + "..."
@@ -2711,30 +2733,21 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             `}
 
             <details
-              class="mt-4"
+              class="creator-details"
               open=${initialParsed.isGerm}
             >
               <summary
-                class="geist-mono cursor-pointer text-sm select-none"
-                style=${{ color: theme.inactive }}
+                class="creator-summary"
               >
                 Card creator
               </summary>
-              <div
-                class="grid gap-x-3 gap-y-2 mt-4 p-4 rounded border transition-colors duration-300 items-center"
-                style=${{
-                  borderColor: theme.subtle,
-                  backgroundColor: theme.subtle,
-                  gridTemplateColumns: "auto 1fr auto",
-                }}
-              >
+              <div class="builder-panel">
                 <${Selector}
                   inputId="buddy-species"
                   label="Species"
                   options=${SPECIES}
                   value=${bones.species}
                   onChange=${(v) => updateBones({ ...bones, species: v })}
-                  theme=${theme}
                 />
                 <${Selector}
                   inputId="buddy-eyes"
@@ -2742,7 +2755,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   options=${EYES}
                   value=${bones.eye}
                   onChange=${(v) => updateBones({ ...bones, eye: v })}
-                  theme=${theme}
                 />
                 <${Selector}
                   inputId="buddy-hat"
@@ -2750,7 +2762,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   options=${HATS}
                   value=${bones.hat}
                   onChange=${(v) => updateBones({ ...bones, hat: v })}
-                  theme=${theme}
                 />
                 <${Selector}
                   inputId="buddy-rarity"
@@ -2758,12 +2769,10 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   options=${RARITIES}
                   value=${bones.rarity}
                   onChange=${(v) => updateBones({ ...bones, rarity: v })}
-                  theme=${theme}
                 />
                 <label
                   for=${nameInputId}
-                  class="geist-mono text-sm"
-                  style=${{ color: theme.inactive }}
+                  class="control-label"
                   >Name</label
                 >
                 <input
@@ -2771,19 +2780,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   type="text"
                   value=${soul.name || ""}
                   onInput=${(e) => updateSoul({ name: e.target.value })}
-                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
-                  style=${{
-                    gridColumn: "2 / -1",
-                    backgroundColor: theme.userMessageBackground,
-                    color: theme.text,
-                    borderColor: theme.inactive,
-                    fontFamily: MONO_FONT_FAMILY,
-                  }}
+                  class="text-input"
                 />
                 <label
                   for=${personalityInputId}
-                  class="geist-mono text-sm"
-                  style=${{ color: theme.inactive }}
+                  class="control-label"
                   >Personality</label
                 >
                 <input
@@ -2791,19 +2792,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   type="text"
                   value=${soul.personality || ""}
                   onInput=${(e) => updateSoul({ personality: e.target.value })}
-                  class="px-2 py-1 rounded border text-sm transition-colors duration-300 outline-none"
-                  style=${{
-                    gridColumn: "2 / -1",
-                    backgroundColor: theme.userMessageBackground,
-                    color: theme.text,
-                    borderColor: theme.inactive,
-                    fontFamily: MONO_FONT_FAMILY,
-                  }}
+                  class="text-input"
                 />
                 <label
                   for=${shinyInputId}
-                  class="geist-mono text-sm"
-                  style=${{ color: theme.inactive }}
+                  class="control-label"
                   >Shiny</label
                 >
                 <input
@@ -2812,8 +2805,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                   checked=${bones.shiny}
                   onChange=${(e) =>
                     updateBones({ ...bones, shiny: e.target.checked })}
-                  class="justify-self-start"
-                  style=${{ gridColumn: "2 / -1" }}
+                  class="checkbox-input"
                 />
                 ${STAT_NAMES.map(
                   (name) => html`
@@ -2827,7 +2819,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
                           ...bones,
                           stats: { ...bones.stats, [name]: v },
                         })}
-                      theme=${theme}
                     />
                   `,
                 )}
@@ -2840,7 +2831,297 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       render(html`<${BuddyCreator} />`, document.getElementById("buddy-app"));
       // #endregion
     </script>
-    <style>
+    <style is:global>
+      :root {
+        --bg: rgb(240, 240, 240);
+        --text: rgb(0, 0, 0);
+        --claude: rgb(215, 119, 87);
+        --subtle: rgb(175, 175, 175);
+        --inactive: rgb(102, 102, 102);
+        --mono: "Geist Mono", var(--font-mono);
+        --sans: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        transition: background-color 300ms ease, color 300ms ease;
+      }
+
+      .page-nav {
+        padding: 1rem;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: color 300ms ease;
+      }
+
+      .page-main {
+        width: min(100%, 42rem);
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .theme-switcher-label,
+      .seed-row,
+      .card-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .theme-switcher-label {
+        align-items: center;
+        font-size: 0.875rem;
+        padding: 0.35rem 0.45rem 0.35rem 0.8rem;
+        border: 1px solid color-mix(in srgb, var(--inactive) 55%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 28px -24px rgba(0, 0, 0, 0.7);
+      }
+
+      .app-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        border: 1px solid color-mix(in srgb, var(--inactive) 35%, transparent);
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--bg) 92%, transparent);
+        box-shadow: 0 18px 45px -38px rgba(0, 0, 0, 0.75);
+        font-size: 0.875rem;
+      }
+
+      .app-copy p {
+        margin: 0;
+      }
+
+      .inline-link {
+        margin-inline: 0.5ch;
+        text-decoration: underline;
+      }
+
+      .seed-row {
+        align-items: stretch;
+        margin-top: 0.35rem;
+      }
+
+      .result-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+
+      .card-shell {
+        display: inline-block;
+      }
+
+      .card-display {
+        transform: rotateX(var(--display-rx)) rotateY(var(--display-ry))
+          rotate(var(--display-rz));
+      }
+
+      .card-text {
+        display: inline-block;
+      }
+
+      .card-accent {
+        color: var(--card-accent);
+      }
+
+      .card-inactive {
+        color: var(--card-inactive);
+      }
+
+      .card-text-color {
+        color: var(--card-text);
+      }
+
+      .card-actions {
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 0.75rem 0.9rem;
+        border: 1px solid color-mix(in srgb, var(--inactive) 28%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        box-shadow: 0 18px 30px -26px rgba(0, 0, 0, 0.55);
+      }
+
+      .seed-note {
+        font-size: 0.75rem;
+      }
+
+      .creator-details {
+        margin-top: 1rem;
+      }
+
+      .creator-summary {
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 0.875rem;
+        color: var(--inactive);
+        user-select: none;
+        letter-spacing: 0.02em;
+      }
+
+      .builder-panel {
+        display: grid;
+        gap: 0.5rem 0.75rem;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 1.1rem;
+        border: 1px solid;
+        border-radius: 1rem;
+        border-color: color-mix(in srgb, var(--inactive) 28%, transparent);
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--bg) 96%, transparent),
+            color-mix(in srgb, var(--subtle) 52%, transparent)
+          );
+        grid-template-columns: auto 1fr auto;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+          0 20px 40px -34px rgba(0, 0, 0, 0.8);
+        transition: background-color 300ms ease, border-color 300ms ease,
+          box-shadow 300ms ease;
+      }
+
+      .control-label,
+      .stat-label,
+      .stat-value,
+      .geist-mono {
+        font-family: var(--mono);
+      }
+
+      .control-label,
+      .stat-label,
+      .seed-note {
+        color: var(--inactive);
+      }
+
+      .stat-value {
+        color: var(--text);
+        text-align: right;
+      }
+
+      .control-label,
+      .theme-switcher-select,
+      .control-select,
+      .text-input,
+      .seed-input,
+      .icon-button,
+      .small-button {
+        font-size: 0.875rem;
+      }
+
+      .stat-label,
+      .stat-value,
+      .small-button,
+      .seed-note {
+        font-size: 0.75rem;
+      }
+
+      .control-label,
+      .stat-label,
+      .stat-value {
+        align-self: center;
+      }
+
+      .theme-switcher-select,
+      .control-select,
+      .text-input,
+      .seed-input,
+      .icon-button,
+      .small-button {
+        border: 1px solid color-mix(in srgb, var(--inactive) 72%, transparent);
+        border-radius: 0.8rem;
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--bg) 97%, white 3%),
+            color-mix(in srgb, var(--bg) 90%, var(--subtle) 10%)
+          );
+        color: var(--text);
+        box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+          0 8px 24px -20px rgba(0, 0, 0, 0.65);
+        transition:
+          transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
+          box-shadow 200ms ease,
+          background-color 300ms ease,
+          border-color 300ms ease,
+          color 300ms ease;
+      }
+
+      .theme-switcher-select,
+      .control-select,
+      .text-input {
+        min-height: 2.6rem;
+        padding: 0.55rem 0.85rem;
+        font-family: var(--mono);
+      }
+
+      .seed-input {
+        flex: 1;
+        min-height: 3rem;
+        padding: 0.8rem 0.95rem;
+        font-family: var(--mono);
+        outline: none;
+      }
+
+      .icon-button {
+        min-width: 3rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+      }
+
+      .small-button {
+        padding: 0.55rem 0.9rem;
+        cursor: pointer;
+      }
+
+      .checkbox-input {
+        grid-column: 2 / -1;
+        justify-self: start;
+      }
+
+      .control-select,
+      .text-input {
+        grid-column: 2 / -1;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       /* --- Atmosphere: subtle terminal dot-grid --- */
       body::before {
         content: "";
@@ -2929,7 +3210,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       }
 
       .geist-mono {
-        font-family: "Geist Mono", var(--font-monospace-code);
+        font-family: var(--mono);
       }
 
       /* --- Button & control micro-interactions --- */
@@ -2945,7 +3226,21 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       @media (hover: hover) and (pointer: fine) {
         button:hover,
         select:hover {
-          box-shadow: 0 0 12px rgba(215, 119, 87, 0.18);
+          box-shadow: 0 0 12px rgba(215, 119, 87, 0.18),
+            0 16px 30px -24px rgba(0, 0, 0, 0.7);
+          border-color: color-mix(in srgb, var(--claude) 45%, var(--inactive));
+        }
+
+        .text-input:hover,
+        .seed-input:hover,
+        .control-select:hover,
+        .theme-switcher-select:hover {
+          background:
+            linear-gradient(
+              180deg,
+              color-mix(in srgb, var(--bg) 99%, white 1%),
+              color-mix(in srgb, var(--bg) 94%, var(--subtle) 6%)
+            );
         }
       }
 
@@ -3064,23 +3359,19 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       }
     </style>
   </head>
-  <body
-    class="transition-colors duration-300 min-h-screen"
-    style="background-color: var(--bg); color: var(--text);"
-  >
-    <nav class="p-4 animate-entrance animate-entrance-1">
+  <body>
+    <nav class="page-nav animate-entrance animate-entrance-1">
       <a
         href="/experiments"
-        class="inline-flex items-center gap-1 transition-colors duration-300"
-        style="color: var(--text);"
+        class="back-link"
         ><Experimental />Back to /experiments</a
       >
     </nav>
-    <main class="max-w-2xl mx-auto p-4">
+    <main class="page-main">
       <div
-        class="flex items-baseline justify-between gap-4 mb-6 animate-entrance animate-entrance-2"
+        class="page-header animate-entrance animate-entrance-2"
       >
-        <h1 class="text-2xl font-bold title-glow">Claude Code Buddy Creator</h1>
+        <h1 class="page-title title-glow">Claude Code Buddy Creator</h1>
         <div id="theme-switcher"></div>
       </div>
       <div
