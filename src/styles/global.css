@@ -1,0 +1,116 @@
+@layer reset {
+  html {
+    font-family:
+      system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji";
+    -moz-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    tab-size: 2;
+    line-height: 1.5;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  *,
+  *:before,
+  *:after {
+    box-sizing: inherit;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+  }
+
+  b,
+  strong {
+    font-weight: bolder;
+  }
+
+  /**
+  1. Improve consistency of default fonts in all browsers. (https://github.com/sindresorhus/modern-normalize/issues/3)
+  2. Correct the odd 'em' font sizing in all browsers.
+  */
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family:
+      ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+      monospace; /* 1 */
+    font-size: 1em; /* 2 */
+  }
+
+  small {
+    font-size: 80%;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-size: 1em;
+    text-wrap: balance;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  button,
+  input,
+  label {
+    line-height: 1.1;
+  }
+
+  sub,
+  sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  sub {
+    bottom: -0.25em;
+  }
+
+  sup {
+    top: -0.5em;
+  }
+
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 100%;
+    margin: 0;
+  }
+
+  /**
+  Correct the inability to style clickable types in iOS and Safari.
+  */
+
+  button,
+  [type="button"],
+  [type="reset"],
+  [type="submit"] {
+    -webkit-appearance: button;
+  }
+
+  summary {
+    display: list-item;
+  }
+  img,
+  p,
+  section {
+    max-width: 60ch;
+    height: auto;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
