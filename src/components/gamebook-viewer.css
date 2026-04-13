@@ -11,6 +11,10 @@
     --space-xl: calc(var(--spacer) * 6);
     --space-2xl: calc(var(--spacer) * 7);
     --space-3xl: calc(var(--spacer) * 8);
+    --text-sm: 0.75rem;
+    --text-md: 0.82rem;
+    --text-lg: 0.95rem;
+    --text-xl: 1rem;
     --color-paper: oklch(0.985 0.008 85);
     --color-paper-strong: oklch(0.955 0.012 85);
     --color-panel: oklch(0.993 0.004 85);
@@ -87,15 +91,15 @@
   }
 
   .page {
-    width: min(1240px, calc(100vw - 2rem));
+    width: min(1240px, calc(100vw - (var(--space-md) * 2)));
     margin-inline: auto;
     padding: var(--space-md) 0 var(--space-2xl);
   }
 
   .hero {
-    padding: clamp(1.25rem, 2.8vw, 2rem);
+    padding: clamp(var(--space-lg), 2.8vw, var(--space-3xl));
     border: 1px solid var(--color-line);
-    border-radius: 1.75rem;
+    border-radius: var(--space-2xl);
     background: var(--color-panel);
     box-shadow: 0 22px 60px rgb(53 44 32 / 0.07);
   }
@@ -109,14 +113,14 @@
     gap: var(--space-sm);
     align-self: stretch;
     padding: var(--space-lg);
-    border-radius: 1.2rem;
+    border-radius: var(--space-lg);
     background: var(--color-panel-muted);
-    font-size: 0.74rem;
+    font-size: var(--text-sm);
   }
 
   .hero-note strong {
     font-family: var(--font-sans);
-    font-size: 1rem;
+    font-size: var(--text-xl);
     letter-spacing: 0;
     text-transform: none;
     color: var(--color-ink);
@@ -124,7 +128,11 @@
 
   .hero h1 {
     font-family: var(--font-serif);
-    font-size: clamp(2.6rem, 6vw, 5.2rem);
+    font-size: clamp(
+      calc(var(--text-xl) * 2.6),
+      6vw,
+      calc(var(--text-xl) * 5.2)
+    );
     font-weight: 400;
     line-height: 0.92;
     letter-spacing: -0.03em;
@@ -147,12 +155,12 @@
 
   .gamebook-controls,
   .gamebook-canvas {
-    padding: 1.25rem;
+    padding: var(--space-lg);
   }
 
   .gamebook-controls {
     position: sticky;
-    top: 1rem;
+    top: var(--space-md);
   }
 
   .gamebook-controls-grid {
@@ -173,18 +181,10 @@
     border-top: 1px solid var(--color-line);
   }
 
-  .gamebook-controls-grid section > * + *,
-  .gamebook-canvas > * + *,
-  .gamebook-viewer-head > div > * + *,
-  .gamebook-error-block > * + *,
-  .gamebook-modal-section > * + * {
-    margin-top: 0.85rem;
-  }
-
   .gamebook-preset-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.85rem;
+    gap: var(--space-sm);
     align-items: end;
   }
 
@@ -240,7 +240,7 @@
     background: var(--surface-overlay);
     z-index: 5;
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: var(--text-md);
   }
 
   .gamebook-modal-backdrop {
@@ -265,8 +265,8 @@
 @layer components {
   code {
     font-family: var(--font-mono);
-    font-size: 0.82rem;
-    padding: 0.2rem 0.4rem;
+    font-size: var(--text-md);
+    padding: var(--space-2xs) var(--space-xs);
     border-radius: var(--radius-sm);
     background: var(--surface-overlay);
     color: var(--color-ink-soft);
@@ -275,7 +275,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
-    padding: 0.45rem 0.8rem;
+    padding: var(--space-xs) var(--space-sm);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-pill);
     background: rgb(255 255 255 / 0.58);
@@ -308,12 +308,12 @@
   }
 
   .hero-kicker {
-    font-size: 0.74rem;
+    font-size: var(--text-sm);
   }
 
   .gamebook-panel {
     border: 1px solid var(--color-line);
-    border-radius: 1.5rem;
+    border-radius: var(--space-xl);
     background: linear-gradient(
       180deg,
       var(--surface-glass-heavy),
@@ -324,7 +324,7 @@
 
   .gamebook-section-title {
     font-family: var(--font-sans);
-    font-size: 1rem;
+    font-size: var(--text-xl);
     font-weight: 600;
     letter-spacing: 0.02em;
     text-wrap: balance;
@@ -333,19 +333,19 @@
   .gamebook-section-copy {
     max-width: 58ch;
     color: var(--color-ink-soft);
-    font-size: 0.95rem;
+    font-size: var(--text-lg);
     line-height: 1.6;
     text-wrap: pretty;
   }
 
   .gamebook-mini-example {
     border: 1px solid var(--color-line);
-    border-radius: 1rem;
-    padding: 0.95rem 1rem;
+    border-radius: var(--space-md);
+    padding: var(--space-md);
     background: var(--color-panel-muted);
     color: var(--color-ink-soft);
     font-family: var(--font-mono);
-    font-size: 0.73rem;
+    font-size: var(--text-sm);
     line-height: 1.5;
     white-space: pre-wrap;
   }
@@ -357,18 +357,18 @@
 
   .gamebook-field-label-text,
   .gamebook-field-label span:first-child {
-    font-size: 0.76rem;
+    font-size: var(--text-sm);
   }
 
   .gamebook-field-label-text {
     display: block;
-    margin-bottom: 0.45rem;
+    margin-bottom: var(--space-xs);
   }
 
   .gamebook-field-hint {
     display: block;
-    margin-top: 0.3rem;
-    font-size: 0.72rem;
+    margin-top: var(--space-2xs);
+    font-size: var(--text-sm);
     color: var(--color-ink-soft);
   }
 
@@ -378,6 +378,11 @@
   .gamebook-modal-close {
     border: 1px solid var(--color-line);
     color: inherit;
+  }
+
+  .gamebook-button,
+  .gamebook-modal-close {
+    cursor: pointer;
   }
 
   .gamebook-textarea,
@@ -392,11 +397,10 @@
     width: 100%;
     min-height: 20rem;
     resize: vertical;
-    border-radius: 1.1rem;
-    padding: 1rem 1.05rem;
-    background: var(--surface-glass-strong);
+    border-radius: var(--space-md);
+    padding: var(--space-md);
     font-family: var(--font-mono);
-    font-size: 0.84rem;
+    font-size: var(--text-md);
     line-height: 1.7;
     tab-size: 2;
   }
@@ -421,13 +425,12 @@
 
   .gamebook-select {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: var(--space-sm) var(--space-md);
   }
 
   .gamebook-button {
-    padding: 0.75rem 1.1rem;
+    padding: var(--space-sm) var(--space-md);
     font-weight: 600;
-    cursor: pointer;
   }
 
   .gamebook-button:disabled {
@@ -459,23 +462,23 @@
 
   .gamebook-viewer-head kbd {
     border: 1px solid var(--color-line);
-    border-radius: 0.45rem;
-    padding: 0.08rem 0.35rem;
+    border-radius: var(--space-xs);
+    padding: var(--space-2xs) var(--space-xs);
     background: var(--color-panel-muted);
     font-family: var(--font-mono);
-    font-size: 0.78em;
+    font-size: var(--text-sm);
   }
 
   .gamebook-pill,
   .gamebook-path-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: var(--space-xs);
     min-height: 2.1rem;
     border: 1px solid var(--color-line);
-    padding: 0.38rem 0.76rem;
+    padding: var(--space-xs) var(--space-sm);
     background: var(--color-panel-muted);
-    font-size: 0.8rem;
+    font-size: var(--text-md);
   }
 
   .gamebook-pill--neutral {
@@ -505,7 +508,7 @@
   }
 
   .gamebook-path-label {
-    font-size: 0.72rem;
+    font-size: var(--text-sm);
     letter-spacing: 0.06em;
   }
 
@@ -513,14 +516,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.82em;
+    font-size: var(--text-md);
     font-weight: 600;
   }
 
   .gamebook-swatch {
-    width: 0.78rem;
-    height: 0.78rem;
-    border-radius: 0.2rem;
+    width: var(--space-sm);
+    height: var(--space-sm);
+    border-radius: var(--space-2xs);
     flex: none;
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55);
   }
@@ -531,20 +534,20 @@
 
   .gamebook-error-block {
     border: 1px solid color-mix(in oklch, oklch(0.63 0.18 24) 28%, white);
-    border-radius: 1rem;
-    padding: 0.95rem 1rem;
+    border-radius: var(--space-md);
+    padding: var(--space-md);
     color: oklch(0.39 0.09 24);
     background: oklch(0.97 0.016 25);
   }
 
   .gamebook-error-block h3 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: var(--text-lg);
   }
 
   .gamebook-error-list {
     margin: 0;
-    padding-left: 1.1rem;
+    padding-left: var(--space-md);
     line-height: 1.5;
   }
 
@@ -552,7 +555,7 @@
     margin: 0;
     max-width: 28ch;
     color: var(--color-ink-soft);
-    font-size: 0.76rem;
+    font-size: var(--text-sm);
     line-height: 1.5;
     text-align: right;
   }
@@ -560,7 +563,7 @@
   .gamebook-flow-shell {
     overflow: hidden;
     border: 1px solid var(--color-line);
-    border-radius: 1.35rem;
+    border-radius: var(--space-lg);
     background: linear-gradient(
       180deg,
       var(--surface-glass-strong),
@@ -571,7 +574,7 @@
   .gamebook-legend-note {
     max-width: 70ch;
     color: var(--color-ink-soft);
-    font-size: 0.77rem;
+    font-size: var(--text-sm);
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -585,7 +588,7 @@
         color-mix(in oklch, var(--color-line-strong) 80%, white)
       );
     border-radius: var(--node-radius, 18px);
-    padding: 1rem 1rem 1rem;
+    padding: var(--space-md);
     color: var(--color-ink);
     background: var(--node-fill, rgb(255 255 255 / 0.97));
     box-shadow: 0 14px 30px rgb(53 44 32 / 0.07);
@@ -613,15 +616,15 @@
   }
 
   .gamebook-node__eyebrow {
-    margin-bottom: 0.55rem;
-    font-size: 0.7rem;
+    margin-bottom: var(--space-xs);
+    font-size: var(--text-sm);
   }
 
   .gamebook-node__title {
     display: grid;
-    gap: 0.2rem;
+    gap: var(--space-2xs);
     font-family: var(--font-sans);
-    font-size: 0.98rem;
+    font-size: var(--text-lg);
     font-weight: 500;
     line-height: 1.42;
   }
@@ -632,24 +635,24 @@
 
   .gamebook-node__count {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: var(--space-md);
+    right: var(--space-md);
     color: var(--color-accent);
-    font-size: 0.7rem;
+    font-size: var(--text-sm);
     font-weight: 600;
   }
 
   .gamebook-node__badge {
     position: absolute;
-    right: 0.9rem;
-    bottom: 0.85rem;
+    right: var(--space-sm);
+    bottom: var(--space-sm);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-    padding: 0 0.45rem;
-    font-size: 0.72rem;
+    min-width: var(--space-xl);
+    min-height: var(--space-xl);
+    padding: 0 var(--space-xs);
+    font-size: var(--text-sm);
   }
 
   .gamebook-node__badge--more {
@@ -677,29 +680,32 @@
     max-height: min(85vh, 48rem);
     overflow: auto;
     border: 1px solid var(--color-line);
-    border-radius: 1.4rem;
-    padding: 1.25rem;
+    border-radius: var(--space-xl);
+    padding: var(--space-lg);
     background: color-mix(in oklch, var(--color-paper) 85%, white);
     box-shadow: 0 28px 70px rgb(15 12 10 / 0.16);
   }
 
   .gamebook-modal-kicker {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
   }
 
   .gamebook-modal-title {
-    margin: 0.6rem 0 0;
+    margin: var(--space-sm) 0 0;
     font-family: var(--font-sans);
-    font-size: clamp(1.35rem, 3vw, 1.8rem);
+    font-size: clamp(
+      calc(var(--text-xl) * 1.35),
+      3vw,
+      calc(var(--text-xl) * 1.8)
+    );
     font-weight: 400;
     line-height: 1.15;
   }
 
   .gamebook-modal-close {
     flex: none;
-    padding: 0.45rem 0.8rem;
+    padding: var(--space-xs) var(--space-sm);
     background: rgb(255 255 255 / 0.86);
-    cursor: pointer;
   }
 
   .gamebook-modal-copy,
@@ -709,11 +715,11 @@
   }
 
   .gamebook-modal-list {
-    padding-left: 1.2rem;
+    padding-left: var(--space-lg);
   }
 
   .gamebook-modal-list code {
-    font-size: 0.86em;
+    font-size: var(--text-md);
   }
 
   .gamebook-flow .react-flow__attribution {
@@ -724,7 +730,7 @@
   .gamebook-flow .react-flow__minimap {
     overflow: hidden;
     border: 1px solid var(--color-line);
-    border-radius: 0.8rem;
+    border-radius: var(--space-sm);
     background: var(--surface-glass-strong);
     box-shadow: var(--shadow-soft);
   }
@@ -739,7 +745,7 @@
 
   .gamebook-flow .react-flow__edge-text {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: calc(var(--text-sm) * 0.92);
   }
 
   .gamebook-flow .react-flow__background path {
@@ -764,7 +770,7 @@
 
   @media (max-width: 840px) {
     .page {
-      width: min(100vw - 1rem, 1240px);
+      width: min(100vw - var(--space-md), 1240px);
       padding-top: var(--space-sm);
     }
 
@@ -772,11 +778,15 @@
       grid-template-columns: 1fr;
       gap: var(--space-md);
       padding: var(--space-lg);
-      border-radius: 1.25rem;
+      border-radius: var(--space-lg);
     }
 
     .hero h1 {
-      font-size: clamp(2.3rem, 12vw, 3.6rem);
+      font-size: clamp(
+        calc(var(--text-xl) * 2.3),
+        12vw,
+        calc(var(--text-xl) * 3.6)
+      );
     }
   }
 

@@ -444,6 +444,10 @@ function getPresetById(id) {
   return CHOICE_PRESETS.find((entry) => entry.id === id) ?? null;
 }
 
+function getPresetByChoices(choices) {
+  return CHOICE_PRESETS.find((preset) => preset.choices === choices) ?? null;
+}
+
 function getInitialViewerState() {
   const fallbackPreset = CHOICE_PRESETS[0];
 
@@ -624,6 +628,108 @@ function edgeKey(fromId, toId, marker) {
   return `${fromId}:${marker}:${toId}`;
 }
 
+function getPathColor(index) {
+  return PATH_COLORS[index % PATH_COLORS.length];
+}
+
+function formatCountLabel(count, singular) {
+  return `${count} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function getNodeSurfaceStyles(node) {
+  const nodeRadius = node.kind === "ending" ? "24px" : "16px";
+
+  if (node.endingCount > 0) {
+    return {
+      "--node-fill": "color-mix(in oklch, var(--color-accent) 14%, white)",
+      "--node-stroke": "color-mix(in oklch, var(--color-accent) 52%, white)",
+      "--node-radius": nodeRadius,
+    };
+  }
+
+  if (node.nodeCount > 0) {
+    return {
+      "--node-fill": "color-mix(in oklch, var(--color-accent) 6%, white)",
+      "--node-stroke": "color-mix(in oklch, var(--color-accent) 30%, white)",
+      "--node-radius": nodeRadius,
+    };
+  }
+
+  return {
+    "--node-fill":
+      node.kind === "ending" ?
+        "oklch(0.97 0.012 245)"
+      : "rgb(255 255 255 / 0.96)",
+    "--node-stroke": "rgb(84 84 94 / 0.24)",
+    "--node-radius": nodeRadius,
+  };
+}
+
+function createTraceResult(
+  pathInput,
+  status,
+  message,
+  nodeIds,
+  edgeKeys,
+  finalId,
+) {
+  return {
+    ...pathInput,
+    status,
+    message,
+    nodeIds,
+    edgeKeys,
+    finalId,
+  };
+}
+
+function getNodeCount(summary, nodeId) {
+  return summary.nodeCounts.get(nodeId) ?? 0;
+}
+
+function getEndingCount(summary, nodeId) {
+  return summary.endingCounts.get(nodeId) ?? 0;
+}
+
+function createNodeModel({
+  id,
+  kind,
+  title,
+  previewLines,
+  hasOverflow,
+  detail,
+  nodeCount,
+  endingCount,
+}) {
+  return {
+    id: String(id),
+    nodeId: id,
+    kind,
+    title,
+    previewLines,
+    hasOverflow,
+    detail,
+    nodeCount,
+    endingCount,
+    width: NODE_WIDTH,
+    height: nodeHeightFromPreview(previewLines.length, kind === "ending"),
+  };
+}
+
+function createBaseEdge(sourceId, choice) {
+  return {
+    id: edgeKey(sourceId, choice.targetId, choice.marker),
+    source: String(sourceId),
+    target: String(choice.targetId),
+    marker: choice.marker,
+    text: choice.text,
+  };
+}
+
+function getBaseEdgeColor(edgeCount) {
+  return edgeCount > 0 ? "rgb(110 110 120 / 0.42)" : "rgb(110 110 120 / 0.24)";
+}
+
 function parsePathInputs(text) {
   return text
     .replace(/\r/g, "")
@@ -638,25 +744,25 @@ function tracePath(graph, pathInput) {
   const invalidMatch = pathInput.normalized.match(/[^A-Z]/);
 
   if (rootId === null) {
-    return {
-      ...pathInput,
-      status: "invalid",
-      message: "No root event available.",
-      nodeIds: [],
-      edgeKeys: [],
-      finalId: null,
-    };
+    return createTraceResult(
+      pathInput,
+      "invalid",
+      "No root event available.",
+      [],
+      [],
+      null,
+    );
   }
 
   if (invalidMatch) {
-    return {
-      ...pathInput,
-      status: "invalid",
-      message: `Contains invalid character "${invalidMatch[0]}". Use letters only.`,
-      nodeIds: [rootId],
-      edgeKeys: [],
-      finalId: rootId,
-    };
+    return createTraceResult(
+      pathInput,
+      "invalid",
+      `Contains invalid character "${invalidMatch[0]}". Use letters only.`,
+      [rootId],
+      [],
+      rootId,
+    );
   }
 
   let currentId = rootId;
@@ -672,26 +778,26 @@ function tracePath(graph, pathInput) {
     const event = events.get(currentId);
 
     if (!event) {
-      return {
-        ...pathInput,
-        status: "invalid",
-        message: `Step ${stepIndex + 1}: path continues after ending ${currentId}.`,
+      return createTraceResult(
+        pathInput,
+        "invalid",
+        `Step ${stepIndex + 1}: path continues after ending ${currentId}.`,
         nodeIds,
         edgeKeys,
-        finalId: currentId,
-      };
+        currentId,
+      );
     }
 
     const choice = event.choiceMap[marker];
     if (!choice) {
-      return {
-        ...pathInput,
-        status: "invalid",
-        message: `Step ${stepIndex + 1}: event ${currentId} has no ${marker} choice.`,
+      return createTraceResult(
+        pathInput,
+        "invalid",
+        `Step ${stepIndex + 1}: event ${currentId} has no ${marker} choice.`,
         nodeIds,
         edgeKeys,
-        finalId: currentId,
-      };
+        currentId,
+      );
     }
 
     edgeKeys.push(edgeKey(currentId, choice.targetId, choice.marker));
@@ -700,24 +806,24 @@ function tracePath(graph, pathInput) {
   }
 
   if (events.has(currentId)) {
-    return {
-      ...pathInput,
-      status: "in-progress",
-      message: `Stops at event ${currentId} before reaching an ending.`,
+    return createTraceResult(
+      pathInput,
+      "in-progress",
+      `Stops at event ${currentId} before reaching an ending.`,
       nodeIds,
       edgeKeys,
-      finalId: currentId,
-    };
+      currentId,
+    );
   }
 
-  return {
-    ...pathInput,
-    status: "ending",
-    message: `Reached ending ${currentId}.`,
+  return createTraceResult(
+    pathInput,
+    "ending",
+    `Reached ending ${currentId}.`,
     nodeIds,
     edgeKeys,
-    finalId: currentId,
-  };
+    currentId,
+  );
 }
 
 function summarizeTraces(graph, traces) {
@@ -828,58 +934,45 @@ function buildNodeModels(graph, summary) {
   const endingIds = new Set();
 
   for (const event of graph.events.values()) {
-    const lines = wrapText(event.title || `Event ${event.id}`, 20);
+    const title = event.title || `Event ${event.id}`;
+    const lines = wrapText(title, 20);
     const previewLines = lines.slice(0, MAX_NODE_PREVIEW_LINES);
     const hasOverflow = lines.length > previewLines.length;
-    const nodeCount = summary.nodeCounts.get(event.id) ?? 0;
-    const endingCount = summary.endingCounts.get(event.id) ?? 0;
-
-    nodeModels.push({
-      id: String(event.id),
-      nodeId: event.id,
-      kind: "event",
-      title: event.title || `Event ${event.id}`,
-      previewLines,
-      hasOverflow,
-      detail: formatEventDetail(event),
-      nodeCount,
-      endingCount,
-      width: NODE_WIDTH,
-      height: nodeHeightFromPreview(previewLines.length, false),
-    });
+    nodeModels.push(
+      createNodeModel({
+        id: event.id,
+        kind: "event",
+        title,
+        previewLines,
+        hasOverflow,
+        detail: formatEventDetail(event),
+        nodeCount: getNodeCount(summary, event.id),
+        endingCount: getEndingCount(summary, event.id),
+      }),
+    );
 
     for (const choice of event.choices) {
-      const targetKey = String(choice.targetId);
-      baseEdges.push({
-        id: edgeKey(event.id, choice.targetId, choice.marker),
-        source: String(event.id),
-        target: targetKey,
-        marker: choice.marker,
-        text: choice.text,
-      });
+      baseEdges.push(createBaseEdge(event.id, choice));
       if (!graph.events.has(choice.targetId)) endingIds.add(choice.targetId);
     }
   }
 
   for (const endingId of [...endingIds].sort((left, right) => left - right)) {
-    const lines = wrapText(`Ending ${endingId}`, 18);
+    const title = `Ending ${endingId}`;
+    const lines = wrapText(title, 18);
     const previewLines = lines.slice(0, MAX_NODE_PREVIEW_LINES);
-    const nodeCount = summary.nodeCounts.get(endingId) ?? 0;
-    const endingCount = summary.endingCounts.get(endingId) ?? 0;
-
-    nodeModels.push({
-      id: String(endingId),
-      nodeId: endingId,
-      kind: "ending",
-      title: `Ending ${endingId}`,
-      previewLines,
-      hasOverflow: false,
-      detail: formatEndingDetail(endingId),
-      nodeCount,
-      endingCount,
-      width: NODE_WIDTH,
-      height: nodeHeightFromPreview(previewLines.length, true),
-    });
+    nodeModels.push(
+      createNodeModel({
+        id: endingId,
+        kind: "ending",
+        title,
+        previewLines,
+        hasOverflow: false,
+        detail: formatEndingDetail(endingId),
+        nodeCount: getNodeCount(summary, endingId),
+        endingCount: getEndingCount(summary, endingId),
+      }),
+    );
   }
 
   return { nodeModels, baseEdges };
@@ -940,6 +1033,7 @@ async function buildLayout(graph, traces, summary) {
 
   const edges = baseEdges.map((edge) => {
     const edgeCount = edgeCounts.get(edge.id) ?? 0;
+    const stroke = getBaseEdgeColor(edgeCount);
 
     return {
       id: edge.id,
@@ -951,14 +1045,12 @@ async function buildLayout(graph, traces, summary) {
       labelBgPadding: [8, 4],
       labelStyle: { fill: "currentColor" },
       style: {
-        stroke:
-          edgeCount > 0 ? "rgb(110 110 120 / 0.42)" : "rgb(110 110 120 / 0.24)",
+        stroke,
         strokeWidth: edgeCount > 0 ? 3 : 2,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color:
-          edgeCount > 0 ? "rgb(110 110 120 / 0.42)" : "rgb(110 110 120 / 0.24)",
+        color: stroke,
       },
       zIndex: 1,
       interactionWidth: 24,
@@ -967,7 +1059,7 @@ async function buildLayout(graph, traces, summary) {
 
   for (let traceIndex = 0; traceIndex < traces.length; traceIndex += 1) {
     const trace = traces[traceIndex];
-    const color = PATH_COLORS[traceIndex % PATH_COLORS.length];
+    const color = getPathColor(traceIndex);
 
     for (let keyIndex = 0; keyIndex < trace.edgeKeys.length; keyIndex += 1) {
       const key = trace.edgeKeys[keyIndex];
@@ -1020,27 +1112,13 @@ function useDebouncedText(initialValue) {
 
 const GamebookNode = memo(function GamebookNode({ data }) {
   const openNode = () => data.onOpen(data.nodeId);
+  const nodeTypeLabel = data.kind === "ending" ? "ENDING" : "EVENT";
 
   return (
     <button
       type="button"
       className="gamebook-node"
-      style={{
-        "--node-fill":
-          data.endingCount > 0 ?
-            "color-mix(in oklch, var(--color-accent) 14%, white)"
-          : data.nodeCount > 0 ?
-            "color-mix(in oklch, var(--color-accent) 6%, white)"
-          : data.kind === "ending" ? "oklch(0.97 0.012 245)"
-          : "rgb(255 255 255 / 0.96)",
-        "--node-stroke":
-          data.endingCount > 0 ?
-            "color-mix(in oklch, var(--color-accent) 52%, white)"
-          : data.nodeCount > 0 ?
-            "color-mix(in oklch, var(--color-accent) 30%, white)"
-          : "rgb(84 84 94 / 0.24)",
-        "--node-radius": data.kind === "ending" ? "24px" : "16px",
-      }}
+      style={getNodeSurfaceStyles(data)}
       onClick={openNode}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -1056,11 +1134,11 @@ const GamebookNode = memo(function GamebookNode({ data }) {
         className="gamebook-handle"
       />
       <div className="gamebook-node__eyebrow">
-        {data.kind === "ending" ? "ENDING" : "EVENT"} {data.nodeId}
+        {nodeTypeLabel} {data.nodeId}
       </div>
       {data.nodeCount > 0 ?
         <div className="gamebook-node__count">
-          {data.nodeCount} path{data.nodeCount === 1 ? "" : "s"}
+          {formatCountLabel(data.nodeCount, "path")}
         </div>
       : null}
       <div className="gamebook-node__title">
@@ -1080,7 +1158,7 @@ const GamebookNode = memo(function GamebookNode({ data }) {
       : null}
       {data.endingCount > 0 ?
         <span className="gamebook-node__badge gamebook-node__badge--ending">
-          {data.endingCount} hit{data.endingCount === 1 ? "" : "s"}
+          {formatCountLabel(data.endingCount, "hit")}
         </span>
       : null}
       <Handle
@@ -1104,14 +1182,14 @@ function NodeModal({ node, onClose }) {
       onClick={onClose}
     >
       <section
-        className="gamebook-modal-card"
+        className="gamebook-modal-card stack"
         role="dialog"
         aria-modal="true"
         aria-labelledby="gamebook-node-modal-title"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="gamebook-modal-head">
-          <div>
+          <div className="stack">
             <div className="gamebook-modal-kicker">{node.detail.kicker}</div>
             <h3
               id="gamebook-node-modal-title"
@@ -1130,13 +1208,13 @@ function NodeModal({ node, onClose }) {
         </div>
 
         {node.detail.body ?
-          <section className="gamebook-modal-section">
+          <section className="gamebook-modal-section stack">
             <p className="gamebook-modal-copy">{node.detail.body}</p>
           </section>
         : null}
 
         {node.detail.choices.length > 0 ?
-          <section className="gamebook-modal-section">
+          <section className="gamebook-modal-section stack">
             <h4 className="gamebook-section-title">Choices</h4>
             <ol className="gamebook-modal-list">
               {node.detail.choices.map((choice) => (
@@ -1202,6 +1280,34 @@ export default function GamebookViewer() {
     () => (parsed.ok ? summarizeTraces(parsed.graph, traces) : null),
     [parsed, traces],
   );
+  const summaryItems = useMemo(() => {
+    if (!summary) return [];
+
+    return [
+      {
+        className: "gamebook-pill gamebook-pill--neutral",
+        label: `${summary.totalNodes} nodes`,
+      },
+      {
+        className: "gamebook-pill gamebook-pill--neutral",
+        label: `${summary.totalEdges} choices`,
+      },
+      {
+        className: "gamebook-pill gamebook-pill--accent",
+        label: `${summary.endingCount} endings reached`,
+      },
+      {
+        className: "gamebook-pill gamebook-pill--soft",
+        label: `${summary.inProgressCount} still in progress`,
+      },
+      {
+        className: "gamebook-pill gamebook-pill--warning",
+        label: `${summary.invalidCount} invalid`,
+      },
+    ];
+  }, [summary]);
+  const canExport = !isExporting && !isLayingOut && flowState.nodes.length > 0;
+  const hasRenderableFlow = parsed.ok && summary;
 
   useEffect(() => {
     if (selectedNodeId === null) return undefined;
@@ -1215,9 +1321,7 @@ export default function GamebookViewer() {
   }, [selectedNodeId]);
 
   useEffect(() => {
-    const matchingPreset =
-      CHOICE_PRESETS.find((preset) => preset.choices === choices.settled)
-      ?? null;
+    const matchingPreset = getPresetByChoices(choices.settled);
     setActivePresetId(matchingPreset?.id ?? null);
   }, [choices.settled]);
 
@@ -1330,7 +1434,7 @@ export default function GamebookViewer() {
     <div className="gamebook-viewer">
       <section className="gamebook-panel gamebook-controls">
         <div className="gamebook-controls-grid">
-          <section>
+          <section className="stack">
             <h2 className="gamebook-section-title">Choices</h2>
             <p className="gamebook-section-copy">
               Each event starts with <code>number. title</code>, followed by one
@@ -1389,7 +1493,7 @@ export default function GamebookViewer() {
             />
           </section>
 
-          <section>
+          <section className="stack">
             <h2 className="gamebook-section-title">Paths</h2>
             <p className="gamebook-section-copy">
               One path per line. Letters are followed from the root event.
@@ -1414,9 +1518,9 @@ export default function GamebookViewer() {
         </div>
       </section>
 
-      <section className="gamebook-panel gamebook-canvas">
+      <section className="gamebook-panel gamebook-canvas stack">
         <div className="gamebook-viewer-head">
-          <div>
+          <div className="stack">
             <h2 className="gamebook-section-title">Path Diagram</h2>
             <p>
               Compare each recorded route against the full branching map. Tap or
@@ -1424,14 +1528,12 @@ export default function GamebookViewer() {
               <kbd>Escape</kbd> to close it.
             </p>
           </div>
-          <div className="gamebook-viewer-head-actions">
+          <div className="gamebook-viewer-head-actions stack">
             <button
               type="button"
               className="gamebook-button"
               onClick={handleExportPng}
-              disabled={
-                isExporting || isLayingOut || flowState.nodes.length === 0
-              }
+              disabled={!canExport}
             >
               {isExporting ? "Saving PNG..." : "Save map as PNG"}
             </button>
@@ -1444,33 +1546,26 @@ export default function GamebookViewer() {
               </p>
             : null}
           </div>
-          {summary ?
+          {summaryItems.length > 0 ?
             <div
               className="gamebook-summary-row"
               aria-label="Diagram summary"
             >
-              <div className="gamebook-pill gamebook-pill--neutral">
-                {summary.totalNodes} nodes
-              </div>
-              <div className="gamebook-pill gamebook-pill--neutral">
-                {summary.totalEdges} choices
-              </div>
-              <div className="gamebook-pill gamebook-pill--accent">
-                {summary.endingCount} endings reached
-              </div>
-              <div className="gamebook-pill gamebook-pill--soft">
-                {summary.inProgressCount} still in progress
-              </div>
-              <div className="gamebook-pill gamebook-pill--warning">
-                {summary.invalidCount} invalid
-              </div>
+              {summaryItems.map((item) => (
+                <div
+                  key={item.label}
+                  className={item.className}
+                >
+                  {item.label}
+                </div>
+              ))}
             </div>
           : null}
         </div>
 
         {parsed.errors.length > 0 ?
           <div
-            className="gamebook-error-block"
+            className="gamebook-error-block stack"
             role="alert"
           >
             <h3>DSL parse errors</h3>
@@ -1488,7 +1583,7 @@ export default function GamebookViewer() {
             aria-label="Path outcomes"
           >
             {traces.map((trace, index) => {
-              const color = PATH_COLORS[index % PATH_COLORS.length];
+              const color = getPathColor(index);
               return (
                 <div
                   className="gamebook-path-pill"
@@ -1512,7 +1607,7 @@ export default function GamebookViewer() {
           className="gamebook-flow-shell"
           ref={flowShellRef}
         >
-          {parsed.ok && summary ?
+          {hasRenderableFlow ?
             <div className="gamebook-flow">
               {isLayingOut ?
                 <div className="gamebook-flow-loading">Laying out graph...</div>
