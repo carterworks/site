@@ -2,7 +2,7 @@ import "@xyflow/react/dist/style.css";
 import "./gamebook-viewer.css";
 
 import { toPng } from "html-to-image";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import {
   Background,
@@ -698,8 +698,6 @@ function createNodeModel({
   previewLines,
   hasOverflow,
   detail,
-  nodeCount,
-  endingCount,
 }) {
   return {
     id: String(id),
@@ -709,8 +707,6 @@ function createNodeModel({
     previewLines,
     hasOverflow,
     detail,
-    nodeCount,
-    endingCount,
     width: NODE_WIDTH,
     height: nodeHeightFromPreview(previewLines.length, kind === "ending"),
   };
@@ -928,7 +924,7 @@ function nodeHeightFromPreview(previewLineCount, isEnding) {
   return baseHeight + extraLines * NODE_TEXT_LINE_HEIGHT;
 }
 
-function buildNodeModels(graph, summary) {
+function buildNodeModels(graph) {
   const nodeModels = [];
   const baseEdges = [];
   const endingIds = new Set();
@@ -946,8 +942,6 @@ function buildNodeModels(graph, summary) {
         previewLines,
         hasOverflow,
         detail: formatEventDetail(event),
-        nodeCount: getNodeCount(summary, event.id),
-        endingCount: getEndingCount(summary, event.id),
       }),
     );
 
@@ -969,8 +963,6 @@ function buildNodeModels(graph, summary) {
         previewLines,
         hasOverflow: false,
         detail: formatEndingDetail(endingId),
-        nodeCount: getNodeCount(summary, endingId),
-        endingCount: getEndingCount(summary, endingId),
       }),
     );
   }
@@ -978,8 +970,8 @@ function buildNodeModels(graph, summary) {
   return { nodeModels, baseEdges };
 }
 
-async function buildLayout(graph, traces, summary) {
-  const { nodeModels, baseEdges } = buildNodeModels(graph, summary);
+async function buildLayout(graph) {
+  const { nodeModels, baseEdges } = buildNodeModels(graph);
   const elkGraph = {
     id: "root",
     layoutOptions: {
@@ -1007,8 +999,6 @@ async function buildLayout(graph, traces, summary) {
   const positionedNodes = new Map(
     (layout.children ?? []).map((child) => [child.id, child]),
   );
-  const edgeCounts = summary.edgeCounts;
-  const edgeById = new Map(baseEdges.map((edge) => [edge.id, edge]));
 
   const nodes = nodeModels.map((node) => {
     const positioned = positionedNodes.get(node.id);
@@ -1031,62 +1021,7 @@ async function buildLayout(graph, traces, summary) {
     };
   });
 
-  const edges = baseEdges.map((edge) => {
-    const edgeCount = edgeCounts.get(edge.id) ?? 0;
-    const stroke = getBaseEdgeColor(edgeCount);
-
-    return {
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: "smoothstep",
-      label: edge.marker,
-      labelShowBg: true,
-      labelBgPadding: [8, 4],
-      labelStyle: { fill: "currentColor" },
-      style: {
-        stroke,
-        strokeWidth: edgeCount > 0 ? 3 : 2,
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: stroke,
-      },
-      zIndex: 1,
-      interactionWidth: 24,
-    };
-  });
-
-  for (let traceIndex = 0; traceIndex < traces.length; traceIndex += 1) {
-    const trace = traces[traceIndex];
-    const color = getPathColor(traceIndex);
-
-    for (let keyIndex = 0; keyIndex < trace.edgeKeys.length; keyIndex += 1) {
-      const key = trace.edgeKeys[keyIndex];
-      const baseEdge = edgeById.get(key);
-      if (!baseEdge) continue;
-
-      edges.push({
-        id: `trace-${traceIndex}-${keyIndex}-${key}`,
-        source: baseEdge.source,
-        target: baseEdge.target,
-        type: "smoothstep",
-        style: {
-          stroke: color,
-          strokeWidth: 4,
-          opacity: trace.status === "invalid" ? 0.5 : 0.92,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color,
-        },
-        zIndex: 2,
-        interactionWidth: 0,
-      });
-    }
-  }
-
-  return { nodes, edges };
+  return { nodes, baseEdges };
 }
 
 function useDebouncedText(initialValue) {
@@ -1233,6 +1168,156 @@ function NodeModal({ node, onClose }) {
   );
 }
 
+const GamebookDiagram = memo(function GamebookDiagram({
+  canExport,
+  edges,
+  exportError,
+  flowShellRef,
+  handleExportPng,
+  hasRenderableFlow,
+  isExporting,
+  isLayingOut,
+  nodes,
+  parsedErrors,
+  summaryItems,
+  traces,
+}) {
+  return (
+    <section className="gamebook-panel gamebook-canvas stack">
+      <div className="gamebook-viewer-head">
+        <div className="stack">
+          <h2 className="gamebook-section-title">Path Diagram</h2>
+          <p>
+            Compare each recorded route against the full branching map. Tap or
+            click any node to read the full passage, or press
+            <kbd>Escape</kbd> to close it.
+          </p>
+        </div>
+        <div className="gamebook-viewer-head-actions stack">
+          <button
+            type="button"
+            className="gamebook-button"
+            onClick={handleExportPng}
+            disabled={!canExport}
+          >
+            {isExporting ? "Saving PNG..." : "Save map as PNG"}
+          </button>
+          {exportError ?
+            <p
+              className="gamebook-export-status"
+              role="status"
+            >
+              {exportError}
+            </p>
+          : null}
+        </div>
+        {summaryItems.length > 0 ?
+          <div
+            className="gamebook-summary-row"
+            aria-label="Diagram summary"
+          >
+            {summaryItems.map((item) => (
+              <div
+                key={item.label}
+                className={item.className}
+              >
+                {item.label}
+              </div>
+            ))}
+          </div>
+        : null}
+      </div>
+
+      {parsedErrors.length > 0 ?
+        <div
+          className="gamebook-error-block stack"
+          role="alert"
+        >
+          <h3>DSL parse errors</h3>
+          <ul className="gamebook-error-list">
+            {parsedErrors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      : null}
+
+      {traces.length > 0 ?
+        <div
+          className="gamebook-path-list"
+          aria-label="Path outcomes"
+        >
+          {traces.map((trace, index) => {
+            const color = getPathColor(index);
+            return (
+              <div
+                className="gamebook-path-pill"
+                key={`${trace.raw}-${index}`}
+              >
+                <span className="gamebook-path-label">Path {index + 1}</span>
+                <span
+                  className="gamebook-swatch"
+                  style={{ background: color }}
+                  aria-hidden="true"
+                />
+                <code>{trace.raw}</code>
+                <span className="gamebook-path-status">{trace.message}</span>
+              </div>
+            );
+          })}
+        </div>
+      : null}
+
+      <div
+        className="gamebook-flow-shell"
+        ref={flowShellRef}
+      >
+        {hasRenderableFlow ?
+          <div className="gamebook-flow">
+            {isLayingOut ?
+              <div className="gamebook-flow-loading">Laying out graph...</div>
+            : null}
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.16 }}
+              minZoom={0.1}
+              maxZoom={1.5}
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable={false}
+              panOnDrag
+              zoomOnDoubleClick={false}
+              proOptions={{ hideAttribution: true }}
+            >
+              <MiniMap
+                pannable
+                zoomable
+              />
+              <Controls showInteractive={true} />
+              <Background
+                color="rgb(84 84 94 / 0.14)"
+                gap={20}
+              />
+            </ReactFlow>
+          </div>
+        : <div className="gamebook-flow-empty">
+            Enter a valid DSL to render the diagram.
+          </div>
+        }
+      </div>
+
+      <p className="gamebook-legend-note">
+        Undefined target ids are treated as endings. Paths that stop on a
+        defined event are marked in progress. Paths that request a missing
+        letter or continue past an ending are marked invalid.
+      </p>
+    </section>
+  );
+});
+
 export default function GamebookViewer() {
   const [initialState] = useState(() => getInitialViewerState());
   const choices = useDebouncedText(initialState.choices);
@@ -1244,7 +1329,7 @@ export default function GamebookViewer() {
     initialState.activePresetId,
   );
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [flowState, setFlowState] = useState({ nodes: [], edges: [] });
+  const [flowState, setFlowState] = useState({ nodes: [], baseEdges: [] });
   const [isLayingOut, setIsLayingOut] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -1306,9 +1391,6 @@ export default function GamebookViewer() {
       },
     ];
   }, [summary]);
-  const canExport = !isExporting && !isLayingOut && flowState.nodes.length > 0;
-  const hasRenderableFlow = parsed.ok && summary;
-
   useEffect(() => {
     if (selectedNodeId === null) return undefined;
 
@@ -1340,15 +1422,15 @@ export default function GamebookViewer() {
   }, [activePresetId, paths.settled]);
 
   useEffect(() => {
-    if (!parsed.ok || !summary) {
-      setFlowState({ nodes: [], edges: [] });
+    if (!parsed.ok) {
+      setFlowState({ nodes: [], baseEdges: [] });
       return undefined;
     }
 
     let isCancelled = false;
     setIsLayingOut(true);
 
-    buildLayout(parsed.graph, traces, summary)
+    buildLayout(parsed.graph)
       .then((nextFlowState) => {
         if (!isCancelled) setFlowState(nextFlowState);
       })
@@ -1359,7 +1441,70 @@ export default function GamebookViewer() {
     return () => {
       isCancelled = true;
     };
-  }, [parsed, summary, traces]);
+  }, [parsed]);
+
+  const edges = useMemo(() => {
+    const edgeCounts = summary?.edgeCounts ?? new Map();
+    const edgeById = new Map(
+      flowState.baseEdges.map((edge) => [edge.id, edge]),
+    );
+    const decoratedEdges = flowState.baseEdges.map((edge) => {
+      const edgeCount = edgeCounts.get(edge.id) ?? 0;
+      const stroke = getBaseEdgeColor(edgeCount);
+
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: "smoothstep",
+        label: edge.marker,
+        labelShowBg: true,
+        labelBgPadding: [8, 4],
+        labelStyle: { fill: "currentColor" },
+        style: {
+          stroke,
+          strokeWidth: edgeCount > 0 ? 3 : 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: stroke,
+        },
+        zIndex: 1,
+        interactionWidth: 24,
+      };
+    });
+
+    for (let traceIndex = 0; traceIndex < traces.length; traceIndex += 1) {
+      const trace = traces[traceIndex];
+      const color = getPathColor(traceIndex);
+
+      for (let keyIndex = 0; keyIndex < trace.edgeKeys.length; keyIndex += 1) {
+        const key = trace.edgeKeys[keyIndex];
+        const baseEdge = edgeById.get(key);
+        if (!baseEdge) continue;
+
+        decoratedEdges.push({
+          id: `trace-${traceIndex}-${keyIndex}-${key}`,
+          source: baseEdge.source,
+          target: baseEdge.target,
+          type: "smoothstep",
+          style: {
+            stroke: color,
+            strokeWidth: 4,
+            opacity: trace.status === "invalid" ? 0.5 : 0.92,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color,
+          },
+          zIndex: 2,
+          interactionWidth: 0,
+        });
+      }
+    }
+
+    return decoratedEdges;
+  }, [flowState.baseEdges, summary, traces]);
 
   const nodes = useMemo(
     () =>
@@ -1367,10 +1512,12 @@ export default function GamebookViewer() {
         ...node,
         data: {
           ...node.data,
+          nodeCount: summary ? getNodeCount(summary, node.data.nodeId) : 0,
+          endingCount: summary ? getEndingCount(summary, node.data.nodeId) : 0,
           onOpen: setSelectedNodeId,
         },
       })),
-    [flowState.nodes],
+    [flowState.nodes, summary],
   );
 
   const selectedNode = useMemo(
@@ -1379,7 +1526,7 @@ export default function GamebookViewer() {
     [nodes, selectedNodeId],
   );
 
-  const handleExportPng = async () => {
+  const handleExportPng = useCallback(async () => {
     if (flowState.nodes.length === 0 || !flowShellRef.current) return;
 
     const viewport = flowShellRef.current.querySelector(
@@ -1428,7 +1575,10 @@ export default function GamebookViewer() {
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [activePresetId, flowState.nodes]);
+
+  const canExport = !isExporting && !isLayingOut && flowState.nodes.length > 0;
+  const hasRenderableFlow = parsed.ok && summary;
 
   return (
     <div className="gamebook-viewer">
@@ -1478,14 +1628,14 @@ export default function GamebookViewer() {
               htmlFor="choices"
               className="gamebook-field-label"
             >
-              <span>Choice DSL</span>
-              <span className="gamebook-field-hint">
-                Neil Patrick Harris preloaded
-              </span>
+              <span>Choice</span>
             </label>
             <textarea
               id="choices"
               className="gamebook-textarea"
+              placeholder="1. You, Neil Patrick Harris, are born in Albuquerque, New Mexico, on June 15, 1973, at what you're pretty sure is St. Joseph's Hospital, although it's har...
+              A(3). If you would like to experience a happy childhood, go HERE .
+              B(2). If you would prefer to experience a miserable childhood that later in life you can claim to have heroically overcome, go HERE ."
               spellCheck={false}
               value={choices.draft}
               onInput={(event) => choices.setDraft(event.currentTarget.value)}
@@ -1494,21 +1644,20 @@ export default function GamebookViewer() {
           </section>
 
           <section className="stack">
-            <h2 className="gamebook-section-title">Paths</h2>
-            <p className="gamebook-section-copy">
-              One path per line. Letters are followed from the root event.
-              Completed paths count toward the endings they reach.
-            </p>
             <label
               htmlFor="paths"
               className="gamebook-field-label"
             >
-              <span>Path Inputs</span>
-              <span className="gamebook-field-hint">Example: ABAACAAA</span>
+              <h2 className="gamebook-section-title">Paths</h2>
+              <p className="gamebook-section-copy">
+                One path per line. Letters are followed from the root event.
+                Completed paths count toward the endings they reach.
+              </p>
             </label>
             <textarea
               id="paths"
               className="gamebook-textarea gamebook-textarea--paths"
+              placeholder="ABACAAABBA"
               spellCheck={false}
               value={paths.draft}
               onInput={(event) => paths.setDraft(event.currentTarget.value)}
@@ -1518,138 +1667,20 @@ export default function GamebookViewer() {
         </div>
       </section>
 
-      <section className="gamebook-panel gamebook-canvas stack">
-        <div className="gamebook-viewer-head">
-          <div className="stack">
-            <h2 className="gamebook-section-title">Path Diagram</h2>
-            <p>
-              Compare each recorded route against the full branching map. Tap or
-              click any node to read the full passage, or press
-              <kbd>Escape</kbd> to close it.
-            </p>
-          </div>
-          <div className="gamebook-viewer-head-actions stack">
-            <button
-              type="button"
-              className="gamebook-button"
-              onClick={handleExportPng}
-              disabled={!canExport}
-            >
-              {isExporting ? "Saving PNG..." : "Save map as PNG"}
-            </button>
-            {exportError ?
-              <p
-                className="gamebook-export-status"
-                role="status"
-              >
-                {exportError}
-              </p>
-            : null}
-          </div>
-          {summaryItems.length > 0 ?
-            <div
-              className="gamebook-summary-row"
-              aria-label="Diagram summary"
-            >
-              {summaryItems.map((item) => (
-                <div
-                  key={item.label}
-                  className={item.className}
-                >
-                  {item.label}
-                </div>
-              ))}
-            </div>
-          : null}
-        </div>
-
-        {parsed.errors.length > 0 ?
-          <div
-            className="gamebook-error-block stack"
-            role="alert"
-          >
-            <h3>DSL parse errors</h3>
-            <ul className="gamebook-error-list">
-              {parsed.errors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        : null}
-
-        {traces.length > 0 ?
-          <div
-            className="gamebook-path-list"
-            aria-label="Path outcomes"
-          >
-            {traces.map((trace, index) => {
-              const color = getPathColor(index);
-              return (
-                <div
-                  className="gamebook-path-pill"
-                  key={`${trace.raw}-${index}`}
-                >
-                  <span className="gamebook-path-label">Path {index + 1}</span>
-                  <span
-                    className="gamebook-swatch"
-                    style={{ background: color }}
-                    aria-hidden="true"
-                  />
-                  <code>{trace.raw}</code>
-                  <span className="gamebook-path-status">{trace.message}</span>
-                </div>
-              );
-            })}
-          </div>
-        : null}
-
-        <div
-          className="gamebook-flow-shell"
-          ref={flowShellRef}
-        >
-          {hasRenderableFlow ?
-            <div className="gamebook-flow">
-              {isLayingOut ?
-                <div className="gamebook-flow-loading">Laying out graph...</div>
-              : null}
-              <ReactFlow
-                nodes={nodes}
-                edges={flowState.edges}
-                nodeTypes={nodeTypes}
-                fitView
-                fitViewOptions={{ padding: 0.16 }}
-                minZoom={0.1}
-                maxZoom={1.5}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={false}
-                panOnDrag
-                zoomOnDoubleClick={false}
-                proOptions={{ hideAttribution: true }}
-              >
-                <MiniMap
-                  pannable
-                  zoomable
-                />
-                <Controls showInteractive={false} />
-                <Background
-                  color="rgb(84 84 94 / 0.14)"
-                  gap={20}
-                />
-              </ReactFlow>
-            </div>
-          : <div className="gamebook-flow-empty">
-              Enter a valid DSL to render the diagram.
-            </div>
-          }
-        </div>
-
-        <p className="gamebook-legend-note">
-          Undefined target ids are treated as endings. Paths that stop on a
-          defined event are marked in progress. Paths that request a missing
-          letter or continue past an ending are marked invalid.
-        </p>
-      </section>
+      <GamebookDiagram
+        canExport={canExport}
+        edges={edges}
+        exportError={exportError}
+        flowShellRef={flowShellRef}
+        handleExportPng={handleExportPng}
+        hasRenderableFlow={hasRenderableFlow}
+        isExporting={isExporting}
+        isLayingOut={isLayingOut}
+        nodes={nodes}
+        parsedErrors={parsed.errors}
+        summaryItems={summaryItems}
+        traces={traces}
+      />
 
       {selectedNode ?
         <NodeModal
