@@ -487,7 +487,12 @@
 
     <script type="module" is:inline>
       import { h, render } from "https://esm.sh/preact@10";
-      import { useMemo, useState } from "https://esm.sh/preact@10/hooks";
+      import {
+        useEffect,
+        useMemo,
+        useRef,
+        useState,
+      } from "https://esm.sh/preact@10/hooks";
       import htm from "https://esm.sh/htm@3";
 
       const html = htm.bind(h);
@@ -677,6 +682,8 @@ B(325). Lie low instead`;
       const PAD_Y = 36;
       const GAP_X = 42;
       const GAP_Y = 112;
+      const INPUT_SETTLE_MS = 120;
+      const MAX_PARSE_ERRORS = 40;
 
       /**
        * @param {number} id
@@ -685,7 +692,51 @@ B(325). Lie low instead`;
        * @param {number} lineNumber
        */
       function createEvent(id, title, choices, lineNumber) {
-        return { id, title, choices, lineNumber };
+        const choiceMap = Object.create(null);
+        for (const choice of choices) {
+          choiceMap[choice.marker] = choice;
+        }
+        return { id, title, choices, choiceMap, lineNumber };
+      }
+
+      /**
+       * @param {Map<number, ReturnType<typeof createEvent>>} events
+       * @param {number | null} firstEventId
+       * @param {string[]} errors
+       */
+      function finishChoiceParse(events, firstEventId, errors) {
+        if (events.size === 0) {
+          errors.push(
+            "No events found. Add at least one event and one choice.",
+          );
+        }
+
+        return {
+          ok: errors.length === 0,
+          errors,
+          graph: {
+            events,
+            rootId: events.has(1) ? 1 : firstEventId,
+          },
+        };
+      }
+
+      /**
+       * @param {string[]} errors
+       * @param {string} message
+       */
+      function pushParseError(errors, message) {
+        if (errors.length < MAX_PARSE_ERRORS) {
+          errors.push(message);
+          return false;
+        }
+
+        if (errors.length === MAX_PARSE_ERRORS) {
+          errors.push(
+            `Too many parse errors. Showing the first ${MAX_PARSE_ERRORS}.`,
+          );
+        }
+        return true;
       }
 
       /**
@@ -709,9 +760,12 @@ B(325). Lie low instead`;
 
           const eventMatch = rawLine.match(EVENT_LINE_RE);
           if (!eventMatch) {
-            errors.push(
+            const shouldAbort = pushParseError(
+              errors,
               `Line ${lineIndex + 1}: expected an event like "17. SCHOOL BUS".`,
             );
+            if (shouldAbort)
+              return finishChoiceParse(events, firstEventId, errors);
             lineIndex += 1;
             continue;
           }
@@ -719,9 +773,12 @@ B(325). Lie low instead`;
           const eventId = Number(eventMatch[1]);
           const title = eventMatch[2].trim();
           if (events.has(eventId)) {
-            errors.push(
+            const shouldAbort = pushParseError(
+              errors,
               `Line ${lineIndex + 1}: event ${eventId} is defined more than once.`,
             );
+            if (shouldAbort)
+              return finishChoiceParse(events, firstEventId, errors);
           }
           if (firstEventId === null) firstEventId = eventId;
           lineIndex += 1;
@@ -740,9 +797,12 @@ B(325). Lie low instead`;
 
             const choiceMatch = choiceLine.match(CHOICE_LINE_RE);
             if (!choiceMatch) {
-              errors.push(
+              const shouldAbort = pushParseError(
+                errors,
                 `Line ${lineIndex + 1}: expected a choice like "A(38). Go to art".`,
               );
+              if (shouldAbort)
+                return finishChoiceParse(events, firstEventId, errors);
               lineIndex += 1;
               continue;
             }
@@ -752,9 +812,12 @@ B(325). Lie low instead`;
             const text = choiceMatch[3].trim();
 
             if (seenMarkers.has(marker)) {
-              errors.push(
+              const shouldAbort = pushParseError(
+                errors,
                 `Line ${lineIndex + 1}: event ${eventId} repeats choice ${marker}.`,
               );
+              if (shouldAbort)
+                return finishChoiceParse(events, firstEventId, errors);
             }
             seenMarkers.add(marker);
 
@@ -768,9 +831,12 @@ B(325). Lie low instead`;
           }
 
           if (choices.length === 0) {
-            errors.push(
+            const shouldAbort = pushParseError(
+              errors,
               `Line ${lineIndex}: event ${eventId} must have at least one choice.`,
             );
+            if (shouldAbort)
+              return finishChoiceParse(events, firstEventId, errors);
           }
 
           if (!events.has(eventId)) {
@@ -781,20 +847,7 @@ B(325). Lie low instead`;
           }
         }
 
-        if (events.size === 0) {
-          errors.push(
-            "No events found. Add at least one event and one choice.",
-          );
-        }
-
-        return {
-          ok: errors.length === 0,
-          errors,
-          graph: {
-            events,
-            rootId: events.has(1) ? 1 : firstEventId,
-          },
-        };
+        return finishChoiceParse(events, firstEventId, errors);
       }
 
       /**
@@ -868,7 +921,7 @@ B(325). Lie low instead`;
             };
           }
 
-          const choice = event.choices.find((entry) => entry.marker === marker);
+          const choice = event.choiceMap[marker];
           if (!choice) {
             return {
               ...pathInput,
@@ -931,31 +984,62 @@ B(325). Lie low instead`;
       }
 
       /**
+       * @param {number} id
+       * @param {"event" | "ending"} kind
+       * @param {string} title
+       * @param {number} lineWrapWidth
+       * @param {number} height
+       * @param {number} order
+       */
+      function createDiagramNode(
+        id,
+        kind,
+        title,
+        lineWrapWidth,
+        height,
+        order,
+      ) {
+        return {
+          id,
+          kind,
+          title,
+          lines: wrapText(title, lineWrapWidth),
+          depth: Number.POSITIVE_INFINITY,
+          order,
+          width: NODE_WIDTH,
+          height,
+          x: 0,
+          y: 0,
+        };
+      }
+
+      /**
        * @param {{ events: Map<number, ReturnType<typeof createEvent>>, rootId: number | null }} graph
        */
       function buildDiagram(graph) {
         const { events, rootId } = graph;
         /** @type {Map<number, { id: number, kind: "event" | "ending", title: string, lines: string[], depth: number, order: number, width: number, height: number, x: number, y: number }>} */
         const nodes = new Map();
-        /** @type {{ fromId: number, toId: number, marker: string, text: string, key: string }[]} */
+        /** @type {{ fromId: number, toId: number, marker: string, text: string, key: string, pathData: string, labelX: number, labelY: number }[]} */
         const edges = [];
+        /** @type {Map<string, { fromId: number, toId: number, marker: string, text: string, key: string, pathData: string, labelX: number, labelY: number }>} */
+        const edgeByKey = new Map();
         /** @type {Map<number, number>} */
         const inboundCounts = new Map();
         let visitOrder = 0;
 
         for (const event of events.values()) {
-          nodes.set(event.id, {
-            id: event.id,
-            kind: "event",
-            title: event.title || `Event ${event.id}`,
-            lines: wrapText(event.title || `Event ${event.id}`, 20),
-            depth: Number.POSITIVE_INFINITY,
-            order: visitOrder,
-            width: NODE_WIDTH,
-            height: EVENT_HEIGHT,
-            x: 0,
-            y: 0,
-          });
+          nodes.set(
+            event.id,
+            createDiagramNode(
+              event.id,
+              "event",
+              event.title || `Event ${event.id}`,
+              20,
+              EVENT_HEIGHT,
+              visitOrder,
+            ),
+          );
           visitOrder += 1;
 
           for (const choice of event.choices) {
@@ -964,89 +1048,107 @@ B(325). Lie low instead`;
               (inboundCounts.get(choice.targetId) ?? 0) + 1,
             );
             if (!nodes.has(choice.targetId) && !events.has(choice.targetId)) {
-              nodes.set(choice.targetId, {
-                id: choice.targetId,
-                kind: "ending",
-                title: `Ending ${choice.targetId}`,
-                lines: wrapText(`Ending ${choice.targetId}`, 18),
-                depth: Number.POSITIVE_INFINITY,
-                order: visitOrder,
-                width: NODE_WIDTH,
-                height: TERMINAL_HEIGHT,
-                x: 0,
-                y: 0,
-              });
+              nodes.set(
+                choice.targetId,
+                createDiagramNode(
+                  choice.targetId,
+                  "ending",
+                  `Ending ${choice.targetId}`,
+                  18,
+                  TERMINAL_HEIGHT,
+                  visitOrder,
+                ),
+              );
               visitOrder += 1;
             }
 
-            edges.push({
+            const edge = {
               fromId: event.id,
               toId: choice.targetId,
               marker: choice.marker,
               text: choice.text,
               key: edgeKey(event.id, choice.targetId, choice.marker),
-            });
+              pathData: "",
+              labelX: 0,
+              labelY: 0,
+            };
+
+            edges.push(edge);
+            edgeByKey.set(edge.key, edge);
           }
         }
 
+        const sortedEventIds = [...events.keys()].sort((a, b) => a - b);
         const rootCandidates = [];
-        if (rootId !== null && events.has(rootId)) {
-          rootCandidates.push(rootId);
+        const rootCandidateSet = new Set();
+        const addRootCandidate = (eventId) => {
+          if (!events.has(eventId) || rootCandidateSet.has(eventId)) return;
+          rootCandidateSet.add(eventId);
+          rootCandidates.push(eventId);
+        };
+
+        if (rootId !== null) addRootCandidate(rootId);
+        for (const eventId of sortedEventIds) {
+          if ((inboundCounts.get(eventId) ?? 0) === 0)
+            addRootCandidate(eventId);
         }
-        for (const eventId of events.keys()) {
-          if ((inboundCounts.get(eventId) ?? 0) === 0 && eventId !== rootId) {
-            rootCandidates.push(eventId);
-          }
-        }
-        for (const eventId of [...events.keys()].sort((a, b) => a - b)) {
-          if (!rootCandidates.includes(eventId)) rootCandidates.push(eventId);
-        }
+        for (const eventId of sortedEventIds) addRootCandidate(eventId);
 
         let nextBaseDepth = 0;
+        const visitedEvents = new Set();
         for (const candidateId of rootCandidates) {
           const candidateNode = nodes.get(candidateId);
-          if (!candidateNode || Number.isFinite(candidateNode.depth) === true)
-            continue;
+          if (!candidateNode || visitedEvents.has(candidateId)) continue;
 
           candidateNode.depth = nextBaseDepth;
           const queue = [candidateId];
-          while (queue.length > 0) {
-            const currentId = queue.shift();
+          let queueIndex = 0;
+          let componentMaxDepth = nextBaseDepth;
+          visitedEvents.add(candidateId);
+
+          while (queueIndex < queue.length) {
+            const currentId = queue[queueIndex];
+            queueIndex += 1;
             const currentNode = nodes.get(currentId);
             if (!currentNode) continue;
+            componentMaxDepth = Math.max(componentMaxDepth, currentNode.depth);
 
             const event = events.get(currentId);
             if (!event) continue;
 
-            for (const choice of event.choices) {
+            for (
+              let choiceIndex = 0;
+              choiceIndex < event.choices.length;
+              choiceIndex += 1
+            ) {
+              const choice = event.choices[choiceIndex];
               const childNode = nodes.get(choice.targetId);
               if (!childNode) continue;
+
               const nextDepth = currentNode.depth + 1;
               if (nextDepth < childNode.depth) {
                 childNode.depth = nextDepth;
               }
-              if (childNode.order > currentNode.order) {
-                childNode.order = Math.min(
-                  childNode.order,
-                  currentNode.order + 0.1,
-                );
+              componentMaxDepth = Math.max(componentMaxDepth, childNode.depth);
+
+              const nextOrder =
+                currentNode.order
+                + (choiceIndex + 1) / (event.choices.length + 1);
+              if (childNode.order > nextOrder) {
+                childNode.order = Math.min(childNode.order, nextOrder);
               }
+
               if (
-                !queue.includes(choice.targetId)
-                && events.has(choice.targetId)
+                events.has(choice.targetId)
+                && !visitedEvents.has(choice.targetId)
               ) {
+                visitedEvents.add(choice.targetId);
                 queue.push(choice.targetId);
               }
             }
           }
 
-          const componentDepth = Math.max(
-            nextBaseDepth,
-            ...[...nodes.values()]
-              .filter((node) => Number.isFinite(node.depth))
-              .map((node) => node.depth),
-          );
-          nextBaseDepth = componentDepth + 1;
+          nextBaseDepth = componentMaxDepth + 1;
         }
 
         const depthBuckets = new Map();
@@ -1058,6 +1160,7 @@ B(325). Lie low instead`;
           depthBuckets.get(depth).push(node);
         }
 
+        const nodeList = [];
         let width = 0;
         let height = 0;
         for (const [depth, bucket] of [...depthBuckets.entries()].sort(
@@ -1075,15 +1178,53 @@ B(325). Lie low instead`;
             node.x = PAD_X + index * (NODE_WIDTH + GAP_X) + NODE_WIDTH / 2;
             node.y = PAD_Y + depth * (EVENT_HEIGHT + GAP_Y) + node.height / 2;
             height = Math.max(height, node.y + node.height / 2 + PAD_Y);
+            nodeList.push(node);
           }
+        }
+
+        for (const edge of edges) {
+          const fromNode = nodes.get(edge.fromId);
+          const toNode = nodes.get(edge.toId);
+          if (!fromNode || !toNode) continue;
+
+          edge.pathData = edgePath(fromNode, toNode);
+          const label = edgeLabelPosition(edge, nodes);
+          edge.labelX = label.x;
+          edge.labelY = label.y;
         }
 
         return {
           nodes,
+          nodeList,
           edges,
+          edgeByKey,
           width: Math.max(width, 720),
           height: Math.max(height, 420),
         };
+      }
+
+      /**
+       * @param {{ current: number }} timerRef
+       * @param {(value: string) => void} setText
+       * @param {string} nextValue
+       */
+      function scheduleBufferedCommit(timerRef, setText, nextValue) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          timerRef.current = 0;
+          setText(nextValue);
+        }, INPUT_SETTLE_MS);
+      }
+
+      /**
+       * @param {{ current: number }} timerRef
+       * @param {(value: string) => void} setText
+       * @param {string} nextValue
+       */
+      function flushBufferedCommit(timerRef, setText, nextValue) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = 0;
+        setText(nextValue);
       }
 
       /**
@@ -1159,6 +1300,16 @@ B(325). Lie low instead`;
       function App() {
         const [choicesText, setChoicesText] = useState(DEFAULT_CHOICES);
         const [pathsText, setPathsText] = useState(DEFAULT_PATHS);
+        const choicesCommitTimerRef = useRef(0);
+        const pathsCommitTimerRef = useRef(0);
+
+        useEffect(
+          () => () => {
+            window.clearTimeout(choicesCommitTimerRef.current);
+            window.clearTimeout(pathsCommitTimerRef.current);
+          },
+          [],
+        );
 
         const parsed = useMemo(
           () => parseChoiceDsl(choicesText),
@@ -1209,9 +1360,19 @@ B(325). Lie low instead`;
                   <textarea
                     id="choices"
                     spellcheck=${false}
-                    value=${choicesText}
+                    defaultValue=${DEFAULT_CHOICES}
                     onInput=${(event) =>
-                      setChoicesText(event.currentTarget.value)}
+                      scheduleBufferedCommit(
+                        choicesCommitTimerRef,
+                        setChoicesText,
+                        event.currentTarget.value,
+                      )}
+                    onBlur=${(event) =>
+                      flushBufferedCommit(
+                        choicesCommitTimerRef,
+                        setChoicesText,
+                        event.currentTarget.value,
+                      )}
                   />
                 </section>
 
@@ -1231,9 +1392,19 @@ B(325). Lie low instead`;
                   <textarea
                     id="paths"
                     spellcheck=${false}
-                    value=${pathsText}
+                    defaultValue=${DEFAULT_PATHS}
                     onInput=${(event) =>
-                      setPathsText(event.currentTarget.value)}
+                      scheduleBufferedCommit(
+                        pathsCommitTimerRef,
+                        setPathsText,
+                        event.currentTarget.value,
+                      )}
+                    onBlur=${(event) =>
+                      flushBufferedCommit(
+                        pathsCommitTimerRef,
+                        setPathsText,
+                        event.currentTarget.value,
+                      )}
                   />
                 </section>
               </div>
@@ -1343,7 +1514,7 @@ B(325). Lie low instead`;
        * @param {{ diagram: ReturnType<typeof buildDiagram>, traces: ReturnType<typeof tracePath>[], summary: ReturnType<typeof summarizeTraces> }} props
        */
       function DiagramSvg({ diagram, traces, summary }) {
-        const { nodes, edges, width, height } = diagram;
+        const { nodeList, edges, edgeByKey, width, height } = diagram;
 
         return html`
           <svg
@@ -1405,18 +1576,12 @@ B(325). Lie low instead`;
             />
 
             ${edges.map((edge) => {
-              const fromNode = nodes.get(edge.fromId);
-              const toNode = nodes.get(edge.toId);
-              if (!fromNode || !toNode) return null;
-
-              const pathData = edgePath(fromNode, toNode);
-              const label = edgeLabelPosition(edge, nodes);
               const edgeCount = summary.edgeCounts.get(edge.key) ?? 0;
 
               return html`
                 <g key=${edge.key}>
                   <path
-                    d=${pathData}
+                    d=${edge.pathData}
                     fill="none"
                     stroke=${edgeCount > 0 ?
                       "rgb(110 110 120 / 0.42)"
@@ -1424,7 +1589,7 @@ B(325). Lie low instead`;
                     stroke-width=${edgeCount > 0 ? 3 : 2}
                     marker-end="url(#arrow-base)"
                   />
-                  <g transform=${`translate(${label.x}, ${label.y})`}>
+                  <g transform=${`translate(${edge.labelX}, ${edge.labelY})`}>
                     <rect
                       x="-14"
                       y="-11"
@@ -1451,15 +1616,12 @@ B(325). Lie low instead`;
               const color = PATH_COLORS[traceIndex % PATH_COLORS.length];
               const markerId = `url(#arrow-${traceIndex % PATH_COLORS.length})`;
               return trace.edgeKeys.map((key, keyIndex) => {
-                const edge = edges.find((entry) => entry.key === key);
+                const edge = edgeByKey.get(key);
                 if (!edge) return null;
-                const fromNode = nodes.get(edge.fromId);
-                const toNode = nodes.get(edge.toId);
-                if (!fromNode || !toNode) return null;
                 return html`
                   <path
                     key=${`${trace.raw}-${key}-${keyIndex}`}
-                    d=${edgePath(fromNode, toNode)}
+                    d=${edge.pathData}
                     fill="none"
                     stroke=${color}
                     stroke-width="4"
@@ -1470,7 +1632,7 @@ B(325). Lie low instead`;
                 `;
               });
             })}
-            ${[...nodes.values()].map((node) => {
+            ${nodeList.map((node) => {
               const nodeCount = summary.nodeCounts.get(node.id) ?? 0;
               const endingCount = summary.endingCounts.get(node.id) ?? 0;
               const isEnding = node.kind === "ending";
