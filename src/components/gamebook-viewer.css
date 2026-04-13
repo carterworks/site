@@ -128,11 +128,7 @@
 
   .hero h1 {
     font-family: var(--font-serif);
-    font-size: clamp(
-      calc(var(--text-xl) * 2.6),
-      6vw,
-      calc(var(--text-xl) * 5.2)
-    );
+    font-size: calc(var(--text-xl) * 2);
     font-weight: 400;
     line-height: 0.92;
     letter-spacing: -0.03em;
@@ -143,6 +139,7 @@
     max-width: 62ch;
     line-height: 1.6;
     color: var(--color-ink-soft);
+    font-size: var(--text-md);
   }
 
   .gamebook-viewer {
