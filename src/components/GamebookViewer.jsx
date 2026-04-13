@@ -434,6 +434,35 @@ const NODE_TEXT_LINE_HEIGHT = 18;
 const EVENT_BASE_HEIGHT = 88;
 const ENDING_BASE_HEIGHT = 72;
 const MAX_NODE_PREVIEW_LINES = 3;
+const URL_PRESET_PARAM = "preset";
+const URL_PATHS_PARAM = "paths";
+
+function getPresetById(id) {
+  return CHOICE_PRESETS.find((entry) => entry.id === id) ?? null;
+}
+
+function getInitialViewerState() {
+  const fallbackPreset = CHOICE_PRESETS[0];
+
+  if (typeof window === "undefined") {
+    return {
+      presetPickerId: fallbackPreset.id,
+      activePresetId: fallbackPreset.id,
+      choices: fallbackPreset.choices,
+      paths: fallbackPreset.paths,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const preset = getPresetById(params.get(URL_PRESET_PARAM)) ?? fallbackPreset;
+
+  return {
+    presetPickerId: preset.id,
+    activePresetId: preset.id,
+    choices: preset.choices,
+    paths: params.get(URL_PATHS_PARAM) ?? preset.paths,
+  };
+}
 
 function createEvent(id, title, choices, lineNumber) {
   const choiceMap = Object.create(null);
@@ -1124,18 +1153,25 @@ function NodeModal({ node, onClose }) {
 }
 
 export default function GamebookViewer() {
-  const choices = useDebouncedText(DEFAULT_CHOICES);
-  const paths = useDebouncedText(DEFAULT_PATHS);
-  const [presetId, setPresetId] = useState(CHOICE_PRESETS[0].id);
+  const [initialState] = useState(() => getInitialViewerState());
+  const choices = useDebouncedText(initialState.choices);
+  const paths = useDebouncedText(initialState.paths);
+  const [presetPickerId, setPresetPickerId] = useState(
+    initialState.presetPickerId,
+  );
+  const [activePresetId, setActivePresetId] = useState(
+    initialState.activePresetId,
+  );
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [flowState, setFlowState] = useState({ nodes: [], edges: [] });
   const [isLayingOut, setIsLayingOut] = useState(false);
 
   const loadPreset = (nextPresetId) => {
-    const preset = CHOICE_PRESETS.find((entry) => entry.id === nextPresetId);
+    const preset = getPresetById(nextPresetId);
     if (!preset) return;
 
-    setPresetId(preset.id);
+    setPresetPickerId(preset.id);
+    setActivePresetId(preset.id);
     choices.setValue(preset.choices);
     paths.setValue(preset.paths);
     setSelectedNodeId(null);
@@ -1171,6 +1207,27 @@ export default function GamebookViewer() {
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
   }, [selectedNodeId]);
+
+  useEffect(() => {
+    const matchingPreset =
+      CHOICE_PRESETS.find((preset) => preset.choices === choices.settled)
+      ?? null;
+    setActivePresetId(matchingPreset?.id ?? null);
+  }, [choices.settled]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (activePresetId) url.searchParams.set(URL_PRESET_PARAM, activePresetId);
+    else url.searchParams.delete(URL_PRESET_PARAM);
+
+    if (paths.settled) url.searchParams.set(URL_PATHS_PARAM, paths.settled);
+    else url.searchParams.delete(URL_PATHS_PARAM);
+
+    if (url.toString() !== window.location.href) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [activePresetId, paths.settled]);
 
   useEffect(() => {
     if (!parsed.ok || !summary) {
@@ -1227,8 +1284,10 @@ export default function GamebookViewer() {
                 <span className="gamebook-field-label-text">Preset</span>
                 <select
                   className="gamebook-select"
-                  value={presetId}
-                  onChange={(event) => setPresetId(event.currentTarget.value)}
+                  value={presetPickerId}
+                  onChange={(event) =>
+                    setPresetPickerId(event.currentTarget.value)
+                  }
                 >
                   {CHOICE_PRESETS.map((preset) => (
                     <option
@@ -1243,7 +1302,7 @@ export default function GamebookViewer() {
               <button
                 type="button"
                 className="gamebook-button"
-                onClick={() => loadPreset(presetId)}
+                onClick={() => loadPreset(presetPickerId)}
               >
                 Load preset
               </button>
