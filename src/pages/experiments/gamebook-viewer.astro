@@ -1,0 +1,97 @@
+---
+import GamebookViewerApp from "../../components/GamebookViewer.jsx";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <meta
+      name="theme-color"
+      content="#fdf6e3"
+    />
+    <meta
+      name="color-scheme"
+      content="light"
+    />
+    <meta
+      http-equiv="X-UA-Compatible"
+      content="ie=edge"
+    />
+    <link
+      rel="canonical"
+      href={Astro.url}
+    />
+    <meta
+      property="og:url"
+      content={Astro.url}
+    />
+    <meta
+      property="og:locale"
+      content="en_US"
+    />
+    <meta
+      property="og:site_name"
+      content="Carter McBride"
+    />
+    <meta
+      property="og:title"
+      content="Gamebook Viewer"
+    />
+    <meta
+      property="og:type"
+      content="website"
+    />
+    <link
+      rel="icon"
+      href="/favicon.svg"
+      type="image/svg+xml"
+    />
+    <link
+      rel="manifest"
+      href="/manifest.webmanifest"
+    />
+    <link
+      rel="sitemap"
+      href="/sitemap-index.xml"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=Geist+Mono:wght@100..900&family=Libre+Caslon+Display&display=swap"
+    />
+
+    <title>Gamebook Viewer | carter.works</title>
+  </head>
+  <body>
+    <main class="page stack">
+      <a
+        href="/experiments"
+        class="back-link"
+      >
+        <span aria-hidden="true">&larr;</span>
+        Back to /experiments
+      </a>
+
+      <header class="hero">
+        <div class="hero-copy stack">
+          <h1>Gamebook (Choose Your Own Adventure™) Mapper</h1>
+          <p>
+            Have you ever read an Choose Your Own Adventure™ book and wondered
+            "is this book really that complicated"? Have you ever read one of
+            those books with your friends and wondered "how did we all end up at
+            the same place?" Well then, this app is for you! Simply translate
+            your entire book into our special format (ChatGPT can probably do
+            it) and then view the wide and twisting path below. You can even
+            record your own path and compare it to that of your friends.
+          </p>
+        </div>
+      </header>
+
+      <GamebookViewerApp client:only="react" />
+    </main>
+  </body>
+</html>

@@ -2,6 +2,7 @@
 import { ClientRouter } from "astro:transitions";
 import { Image } from "astro:assets";
 import claudeCodeBuddyCreator from "../../content/blog/assets/claude-code-buddy-creator.png";
+import gamebookViewer from "../../content/blog/assets/gamebook-viewer.png";
 import halftonePaintingApp from "../../content/blog/assets/halftone-painting-app.jpeg";
 
 const { url } = Astro;
@@ -127,10 +128,28 @@ const { url } = Astro;
               </p>
             </div>
           </a>
+          <a href="/blog/2026-03-31-claude-code-buddies-experiement/"
+            >read note</a
+          >
+        </li>
+        <li>
+          <a href="/experiments/gamebook-viewer">
+            <div>
+              <Image
+                src={gamebookViewer}
+                alt="Gamebook Viewer screenshot"
+              />
+            </div>
+            <div>
+              <h3>Gamebook Viewer</h3>
+              <p>
+                Map branching choice books and compare recorded routes against
+                the full story graph.
+              </p>
+            </div>
+          </a>
           <div>
-            <a href="https://github.com/carterworks/site/blob/main/src/pages/experiments/claude-code-buddy-creator.astro"
-              >view source</a
-            >
+            <a href="/blog/2026-04-13-gamebook-viewer/">read note</a>
           </div>
         </li>
       </ul>
