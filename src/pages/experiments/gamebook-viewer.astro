@@ -65,197 +65,6 @@ import GamebookViewerApp from "../../components/GamebookViewer.jsx";
     />
 
     <title>Gamebook Viewer | carter.works</title>
-
-    <style>
-      :root {
-        --space-2xs: 0.25rem;
-        --space-xs: 0.5rem;
-        --space-sm: 0.75rem;
-        --space-md: 1rem;
-        --space-lg: 1.5rem;
-        --space-xl: 2rem;
-        --space-2xl: 3rem;
-        --space-3xl: 4rem;
-        --color-paper: oklch(0.985 0.008 85);
-        --color-paper-strong: oklch(0.955 0.012 85);
-        --color-panel: oklch(0.993 0.004 85);
-        --color-panel-muted: oklch(0.973 0.008 85);
-        --color-ink: oklch(0.26 0.018 248);
-        --color-ink-soft: oklch(0.43 0.012 248);
-        --color-line: oklch(0.86 0.01 85);
-        --color-line-strong: oklch(0.77 0.014 85);
-        --color-accent: oklch(0.56 0.11 250);
-        --color-accent-soft: oklch(0.95 0.03 250);
-        --font-sans: "Familjen Grotesk", "Segoe UI", sans-serif;
-        --font-serif: "Libre Caslon Display", "Iowan Old Style", serif;
-        --font-mono:
-          "Geist Mono", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo,
-          Consolas, "DejaVu Sans Mono", monospace;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        color-scheme: light;
-        background: var(--color-paper);
-      }
-
-      body {
-        margin: 0;
-        color: var(--color-ink);
-        background:
-          radial-gradient(
-            circle at top left,
-            oklch(1 0 0 / 0.95),
-            transparent 26%
-          ),
-          linear-gradient(180deg, var(--color-paper) 0%, var(--color-paper-strong) 100%);
-        font-family: var(--font-sans);
-        text-rendering: optimizeLegibility;
-      }
-
-      a,
-      a:visited {
-        color: inherit;
-      }
-
-      h1,
-      h2,
-      h3,
-      h4,
-      pre {
-        margin: 0;
-      }
-
-      code,
-      textarea,
-      input,
-      button {
-        font: inherit;
-      }
-
-      .page {
-        width: min(1240px, calc(100vw - 2rem));
-        margin: 0 auto;
-        padding: var(--space-md) 0 var(--space-2xl);
-      }
-
-      .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-xs);
-        margin-bottom: var(--space-xl);
-        padding: 0.45rem 0.8rem;
-        border: 1px solid var(--color-line);
-        border-radius: 999px;
-        background: rgb(255 255 255 / 0.58);
-        text-decoration: none;
-        color: var(--color-ink-soft);
-        transition:
-          border-color 140ms ease,
-          color 140ms ease,
-          background-color 140ms ease;
-      }
-
-      .back-link:hover,
-      .back-link:focus-visible {
-        color: var(--color-ink);
-        border-color: var(--color-line-strong);
-        background: rgb(255 255 255 / 0.82);
-      }
-
-      .hero {
-        display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
-        gap: var(--space-lg);
-        align-items: end;
-        margin-bottom: var(--space-xl);
-        padding: clamp(1.25rem, 2.8vw, 2rem);
-        border: 1px solid var(--color-line);
-        border-radius: 1.75rem;
-        background:
-          linear-gradient(135deg, rgb(255 255 255 / 0.88), rgb(255 255 255 / 0.62)),
-          var(--color-panel);
-        box-shadow: 0 22px 60px rgb(53 44 32 / 0.07);
-      }
-
-      .hero > * + * {
-        margin-top: var(--space-sm);
-      }
-
-      .hero-copy {
-        max-width: 65ch;
-      }
-
-      .hero-kicker,
-      .hero-note {
-        font-family: var(--font-mono);
-        font-size: 0.74rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .hero-kicker {
-        color: var(--color-ink-soft);
-      }
-
-      .hero-note {
-        display: grid;
-        gap: var(--space-sm);
-        align-self: stretch;
-        padding: var(--space-lg);
-        border-radius: 1.2rem;
-        background: var(--color-panel-muted);
-        color: var(--color-ink-soft);
-      }
-
-      .hero-note strong {
-        font-family: var(--font-sans);
-        font-size: 1rem;
-        letter-spacing: 0;
-        text-transform: none;
-        color: var(--color-ink);
-      }
-
-      .hero h1 {
-        font-family: var(--font-serif);
-        font-size: clamp(2.6rem, 6vw, 5.2rem);
-        font-weight: 400;
-        line-height: 0.92;
-        letter-spacing: -0.03em;
-      }
-
-      .hero p {
-        margin: 0;
-        max-width: 62ch;
-        line-height: 1.6;
-        color: var(--color-ink-soft);
-      }
-
-      @media (max-width: 840px) {
-        .page {
-          width: min(100vw - 1rem, 1240px);
-          padding-top: var(--space-sm);
-        }
-
-        .back-link {
-          margin-bottom: var(--space-lg);
-        }
-
-        .hero {
-          grid-template-columns: 1fr;
-          gap: var(--space-md);
-          padding: var(--space-lg);
-          border-radius: 1.25rem;
-        }
-
-        .hero h1 {
-          font-size: clamp(2.3rem, 12vw, 3.6rem);
-        }
-      }
-    </style>
   </head>
   <body>
     <main class="page">
@@ -269,8 +78,7 @@ import GamebookViewerApp from "../../components/GamebookViewer.jsx";
 
       <header class="hero">
         <div class="hero-copy">
-          <div class="hero-kicker">Neil Patrick Harris book club utility</div>
-          <h1>Gamebook Viewer</h1>
+          <h1>Gamebook (Choose Your Own Adventure™) Mapper</h1>
           <p>
             Load the branching autobiography, paste the paths your group took,
             and compare where each first read ended up. The viewer keeps the
@@ -278,10 +86,15 @@ import GamebookViewerApp from "../../components/GamebookViewer.jsx";
             discussion.
           </p>
         </div>
-        <div class="hero-note" aria-label="Viewer summary">
+        <div
+          class="hero-note"
+          aria-label="Viewer summary"
+        >
           <span>Designed for</span>
           <strong>Small-group path comparison on phones and laptops</strong>
-          <span>Paste DSL, add one route per line, inspect any node in place.</span>
+          <span
+            >Paste DSL, add one route per line, inspect any node in place.</span
+          >
         </div>
       </header>
 
