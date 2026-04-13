@@ -2,14 +2,15 @@
 
 @layer tokens {
   :root {
-    --space-2xs: 0.25rem;
-    --space-xs: 0.5rem;
-    --space-sm: 0.75rem;
-    --space-md: 1rem;
-    --space-lg: 1.5rem;
-    --space-xl: 2rem;
-    --space-2xl: 3rem;
-    --space-3xl: 4rem;
+    --spacer: 0.25rlh;
+    --space-2xs: calc(var(--spacer) * 1);
+    --space-xs: calc(var(--spacer) * 2);
+    --space-sm: calc(var(--spacer) * 3);
+    --space-md: calc(var(--spacer) * 4);
+    --space-lg: calc(var(--spacer) * 5);
+    --space-xl: calc(var(--spacer) * 6);
+    --space-2xl: calc(var(--spacer) * 7);
+    --space-3xl: calc(var(--spacer) * 8);
     --color-paper: oklch(0.985 0.008 85);
     --color-paper-strong: oklch(0.955 0.012 85);
     --color-panel: oklch(0.993 0.004 85);
@@ -54,13 +55,6 @@
   body {
     margin: 0;
     color: var(--color-ink);
-    background:
-      radial-gradient(circle at top left, oklch(1 0 0 / 0.95), transparent 26%),
-      linear-gradient(
-        180deg,
-        var(--color-paper) 0%,
-        var(--color-paper-strong) 100%
-      );
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
   }
@@ -87,33 +81,23 @@
 }
 
 @layer layout {
+  .stack > * + *,
+  .stack > astro-island > * {
+    margin-block-start: var(--space-md);
+  }
+
   .page {
     width: min(1240px, calc(100vw - 2rem));
-    margin: 0 auto;
+    margin-inline: auto;
     padding: var(--space-md) 0 var(--space-2xl);
   }
 
   .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
-    gap: var(--space-lg);
-    align-items: end;
-    margin-bottom: var(--space-xl);
     padding: clamp(1.25rem, 2.8vw, 2rem);
     border: 1px solid var(--color-line);
     border-radius: 1.75rem;
-    background:
-      linear-gradient(
-        135deg,
-        var(--surface-glass-strong),
-        rgb(255 255 255 / 0.62)
-      ),
-      var(--color-panel);
+    background: var(--color-panel);
     box-shadow: 0 22px 60px rgb(53 44 32 / 0.07);
-  }
-
-  .hero > * + * {
-    margin-top: var(--space-sm);
   }
 
   .hero-copy {
@@ -222,7 +206,7 @@
   .gamebook-path-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem;
+    gap: var(--space-md);
   }
 
   .gamebook-summary-row {
@@ -273,11 +257,18 @@
 }
 
 @layer components {
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-overlay);
+    color: var(--color-ink-soft);
+  }
   .back-link {
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
-    margin-bottom: var(--space-xl);
     padding: 0.45rem 0.8rem;
     border: 1px solid var(--color-line);
     border-radius: var(--radius-pill);
@@ -755,10 +746,6 @@
     .page {
       width: min(100vw - 1rem, 1240px);
       padding-top: var(--space-sm);
-    }
-
-    .back-link {
-      margin-bottom: var(--space-lg);
     }
 
     .hero {

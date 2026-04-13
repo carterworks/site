@@ -67,7 +67,7 @@ import GamebookViewerApp from "../../components/GamebookViewer.jsx";
     <title>Gamebook Viewer | carter.works</title>
   </head>
   <body>
-    <main class="page">
+    <main class="page stack">
       <a
         href="/experiments"
         class="back-link"
@@ -77,24 +77,17 @@ import GamebookViewerApp from "../../components/GamebookViewer.jsx";
       </a>
 
       <header class="hero">
-        <div class="hero-copy">
+        <div class="hero-copy stack">
           <h1>Gamebook (Choose Your Own Adventure™) Mapper</h1>
           <p>
-            Load the branching autobiography, paste the paths your group took,
-            and compare where each first read ended up. The viewer keeps the
-            structure legible while the diagram stays detailed enough for close
-            discussion.
+            Have you ever read an Choose Your Own Adventure™ book and wondered
+            "is this book really that complicated"? Have you ever read one of
+            those books with your friends and wondered "how did we all end up at
+            the same place?" Well then, this app is for you! Simply translate
+            your entire book into our special format (ChatGPT can probably do
+            it) and then view the wide and twisting path below. You can even
+            record your own path and compare it to that of your friends.
           </p>
-        </div>
-        <div
-          class="hero-note"
-          aria-label="Viewer summary"
-        >
-          <span>Designed for</span>
-          <strong>Small-group path comparison on phones and laptops</strong>
-          <span
-            >Paste DSL, add one route per line, inspect any node in place.</span
-          >
         </div>
       </header>
 
