@@ -209,6 +209,12 @@
     gap: var(--space-md);
   }
 
+  .gamebook-viewer-head-actions {
+    display: grid;
+    gap: var(--space-xs);
+    justify-items: end;
+  }
+
   .gamebook-summary-row {
     align-self: flex-start;
   }
@@ -424,6 +430,11 @@
     cursor: pointer;
   }
 
+  .gamebook-button:disabled {
+    cursor: wait;
+    opacity: 0.68;
+  }
+
   .gamebook-button:hover,
   .gamebook-select:hover {
     border-color: var(--color-line-strong);
@@ -535,6 +546,15 @@
     margin: 0;
     padding-left: 1.1rem;
     line-height: 1.5;
+  }
+
+  .gamebook-export-status {
+    margin: 0;
+    max-width: 28ch;
+    color: var(--color-ink-soft);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    text-align: right;
   }
 
   .gamebook-flow-shell {
@@ -763,6 +783,11 @@
   @container (max-width: 760px) {
     .gamebook-viewer-head {
       align-items: flex-start;
+    }
+
+    .gamebook-viewer-head-actions {
+      width: 100%;
+      justify-items: start;
     }
 
     .gamebook-summary-row {

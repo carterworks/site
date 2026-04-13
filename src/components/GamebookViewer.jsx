@@ -1,11 +1,14 @@
 import "@xyflow/react/dist/style.css";
 import "./gamebook-viewer.css";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { toPng } from "html-to-image";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import {
   Background,
   Controls,
+  getNodesBounds,
+  getViewportForBounds,
   Handle,
   MarkerType,
   MiniMap,
@@ -1165,6 +1168,9 @@ export default function GamebookViewer() {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [flowState, setFlowState] = useState({ nodes: [], edges: [] });
   const [isLayingOut, setIsLayingOut] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const flowShellRef = useRef(null);
 
   const loadPreset = (nextPresetId) => {
     const preset = getPresetById(nextPresetId);
@@ -1269,6 +1275,57 @@ export default function GamebookViewer() {
     [nodes, selectedNodeId],
   );
 
+  const handleExportPng = async () => {
+    if (flowState.nodes.length === 0 || !flowShellRef.current) return;
+
+    const viewport = flowShellRef.current.querySelector(
+      ".react-flow__viewport",
+    );
+    if (!(viewport instanceof HTMLElement)) {
+      setExportError("Couldn't find the rendered map to export.");
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError("");
+
+    try {
+      const bounds = getNodesBounds(flowState.nodes);
+      const exportWidth = Math.max(Math.ceil(bounds.width), 1200);
+      const exportHeight = Math.max(Math.ceil(bounds.height), 800);
+      const viewportTransform = getViewportForBounds(
+        bounds,
+        exportWidth,
+        exportHeight,
+        0.1,
+        1.5,
+        0.12,
+      );
+      const dataUrl = await toPng(viewport, {
+        backgroundColor: "#fdf6e3",
+        cacheBust: true,
+        pixelRatio: 2,
+        width: exportWidth,
+        height: exportHeight,
+        style: {
+          width: `${exportWidth}px`,
+          height: `${exportHeight}px`,
+          transform: `translate(${viewportTransform.x}px, ${viewportTransform.y}px) scale(${viewportTransform.zoom})`,
+          transformOrigin: "top left",
+        },
+      });
+      const link = document.createElement("a");
+
+      link.download = `${activePresetId ?? "custom"}-map.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      setExportError("PNG export failed. Try again after the layout finishes.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="gamebook-viewer">
       <section className="gamebook-panel gamebook-controls">
@@ -1367,6 +1424,26 @@ export default function GamebookViewer() {
               <kbd>Escape</kbd> to close it.
             </p>
           </div>
+          <div className="gamebook-viewer-head-actions">
+            <button
+              type="button"
+              className="gamebook-button"
+              onClick={handleExportPng}
+              disabled={
+                isExporting || isLayingOut || flowState.nodes.length === 0
+              }
+            >
+              {isExporting ? "Saving PNG..." : "Save map as PNG"}
+            </button>
+            {exportError ?
+              <p
+                className="gamebook-export-status"
+                role="status"
+              >
+                {exportError}
+              </p>
+            : null}
+          </div>
           {summary ?
             <div
               className="gamebook-summary-row"
@@ -1431,7 +1508,10 @@ export default function GamebookViewer() {
           </div>
         : null}
 
-        <div className="gamebook-flow-shell">
+        <div
+          className="gamebook-flow-shell"
+          ref={flowShellRef}
+        >
           {parsed.ok && summary ?
             <div className="gamebook-flow">
               {isLayingOut ?
