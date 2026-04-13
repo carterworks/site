@@ -416,14 +416,14 @@ const CHOICE_PRESETS = [
   },
 ];
 const PATH_COLORS = [
-  "#4063ff",
-  "#d54b9a",
-  "#0f9f84",
-  "#e07c24",
-  "#8b5cf6",
-  "#d44f42",
-  "#0084b8",
-  "#7a9b1d",
+  "oklch(0.58 0.17 259)",
+  "oklch(0.62 0.18 11)",
+  "oklch(0.64 0.14 166)",
+  "oklch(0.72 0.15 72)",
+  "oklch(0.6 0.16 326)",
+  "oklch(0.55 0.15 220)",
+  "oklch(0.68 0.16 37)",
+  "oklch(0.7 0.14 142)",
 ];
 const EVENT_LINE_RE = /^(\d+)\.\s*(.*)$/;
 const CHOICE_LINE_RE = /^([A-Z])\((\d+)\)\.\s*(.*)$/;
@@ -995,11 +995,18 @@ const GamebookNode = memo(function GamebookNode({ data }) {
       className="gamebook-node"
       style={{
         "--node-fill":
-          data.kind === "ending" ?
-            "color-mix(in srgb, rgb(207 237 255) 28%, white)"
-          : "rgb(255 255 255 / 0.94)",
+          data.endingCount > 0 ?
+            "color-mix(in oklch, var(--color-accent) 14%, white)"
+          : data.nodeCount > 0 ?
+            "color-mix(in oklch, var(--color-accent) 6%, white)"
+          : data.kind === "ending" ? "oklch(0.97 0.012 245)"
+          : "rgb(255 255 255 / 0.96)",
         "--node-stroke":
-          data.nodeCount > 0 ? "rgb(46 84 187 / 0.55)" : "rgb(84 84 94 / 0.24)",
+          data.endingCount > 0 ?
+            "color-mix(in oklch, var(--color-accent) 52%, white)"
+          : data.nodeCount > 0 ?
+            "color-mix(in oklch, var(--color-accent) 30%, white)"
+          : "rgb(84 84 94 / 0.24)",
         "--node-radius": data.kind === "ending" ? "24px" : "16px",
       }}
       onClick={openNode}
@@ -1296,9 +1303,8 @@ export default function GamebookViewer() {
           <div>
             <h2 className="gamebook-section-title">Path Diagram</h2>
             <p>
-              React Flow now owns the canvas, and ELK computes the layout with
-              the actual node sizes. Click any node to open its full card, or
-              press
+              Compare each recorded route against the full branching map. Tap or
+              click any node to read the full passage, or press
               <kbd>Escape</kbd> to close it.
             </p>
           </div>
@@ -1307,15 +1313,19 @@ export default function GamebookViewer() {
               className="gamebook-summary-row"
               aria-label="Diagram summary"
             >
-              <div className="gamebook-pill">{summary.totalNodes} nodes</div>
-              <div className="gamebook-pill">{summary.totalEdges} choices</div>
-              <div className="gamebook-pill">
+              <div className="gamebook-pill gamebook-pill--neutral">
+                {summary.totalNodes} nodes
+              </div>
+              <div className="gamebook-pill gamebook-pill--neutral">
+                {summary.totalEdges} choices
+              </div>
+              <div className="gamebook-pill gamebook-pill--accent">
                 {summary.endingCount} endings reached
               </div>
-              <div className="gamebook-pill">
+              <div className="gamebook-pill gamebook-pill--soft">
                 {summary.inProgressCount} still in progress
               </div>
-              <div className="gamebook-pill">
+              <div className="gamebook-pill gamebook-pill--warning">
                 {summary.invalidCount} invalid
               </div>
             </div>
@@ -1348,6 +1358,7 @@ export default function GamebookViewer() {
                   className="gamebook-path-pill"
                   key={`${trace.raw}-${index}`}
                 >
+                  <span className="gamebook-path-label">Path {index + 1}</span>
                   <span
                     className="gamebook-swatch"
                     style={{ background: color }}
