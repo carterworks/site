@@ -11,7 +11,7 @@ For week 2, Jared chose the prompt:
 
 - [Sam: “Internet Driven Memories”](https://samwarnick.com/blog/internet-driven-memories/)
 - [Jared: “”](https://jaredezz.tech/posts/)
-- [Dave: “”](https://catskull.net/)
+- [Dave: “The Internet is a vast place”](https://catskull.net/the-internet-is-a-vast-place.html)
 
 ---
 
