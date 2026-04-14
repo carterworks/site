@@ -2130,12 +2130,30 @@ const { url } = Astro;
           }
 
           if (card) {
-            card.style.setProperty("--display-rx", card.style.getPropertyValue("--display-rx") || "0deg");
-            card.style.setProperty("--display-ry", card.style.getPropertyValue("--display-ry") || "0deg");
-            card.style.setProperty("--display-rz", card.style.getPropertyValue("--display-rz") || "0deg");
-            card.style.setProperty("--pointer-x", card.style.getPropertyValue("--pointer-x") || "50%");
-            card.style.setProperty("--pointer-y", card.style.getPropertyValue("--pointer-y") || "50%");
-            card.style.setProperty("--glare-opacity", card.style.getPropertyValue("--glare-opacity") || "0");
+            card.style.setProperty(
+              "--display-rx",
+              card.style.getPropertyValue("--display-rx") || "0deg",
+            );
+            card.style.setProperty(
+              "--display-ry",
+              card.style.getPropertyValue("--display-ry") || "0deg",
+            );
+            card.style.setProperty(
+              "--display-rz",
+              card.style.getPropertyValue("--display-rz") || "0deg",
+            );
+            card.style.setProperty(
+              "--pointer-x",
+              card.style.getPropertyValue("--pointer-x") || "50%",
+            );
+            card.style.setProperty(
+              "--pointer-y",
+              card.style.getPropertyValue("--pointer-y") || "50%",
+            );
+            card.style.setProperty(
+              "--glare-opacity",
+              card.style.getPropertyValue("--glare-opacity") || "0",
+            );
             card.style.setProperty("--card-accent", accentColor);
             card.style.setProperty("--card-inactive", theme.inactive);
             card.style.setProperty("--card-text", theme.text);
@@ -2176,7 +2194,14 @@ const { url } = Astro;
             glare.style.transition = "opacity 500ms ease-out";
             glare.style.pointerEvents = "none";
           }
-        }, [accentColor, cardBoxShadow, fontSize, theme.inactive, theme.text, theme.userMessageBackground]);
+        }, [
+          accentColor,
+          cardBoxShadow,
+          fontSize,
+          theme.inactive,
+          theme.text,
+          theme.userMessageBackground,
+        ]);
 
         // Build the animated version (sprite frame changes per tick)
         const frameIdx = IDLE_SEQUENCE[tick % IDLE_SEQUENCE.length];
@@ -2242,12 +2267,10 @@ const { url } = Astro;
             const tail = raw.slice(25);
             const outerPadRight = line.slice(-3, -1);
             return html`<span class="card-accent">${B.v}</span
-              ><span class="card-inactive"
-                >${outerPad + label}</span
+              ><span class="card-inactive">${outerPad + label}</span
               ><span class="card-accent">${bar}</span
               ><span class="card-text-color">${val}</span
-              ><span class="card-inactive"
-                >${tail + outerPadRight}</span
+              ><span class="card-inactive">${tail + outerPadRight}</span
               ><span class="card-accent">${B.v}</span>`;
           }
           const content = line.slice(1, -1);
@@ -2281,7 +2304,10 @@ const { url } = Astro;
               >
 ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               >
-              <div ref=${glareRef} class="card-glare"></div>
+              <div
+                ref=${glareRef}
+                class="card-glare"
+              ></div>
               ${bones.shiny && html`<div class="shiny-overlay" />`}
             </div>
           </div>
@@ -2500,7 +2526,9 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        */
       function Selector({ inputId, label, options, value, onChange }) {
         return html`
-          <label for=${inputId} class="control-label"
+          <label
+            for=${inputId}
+            class="control-label"
             >${label}</label
           >
           <select
@@ -2528,7 +2556,9 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
        */
       function StatSlider({ inputId, name, value, onChange }) {
         return html`
-          <label for=${inputId} class="stat-label"
+          <label
+            for=${inputId}
+            class="stat-label"
             >${name}</label
           >
           <input
@@ -2539,9 +2569,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
             value=${value}
             onInput=${(e) => onChange(Number(e.target.value))}
           />
-          <span class="stat-value"
-            >${value}</span
-          >
+          <span class="stat-value">${value}</span>
         `;
       }
 
@@ -2736,11 +2764,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
               class="creator-details"
               open=${initialParsed.isGerm}
             >
-              <summary
-                class="creator-summary"
-              >
-                Card creator
-              </summary>
+              <summary class="creator-summary">Card creator</summary>
               <div class="builder-panel">
                 <${Selector}
                   inputId="buddy-species"
@@ -2839,7 +2863,9 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         --subtle: rgb(175, 175, 175);
         --inactive: rgb(102, 102, 102);
         --mono: "Geist Mono", var(--font-mono);
-        --sans: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+        --sans:
+          Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial,
+          sans-serif;
       }
 
       body {
@@ -2847,7 +2873,9 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         background-color: var(--bg);
         color: var(--text);
         font-family: var(--sans);
-        transition: background-color 300ms ease, color 300ms ease;
+        transition:
+          background-color 300ms ease,
+          color 300ms ease;
       }
 
       .page-nav {
@@ -2994,16 +3022,18 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         border: 1px solid;
         border-radius: 1rem;
         border-color: color-mix(in srgb, var(--inactive) 28%, transparent);
-        background:
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--bg) 96%, transparent),
-            color-mix(in srgb, var(--subtle) 52%, transparent)
-          );
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--bg) 96%, transparent),
+          color-mix(in srgb, var(--subtle) 52%, transparent)
+        );
         grid-template-columns: auto 1fr auto;
-        box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
           0 20px 40px -34px rgba(0, 0, 0, 0.8);
-        transition: background-color 300ms ease, border-color 300ms ease,
+        transition:
+          background-color 300ms ease,
+          border-color 300ms ease,
           box-shadow 300ms ease;
       }
 
@@ -3056,14 +3086,14 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       .small-button {
         border: 1px solid color-mix(in srgb, var(--inactive) 72%, transparent);
         border-radius: 0.8rem;
-        background:
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--bg) 97%, white 3%),
-            color-mix(in srgb, var(--bg) 90%, var(--subtle) 10%)
-          );
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--bg) 97%, white 3%),
+          color-mix(in srgb, var(--bg) 90%, var(--subtle) 10%)
+        );
         color: var(--text);
-        box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
           0 8px 24px -20px rgba(0, 0, 0, 0.65);
         transition:
           transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -3226,7 +3256,8 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       @media (hover: hover) and (pointer: fine) {
         button:hover,
         select:hover {
-          box-shadow: 0 0 12px rgba(215, 119, 87, 0.18),
+          box-shadow:
+            0 0 12px rgba(215, 119, 87, 0.18),
             0 16px 30px -24px rgba(0, 0, 0, 0.7);
           border-color: color-mix(in srgb, var(--claude) 45%, var(--inactive));
         }
@@ -3235,12 +3266,11 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
         .seed-input:hover,
         .control-select:hover,
         .theme-switcher-select:hover {
-          background:
-            linear-gradient(
-              180deg,
-              color-mix(in srgb, var(--bg) 99%, white 1%),
-              color-mix(in srgb, var(--bg) 94%, var(--subtle) 6%)
-            );
+          background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--bg) 99%, white 1%),
+            color-mix(in srgb, var(--bg) 94%, var(--subtle) 6%)
+          );
         }
       }
 
@@ -3368,9 +3398,7 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
       >
     </nav>
     <main class="page-main">
-      <div
-        class="page-header animate-entrance animate-entrance-2"
-      >
+      <div class="page-header animate-entrance animate-entrance-2">
         <h1 class="page-title title-glow">Claude Code Buddy Creator</h1>
         <div id="theme-switcher"></div>
       </div>
