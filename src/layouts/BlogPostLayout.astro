@@ -4,7 +4,9 @@ import BaseLayout from "./BaseLayout.astro";
 import { formatDateLong } from "../lib/date";
 
 interface Props {
-  frontmatter: CollectionEntry<"blog">["data"];
+  frontmatter: CollectionEntry<"blog">["data"] & {
+    articleClass?: string;
+  };
 }
 
 const { frontmatter } = Astro.props;
@@ -27,8 +29,8 @@ const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
       content="Carter McBride"
     />
   </Fragment>
-  <article>
-    <header>
+  <article class:list={["stack", frontmatter.articleClass]}>
+    <header class="stack">
       <h1>
         {frontmatter.draft && "Rough Draft: "}{frontmatter.title}
       </h1>

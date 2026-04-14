@@ -1,15 +1,36 @@
+@layer reset, tokens, visual;
+
+@layer tokens {
+  :root {
+    --spacer: 0.25rlh;
+    --space-xs: calc(var(--spacer) * 0.5);
+    --space-sm: calc(var(--spacer) * 1);
+    --space-md: calc(var(--spacer) * 1.5);
+    --space-lg: calc(var(--spacer) * 2);
+    --space-xl: calc(var(--spacer) * 2.5);
+    --space-2xl: calc(var(--spacer) * 3);
+    --space-3xl: calc(var(--spacer) * 4);
+
+    --font-size: 16px;
+    --font-color: light-dark(black, white);
+    --font-stack:
+      monospace system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji";
+  }
+}
+
 @layer reset {
   html {
-    font-family:
-      system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
-      "Apple Color Emoji", "Segoe UI Emoji";
+    font-family: var(--font-stack);
     -moz-text-size-adjust: none;
     -webkit-text-size-adjust: none;
     text-size-adjust: none;
     tab-size: 2;
-    line-height: 1.5;
-    font-size: 16px;
+    line-height: 1.25;
+    font-size: var(--font-size);
     box-sizing: border-box;
+    padding: var(--space-md);
+    color: var(--font-color);
   }
 
   *,
@@ -43,25 +64,11 @@
     font-size: 1em; /* 2 */
   }
 
-  small {
-    font-size: 80%;
-  }
-
   h1,
   h2,
   h3 {
     font-size: 1em;
     text-wrap: balance;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  button,
-  input,
-  label {
-    line-height: 1.1;
   }
 
   sub,
@@ -73,11 +80,11 @@
   }
 
   sub {
-    bottom: -0.25em;
+    bottom: calc(var(--spacer) * -0.25);
   }
 
   sup {
-    top: -0.5em;
+    top: calc(var(--spacer) * -1.25);
   }
 
   button,
@@ -104,13 +111,48 @@
   summary {
     display: list-item;
   }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :target {
+    scroll-margin-block: calc(var(--spacer) * 5);
+  }
+}
+
+@layer visual {
   img,
   p,
+  ul,
   section {
     max-width: 60ch;
     height: auto;
   }
-  p {
-    text-wrap: pretty;
+
+  ul {
+    padding-inline-start: var(--space-2xl);
+  }
+
+  blockquote {
+    border-inline-start: 2px solid var(--font-color);
+    margin: 0;
+    padding-inline-start: var(--space-md);
+    margin-inline-start: var(--space-md);
+  }
+  .stack > * + *,
+  .stack > astro-island > * + * {
+    margin-block: var(--space-lg);
+  }
+
+  rss-feed {
+    display: block;
+    overflow-y: auto;
+    width: inherit;
+    scrollbar-gutter: stable;
+    height: calc(var(--spacer) * 100);
+    > * + * {
+      margin-block: var(--space-lg);
+    }
   }
 }

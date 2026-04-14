@@ -15,7 +15,7 @@ const recentPosts = await getPublishedPosts();
       content="Front-end dev. Father. Young grump. Simple things enjoyer."
     />
   </Fragment>
-  <main>
+  <main class="stack">
     <section>
       <h2>Who?</h2>
       Still figuring things out. Right now: a dad, a tired man, a code plumber on
@@ -24,7 +24,7 @@ const recentPosts = await getPublishedPosts();
         href="https://churchofjesuschrist.org">a disciple of Christ</a
       >.
     </section>
-    <section>
+    <section class="stack">
       <h2>Some things I made</h2>
       <ul role="list">
         <li role="listitem">
@@ -43,13 +43,11 @@ const recentPosts = await getPublishedPosts();
           </a>
         </li>
         <li role="listitem">
-          <a href="/experiments/">
-            Experiments, what ifs, and prototypes
-          </a>
+          <a href="/experiments/"> Experiments, what ifs, and prototypes </a>
         </li>
       </ul>
     </section>
-    <section>
+    <section class="stack">
       <h2>
         <a href="https://mastodon.social/@literallyacar">Mastodon</a>
       </h2>
@@ -60,16 +58,16 @@ const recentPosts = await getPublishedPosts();
     </section>
     {
       recentPosts.length > 0 && (
-        <section>
+        <section class="stack">
           <h2>
+            <a href="/blog/">Blog posts</a>
             <a
               href="/blog/feed.xml"
               title="RSS feed"
               aria-label="RSS feed"
             >
-              RSS
+              (RSS)
             </a>
-            <a href="/blog/">Blog posts</a>
           </h2>
           <ul role="list">
             {recentPosts.map((post) => (
