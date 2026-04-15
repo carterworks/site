@@ -10,7 +10,7 @@ For week 2, Jared chose the prompt:
 **“What are your favorite places on the internet or favorite things about the internet and why? How do they differ from the parts of the internet that you dislike”**
 
 - [Sam: “Internet Driven Memories”](https://samwarnick.com/blog/internet-driven-memories/)
-- [Jared: “”](https://jaredezz.tech/posts/)
+- [Jared: “My Preferred Corners of the Internet, and Why I Spend My Time There”](https://jaredezz.tech/posts/preferred-corners-of-the-internet/)
 - [Dave: “The Internet is a vast place”](https://catskull.net/the-internet-is-a-vast-place.html)
 
 ---
