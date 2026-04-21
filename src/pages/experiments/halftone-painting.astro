@@ -194,7 +194,7 @@ const { url } = Astro;
       }
     </style>
 
-    <script type="module">
+    <script type="module" is:inline>
       const resolveCssColor = (colorString) => {
         const el = document.createElement("span");
         el.style.color = colorString;

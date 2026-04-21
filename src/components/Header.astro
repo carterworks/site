@@ -11,7 +11,7 @@ const possibleSubtitles = [
 ];
 ---
 
-<script defer define:vars={{ possibleSubtitles }}>
+<script defer is:inline define:vars={{ possibleSubtitles }}>
   function randomSubtitle() {
     const $headingSubtitle = document.getElementById("heading-subtitle");
     if (!$headingSubtitle) {
