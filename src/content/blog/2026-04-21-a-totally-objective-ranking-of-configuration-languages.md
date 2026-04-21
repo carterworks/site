@@ -1,4 +1,8 @@
-
+---
+title: A totally objective ranking of configuration languages
+pubDate: 2026-04-21
+draft: false
+---
 My friends and I decided to do a weekly blog challenge for the month of April 2026! Each week, one of us chooses a prompt and we all write posts.
 
 For week 3, Dave chose the prompt:
