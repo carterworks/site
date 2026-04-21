@@ -26,7 +26,6 @@
     -webkit-text-size-adjust: none;
     text-size-adjust: none;
     tab-size: 2;
-    box-sizing: border-box;
     padding: var(--space-md);
     color: var(--font-color);
   }
@@ -34,7 +33,7 @@
   *,
   *:before,
   *:after {
-    box-sizing: inherit;
+    box-sizing: border-box;
   }
 
   body {
@@ -136,9 +135,15 @@
 }
 
 @layer visual {
+  * {
+    max-inline-size: 100%;
+  }
+
   p,
   ul,
-  section {
+  section,
+  ol,
+  pre:has(code) {
     max-inline-size: 60ch;
   }
 

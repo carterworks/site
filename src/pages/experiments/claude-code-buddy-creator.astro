@@ -93,7 +93,6 @@ const { url } = Astro;
         layout,
         prepareWithSegments,
         layoutWithLines,
-        layoutNextLine,
       } from "https://unpkg.com/@chenglou/pretext@0.0.3/dist/layout.js";
       import htm from "https://esm.sh/htm@3";
       const html = htm.bind(h);
@@ -1273,14 +1272,6 @@ const { url } = Astro;
       }
 
       /**
-       * @param {Species} species
-       * @returns {number}
-       */
-      function spriteFrameCount(species) {
-        return BODIES[species].length;
-      }
-
-      /**
        * Convert "rgb(r,g,b)" to "rgba(r,g,b,a)"
        * @param {string} rgb
        * @param {number} alpha
@@ -1397,14 +1388,6 @@ const { url } = Astro;
           stats: rollStats(rng, rarity),
         };
         return { bones, inspirationSeed: Math.floor(rng() * 1e9) };
-      }
-
-      /**
-       * @param {string} seed
-       * @returns {{ bones: CompanionBones, inspirationSeed: number }}
-       */
-      function rollWithSeed(seed) {
-        return rollFrom(mulberry32(hashString(seed)));
       }
 
       /**
@@ -1688,71 +1671,6 @@ const { url } = Astro;
       }
 
       /**
-       * Wrap header text inside the card, preferring word boundaries.
-       * Continuation lines can use a different width than the first line.
-       * @param {string} text
-       * @param {number} firstWidth
-       * @param {number} continuationWidth
-       * @returns {string[]}
-       */
-      function wrapCardSegment(
-        text,
-        firstWidth,
-        continuationWidth = firstWidth,
-        font = getCardLayoutFont(),
-      ) {
-        const source = text.trim();
-        if (!source) return [" "];
-
-        try {
-          const prepared = prepareWithSegments(source, font, {
-            whiteSpace: "pre-wrap",
-          });
-          const firstWidthPx = getColumnWidthPx(
-            Math.max(1, firstWidth - 1),
-            font,
-          );
-          const continuationWidthPx = getColumnWidthPx(
-            Math.max(1, continuationWidth - 1),
-            font,
-          );
-
-          const wrapped = [];
-          let cursor = { segmentIndex: 0, graphemeIndex: 0 };
-          let isFirstLine = true;
-          while (true) {
-            const maxWidthPx = isFirstLine ? firstWidthPx : continuationWidthPx;
-            const nextLine = layoutNextLine(prepared, cursor, maxWidthPx);
-            if (nextLine === null) break;
-            wrapped.push(" " + nextLine.text.trimEnd());
-            cursor = nextLine.end;
-            isFirstLine = false;
-          }
-          return wrapped.length > 0 ? wrapped : [" "];
-        } catch {
-          const lines = [];
-          let remaining = source;
-          let width = Math.max(1, firstWidth - 1);
-
-          while (remaining.length > 0) {
-            if (remaining.length <= width) {
-              lines.push(" " + remaining);
-              break;
-            }
-
-            let breakAt = remaining.lastIndexOf(" ", width);
-            if (breakAt <= 0) breakAt = width;
-
-            lines.push(" " + remaining.slice(0, breakAt).trimEnd());
-            remaining = remaining.slice(breakAt).trimStart();
-            width = Math.max(1, continuationWidth - 1);
-          }
-
-          return lines;
-        }
-      }
-
-      /**
        * Build the card lines once so display and copied output stay identical.
        * @param {CompanionBones} bones
        * @param {string} seed
@@ -1767,7 +1685,7 @@ const { url } = Astro;
         const stars = RARITY_STARS[bones.rarity];
         const species = bones.species.toUpperCase() + (bones.shiny ? " *" : "");
         const rarity = bones.rarity.toUpperCase();
-        const name = soul?.name?.trim() || "";
+        const buddyName = soul?.name?.trim() || "";
         const personality = soul?.personality?.trim() || "";
         const titleLeft = `${stars} ${rarity}`;
         const quotedPersonality = personality ? `"${personality}"` : "";
@@ -1804,11 +1722,11 @@ const { url } = Astro;
           );
         }
         lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
-        if (name) {
-          lines.push(B.v + "  " + padCardBody(name, body) + "  " + B.v);
+        if (buddyName) {
+          lines.push(B.v + "  " + padCardBody(buddyName, body) + "  " + B.v);
         }
         if (quoteLines.length > 0) {
-          if (name) {
+          if (buddyName) {
             lines.push(B.v + "  " + blankCardBody(body) + "  " + B.v);
           }
           for (const quoteLine of quoteLines) {
@@ -2274,7 +2192,8 @@ const { url } = Astro;
               ><span class="card-accent">${B.v}</span>`;
           }
           const content = line.slice(1, -1);
-          const isNameLine = !!name && content.trim() === name;
+          const buddyName = soul?.name?.trim() || "";
+          const isNameLine = !!buddyName && content.trim() === buddyName;
           return html`<span class="card-accent">${B.v}</span
             ><span class=${isNameLine ? "card-text-color" : "card-inactive"}
               >${content}</span
@@ -2583,8 +2502,6 @@ ${coloredLines.map((l, i) => html`${i > 0 ? "\n" : ""}${l}`)}</pre
           soul: initialParsed.soul,
           seed: initialSeed,
         }));
-        const [themeName] = useTheme();
-        const theme = getTheme(themeName);
         const [copied, setCopied] = useState(false);
         const [germCopied, setGermCopied] = useState(false);
         const seedInputId = "buddy-seed";
