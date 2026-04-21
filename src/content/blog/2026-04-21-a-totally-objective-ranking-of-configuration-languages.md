@@ -21,7 +21,7 @@ My general philosophy for computation is rather boring:
 ---
 But other people have already expressed all these ideas so very well. Instead, I will objectively end all discussions on "what file format should I configure my applications in" by ranking them.
 
-I haven't looked at the documentation for most of these. Instead, it is a vibes-based ranking based on how much intuitive sense they make to me, the Emperor of Configuration. Most of my programming experience is in JavaScript and the frontend so much of my decrees are based around how simply I can 
+I haven't looked at the documentation for most of these. Instead, it is a vibes-based ranking based on how much intuitive sense they make to me, the Emperor of Configuration. Most of my programming experience is in JavaScript. Therefore, the "how easily can I convert this to JSON" vibe weighs heavily on the ranking.
 
 There is a trivial example configuration for each language, centered around a hypothetical music player. However, that example often fails to show the horrors.
 ![A vertical ranking list of the configuration languages. Where each language falls can be discovered in the rest of the article](assets/configuration-tier-list.png)
@@ -51,7 +51,7 @@ playback:
 ```
 
 Character count: 125
-YAML is the svelte cousin of JSON. Entire careers have been built on configuring yaml - Github Actions, Kubernetes, and others. But I can never shake the feeling that I'm yamling incorrectly. I default to a tab size of 2 spaces so it always unnerves me that the array indicator `-` and the properties of the object in the array line up.
+yaml is the svelte cousin of JSON. Entire careers have been built on configuring yaml: GitHub Actions, Kubernetes, and others. But I can never shake the feeling that I'm yamling incorrectly. I default to a tab size of 2 spaces so it always unnerves me that the array indicator `-` and the properties of the object in the array line up.
 
 ```yaml
 - title: Don\'t Stop Believing
@@ -59,14 +59,13 @@ YAML is the svelte cousin of JSON. Entire careers have been built on configuring
 - title: Faithfully
   artist: Journey
 ```
-Another blight on yaml is the ambiguity. [StackOverflow](https://stackoverflow.com/questions/53648244/specifying-the-string-value-yes-in-yaml) (remember that place?) tells me that YAML 1.1 recommends that strings that match this regex
+Another blight on yaml is the ambiguity. [StackOverflow](https://stackoverflow.com/questions/53648244/specifying-the-string-value-yes-in-yaml) (remember that place?) tells me that yaml 1.1 defines a boolean as:
 ```regex
 y|Y|yes|Yes|YES|n|N|no|No|NO|
 true|True|TRUE|false|False|FALSE|
 on|On|ON|off|Off|OFF
 ```
-as equivalent to JSON's `true` or `false`.
-Too much, darling.
+Too much, darling. Later versions of yaml narrow the boolean regex, but it takes a long time to rebuild trust.
 Later versions of the specification got rid of that, but it feels like a spooky ghost that follows me. 
 However, the trimming of the quotation marks earns it a place above JSON at the very top of A tier.
 ## JavaScript Object Notation (JSON)
@@ -84,7 +83,7 @@ However, the trimming of the quotation marks earns it a place above JSON at the 
 ```
 
 Character count: 169
-In 2026, it is almost at the point where JSON is to internet as electricity is to the nervous system. It is the message format that most of the web works on (go away, protobuf. I can't read you with my eyes.) But, I still can't add a comment anywhere. JSON5 and JSONC are fake. It's been 14 years and I still can't `JSON.parse('{ "foo": "bar", }`. It's annoying to have to write the quotes and the commas every single time. It's hard to balance the ubiquitousness and the quirks, so I will put it in A tier.
+In 2026, it is almost at the point where JSON is to the internet as electricity is to the nervous system. It is the message format that most of the web works on (go away, protobuf. I can't read you with my eyes.) But, I still can't add a comment anywhere. JSON5 and JSONC are fake. It's been 14 years and I still can't `JSON.parse('{ "foo": "bar", })`. It's annoying to have to write the quotes and the commas every single time. It's hard to balance the ubiquitousness and the quirks, so I will put it in A tier.
 ## Lua
 
 ```lua
@@ -100,7 +99,7 @@ return {
 ```
 
 Character count: 172
-Lua gets a special mention because, although it is a programming language and not a static description of a data object, it is often used to configure programs. Most famously Roblox, Pico8, and Neovim but also the next version of Hyprland because Lua is easily embedded inside other applications. I don't hate it. I also don't love it. The similarities between objects and arrays is a little strange, but not absurd. A tier for the versatility.
+Lua gets a special mention because, although it is a programming language and not a static description of a data object, it is often used to configure programs. Most famously in Roblox, Pico8, and Neovim, but also in the next version of Hyprland. That's because the runtime of Lua is teeny and therefore easily embedded inside other applications. I don't hate it. I also don't love it. The similarities between objects and arrays are a little strange, but not absurd. A tier for the versatility.
 ## Rusty Object Notation (RON)
 
 ```ron
@@ -117,7 +116,7 @@ Lua gets a special mention because, although it is a programming language and no
 
 Character count: 159
 
-I first learned about this yesterday. Apparently it is the configuration language used by Cosmic desktop, which I installed on my computer yesterday. This contrived example looks simple enough, but the way that Cosmic does it is... odd.
+I first learned of RON yesterday while installing System76's Cosmic Desktop. This contrived example looks simple enough, but the way that Cosmic does it is... odd.
 ```ron
 {
     (
@@ -135,7 +134,7 @@ I first learned about this yesterday. Apparently it is the configuration languag
     ): Spawn("vicinae toggle"),
 }
 ```
-Why does it start with a nested object‽ Why do we need an extra level of indentation? What does `()` represent? At first glance, it seems opposite of JSON. Value, followed by key? What does `Disable` event represent? I, genuinely, have no idea how to translate this into any of the other formats. 
+Why does it start with a nested object‽ Why do we need an extra level of indentation? What does `()` represent? At first glance, it looks backwards compared to JSON. What does `Disable` even represent? I, genuinely, have no idea how to translate this into any of the other formats. 
 For these sins, I give it B tier.
 ## Ini
 
@@ -169,7 +168,7 @@ player {
 ```
 
 Character count: 153
-I think the creator of Hyprland has a history of getting into petty internet squabbles and then forking projects. I'm not going to look up why it was created. I also will not look why `yes, please :)` is an alias for `true`. I am generally against domain-specific languages (sorry, [Matthew Butterick](https://beautifulracket.com/appendix/why-lop-why-racket.html)). However, Mr. Hyprland Creator is [currently migrating away from hyprland to lua](https://github.com/hyprwm/Hyprland/pull/13817) so even he has seen the light against it.
+I think the creator of Hyprland has a history of getting into petty internet squabbles and then forking projects. I'm not going to look up why it was created. I also will not learn why `yes, please :)` is an alias for `true`. I am generally against domain-specific languages (sorry, [Matthew Butterick](https://beautifulracket.com/appendix/why-lop-why-racket.html)). However, Mr. Hyprland Creator is [currently migrating away from Hyprland to Lua](https://github.com/hyprwm/Hyprland/pull/13817) so even he has seen the light against it.
 C tier.
  
 ## XML
@@ -187,7 +186,7 @@ C tier.
 ```
 
 Character count: 245
-By far, the most verbose of all of these. The only saving grace is that it is easy to type and that [LLMs seem to interpret it more confidently](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#structure-prompts-with-xml-tags). I often include pseudo-xml in my prompts, like wrapping a page from a libraries documentation in `<docs>`. Its crimes are many: XSLT, rigidity (i.e. no fault tolerance), and of course the verbosity. C tier.
+By far, the most verbose of all of these. The only saving grace is that it is easy to type and that [LLMs seem to interpret it more confidently](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#structure-prompts-with-xml-tags). I often include pseudo-xml in my prompts, like wrapping documentation from a webpage in `<docs>`. Its crimes are many: XSLT, rigidity (i.e. no fault tolerance), and of course the verbosity. C tier.
 ## Nix
 
 ```nix
@@ -203,7 +202,7 @@ By far, the most verbose of all of these. The only saving grace is that it is ea
 ```
 
 Character count: 161
-Deceitful little Nix. It's actually... a programming language! One that I have used a lot an still don't understand! The following is an example from my dotfiles. See if you can translate this into JavaScript:
+Deceitful little Nix. It's actually... a programming language! One that I have used a lot and still don't understand! The following is an example from my dotfiles. See if you can translate this into JavaScript:
 ```nix
 outputs =
     inputs@{ self, nixpkgs, ... }:
@@ -282,7 +281,7 @@ const outputs = (inputs) => {
   };
 };
 ```
-I couldn't figure it out, despite having used nix for 2+ years–that snippit right there is AI generated. 
+I couldn't figure it out, despite having used nix for 2+ years. That snippet right there is AI-generated. 
 I am not completely sold on the argument that they needed to create a deterministic, functional programming language without side effects just to be able to create build scripts that always evaluate to the same lock file. But I just write JavaScript, what do I know.
 
 ## Vimscript
@@ -317,7 +316,7 @@ export default {
 ```
 
 Character count: 171
-I don't want to have to write tests for my configuration files! 2 branches is too many! D tier.
+I don't want to have to write tests for my configuration files! 2 branches is one too many! D tier.
 ## Markdown files
 
 ```md
@@ -332,7 +331,7 @@ I don't want to have to write tests for my configuration files! 2 branches is to
 ```
 
 Character count: 159
-AKA an `AGENTS.md` or `CLAUDE.md` or `SKILL.md` file. The worst kind of configuration because the output is always different! F tier. 
+aka an `AGENTS.md` or `CLAUDE.md` or `SKILL.md` file. The worst kind of configuration because the output is always different! F tier. 
 
 ---
 Thank you for coming to my TED Talk. Don't forget to like and subscribe.
