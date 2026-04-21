@@ -11,7 +11,7 @@ For week 3, Dave chose the prompt:
 
 - [Sam: “How Do I Computer”](https://samwarnick.com/blog/how-do-i-computer/)
 - [Jared: “”](https://jaredezz.tech/posts//)
-- [Dave: “”](https://catskull.net/)
+- [Dave: “How I Compute (2026)”](https://catskull.net/how-i-compute-2026.html)
 
 ---
 
