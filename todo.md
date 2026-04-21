@@ -1,2 +1,0 @@
-- Separate theme into "layout theme" and "color scheme"
-- Extract theme into carterworks/tailwind-theme that can be used in Yazzy and the rss-reader
