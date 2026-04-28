@@ -1,0 +1,30 @@
+home:
+  title: "👋 I'm Carter."
+  description: "Front-end dev. Father. Young grump. Simple things enjoyer."
+  intro:
+    heading: "Who?"
+    body: >-
+      Still figuring things out. Right now: a dad, a tired man, a code plumber on
+      the Web, [a complector](https://youtu.be/SxdOUGdseq4), a researcher, a
+      homebody, a reader, a eater (not a foodie), and [a disciple of
+      Christ](https://churchofjesuschrist.org).
+  projects:
+    heading: "Some things I made"
+    items:
+      - title: "Yazzy"
+        url: "https://yazzy.carter.works"
+        description: "a site to bring reader mode to all the web."
+      - title: "My personal RSS reader"
+        url: "https://carterworks.github.io/rss-reader/"
+        description: ""
+      - title: "Substack-to-epub scraper"
+        url: "https://github.com/carterworks/substack-to-epub"
+        description: ""
+      - title: "Experiments, what ifs, and prototypes"
+        url: "/experiments/"
+        description: ""
+  socialFeed:
+    heading: "Mastodon"
+    url: "https://mastodon.social/@literallyacar"
+    feedUrl: "https://mastodon.social/@literallyacar.rss"
+    count: 2
