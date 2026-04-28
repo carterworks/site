@@ -11,7 +11,7 @@ For week 4, I chose the prompt:
 
 - [Sam: "Talents for Good"](https://samwarnick.com/blog/talents-for-good/)
 - [Jared: ""](https://jaredezz.tech)
-- [Dave: ""](https://catskull.net/)
+- [Dave: "Doing the most good"](https://catskull.net/doing-the-most-good.html)
 
 ---
 
