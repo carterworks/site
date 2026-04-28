@@ -2,6 +2,10 @@
   "name": "site",
   "version": "6.1.2",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
   "module": "src/index.astro",
   "license": "MIT",
   "repository": {
@@ -21,14 +25,12 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "@cloudflare/workers-types": "^4.20250620.0",
+    "@types/node": "^24.10.1",
     "astro": "^5.10.1",
-    "bun-types": "latest",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.9.3",
     "wrangler": "^4.22.0"
-  },
-  "peerDependencies": {
-    "typescript": "^6.0.2"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.3",
@@ -46,9 +48,11 @@
     "react-dom": "^19.2.5",
     "sanitize-html": "^2.17.0"
   },
-  "trustedDependencies": [
-    "esbuild",
-    "sharp",
-    "workerd"
-  ]
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
 }
