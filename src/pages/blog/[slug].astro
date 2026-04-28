@@ -1,25 +1,20 @@
 ---
-import { render } from "astro:content";
 import { getPublishedPosts } from "../../lib/blog";
 import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import { renderMarkdown } from "../../lib/markdown";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
-  return posts.map((entry) => ({
-    params: { slug: entry.id },
-    props: { entry },
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
   }));
 }
 
-const { entry } = Astro.props;
-const { Content, remarkPluginFrontmatter } = await render(entry);
+const { post } = Astro.props;
+const content = renderMarkdown(post.body);
 ---
 
-<BlogPostLayout
-  frontmatter={{
-    ...entry.data,
-    articleClass: remarkPluginFrontmatter.articleClass,
-  }}
->
-  <Content />
+<BlogPostLayout frontmatter={post}>
+  <Fragment set:html={content} />
 </BlogPostLayout>

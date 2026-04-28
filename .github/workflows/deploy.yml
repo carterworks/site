@@ -2,6 +2,9 @@ name: Deploy
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types:
+      - sanity-content-update
   push:
     branches:
       - main
@@ -11,15 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Enable pnpm
+        run: corepack enable pnpm
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Build
-        run: bun run build
+        env:
+          SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+          SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+          SANITY_API_VERSION: ${{ vars.SANITY_API_VERSION }}
+        run: pnpm run build
       - name: Deploy
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
