@@ -1,7 +1,9 @@
 import { getPublishedPosts } from "../../lib/blog";
 import rss from "@astrojs/rss";
 import sanitizeHtml from "sanitize-html";
-import { renderMarkdown } from "../../lib/markdown";
+import MarkdownIt from "markdown-it";
+
+const parser = new MarkdownIt();
 
 export async function GET(context: { site: string }) {
   const posts = (await getPublishedPosts()).toReversed();
@@ -12,7 +14,7 @@ export async function GET(context: { site: string }) {
     items: posts
       .filter((post) => !!post.body)
       .map((post) => {
-        const renderedContent = renderMarkdown(post.body);
+        const renderedContent = parser.render(post.body!);
         const absoluteContent = renderedContent
           .replace(/src=["']\.?\/?([^"']+)["']/g, (match, url) => {
             if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -35,9 +37,9 @@ export async function GET(context: { site: string }) {
           });
 
         return {
-          title: post.title ?? "A post from Carter's blog",
-          pubDate: post.pubDate,
-          link: `/blog/${post.slug}`,
+          title: post.data.title ?? "A post from Carter's blog",
+          pubDate: post.data.pubDate,
+          link: `/blog/${post.id}`,
           content: sanitizeHtml(absoluteContent, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
           }),
