@@ -27,6 +27,26 @@ export default defineConfig({
         default: false,
         description: "Whether the site is running in development mode",
       }),
+      SANITY_PROJECT_ID: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+        description: "Sanity project ID for blog content",
+      }),
+      SANITY_DATASET: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+        default: "production",
+        description: "Sanity dataset for blog content",
+      }),
+      SANITY_API_VERSION: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+        default: "2026-04-27",
+        description: "Sanity API version date",
+      }),
     },
   },
 });
