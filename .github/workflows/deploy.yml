@@ -2,6 +2,9 @@ name: Deploy
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types:
+      - sanity-content-update
   push:
     branches:
       - main
@@ -21,8 +24,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build
+        env:
+          SANITY_PROJECT_ID: ${{ vars.SANITY_PROJECT_ID }}
+          SANITY_DATASET: ${{ vars.SANITY_DATASET }}
+          SANITY_API_VERSION: ${{ vars.SANITY_API_VERSION }}
         run: pnpm run build
       - name: Deploy
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
