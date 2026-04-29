@@ -3,7 +3,6 @@ pubDate: 2026-04-29
 draft: true
 title: April blogging challenge wrap-up
 ---
-
 My friends and I decided to do a weekly blog challenge for the month of April, 2026! Each week, one of us chooses a prompt and we all write posts.
 
 For the bonus wrap-up, Sam chose the prompt:
@@ -19,9 +18,17 @@ For the bonus wrap-up, Sam chose the prompt:
 
 Blog: [samwarnick.com](https://samwarnick.com)
 
+Sam has a beautiful consistency between his speaking voice and his writing voice. Every time I read one of them, it's just like I'm talking to him in person, which I don't get to do anymore because he moved away. They are casual and cozy. You can tell that he is doing it for love of the game. The overall effect is very refreshing and personal, Which is very refreshing in Anno Domini 2026, when the slopidemic is not just concerning, it's very concerning.
+
 ## Dave
 
 Blog: [catskull.net](https://catskull.net)
+
+ Dave has the strongest sense of style and taste of anyone I know. Just look at this OG image for a blog post he wrote earlier in the series called ["Nintendo Announces 3DS successor: '3DS Plus'"][https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html](https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html).
+
+![A preview image for a blog post titles "Nintendo announces 3DS successor: '3DS Plus'](/assets/catskull-3ds-plus-og.png)
+
+Look at the texture, the fuzz, the colors, the font. It's obvious that he isn't chasing trends or trying to emulate some awwwards-winning designer. He is just authentically expressing his love for vintage technology. Even the topic of his blog post is another expression of his love and taste.
 
 ## Jared
 
@@ -65,3 +72,4 @@ Blog: [jaredezz.tech](https://jaredezz.tech)
 - [Sam: "April Blogging Challenge Wrap-Up"](https://samwarnick.com/blog/april-blogging-challenge-wrap-up/)
 - [Jared: ""](https://jaredezz.tech)
 - [Dave: "April Blogging Challenge Wrap-Up"](https://catskull.net/april-blogging-challenge-wrapup.html)
+
