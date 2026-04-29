@@ -12,7 +12,7 @@ I wanted to see all the permutations, so I copied the source code and vibed a ne
 
 [Go make a buddy!](/experiments/claude-code-buddy-creator) I will probably update this a little bit. once the buddy feature is officially released. But for now you can share your buddy as a URL or copy it as ASCII text. Or you can just screenshot it.
 
-![](assets/ddr-rams.png)
+![](/assets/ddr-rams.png)
 
 DDRRAMS–a certified lil' guy.
 
