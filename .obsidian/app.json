@@ -1,7 +1,7 @@
 {
   "tabSize": 2,
   "alwaysUpdateLinks": true,
-  "attachmentFolderPath": "src/content/blog/assets",
+  "attachmentFolderPath": "content/blog/assets",
   "userIgnoreFilters": [
     "dist/",
     "node_modules/",
