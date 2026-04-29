@@ -34,6 +34,8 @@ Look at the texture, the fuzz, the colors, the font. It's obvious that he isn't 
 
 Blog: [jaredezz.tech](https://jaredezz.tech)
 
+My favorite of his pieces is ["Fantastic Computers and Where to Find Them"](https://jaredezz.tech/posts/fantastic-computers-and-where-to-find-them/), where he goes through his device history. It stokes the fires of nostalgia in my heart as I think fondly of my old LG G6 and the specters of the other phones, long forgotten. However, I'm still waiting for the blog post that explains how, in his Twitch streamer days, he would deterministically rig the raid system in Pokémon Sword/Shield using a hacked-together USB controller. Not only is it a fascinating use of hardware, you also get a glimpse into just how smart Jared is, although he would never tell you because he's very modest.
+
 ---
 
 ## The Whole Challenge
