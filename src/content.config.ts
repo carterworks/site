@@ -17,6 +17,7 @@ const data = defineCollection({
     home: z.object({
       title: z.string(),
       description: z.string(),
+      subtitles: z.array(z.string()).min(1),
       intro: z.object({
         heading: z.string(),
         body: z.string(),

@@ -1,6 +1,14 @@
 home:
   title: "👋 I'm Carter."
   description: "Front-end dev. Father. Young grump. Simple things enjoyer."
+  subtitles:
+    - "A software developer."
+    - "A dad."
+    - "A grump."
+    - "An enjoyer of simple things."
+    - "carter.works? I sure hope he does!"
+    - "A sepia tone enthusiast."
+    - "A crust eaten in peace is better than a banquet partaken in anxiety."
   intro:
     heading: "Who?"
     body: >-

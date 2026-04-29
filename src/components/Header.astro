@@ -1,24 +1,27 @@
 ---
+import { getEntry } from "astro:content";
 import { DEV } from "astro:env/client";
-const possibleSubtitles = [
-  "A software developer.",
-  "A dad.",
-  "A grump.",
-  "An enjoyer of simple things.",
-  "carter.works? I sure hope he does!",
-  "A sepia tone enthusiast.",
-  "A crust eaten in peace is better than a banquet partaken in anxiety.",
-];
+
+const homeEntry = await getEntry("data", "home");
+
+if (!homeEntry) {
+  throw new Error("Missing home content data");
+}
+
+const possibleSubtitles = homeEntry.data.home.subtitles ?? [];
+const randomIndex = Math.floor(Math.random() * possibleSubtitles.length);
+const initialSubtitle =
+  possibleSubtitles.at(randomIndex % possibleSubtitles.length) ?? "";
 ---
 
 <script defer is:inline define:vars={{ possibleSubtitles }}>
   function randomSubtitle() {
     const $headingSubtitle = document.getElementById("heading-subtitle");
-    if (!$headingSubtitle) {
+    if (!$headingSubtitle || possibleSubtitles.length === 0) {
       return;
-    }
+    }const randomIndex = Math.floor(Math.random() * possibleSubtitles.length);
     const subtitle =
-      possibleSubtitles[Math.floor(Math.random() * possibleSubtitles.length)];
+      possibleSubtitles.at(randomIndex % possibleSubtitles.length) ?? "";
     $headingSubtitle.textContent = subtitle;
   }
   randomSubtitle();
@@ -32,13 +35,7 @@ const possibleSubtitles = [
       <h1>
         I'm {DEV && "(dev mode) "}Carter.
       </h1>
-      <p id="heading-subtitle">
-        {
-          possibleSubtitles[
-            Math.floor(Math.random() * possibleSubtitles.length)
-          ]
-        }
-      </p>
+      <p id="heading-subtitle">{initialSubtitle}</p>
     </a>
   </hgroup>
   <ul role="list">
