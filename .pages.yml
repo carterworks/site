@@ -1,0 +1,132 @@
+media:
+  - name: blog_assets
+    label: Blog assets
+    input: content/blog/assets
+    output: /assets
+    rename: safe
+    categories: [image]
+  - name: public_assets
+    label: Public assets
+    input: public/assets
+    output: /assets
+    rename: safe
+    categories: [image, video, audio]
+
+content:
+  - name: blog
+    label: Blog
+    type: collection
+    path: content/blog
+    format: yaml-frontmatter
+    filename: "{year}-{month}-{day}-{primary}.md"
+    exclude:
+      - assets/**
+    view:
+      fields: [title, pubDate, draft]
+      primary: title
+      sort: [pubDate, title]
+      default:
+        sort: pubDate
+        order: desc
+    fields:
+      - name: title
+        label: Title
+        type: string
+      - name: pubDate
+        label: Publication date
+        type: date
+        required: true
+      - name: draft
+        label: Draft
+        type: boolean
+      - name: body
+        label: Body
+        type: rich-text
+        options:
+          format: markdown
+          media: blog_assets
+          switcher: true
+
+  - name: home
+    label: Home page
+    type: file
+    path: content/data/home.yml
+    format: yaml
+    fields:
+      - name: home
+        label: Home
+        type: object
+        fields:
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: description
+            label: Description
+            type: string
+            required: true
+          - name: subtitles
+            label: Subtitles
+            type: string
+            list: true
+            required: true
+          - name: intro
+            label: Intro
+            type: object
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+                required: true
+              - name: body
+                label: Body
+                type: text
+                required: true
+          - name: projects
+            label: Projects
+            type: object
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+                required: true
+              - name: items
+                label: Items
+                type: object
+                list: true
+                fields:
+                  - name: title
+                    label: Title
+                    type: string
+                    required: true
+                  - name: url
+                    label: URL
+                    type: string
+                    required: true
+                  - name: description
+                    label: Description
+                    type: string
+          - name: socialFeed
+            label: Social feed
+            type: object
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+                required: true
+              - name: url
+                label: URL
+                type: string
+                required: true
+              - name: feedUrl
+                label: Feed URL
+                type: string
+                required: true
+              - name: count
+                label: Count
+                type: number
+                required: true
+
+settings:
+  content:
+    merge: true
