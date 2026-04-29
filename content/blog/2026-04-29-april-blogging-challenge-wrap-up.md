@@ -1,9 +1,10 @@
 ---
 pubDate: 2026-04-29
-draft: true
+draft: false
 title: April blogging challenge wrap-up
 ---
-My friends and I decided to do a weekly blog challenge for the month of April, 2026! Each week, one of us chooses a prompt and we all write posts.
+
+My friends and I decided to do a weekly blog challenge for the month of April 2026! Each week, one of us chose a prompt and we all wrote posts.
 
 For the bonus wrap-up, Sam chose the prompt:
 **"One thing you like about each other's blogs--content, design, etc"**
@@ -14,27 +15,29 @@ For the bonus wrap-up, Sam chose the prompt:
 
 ---
 
+All of these wonderful people has RSS feeds. There is no excuse for not following each of them in your RSS reader.
+
 ## Sam
 
-Blog: [samwarnick.com](https://samwarnick.com)
+Blog: [samwarnick.com](https://samwarnick.com) ([RSS](https://samwarnick.com/rss.xml))
 
-Sam has a beautiful consistency between his speaking voice and his writing voice. Every time I read one of them, it's just like I'm talking to him in person, which I don't get to do anymore because he moved away. They are casual and cozy. You can tell that he is doing it for love of the game. The overall effect is very refreshing and personal, Which is very refreshing in Anno Domini 2026, when the slopidemic is not just concerning, it's very concerning.
+Sam has a beautiful consistency between his speaking voice and his writing voice. Every time I read one of his posts, it feels like talking to him in person. I miss that; he moved away, and the posts preserve some of the rhythm of being around him. They are casual and cozy. You can tell he is doing it for the love of the game. The overall effect is personal and refreshing in Anno Domini 2026, when the slopidemic is not just concerning, it's very concerning.
 
 ## Dave
 
-Blog: [catskull.net](https://catskull.net)
+Blog: [catskull.net](https://catskull.net) ([RSS](https://catskull.net/feed.xml))
 
- Dave has the strongest sense of style and taste of anyone I know. Just look at this OG image for a blog post he wrote earlier in the series called ["Nintendo Announces 3DS successor: '3DS Plus'"][https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html](https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html).
+Dave has the strongest sense of style and taste of anyone I know. Just look at this OG image for a blog post he wrote earlier in the series called ["Nintendo Announces 3DS successor: '3DS Plus'"](https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html).
 
-![A preview image for a blog post titles "Nintendo announces 3DS successor: '3DS Plus'](/assets/catskull-3ds-plus-og.png)
+![A preview image for a blog post titled "Nintendo announces 3DS successor: '3DS Plus'"](/assets/catskull-3ds-plus-og.png)
 
-Look at the texture, the fuzz, the colors, the font. It's obvious that he isn't chasing trends or trying to emulate some awwwards-winning designer. He is just authentically expressing his love for vintage technology. Even the topic of his blog post is another expression of his love and taste.
+Look at the texture, the fuzz, the colors, the font. He isn't chasing trends or trying to emulate some awwwards-winning designer. He is just authentically expressing his love for vintage technology. Even the topic of his blog post is another expression of his love and taste.
 
 ## Jared
 
-Blog: [jaredezz.tech](https://jaredezz.tech)
+Blog: [jaredezz.tech](https://jaredezz.tech) ([RSS](https://jaredezz.tech/rss.xml))
 
-My favorite of his pieces is ["Fantastic Computers and Where to Find Them"](https://jaredezz.tech/posts/fantastic-computers-and-where-to-find-them/), where he goes through his device history. It stokes the fires of nostalgia in my heart as I think fondly of my old LG G6 and the specters of the other phones, long forgotten. However, I'm still waiting for the blog post that explains how, in his Twitch streamer days, he would deterministically rig the raid system in Pokémon Sword/Shield using a hacked-together USB controller. Not only is it a fascinating use of hardware, you also get a glimpse into just how smart Jared is, although he would never tell you because he's very modest.
+My favorite of his pieces is ["Fantastic Computers and Where to Find Them"](https://jaredezz.tech/posts/fantastic-computers-and-where-to-find-them/), where he goes through his device history. It stokes the fires of nostalgia in my heart as I think fondly of my old LG G6 and the specters of the other phones, long forgotten. However, I'm still waiting for the blog post that explains how, in his Twitch streamer days, he would deterministically rig the raid system in Pokémon Sword/Shield using a hacked-together USB controller. It is a fascinating use of hardware, and it gives you a glimpse into just how smart Jared is. He would never tell you because he's very modest.
 
 ---
 
@@ -74,4 +77,3 @@ My favorite of his pieces is ["Fantastic Computers and Where to Find Them"](http
 - [Sam: "April Blogging Challenge Wrap-Up"](https://samwarnick.com/blog/april-blogging-challenge-wrap-up/)
 - [Jared: ""](https://jaredezz.tech)
 - [Dave: "April Blogging Challenge Wrap-Up"](https://catskull.net/april-blogging-challenge-wrapup.html)
-
