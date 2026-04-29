@@ -24,7 +24,7 @@ From the Private mode new tab page of Perplexity's Comet
 
 [From designer Sam Peitz](https://x.com/samdape/status/1859945404806451494/photo/1)
 
-![a heart in a box](/assets/Halftone%20Painting%20Aug%2014%202025.png)
+![a heart in a box](/assets/heart-in-a-box-halftone.png)
 
 A bad heart in a box, by me.
 

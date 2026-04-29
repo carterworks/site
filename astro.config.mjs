@@ -1,11 +1,12 @@
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
+import remarkEleventyImage from "astro-remark-eleventy-image";
 import { defineConfig, envField } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://carter.works",
-  integrations: [sitemap(), react()],
+  integrations: [sitemap(), react(), remarkEleventyImage()],
   output: "static",
   vite: {
     resolve: {
