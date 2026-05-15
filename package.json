@@ -23,17 +23,17 @@
     "deploy": "wrangler types && astro build && wrangler pages deploy"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.8",
+    "@astrojs/check": "^0.9.9",
     "@cloudflare/workers-types": "^4.20250620.0",
     "@types/node": "^24.10.1",
-    "astro": "^6.1.9",
+    "astro": "^6.3.3",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
     "typescript": "^5.9.3",
     "wrangler": "^4.22.0"
   },
   "dependencies": {
-    "@astrojs/react": "5.0.4",
+    "@astrojs/react": "5.0.5",
     "@astrojs/rss": "4.0.18",
     "@astrojs/sitemap": "3.7.2",
     "@types/markdown-it": "^14.1.2",
