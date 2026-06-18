@@ -657,9 +657,9 @@ function getNodeSurfaceStyles(node) {
 
   return {
     "--node-fill":
-      node.kind === "ending" ?
-        "oklch(0.97 0.012 245)"
-      : "rgb(255 255 255 / 0.96)",
+      node.kind === "ending"
+        ? "oklch(0.97 0.012 245)"
+        : "rgb(255 255 255 / 0.96)",
     "--node-stroke": "rgb(84 84 94 / 0.24)",
     "--node-radius": nodeRadius,
   };
@@ -1071,11 +1071,11 @@ const GamebookNode = memo(function GamebookNode({ data }) {
       <div className="gamebook-node__eyebrow">
         {nodeTypeLabel} {data.nodeId}
       </div>
-      {data.nodeCount > 0 ?
+      {data.nodeCount > 0 ? (
         <div className="gamebook-node__count">
           {formatCountLabel(data.nodeCount, "path")}
         </div>
-      : null}
+      ) : null}
       <div className="gamebook-node__title">
         {data.previewLines.map((line, index) => (
           <span
@@ -1086,16 +1086,16 @@ const GamebookNode = memo(function GamebookNode({ data }) {
           </span>
         ))}
       </div>
-      {data.hasOverflow ?
+      {data.hasOverflow ? (
         <span className="gamebook-node__badge gamebook-node__badge--more">
           +
         </span>
-      : null}
-      {data.endingCount > 0 ?
+      ) : null}
+      {data.endingCount > 0 ? (
         <span className="gamebook-node__badge gamebook-node__badge--ending">
           {formatCountLabel(data.endingCount, "hit")}
         </span>
-      : null}
+      ) : null}
       <Handle
         type="source"
         position={Position.Bottom}
@@ -1142,13 +1142,13 @@ function NodeModal({ node, onClose }) {
           </button>
         </div>
 
-        {node.detail.body ?
+        {node.detail.body ? (
           <section className="gamebook-modal-section stack">
             <p className="gamebook-modal-copy">{node.detail.body}</p>
           </section>
-        : null}
+        ) : null}
 
-        {node.detail.choices.length > 0 ?
+        {node.detail.choices.length > 0 ? (
           <section className="gamebook-modal-section stack">
             <h4 className="gamebook-section-title">Choices</h4>
             <ol className="gamebook-modal-list">
@@ -1162,7 +1162,7 @@ function NodeModal({ node, onClose }) {
               ))}
             </ol>
           </section>
-        : null}
+        ) : null}
       </section>
     </div>
   );
@@ -1202,16 +1202,16 @@ const GamebookDiagram = memo(function GamebookDiagram({
           >
             {isExporting ? "Saving PNG..." : "Save map as PNG"}
           </button>
-          {exportError ?
+          {exportError ? (
             <p
               className="gamebook-export-status"
               role="status"
             >
               {exportError}
             </p>
-          : null}
+          ) : null}
         </div>
-        {summaryItems.length > 0 ?
+        {summaryItems.length > 0 ? (
           <div
             className="gamebook-summary-row"
             aria-label="Diagram summary"
@@ -1225,10 +1225,10 @@ const GamebookDiagram = memo(function GamebookDiagram({
               </div>
             ))}
           </div>
-        : null}
+        ) : null}
       </div>
 
-      {parsedErrors.length > 0 ?
+      {parsedErrors.length > 0 ? (
         <div
           className="gamebook-error-block stack"
           role="alert"
@@ -1240,9 +1240,9 @@ const GamebookDiagram = memo(function GamebookDiagram({
             ))}
           </ul>
         </div>
-      : null}
+      ) : null}
 
-      {traces.length > 0 ?
+      {traces.length > 0 ? (
         <div
           className="gamebook-path-list"
           aria-label="Path outcomes"
@@ -1266,17 +1266,17 @@ const GamebookDiagram = memo(function GamebookDiagram({
             );
           })}
         </div>
-      : null}
+      ) : null}
 
       <div
         className="gamebook-flow-shell"
         ref={flowShellRef}
       >
-        {hasRenderableFlow ?
+        {hasRenderableFlow ? (
           <div className="gamebook-flow">
-            {isLayingOut ?
+            {isLayingOut ? (
               <div className="gamebook-flow-loading">Laying out graph...</div>
-            : null}
+            ) : null}
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -1303,10 +1303,11 @@ const GamebookDiagram = memo(function GamebookDiagram({
               />
             </ReactFlow>
           </div>
-        : <div className="gamebook-flow-empty">
+        ) : (
+          <div className="gamebook-flow-empty">
             Enter a valid DSL to render the diagram.
           </div>
-        }
+        )}
       </div>
 
       <p className="gamebook-legend-note">
@@ -1356,9 +1357,9 @@ export default function GamebookViewer() {
   );
   const traces = useMemo(
     () =>
-      parsed.ok ?
-        pathInputs.map((entry) => tracePath(parsed.graph, entry))
-      : [],
+      parsed.ok
+        ? pathInputs.map((entry) => tracePath(parsed.graph, entry))
+        : [],
     [parsed, pathInputs],
   );
   const summary = useMemo(
@@ -1682,12 +1683,12 @@ export default function GamebookViewer() {
         traces={traces}
       />
 
-      {selectedNode ?
+      {selectedNode ? (
         <NodeModal
           node={selectedNode}
           onClose={() => setSelectedNodeId(null)}
         />
-      : null}
+      ) : null}
     </div>
   );
 }
