@@ -25,10 +25,10 @@ export async function GET(context: { site: string }) {
           })
           .replace(/href=["']\.?\/?([^"']+)["']/g, (match, url) => {
             if (
-              url.startsWith("#")
-              || url.startsWith("mailto:")
-              || url.startsWith("http://")
-              || url.startsWith("https://")
+              url.startsWith("#") ||
+              url.startsWith("mailto:") ||
+              url.startsWith("http://") ||
+              url.startsWith("https://")
             ) {
               return match;
             }

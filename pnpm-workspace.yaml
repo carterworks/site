@@ -1,0 +1,27 @@
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+
+overrides:
+  devalue: ">=5.8.1"
+  esbuild: "0.28.1"
+  fast-uri: ">=3.1.2"
+  fast-xml-builder: ">=1.1.7"
+  sharp: ">=0.32.6"
+  yaml: ">=2.8.3"
+
+minimumReleaseAgeExclude:
+  - anynum@1.0.1
+  - miniflare@4.20260617.0
+  - node-releases@2.0.48
+  - strnum@2.4.1
+  - wrangler@4.102.0

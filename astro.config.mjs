@@ -6,7 +6,9 @@ import { copyFile, mkdir, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const publicDir = fileURLToPath(new URL("./public", import.meta.url));
-const publicAssetsDir = fileURLToPath(new URL("./public/assets", import.meta.url));
+const publicAssetsDir = fileURLToPath(
+  new URL("./public/assets", import.meta.url),
+);
 const distAssetsDir = fileURLToPath(new URL("./dist/assets", import.meta.url));
 
 const escapeHtml = (value) =>
@@ -17,7 +19,9 @@ const escapeHtml = (value) =>
     .replaceAll(">", "&gt;");
 
 const withRootSlash = (value) =>
-  value.replaceAll('srcset="assets/', 'srcset="/assets/').replaceAll(", assets/", ", /assets/");
+  value
+    .replaceAll('srcset="assets/', 'srcset="/assets/')
+    .replaceAll(", assets/", ", /assets/");
 
 const markdownImageMarkup = ({ src, sources, width, height, alt }) => `<picture>
   ${withRootSlash(sources)}
@@ -32,7 +36,10 @@ const copyGeneratedBlogImages = () => ({
 
       for (const file of await readdir(publicAssetsDir)) {
         if (/-\d+\.(jpe?g|png|webp)$/.test(file)) {
-          await copyFile(`${publicAssetsDir}/${file}`, `${distAssetsDir}/${file}`);
+          await copyFile(
+            `${publicAssetsDir}/${file}`,
+            `${distAssetsDir}/${file}`,
+          );
         }
       }
     },

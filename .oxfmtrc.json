@@ -1,7 +1,5 @@
 {
-  "$schema": "https://www.schemastore.org/prettierrc.json",
-  "experimentalTernaries": true,
-  "experimentalOperatorPosition": "start",
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 80,
   "tabWidth": 2,
   "useTabs": false,
@@ -23,5 +21,6 @@
   "endOfLine": "lf",
   "embeddedLanguageFormatting": "auto",
   "singleAttributePerLine": true,
-  "plugins": ["prettier-plugin-astro"]
+  "sortPackageJson": false,
+  "ignorePatterns": [".obsidian/", "worker-configuration.d.ts"]
 }
