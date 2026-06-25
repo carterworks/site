@@ -15,10 +15,7 @@ For week 4, I chose the prompt:
 
 ---
 
-<video autoplay disablepictureinpicture playsinline loop muted aria-label='A character from Unbreakable Kimmy Schmidt saying "Get small, muchachos"'>
-  <source src="/assets/get-small-muchachos.webm" type="video/webm"/>
-  <source src="/assets/get-small-muchachos.mp4" type="video/mp4"/>
-</video>
+<video src="/assets/get-small-muchachos.webm" autoplay disablepictureinpicture playsinline loop muted aria-label='A character from Unbreakable Kimmy Schmidt saying "Get small, muchachos"'></video>
 
 The best charity is local. My reason is unclear–it just clicks better for me. Maybe it is selfishness; if I can't see it or change it, I can't affect it and it can't affect me. Or maybe the sleeper agent Boy Scout training encouraging me to leave a place better than I found it. A family member needs something? My dollars and I are there in an instant. Someone at church needs something? Blank check. The local food bank is doing a drive? Not a blank check, but they still get something. A dollar goes furthest when you can deploy it yourself. Parenting is the most local charity I have: the daily work of becoming safer, kinder, and more useful to the people closest to me.
 
