@@ -10,7 +10,7 @@ But m my favorite is Anthropic's upcoming April Fool's Day project: buddies. You
 
 I wanted to see all the permutations, so I copied the source code and vibed a new little experiment. It uses [Cheng Lou's incredible `pretext` library](https://github.com/chenglou/pretext) for some rendering.
 
-[Go make a buddy!](/experiments/claude-code-buddy-creator) I will probably update this a little bit. once the buddy feature is officially released. But for now you can share your buddy as a URL or copy it as ASCII text. Or you can just screenshot it.
+[Go make a buddy!](https://tools.carter.works/claude-code-buddy-creator/) I will probably update this a little bit. once the buddy feature is officially released. But for now you can share your buddy as a URL or copy it as ASCII text. Or you can just screenshot it.
 
 ![DDRRAMS character card](/assets/ddr-rams.png)
 

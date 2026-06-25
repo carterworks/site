@@ -29,7 +29,7 @@ home:
         url: "https://github.com/carterworks/substack-to-epub"
         description: ""
       - title: "Experiments, what ifs, and prototypes"
-        url: "/experiments/"
+        url: "https://tools.carter.works/"
         description: ""
   socialFeed:
     heading: "Mastodon"

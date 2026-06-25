@@ -6,7 +6,7 @@ draft: false
 
 The theme for my book club this month is "choose your own adventure" books. Turns out, Choose Your Own Adventure™ is a trademark of Random House. The generic name for the is gamebooks. It's a larger genre than I thought it might be. We're reading [_Neil Patrick Harris: Choose Your Own Autobiography_](https://fable.co/book/neil-patrick-harris-choose-your-own-autobiography-by-neil-patrick-harris-Rrnh6Z6qpY) ([Goodreads](https://www.goodreads.com/book/show/20170296-neil-patrick-harris)).
 
-Someone in the group said that it might be fun to have everyone record their path and then we can compare and see how many people ended up where so I vibe coded a little web app to enable that. I am calling it the [Gamebook Viewer](/experiments/gamebook-viewer).
+Someone in the group said that it might be fun to have everyone record their path and then we can compare and see how many people ended up where so I vibe coded a little web app to enable that. I am calling it the [Gamebook Viewer](https://tools.carter.works/gamebook-viewer/).
 
 The most fun part was coming up with the domain specific language to describe the branching paths of a game book. It's pretty simple, but I did come up with a whole Backus-Naur form grammer to harken back to my college days.
 

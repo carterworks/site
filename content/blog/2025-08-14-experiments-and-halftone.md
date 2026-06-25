@@ -4,7 +4,7 @@ pubDate: 2025-08-14
 draft: false
 ---
 
-I am devoting a section of my site to "experiments"—little "what if's" and prototypes of ideas. They aren't big enough to turn into apps or tools, nor do I want to spend the time to fully integrate them into my main site. They are independent, atomic, and fun. The point is to be non-committal and give me a chance to try out new things then throw them away. You can see them all [on my Experiments page](/experiements).
+I am devoting a section of my site to "experiments"—little "what if's" and prototypes of ideas. They aren't big enough to turn into apps or tools, nor do I want to spend the time to fully integrate them into my main site. They are independent, atomic, and fun. The point is to be non-committal and give me a chance to try out new things then throw them away. You can see them all [on my tools page](https://tools.carter.works/).
 
 ---
 
@@ -28,6 +28,6 @@ From the Private mode new tab page of Perplexity's Comet
 
 A bad heart in a box, by me.
 
-In that vein, [I built a little tool to create them](/experiments/halftone-painting). I might refine it later. I'm not an artist, so I don't have any examples of my own creations. You can save them as pngs. Send them to me with the `@carter.works` halftone address! Make sure to mark it "fit to print"!
+In that vein, [I built a little tool to create them](https://tools.carter.works/halftone-painting/). I might refine it later. I'm not an artist, so I don't have any examples of my own creations. You can save them as pngs. Send them to me with the `@carter.works` halftone address! Make sure to mark it "fit to print"!
 
-[![A screenshot of a webpage for creating halftone images](/assets/halftone-painting-app.jpeg)](/experiments/halftone-painting)
+[![A screenshot of a webpage for creating halftone images](/assets/halftone-painting-app.jpeg)](https://tools.carter.works/halftone-painting/)

@@ -33,20 +33,12 @@
     "wrangler": "4.102.0"
   },
   "dependencies": {
-    "@astrojs/react": "5.0.7",
     "@astrojs/rss": "4.0.18",
     "@astrojs/sitemap": "3.7.3",
     "@types/markdown-it": "14.1.2",
     "@types/sanitize-html": "2.16.1",
-    "@xyflow/react": "12.11.0",
     "astro-remark-eleventy-image": "2.0.1",
-    "elkjs": "0.11.1",
-    "html-to-image": "1.11.13",
     "markdown-it": "14.2.0",
-    "preact": "10.29.2",
-    "preact-render-to-string": "6.7.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
     "sanitize-html": "2.17.5"
   }
 }
