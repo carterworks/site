@@ -17,6 +17,7 @@
     "start": "wrangler types && DEV=true astro dev",
     "build": "wrangler types && astro build",
     "preview": "wrangler types && astro preview",
+    "asset:image": "node scripts/asset-image.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check",
