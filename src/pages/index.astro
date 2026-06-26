@@ -29,23 +29,23 @@ const recentPosts = await getPublishedPosts();
     </section>
     <section class="stack">
       <h2>Some things I made</h2>
-      <ul role="list">
-        <li role="listitem">
+      <ul>
+        <li>
           <a href="https://yazzy.carter.works">
             Yazzy, a site to bring reader mode to all the web.
           </a>
         </li>
-        <li role="listitem">
+        <li>
           <a href="https://carterworks.github.io/rss-reader/">
             My personal RSS reader
           </a>
         </li>
-        <li role="listitem">
+        <li>
           <a href="https://github.com/carterworks/substack-to-epub">
             Substack-to-epub scraper
           </a>
         </li>
-        <li role="listitem">
+        <li>
           <a href="https://tools.carter.works/">
             Experiments, what ifs, and prototypes
           </a>
@@ -74,9 +74,9 @@ const recentPosts = await getPublishedPosts();
               (RSS)
             </a>
           </h2>
-          <ul role="list">
+          <ul>
             {recentPosts.map((post) => (
-              <li role="listitem">
+              <li>
                 <ArticlePreview post={post} />
               </li>
             ))}
