@@ -1,14 +1,15 @@
 ---
-import { getEntry } from "astro:content";
 import { DEV } from "astro:env/client";
 
-const homeEntry = await getEntry("data", "home");
-
-if (!homeEntry) {
-  throw new Error("Missing home content data");
-}
-
-const possibleSubtitles = homeEntry.data.home.subtitles ?? [];
+const possibleSubtitles = [
+  "A software developer.",
+  "A dad.",
+  "A grump.",
+  "An enjoyer of simple things.",
+  "carter.works? I sure hope he does!",
+  "A sepia tone enthusiast.",
+  "A crust eaten in peace is better than a banquet partaken in anxiety.",
+];
 const randomIndex = Math.floor(Math.random() * possibleSubtitles.length);
 const initialSubtitle =
   possibleSubtitles.at(randomIndex % possibleSubtitles.length) ?? "";
