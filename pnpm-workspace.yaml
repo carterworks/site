@@ -18,10 +18,3 @@ overrides:
   fast-uri: ">=3.1.2"
   fast-xml-builder: ">=1.1.7"
   yaml: ">=2.8.3"
-
-minimumReleaseAgeExclude:
-  - anynum@1.0.1
-  - miniflare@4.20260617.0
-  - node-releases@2.0.48
-  - strnum@2.4.1
-  - wrangler@4.102.0

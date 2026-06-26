@@ -8,7 +8,7 @@ I've always loved Android and Google. Even before I had a smartphone, I download
 
 But my first iPhone arrived yesterday-a blue iPhone 17 Pro Max. I've migrated everything over and my Samsung S20 FE has been boxed up to be courtesy-recycled. It's been 24 hours and I've enjoyed setting things up and diving deep into the iOS ecosystem.
 
-![An Android phone and an iPhone, side-by-side on my desk.](/assets/old-android-and-new-iphone.png)
+![An Android phone and an iPhone, side-by-side on my desk.](/assets/old-android-and-new-iphone-600.avif)
 
 ## Reasons for wanting to switch
 
@@ -22,16 +22,13 @@ Additionally, my wife has an iPhone and an iPad. A unified family platform would
 
 And I gotta say, for all its haters, liquid glass can be beautiful.
 
-![An iPhone screenshot, showcasing the ](/assets/liquid-glass.png)
+![An iPhone screenshot, showcasing the ](/assets/liquid-glass-1000.avif)
 
 Look at the chromatic aberration on the edges of the notification shade! The edge distortion! And have you seen the airdrop animation?
 
 Meanwhile, Google made some different shapes, like a sawtooth clock. How funky of them.
 
-<video autoplay disablepictureinpicture playsinline loop muted>
-  <source src="/assets/airdrop.webm" type="video/webm"/>
-  <source src="/assets/airdrop.mp4" type="video/mp4"/>
-</video>
+<video src="/assets/airdrop.webm" autoplay disablepictureinpicture playsinline loop muted></video>
 
 Now the day is finally here. To be fair, this is not an apples-to-apples comparison. This is comparing a 5-year old [Samsung Galaxy S20 FE](https://www.gsmarena.com/samsung_galaxy_s20_fe_5g-10377.php) to the iPhone 17 Pro Max, [a device with literally triple the Geekbench score, twice the RAM, and a screen that isn't cracked.](https://www.gsmarena.com/apple_iphone_17_pro_max-13964.php)
 
@@ -61,17 +58,14 @@ The overall user interface presented by One UI 5.1 on Android 13 was fairly inco
 
 Honestly, not as much as I thought I was going to! I thought I was going to miss Syncthing as a way of syncing my Obsidian vault around, but [Möbius Sync](https://mobiussync.com/) works really well.
 
-<video autoplay disablepictureinpicture playsinline loop muted>
-  <source src="/assets/niagara.webm" type="video/webm"/>
-  <source src="/assets/niagara.mp4" type="video/mp4"/>
-</video>
+<video src="/assets/niagara-launcher.webm" autoplay disablepictureinpicture playsinline loop muted></video>
 
 [Niagara Launcher](https://niagaralauncher.com/) will be greatly missed. The scrollable alphabet feature that moved out of the way of your thumb is so fast. I'm surprised that Apple still keeps around the old alphabet quick list for the App Library.
 
 Gboard on Android is great. The number row on top makes it really quick to... type numbers. And why is the emoji keyboard on iOS still a completely separate input language? If I want to 👏talk👏 👏like👏an👏AI,👏 it shouldn't take me five minutes.
 
 Why are iOS emoji so ugly? They haven't been updated since they were first introduced in iOS 2.2! The gradient and outline look very dated, compared to Noto Color Emoji.
-![Comparison of iOS and Android emoji designs](/assets/ios-vs-android-emoji.png)
+![Comparison of iOS and Android emoji designs](/assets/ios-vs-android-emoji-189.avif)
 [F-Droid](https://f-droid.org/en/packages/), an app marketplace for open-source applications, was nice. I would often use it for little apps because I knew that, when I downloaded an app via F-Droid, it would not be displaying advertisements or slurping up my data and sending it to Facebook or the Chinese Communist Party.
 
 ## TL;DR

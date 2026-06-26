@@ -1,31 +1,7 @@
 ---
-import { getEntry } from "astro:content";
 import { DEV } from "astro:env/client";
-
-const homeEntry = await getEntry("data", "home");
-
-if (!homeEntry) {
-  throw new Error("Missing home content data");
-}
-
-const possibleSubtitles = homeEntry.data.home.subtitles ?? [];
-const randomIndex = Math.floor(Math.random() * possibleSubtitles.length);
-const initialSubtitle =
-  possibleSubtitles.at(randomIndex % possibleSubtitles.length) ?? "";
 ---
 
-<script defer is:inline define:vars={{ possibleSubtitles }}>
-  function randomSubtitle() {
-    const $headingSubtitle = document.getElementById("heading-subtitle");
-    if (!$headingSubtitle || possibleSubtitles.length === 0) {
-      return;
-    }const randomIndex = Math.floor(Math.random() * possibleSubtitles.length);
-    const subtitle =
-      possibleSubtitles.at(randomIndex % possibleSubtitles.length) ?? "";
-    $headingSubtitle.textContent = subtitle;
-  }
-  randomSubtitle();
-</script>
 <header class="stack">
   <hgroup class="stack">
     <a
@@ -35,11 +11,11 @@ const initialSubtitle =
       <h1>
         I'm {DEV && "(dev mode) "}Carter.
       </h1>
-      <p id="heading-subtitle">{initialSubtitle}</p>
+      <p>A software developer.</p>
     </a>
   </hgroup>
-  <ul role="list">
-    <li role="listitem">
+  <ul>
+    <li>
       <a
         href="https://mastodon.social/@literallyacar"
         rel="me"
@@ -47,14 +23,14 @@ const initialSubtitle =
         >Mastodon</a
       >
     </li>
-    <li role="listitem">
+    <li>
       <a
         href="https://github.com/carterworks"
         aria-label="GitHub"
         >GitHub</a
       >
     </li>
-    <li role="listitem">
+    <li>
       <a
         href="https://www.linkedin.com/in/thatcartermcbride/"
         aria-label="LinkedIn"

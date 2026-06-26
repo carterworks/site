@@ -13,18 +13,18 @@
     "url": "git+https://github.com/carterworks/site.git"
   },
   "scripts": {
-    "dev": "wrangler types && DEV=true astro dev",
-    "start": "wrangler types && DEV=true astro dev",
-    "build": "wrangler types && astro build",
-    "preview": "wrangler types && astro preview",
+    "dev": "DEV=true astro dev",
+    "start": "DEV=true astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "assets": "node scripts/assets.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check",
-    "deploy": "wrangler types && astro build && wrangler pages deploy"
+    "deploy": "astro build && wrangler pages deploy"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
-    "@cloudflare/workers-types": "4.20260617.1",
     "@types/node": "25.9.3",
     "astro": "6.4.8",
     "oxfmt": "0.55.0",
@@ -37,7 +37,6 @@
     "@astrojs/sitemap": "3.7.3",
     "@types/markdown-it": "14.1.2",
     "@types/sanitize-html": "2.16.1",
-    "astro-remark-eleventy-image": "2.0.1",
     "markdown-it": "14.2.0",
     "sanitize-html": "2.17.5"
   }

@@ -6,10 +6,6 @@ interface Props {
 const { url, count = 2 } = Astro.props;
 ---
 
-<!-- <script
-	type="text/javascript"
-	src="https://catskull.net/public/js/components/rss-feed.js"
-	async></script> -->
 <script>
   // From https://github.com/catskull/rss-feed (MIT License)
   class RSS extends HTMLElement {
@@ -96,7 +92,6 @@ const { url, count = 2 } = Astro.props;
     }
   }
 
-  // Define the custom element
   customElements.define("rss-feed", RSS);
 </script>
 <rss-feed
