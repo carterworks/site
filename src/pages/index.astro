@@ -1,89 +1,64 @@
 ---
-import MarkdownIt from "markdown-it";
 import { getPublishedPosts } from "../lib/blog";
 import RssFeed from "../components/RssFeed.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ArticlePreview from "../components/ArticlePreview.astro";
 
-const parser = new MarkdownIt();
-const home = {
-  title: "👋 I'm Carter.",
-  description: "Front-end dev. Father. Young grump. Simple things enjoyer.",
-  intro: {
-    heading: "Who?",
-    body: "Still figuring things out. Right now: a dad, a tired man, a code plumber on the Web, [a complector](https://youtu.be/SxdOUGdseq4), a researcher, a homebody, a reader, a eater (not a foodie), and [a disciple of Christ](https://churchofjesuschrist.org).",
-  },
-  projects: {
-    heading: "Some things I made",
-    items: [
-      {
-        title: "Yazzy",
-        url: "https://yazzy.carter.works",
-        description: "a site to bring reader mode to all the web.",
-      },
-      {
-        title: "My personal RSS reader",
-        url: "https://carterworks.github.io/rss-reader/",
-        description: "",
-      },
-      {
-        title: "Substack-to-epub scraper",
-        url: "https://github.com/carterworks/substack-to-epub",
-        description: "",
-      },
-      {
-        title: "Experiments, what ifs, and prototypes",
-        url: "https://tools.carter.works/",
-        description: "",
-      },
-    ],
-  },
-  socialFeed: {
-    heading: "Mastodon",
-    url: "https://mastodon.social/@literallyacar",
-    feedUrl: "https://mastodon.social/@literallyacar.rss",
-    count: 2,
-  },
-};
-const introHtml = parser.renderInline(home.intro.body);
 const recentPosts = await getPublishedPosts();
 ---
 
-<BaseLayout title={home.title}>
+<BaseLayout title="👋 I'm Carter.">
   <Fragment slot="head">
     <meta
       name="description"
       property="og:description"
-      content={home.description}
+      content="Front-end dev. Father. Young grump. Simple things enjoyer."
     />
   </Fragment>
   <main class="stack">
     <section>
-      <h2>{home.intro.heading}</h2>
-      <Fragment set:html={introHtml} />
+      <h2>Who?</h2>
+      <p>
+        Still figuring things out. Right now: a dad, a tired man, a code
+        plumber on the Web, <a href="https://youtu.be/SxdOUGdseq4"
+          >a complector</a
+        >, a researcher, a homebody, a reader, a eater (not a foodie), and <a
+          href="https://churchofjesuschrist.org">a disciple of Christ</a
+        >.
+      </p>
     </section>
     <section class="stack">
-      <h2>{home.projects.heading}</h2>
+      <h2>Some things I made</h2>
       <ul role="list">
-        {
-          home.projects.items.map((project) => (
-            <li role="listitem">
-              <a href={project.url}>
-                {project.title}
-                {project.description && `, ${project.description}`}
-              </a>
-            </li>
-          ))
-        }
+        <li role="listitem">
+          <a href="https://yazzy.carter.works">
+            Yazzy, a site to bring reader mode to all the web.
+          </a>
+        </li>
+        <li role="listitem">
+          <a href="https://carterworks.github.io/rss-reader/">
+            My personal RSS reader
+          </a>
+        </li>
+        <li role="listitem">
+          <a href="https://github.com/carterworks/substack-to-epub">
+            Substack-to-epub scraper
+          </a>
+        </li>
+        <li role="listitem">
+          <a href="https://tools.carter.works/">
+            Experiments, what ifs, and prototypes
+          </a>
+        </li>
       </ul>
     </section>
     <section class="stack">
       <h2>
-        <a href={home.socialFeed.url}>{home.socialFeed.heading}</a>
+        <a href="https://mastodon.social/@literallyacar">Mastodon</a>
       </h2>
       <RssFeed
-        url={home.socialFeed.feedUrl}
-        count={home.socialFeed.count}
+        url="https://mastodon.social/@literallyacar.rss"
+        count={2}
       />
     </section>
     {
