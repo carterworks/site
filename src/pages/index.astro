@@ -2,6 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getPublishedPosts } from "../lib/blog";
 import { formatDateLong, toISODateString } from "../lib/date";
+import NameTag from "../components/NameTag.astro";
+import InlineAvatar from "../components/InlineAvatar.astro";
 
 const posts = await getPublishedPosts();
 const blogPostCount = posts.length;
@@ -11,17 +13,10 @@ const mostRecentBlogPost = posts[0];
 <BaseLayout title="Carter | A developer from Utah">
   <section>
     <p>
-      <strong view-transition-name="carter">
-        <img
-          class="inline-avatar"
-          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='32' fill='%23d9d9d9'/%3E%3Ccircle cx='32' cy='25' r='11' fill='%23888888'/%3E%3Cpath d='M14 56c2.5-10 9.5-17 18-17s15.5 7 18 17' fill='%23888888'/%3E%3C/svg%3E"
-          alt="A headshot of Carter"
-        />Carter McBride.
-      </strong>
+      <NameTag />
       He's a developer from Utah. Carter considers himself a minimalist. He's written
       a lot of JavaScript. Right now, he works at <strong
-        ><img
-          class="inline-avatar"
+        ><InlineAvatar
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='32' fill='%23f03c00'/%3E%3Cpath d='M16 48 28 16h8l12 32h-8l-2.5-8h-11L24 48h-8Zm13-15h6l-3-10-3 10Z' fill='white'/%3E%3C/svg%3E"
           alt="The logo for Adobe"
         />Adobe</strong
