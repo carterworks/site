@@ -7,6 +7,10 @@ import InlineAvatar from "../components/InlineAvatar.astro";
 
 const posts = await getPublishedPosts();
 const blogPostCount = posts.length;
+const blogPostLabel =
+  new Intl.PluralRules("en-US").select(blogPostCount) === "one"
+    ? "blog post"
+    : "blog posts";
 const mostRecentBlogPost = posts[0];
 ---
 
@@ -48,15 +52,17 @@ const mostRecentBlogPost = posts[0];
     </p>
   </section>
   <section>
-    He has written {blogPostCount}
-    <a href="/blog/">blog post{blogPostCount === 1 ? "" : "s"}.</a> The most recent
-    was <a href={`/blog/${mostRecentBlogPost.id}/`}
-      ><q>{mostRecentBlogPost.data.title}</q></a
-    >
-    and it was written on <time
-      datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
-    >
-      {formatDateLong(mostRecentBlogPost.data.pubDate)}
-    </time>. You can get updates <a href="/blog/feed.xml">via RSS.</a>
+    <p>
+      He has written
+      <a href="/blog/">{blogPostCount} {blogPostLabel}.</a> The most recent was <a
+        href={`/blog/${mostRecentBlogPost.id}/`}
+        ><q>{mostRecentBlogPost.data.title}</q></a
+      >
+      and it was written on <time
+        datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
+      >
+        {formatDateLong(mostRecentBlogPost.data.pubDate)}
+      </time>. You can get updates <a href="/blog/feed.xml">via RSS.</a>
+    </p>
   </section>
 </BaseLayout>
