@@ -1,7 +1,9 @@
 ---
 import { render } from "astro:content";
 import { getPublishedPosts } from "../../lib/blog";
-import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { formatDateLong } from "../../lib/date";
+import NameTag from "../../components/NameTag.astro";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -13,13 +15,38 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content, remarkPluginFrontmatter } = await render(entry);
+const frontmatter = {
+  ...entry.data,
+  articleClass: remarkPluginFrontmatter.articleClass,
+};
+const pubDateISO = frontmatter.pubDate.toISOString();
+const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
 ---
 
-<BlogPostLayout
-  frontmatter={{
-    ...entry.data,
-    articleClass: remarkPluginFrontmatter.articleClass,
-  }}
->
-  <Content />
-</BlogPostLayout>
+<BaseLayout title={`${frontmatter.title} | carter.works`}>
+  <Fragment slot="head">
+    <meta property="og:type" content="article" />
+    <meta property="og:article:published_time" content={pubDateISO} />
+    <meta property="og:article:author" content="Carter McBride" />
+    <style is:global>
+      article img {
+        max-inline-size: 100%;
+        block-size: auto;
+      }
+    </style>
+  </Fragment>
+  <header>
+    <NameTag href="/" />
+  </header>
+  <article class:list={["stack", frontmatter.articleClass]}>
+    <header class="stack">
+      <h1>
+        {frontmatter.draft && "Rough Draft: "}{frontmatter.title}
+      </h1>
+      <p>
+        <time datetime={pubDateISO}>{humanFriendlyDate}</time>
+      </p>
+    </header>
+    <Content />
+  </article>
+</BaseLayout>
