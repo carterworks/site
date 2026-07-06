@@ -26,12 +26,10 @@ const mostRecentBlogPost = posts[0];
       }
     </style>
   </Fragment>
-  <header>
-    <NameTag href="/" />
-  </header>
   <section>
     <p>
-      He has written {blogPostCount} {blogPostLabel}. The most recent was <a
+      He has written {blogPostCount}
+      {blogPostLabel}. The most recent was <a
         href={`/blog/${mostRecentBlogPost.id}/`}
         ><q>{getPostTitle(mostRecentBlogPost)}</q></a
       >

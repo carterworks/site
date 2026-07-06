@@ -1,9 +1,11 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import NameTag from "../components/NameTag.astro";
 interface Props {
   title: string;
+  class?: string;
 }
-const { title } = Astro.props;
+const { title, class: className } = Astro.props;
 ---
 
 <!doctype html>
@@ -88,17 +90,20 @@ const { title } = Astro.props;
             content-col-end;
         }
       }
-      .stack {
-        display: flex;
-        flex-direction: column;
-        gap: var(--size-md);
+      .stack > * + * {
+        margin-block-start: var(--flow-space, var(--size-md, 1lh));
       }
     </style>
     <slot name="head" />
   </head>
   <body>
-    <main class="stack">
-      <slot />
-    </main>
+    <div class="stack">
+      <header>
+        <NameTag href="/" />
+      </header>
+      <main class={className}>
+        <slot />
+      </main>
+    </div>
   </body>
 </html>
