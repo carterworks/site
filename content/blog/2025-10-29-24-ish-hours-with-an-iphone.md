@@ -65,7 +65,9 @@ Honestly, not as much as I thought I was going to! I thought I was going to miss
 Gboard on Android is great. The number row on top makes it really quick to... type numbers. And why is the emoji keyboard on iOS still a completely separate input language? If I want to 👏talk👏 👏like👏an👏AI,👏 it shouldn't take me five minutes.
 
 Why are iOS emoji so ugly? They haven't been updated since they were first introduced in iOS 2.2! The gradient and outline look very dated, compared to Noto Color Emoji.
+
 ![Comparison of iOS and Android emoji designs](/assets/ios-vs-android-emoji-189.avif)
+
 [F-Droid](https://f-droid.org/en/packages/), an app marketplace for open-source applications, was nice. I would often use it for little apps because I knew that, when I downloaded an app via F-Droid, it would not be displaying advertisements or slurping up my data and sending it to Facebook or the Chinese Communist Party.
 
 ## TL;DR

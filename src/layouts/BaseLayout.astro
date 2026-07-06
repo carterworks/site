@@ -27,15 +27,19 @@ const { title } = Astro.props;
     <title>{title}</title>
     <style is:global>
       @layer reset {
-        * {
+        *,
+        *::before,
+        *::after {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
         }
-        h1,
-        h2,
-        h3 {
+        :where(h1, h2, h3, h4, h5) {
           font-size: initial;
+        }
+        :where(img, svg, video) {
+          max-inline-size: 100%;
+          block-size: auto;
         }
       }
       @font-face {
@@ -53,21 +57,30 @@ const { title } = Astro.props;
         src: url("/InterVariable-Italic.woff2") format("woff2");
       }
       :root {
+        --spacer: 0.25lh;
+        --size-xs: calc(var(--spacer) * 1);
+        --size-sm: calc(var(--spacer) * 2);
+        --size-md: calc(var(--spacer) * 4);
+        --size-lg: calc(var(--size-md) * 2);
+        --size-xl: calc(var(--size-md) * 4);
+        --size-screen: 100svh;
+        --size-prose: 65ch;
+
         scrollbar-gutter: stable;
       }
       body {
         font-family: "InterVariable", sans-serif;
         font-optical-sizing: auto;
-        min-height: 100svh;
+        min-height: var(--size-screen);
         display: grid;
         grid-template:
-          [top-gutter-start] 40svh
+          [top-gutter-start] calc(var(--size-screen) * 0.4)
           [top-gutter-end content-row-start] min-content
-          [content-row-end bottom-gutter-start] minmax(4rem, 1fr)
+          [content-row-end bottom-gutter-start] minmax(var(--size-md), 1fr)
           [bottom-gutter-end] /
-          [left-gutter-start] minmax(1rem, auto)
-          [left-gutter-end content-col-start] minmax(min-content, 65ch)
-          [content-col-end right-gutter-start] minmax(1rem, auto)
+          [left-gutter-start] minmax(var(--size-md), auto)
+          [left-gutter-end content-col-start] minmax(0, var(--size-prose))
+          [content-col-end right-gutter-start] minmax(var(--size-md), auto)
           [right-gutter-end];
 
         > * {
@@ -78,7 +91,7 @@ const { title } = Astro.props;
       .stack {
         display: flex;
         flex-direction: column;
-        gap: 1lh;
+        gap: var(--size-md);
       }
     </style>
     <slot name="head" />
