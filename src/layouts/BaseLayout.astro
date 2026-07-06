@@ -23,6 +23,8 @@ const fediverseCreator = "@literallyacar@mastodon.social";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f1f1f1" />
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />
@@ -39,9 +41,17 @@ const fediverseCreator = "@literallyacar@mastodon.social";
       href="/blog/rss.xml"
     />
     <title>{title}</title>
-    {metadata?.description && <meta name="description" content={metadata.description} />}
+    {
+      metadata?.description && (
+        <meta name="description" content={metadata.description} />
+      )
+    }
     {metadata && <meta property="og:title" content={metadata.title} />}
-    {metadata?.description && <meta property="og:description" content={metadata.description} />}
+    {
+      metadata?.description && (
+        <meta property="og:description" content={metadata.description} />
+      )
+    }
     {metadata?.ogType && <meta property="og:type" content={metadata.ogType} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
     {ogImage && <meta property="og:image:type" content="image/webp" />}
