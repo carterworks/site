@@ -1,8 +1,22 @@
 {
   "name": "Carter McBride",
-  "short_name": "Carter McBride",
+  "short_name": "Carter",
+  "description": "A developer from Utah.",
   "start_url": "/",
-  "icons": [],
-  "background_color": "#fdf6e3",
-  "display": "standalone"
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f1f1f1",
+  "theme_color": "#f1f1f1",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
 }
