@@ -13,6 +13,7 @@ const blogPostLabel =
 const mostRecentBlogPost = posts[0];
 const description = "A developer from Utah.";
 const title = `Carter | ${description}`;
+const ogImage = new URL("/og/index.webp", Astro.site);
 ---
 
 <BaseLayout title={title} class="stack">
@@ -20,6 +21,11 @@ const title = `Carter | ${description}`;
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
   </Fragment>
   <section>
     <p>

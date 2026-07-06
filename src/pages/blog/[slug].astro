@@ -27,6 +27,7 @@ const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
 const title = getPostTitle(entry);
 const pageTitle = `${title} | carter.works`;
 const description = getPostDescription(entry);
+const ogImage = new URL(`/og/${entry.id}.webp`, Astro.site);
 ---
 
 <BaseLayout title={pageTitle}>
@@ -34,6 +35,11 @@ const description = getPostDescription(entry);
     {description && <meta name="description" content={description} />}
     <meta property="og:title" content={pageTitle} />
     {description && <meta property="og:description" content={description} />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
     <meta property="og:type" content="article" />
     <meta property="og:article:published_time" content={pubDateISO} />
     <meta property="og:article:author" content="Carter McBride" />

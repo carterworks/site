@@ -12,6 +12,7 @@ const blogPostLabel =
 const mostRecentBlogPost = posts[0];
 const title = "All blog posts | carter.works";
 const description = "A software engineer's blog? How original.";
+const ogImage = new URL("/og/blog.webp", Astro.site);
 ---
 
 <BaseLayout title={title}>
@@ -19,6 +20,11 @@ const description = "A software engineer's blog? How original.";
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
     <style>
       ol {
         list-style: none;
