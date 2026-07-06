@@ -39,7 +39,7 @@ Maybe the world will fill with slop. Maybe the world is already full of slop. Wh
 
 I'm enjoying having opinions.
 
-!["Some may call this junk. Me, I call them treasures" Belethor, Skyrim](/assets/belethor-1000.avif)
+<img src="/assets/belethor-1000.avif" srcset="/assets/belethor-600.avif 600w, /assets/belethor-1000.avif 1000w" sizes="(max-width: 1000px) 100vw, 1000px" alt="&quot;Some may call this junk. Me, I call them treasures&quot; Belethor, Skyrim" width="1000" height="750" loading="lazy" decoding="async">
 
 Wise words, Belethor
 
@@ -47,4 +47,4 @@ Wise words, Belethor
 
 Oh and also I'm enjoying these [suede loafers from Meermin](https://meermin.com/products/101381-brown-suede-e). They slap.
 
-![A pair of tassel loafers](/assets/loafers-1000.avif)
+<img src="/assets/loafers-1000.avif" srcset="/assets/loafers-600.avif 600w, /assets/loafers-1000.avif 1000w" sizes="(max-width: 1000px) 100vw, 1000px" alt="A pair of tassel loafers" width="1000" height="1333" loading="lazy" decoding="async">

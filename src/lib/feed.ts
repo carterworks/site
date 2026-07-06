@@ -3,19 +3,37 @@ import { Feed } from "feed";
 import MarkdownIt from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 
-const parser = new MarkdownIt();
+const parser = new MarkdownIt({ html: true });
 const feeds = new Map<string, Promise<Feed>>();
 type FeedFormat = "atom" | "rss";
 
+function absolutizeUrl(url: string, site: string) {
+  if (/^(#|[a-z][a-z\d+.-]*:)/i.test(url)) {
+    return url;
+  }
+
+  return new URL(url, site).href;
+}
+
+function absolutizeSrcset(srcset: string, site: string) {
+  return srcset
+    .split(",")
+    .map((candidate) => {
+      const [url, ...descriptors] = candidate.trim().split(/\s+/);
+      return [absolutizeUrl(url, site), ...descriptors].join(" ");
+    })
+    .join(", ");
+}
+
 function absolutizeHtmlUrls(html: string, site: string) {
   return html.replace(
-    /(src|href)=["']([^"']+)["']/g,
-    (match, attribute, url) => {
-      if (/^(#|[a-z][a-z\d+.-]*:)/i.test(url)) {
-        return match;
+    /(srcset|src|href)=["']([^"']+)["']/g,
+    (_, attribute, url) => {
+      if (attribute === "srcset") {
+        return `${attribute}="${absolutizeSrcset(url, site)}"`;
       }
 
-      return `${attribute}="${new URL(url, site).href}"`;
+      return `${attribute}="${absolutizeUrl(url, site)}"`;
     },
   );
 }
@@ -23,6 +41,20 @@ function absolutizeHtmlUrls(html: string, site: string) {
 function renderPostContent(markdown: string, site: string) {
   return sanitizeHtml(absolutizeHtmlUrls(parser.render(markdown), site), {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: [
+        "src",
+        "srcset",
+        "sizes",
+        "alt",
+        "title",
+        "width",
+        "height",
+        "loading",
+        "decoding",
+      ],
+    },
   });
 }
 

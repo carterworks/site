@@ -29,7 +29,7 @@ Blog: [catskull.net](https://catskull.net) ([RSS](https://catskull.net/feed.xml)
 
 Dave has the strongest sense of style and taste of anyone I know. Just look at this OG image for a blog post he wrote earlier in the series called ["Nintendo Announces 3DS successor: '3DS Plus'"](https://catskull.net/nintendo-announces-3ds-successor-3ds-plus.html).
 
-![A preview image for a blog post titled 'Nintendo announces 3DS successor: 3DS Plus'](/assets/catskull-3ds-plus-og-1000.avif)
+<img src="/assets/catskull-3ds-plus-og-1000.avif" srcset="/assets/catskull-3ds-plus-og-600.avif 600w, /assets/catskull-3ds-plus-og-1000.avif 1000w" sizes="(max-width: 1000px) 100vw, 1000px" alt="A preview image for a blog post titled 'Nintendo announces 3DS successor: 3DS Plus'" width="1000" height="525" loading="lazy" decoding="async">
 
 Look at the texture, the fuzz, the colors, the font. He isn't chasing trends or trying to emulate some awwwards-winning designer. He is just authentically expressing his love for vintage technology. Even the topic of his blog post is another expression of his love and taste.
 

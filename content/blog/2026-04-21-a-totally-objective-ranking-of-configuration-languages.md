@@ -27,7 +27,7 @@ But other people have already expressed all these ideas so very well. Instead, I
 I haven't looked at the documentation for most of these. Instead, it is a vibes-based ranking based on how much intuitive sense they make to me, the Emperor of Configuration. Most of my programming experience is in JavaScript. Therefore, the "how easily can I convert this to JSON" vibe weighs heavily on the ranking.
 
 There is a trivial example configuration for each language, centered around a hypothetical music player. However, that example often fails to show the horrors.
-![A vertical ranking list of the configuration languages. Where each language falls can be discovered in the rest of the article](/assets/configuration-tier-list-1000.avif)
+<img src="/assets/configuration-tier-list-1000.avif" srcset="/assets/configuration-tier-list-600.avif 600w, /assets/configuration-tier-list-1000.avif 1000w" sizes="(max-width: 1000px) 100vw, 1000px" alt="A vertical ranking list of the configuration languages. Where each language falls can be discovered in the rest of the article" width="1000" height="404" loading="lazy" decoding="async">
 
 ## Tom's Obvious Minimal Language (TOML)
 

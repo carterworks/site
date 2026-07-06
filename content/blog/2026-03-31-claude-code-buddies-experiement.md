@@ -12,7 +12,7 @@ I wanted to see all the permutations, so I copied the source code and vibed a ne
 
 [Go make a buddy!](https://tools.carter.works/claude-code-buddy-creator/) I will probably update this a little bit. once the buddy feature is officially released. But for now you can share your buddy as a URL or copy it as ASCII text. Or you can just screenshot it.
 
-![DDRRAMS character card](/assets/ddr-rams-600.avif)
+<img src="/assets/ddr-rams-600.avif" alt="DDRRAMS character card" width="600" height="665" loading="lazy" decoding="async">
 
 DDRRAMS–a certified lil' guy.
 
