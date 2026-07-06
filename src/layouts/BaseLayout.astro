@@ -95,6 +95,10 @@ const { title, class: className } = Astro.props;
             content-col-end;
         }
       }
+      :is(ol, ul) > li + li {
+        /* match the line-height on the body */
+        margin-block-start: calc(1lh - 1em);
+      }
       .stack > * + * {
         margin-block-start: var(--flow-space, var(--size-md, 1lh));
       }
