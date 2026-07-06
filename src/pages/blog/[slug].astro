@@ -1,6 +1,10 @@
 ---
 import { render } from "astro:content";
-import { getPostTitle, getPublishedPosts } from "../../lib/blog";
+import {
+  getPostDescription,
+  getPostTitle,
+  getPublishedPosts,
+} from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { formatDateLong } from "../../lib/date";
 
@@ -21,11 +25,22 @@ const frontmatter = {
 const pubDateISO = frontmatter.pubDate.toISOString();
 const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
 const title = getPostTitle(entry);
+const pageTitle = `${title} | carter.works`;
+const description = getPostDescription(entry);
+const ogImage = new URL(`/og/${entry.id}.webp`, Astro.site);
 ---
 
-<BaseLayout title={`${title} | carter.works`}>
+<BaseLayout
+  metadata={{
+    description,
+    id: entry.id,
+    ogImage,
+    ogTitle: title,
+    ogType: "article",
+    title: pageTitle,
+  }}
+>
   <Fragment slot="head">
-    <meta property="og:type" content="article" />
     <meta property="og:article:published_time" content={pubDateISO} />
     <meta property="og:article:author" content="Carter McBride" />
     <style is:global>

@@ -4,6 +4,20 @@ import { getCollection, type CollectionEntry } from "astro:content";
 export type BlogPost = CollectionEntry<"blog">;
 
 const DERIVED_TITLE_MAX_WORDS = 15;
+
+function markdownToText(markdown: string): string {
+  return (
+    markdown
+      // Remove inline HTML tags.
+      .replace(/<[^>]*>/g, "")
+      // Keep link text, discard link URLs.
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Remove common Markdown formatting and heading/quote markers.
+      .replace(/[`*_~#>]/g, "")
+      .trim()
+  );
+}
+
 export function getPostTitle(post: BlogPost): string {
   const title = post.data.title?.trim();
   if (title) return title;
@@ -16,19 +30,16 @@ export function getPostTitle(post: BlogPost): string {
   if (!firstLine)
     return `Post from ${post.data.pubDate.toISOString().slice(0, 10)}`;
 
-  const derivedTitle = firstLine
-    .replace(/^#+\s*/, "")
-    .replace(/^>\s*/, "")
-    .replace(/^[-*+]\s+/, "")
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/[`*_~]/g, "")
-    .trim();
+  const derivedTitle = markdownToText(firstLine);
 
   const words = derivedTitle.split(/\s+/);
   return words.length > DERIVED_TITLE_MAX_WORDS
     ? `${words.slice(0, DERIVED_TITLE_MAX_WORDS).join(" ")}…`
     : derivedTitle;
+}
+
+export function getPostDescription(post: BlogPost): string | undefined {
+  return post.data.description?.trim() || undefined;
 }
 
 export function filterPublishedPosts(posts: BlogPost[]): BlogPost[] {
