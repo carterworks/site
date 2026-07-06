@@ -77,10 +77,19 @@ const fediverseCreator = "@literallyacar@mastodon.social";
         --size-screen: 100svh;
         --size-prose: 65ch;
 
+        --color-white: oklch(98% 0 0);
+        --color-black: oklch(18% 0 0);
+        --color-text: light-dark(var(--color-black), var(--color-white));
+        --color-bg: light-dark(var(--color-white), var(--color-black));
+
         scrollbar-gutter: stable;
       }
       body {
         --top-gutter-size: clamp(var(--size-md), 40svh, var(--size-3xl));
+
+        background-color: var(--color-bg);
+        color: var(--color-text);
+
         font-family: "InterVariable", sans-serif;
         font-optical-sizing: auto;
         line-height: 1.3;
