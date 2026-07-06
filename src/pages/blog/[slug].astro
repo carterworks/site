@@ -3,7 +3,6 @@ import { render } from "astro:content";
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { formatDateLong } from "../../lib/date";
-import NameTag from "../../components/NameTag.astro";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();

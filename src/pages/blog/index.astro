@@ -1,7 +1,6 @@
 ---
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import NameTag from "../../components/NameTag.astro";
 import { formatDateLong, toISODateString } from "../../lib/date";
 
 const posts = await getPublishedPosts();
