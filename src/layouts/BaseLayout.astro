@@ -1,85 +1,137 @@
 ---
 import { ClientRouter } from "astro:transitions";
-import "../styles/global.css";
-import Header from "../components/Header.astro";
+import NameTag from "../components/NameTag.astro";
 interface Props {
   title: string;
+  class?: string;
 }
-const { title } = Astro.props;
-const { url } = Astro;
+const { title, class: className } = Astro.props;
 ---
 
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1"
-    />
-    <meta
-      name="theme-color"
-      content="#fdf6e3"
-    />
-    <meta
-      name="color-scheme"
-      content="light dark"
-    />
-    <meta
-      http-equiv="X-UA-Compatible"
-      content="ie=edge"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <ClientRouter />
     <link
-      rel="canonical"
-      href={url}
-    />
-    <meta
-      property="og:url"
-      content={url}
-    />
-    <meta
-      property="og:locale"
-      content="en_US"
-    />
-    <meta
-      property="og:site_name"
-      content="Carter McBride"
-    />
-    <link
-      rel="icon"
-      href="/favicon.svg"
-      type="image/svg+xml"
+      rel="alternate"
+      type="application/atom+xml"
+      title="Carter's Blog"
+      href="/blog/atom.xml"
     />
     <link
       rel="alternate"
       type="application/rss+xml"
-      href={new URL("/blog/feed.xml", Astro.site)}
+      title="Carter's Blog"
+      href="/blog/rss.xml"
     />
-    <link
-      rel="manifest"
-      href="/manifest.webmanifest"
-    />
-    <link
-      rel="sitemap"
-      href="/sitemap-index.xml"
-    />
-    <ClientRouter />
-
-    <slot name="head" />
-
     <title>{title}</title>
+    <style is:global>
+      @layer reset {
+        *,
+        *::before,
+        *::after {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        :where(h1, h2, h3, h4, h5) {
+          font-size: initial;
+        }
+        :where(img, svg, video) {
+          max-inline-size: 100%;
+          block-size: auto;
+        }
+        p {
+          text-wrap: pretty;
+        }
+      }
+      @font-face {
+        font-family: InterVariable;
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("/InterVariable.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: InterVariable;
+        font-style: italic;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("/InterVariable-Italic.woff2") format("woff2");
+      }
+      :root {
+        --spacer: 0.25lh;
+        --size-2xs: calc(var(--spacer) * 0.5);
+        --size-xs: calc(var(--spacer) * 1);
+        --size-sm: calc(var(--spacer) * 2);
+        --size-md: calc(var(--spacer) * 4);
+        --size-lg: calc(var(--size-md) * 2);
+        --size-xl: calc(var(--size-md) * 4);
+        --size-2xl: calc(var(--size-xl) * 2);
+        --size-3xl: calc(var(--size-2xl) * 2);
+        --size-screen: 100svh;
+        --size-prose: 65ch;
 
-    <meta
-      property="og:title"
-      content={title}
-    />
-    <meta
-      property="og:type"
-      content="website"
-    />
+        scrollbar-gutter: stable;
+      }
+      body {
+        --top-gutter-size: clamp(var(--size-md), 40svh, var(--size-3xl));
+        font-family: "InterVariable", sans-serif;
+        font-optical-sizing: auto;
+        line-height: 1.3;
+        min-height: var(--size-screen);
+        display: grid;
+        grid-template:
+          [top-gutter-start] "left-gutter top-gutter right-gutter" var(
+            --top-gutter-size
+          )
+          [top-gutter-end content-row-start] "left-gutter content right-gutter" min-content
+          [content-row-end bottom-gutter-start] "left-gutter bottom-gutter right-gutter" minmax(
+            var(--size-md),
+            1fr
+          )
+          [bottom-gutter-end] /
+          [left-gutter-start] minmax(var(--size-md), auto)
+          [left-gutter-end content-col-start] minmax(0, var(--size-prose))
+          [content-col-end right-gutter-start] minmax(var(--size-md), auto)
+          [right-gutter-end];
+        place-content: center;
+
+        @media (max-width: 640px) {
+          --top-gutter-size: clamp(var(--size-md), 20svh, var(--size-lg));
+        }
+        @media (max-height: 500px) {
+          --top-gutter-size: clamp(var(--size-md), 10svh, var(--size-lg));
+        }
+
+        > * {
+          grid-area: content;
+        }
+      }
+      :is(ol, ul) > li + li {
+        /* match the line-height on the body */
+        margin-block-start: calc(1lh - 1em);
+      }
+      .stack > * + * {
+        margin-block-start: var(--flow-space, var(--size-md, 1lh));
+      }
+      a[href^="http"]:not(:has(img))::after {
+        content: "↗";
+        font-size: 0.8em;
+      }
+    </style>
+    <slot name="head" />
   </head>
-
-  <body class="stack">
-    <Header />
-    <slot />
+  <body>
+    <div class="stack">
+      <header>
+        <NameTag href="/" />
+      </header>
+      <main class={className}>
+        <slot />
+      </main>
+    </div>
   </body>
 </html>

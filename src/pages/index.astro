@@ -1,88 +1,59 @@
 ---
-import { getPublishedPosts } from "../lib/blog";
-import RssFeed from "../components/RssFeed.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ArticlePreview from "../components/ArticlePreview.astro";
+import { getPostTitle, getPublishedPosts } from "../lib/blog";
+import { formatDateLong, toISODateString } from "../lib/date";
+import InlineAvatar from "../components/InlineAvatar.astro";
 
-const recentPosts = await getPublishedPosts();
+const posts = await getPublishedPosts();
+const blogPostCount = posts.length;
+const blogPostLabel =
+  new Intl.PluralRules("en-US").select(blogPostCount) === "one"
+    ? "blog post"
+    : "blog posts";
+const mostRecentBlogPost = posts[0];
 ---
 
-<BaseLayout title="👋 I'm Carter.">
-  <Fragment slot="head">
-    <meta
-      name="description"
-      property="og:description"
-      content="Front-end dev. Father. Young grump. Simple things enjoyer."
-    />
-  </Fragment>
-  <main class="stack">
-    <section>
-      <h2>Who?</h2>
-      <p>
-        Still figuring things out. Right now: a dad, a tired man, a code
-        plumber on the Web, <a href="https://youtu.be/SxdOUGdseq4"
-          >a complector</a
-        >, a researcher, a homebody, a reader, a eater (not a foodie), and <a
-          href="https://churchofjesuschrist.org">a disciple of Christ</a
-        >.
-      </p>
-    </section>
-    <section class="stack">
-      <h2>Some things I made</h2>
-      <ul>
-        <li>
-          <a href="https://yazzy.carter.works">
-            Yazzy, a site to bring reader mode to all the web.
-          </a>
-        </li>
-        <li>
-          <a href="https://carterworks.github.io/rss-reader/">
-            My personal RSS reader
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/carterworks/substack-to-epub">
-            Substack-to-epub scraper
-          </a>
-        </li>
-        <li>
-          <a href="https://tools.carter.works/">
-            Experiments, what ifs, and prototypes
-          </a>
-        </li>
-      </ul>
-    </section>
-    <section class="stack">
-      <h2>
-        <a href="https://mastodon.social/@literallyacar">Mastodon</a>
-      </h2>
-      <RssFeed
-        url="https://mastodon.social/@literallyacar.rss"
-        count={2}
-      />
-    </section>
-    {
-      recentPosts.length > 0 && (
-        <section class="stack">
-          <h2>
-            <a href="/blog/">Blog posts</a>
-            <a
-              href="/blog/feed.xml"
-              title="RSS feed"
-              aria-label="RSS feed"
-            >
-              (RSS)
-            </a>
-          </h2>
-          <ul>
-            {recentPosts.map((post) => (
-              <li>
-                <ArticlePreview post={post} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
-  </main>
+<BaseLayout title="Carter | A developer from Utah" class="stack">
+  <section>
+    <p>
+      He's a developer from Utah. Carter considers himself a minimalist. He's
+      written a lot of JavaScript. Right now, he works at <strong
+        ><InlineAvatar
+          src="data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20id%3D%22Layer_2%22%20data-name%3D%22Layer%202%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20501.71%20444.05%22%3E%3Cdefs%3E%3Cstyle%3E.cls-1%7Bfill%3A%23eb1000%3Bstroke-width%3A0px%3B%7D%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22Layer_1-2%22%20data-name%3D%22Layer%201%22%3E%3Cpolygon%20class%3D%22cls-1%22%20points%3D%22297.58%20444.05%20261.13%20342.65%20169.67%20342.65%20246.54%20149.12%20363.19%20444.05%20501.71%20444.05%20316.8%200%20186.23%200%200%20444.05%20297.58%20444.05%20297.58%20444.05%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"
+          alt="The logo for Adobe"
+        />Adobe</strong
+      > on the <a href="https://github.com/adobe/alloy">AEP Web SDK</a>, a data collection
+      and personalization library that runs on many of the world's biggest websites
+      and storefronts.
+    </p>
+  </section>
+  <section>
+    <p>
+      Some of Carter's projects are
+      <a href="https://yazzy.carter.works">Yazzy</a> (a webapp to bring reader mode
+      to any website),
+      <a href="https://carterworks.github.io/rss-reader/">his personal RSS reader</a>, a small
+      <a href="https://github.com/carterworks/substack-to-epub">Substack-to-epub scraper</a>, and his collection of
+      <a href="https://tools.carter.works/">tools</a>.
+    </p>
+  </section>
+  <section>
+    <p>
+      He can be followed on <a href="https://github.com/carterworks">GitHub</a>,
+      <a href="https://mastodon.social/@literallyacar">Mastodon</a>,
+      <a href="https://www.linkedin.com/in/thatcartermcbride/">LinkedIn</a>, and
+      <a href="https://steamcommunity.com/id/CobraLaserFace/home">Steam</a>.
+    </p>
+  </section>
+  <section>
+    <p>
+      He has written
+      <a href="/blog/">{blogPostCount} {blogPostLabel}</a>. The most recent was <a
+        href={`/blog/${mostRecentBlogPost.id}/`}
+        ><q>{getPostTitle(mostRecentBlogPost)}</q></a
+      >
+      and it was written on <time datetime={toISODateString(mostRecentBlogPost.data.pubDate)}>{formatDateLong(mostRecentBlogPost.data.pubDate)}</time>.
+      You can get updates <a href="/blog/atom.xml">via Atom</a>.
+    </p>
+  </section>
 </BaseLayout>

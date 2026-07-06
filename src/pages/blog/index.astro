@@ -1,9 +1,15 @@
 ---
-import { getPublishedPosts } from "../../lib/blog";
+import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ArticlePreview from "../../components/ArticlePreview.astro";
+import { formatDateLong, toISODateString } from "../../lib/date";
 
 const posts = await getPublishedPosts();
+const blogPostCount = posts.length;
+const blogPostLabel =
+  new Intl.PluralRules("en-US").select(blogPostCount) === "one"
+    ? "blog post"
+    : "blog posts";
+const mostRecentBlogPost = posts[0];
 ---
 
 <BaseLayout title="All blog posts | carter.works">
@@ -13,26 +19,46 @@ const posts = await getPublishedPosts();
       property="og:description"
       content="Everything fit to print!"
     />
+    <style>
+      ol {
+        list-style: none;
+      }
+    </style>
   </Fragment>
-  <main>
-    <h2>
-      <a
-        href="/blog/feed.xml"
-        title="RSS feed"
-        aria-label="RSS feed"
+  <section>
+    <p>
+      He has written {blogPostCount}
+      {blogPostLabel}. The most recent was <a
+        href={`/blog/${mostRecentBlogPost.id}/`}
+        ><q>{getPostTitle(mostRecentBlogPost)}</q></a
       >
-        RSS
-      </a>
-      <a href="/blog/">All blog posts</a>
-    </h2>
-    <ul>
+      and it was written on <time
+        datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
+      >
+        {formatDateLong(mostRecentBlogPost.data.pubDate)}
+      </time>. You can get updates <a href="/blog/atom.xml">via Atom.</a>
+    </p>
+  </section>
+  <section class="stack">
+    <h1>All blog posts</h1>
+    <ol class="stack">
       {
         posts.map((post) => (
           <li>
-            <ArticlePreview post={post} />
+            <article>
+              <h2>
+                <a href={`/blog/${post.id}/`}>
+                  {post.data.draft && "Rough Draft: "}
+                  {getPostTitle(post)}
+                </a>
+              </h2>
+              <time datetime={toISODateString(post.data.pubDate)}>
+                {formatDateLong(post.data.pubDate)}
+              </time>
+            </article>
           </li>
         ))
       }
-    </ul>
-  </main>
+    </ol>
+  </section>
 </BaseLayout>

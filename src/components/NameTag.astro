@@ -1,0 +1,21 @@
+---
+import InlineAvatar from "./InlineAvatar.astro";
+
+interface Props {
+  href?: string;
+}
+
+const { href } = Astro.props;
+const Tag = href ? "a" : Fragment;
+---
+
+<Tag {...href ? { href } : {}}>
+  <strong view-transition-name="carter">
+    <InlineAvatar
+      src="/assets/avatar-460.avif"
+      srcset="/assets/avatar-39.avif 39w, /assets/avatar-460.avif 460w"
+      sizes="39px"
+      alt="A headshot of Carter"
+    />Carter McBride.
+  </strong>
+</Tag>

@@ -1,50 +1,11 @@
-import { getPublishedPosts } from "../../lib/blog";
-import rss from "@astrojs/rss";
-import sanitizeHtml from "sanitize-html";
-import MarkdownIt from "markdown-it";
-
-const parser = new MarkdownIt();
+import { getBlogFeed } from "../../lib/feed";
 
 export async function GET(context: { site: string }) {
-  const posts = (await getPublishedPosts()).toReversed();
-  return rss({
-    title: "Carter's Blog",
-    description: "A software engineer's blog? How original.",
-    site: context.site,
-    items: posts
-      .filter((post) => !!post.body)
-      .map((post) => {
-        const renderedContent = parser.render(post.body!);
-        const absoluteContent = renderedContent
-          .replace(/src=["']\.?\/?([^"']+)["']/g, (match, url) => {
-            if (url.startsWith("http://") || url.startsWith("https://")) {
-              return match;
-            }
-            const absoluteUrl = new URL(url, context.site).href;
-            return `src="${absoluteUrl}"`;
-          })
-          .replace(/href=["']\.?\/?([^"']+)["']/g, (match, url) => {
-            if (
-              url.startsWith("#") ||
-              url.startsWith("mailto:") ||
-              url.startsWith("http://") ||
-              url.startsWith("https://")
-            ) {
-              return match;
-            }
-            const absoluteUrl = new URL(url, context.site).href;
-            return `href="${absoluteUrl}"`;
-          });
+  const feed = await getBlogFeed(context.site);
 
-        return {
-          title: post.data.title ?? "A post from Carter's blog",
-          pubDate: post.data.pubDate,
-          link: `/blog/${post.id}`,
-          content: sanitizeHtml(absoluteContent, {
-            allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
-          }),
-        };
-      }),
-    customData: "<language>en-us</language>",
+  return new Response(feed.atom1(), {
+    headers: {
+      "Content-Type": "application/atom+xml; charset=utf-8",
+    },
   });
 }

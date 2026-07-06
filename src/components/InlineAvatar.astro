@@ -1,0 +1,22 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"img"> {
+  src: string;
+  alt: string;
+}
+const { src, alt, ...rest } = Astro.props;
+---
+
+<style>
+  .inline-avatar {
+    inline-size: var(--size-md);
+    block-size: var(--size-md);
+    display: inline-block;
+    margin-inline-end: var(--size-2xs);
+    border-radius: 100%;
+    vertical-align: text-bottom;
+  }
+</style>
+
+<img class="inline-avatar" src={src} alt={alt} {...rest} />
