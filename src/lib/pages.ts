@@ -12,7 +12,7 @@ const pages: Record<string, PageMetadata> = {
     description: "A developer from Utah.",
     id: "index",
     ogImage: "/og/index.webp",
-    ogTitle: "Carter | A developer from Utah.",
+    ogTitle: "A developer from Utah.",
     ogType: "website",
     title: "Carter | A developer from Utah.",
   },

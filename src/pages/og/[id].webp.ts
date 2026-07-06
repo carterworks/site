@@ -36,19 +36,22 @@ function card(
   description: string | undefined,
   pathLabel: string,
 ): string {
+  const repeatedDescription = description && title.includes(description);
+  const content = `
+    <div><strong>${escapeHtml(title)}</strong></div>
+    ${description && !repeatedDescription ? `<div style="margin-top:1.3em;">${escapeHtml(description)}</div>` : ""}
+  `;
+
   return `
-    <div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:space-between;background:#f8f8f8;color:#111;padding:72px;font-family:InterVariable,sans-serif;">
-      <div style="max-width:980px;">
-        <div style="font-size:76px;font-weight:760;line-height:0.98;letter-spacing:-0.05em;">${escapeHtml(title)}</div>
-        ${description ? `<div style="margin-top:28px;font-size:34px;font-weight:520;line-height:1.15;letter-spacing:-0.03em;color:#444;">${escapeHtml(description)}</div>` : ""}
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:34px;font-weight:700;letter-spacing:-0.03em;">
+    <div style="width:100%;height:100%;display:flex;flex-direction:column;background:oklch(98% 0 0);color:oklch(18% 0 0);padding:48px;font-family:InterVariable,sans-serif;font-size:52px;font-weight:400;line-height:1.3;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;">
         <div style="display:flex;align-items:center;">
-          <img src="${avatarSrc}" alt="" style="width:48px;height:48px;border-radius:999px;margin-right:14px;" />
+          <img src="${avatarSrc}" alt="" style="width:39px;height:39px;border-radius:999px;margin-right:12px;" />
           <div>Carter McBride | carter.works</div>
         </div>
         ${pathLabel ? `<div>${escapeHtml(pathLabel)}</div>` : ""}
       </div>
+      <div>${content}</div>
     </div>
   `;
 }
