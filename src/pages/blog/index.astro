@@ -10,15 +10,15 @@ const blogPostLabel =
     ? "blog post"
     : "blog posts";
 const mostRecentBlogPost = posts[0];
+const title = "All blog posts | carter.works";
+const description = "A software engineer's blog? How original.";
 ---
 
-<BaseLayout title="All blog posts | carter.works">
+<BaseLayout title={title}>
   <Fragment slot="head">
-    <meta
-      name="description"
-      property="og:description"
-      content="Everything fit to print!"
-    />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
     <style>
       ol {
         list-style: none;
