@@ -1,5 +1,5 @@
 ---
-import { getPublishedPosts } from "../../lib/blog";
+import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NameTag from "../../components/NameTag.astro";
 import { formatDateLong, toISODateString } from "../../lib/date";
@@ -33,7 +33,7 @@ const mostRecentBlogPost = posts[0];
     <p>
       He has written {blogPostCount} {blogPostLabel}. The most recent was <a
         href={`/blog/${mostRecentBlogPost.id}/`}
-        ><q>{mostRecentBlogPost.data.title}</q></a
+        ><q>{getPostTitle(mostRecentBlogPost)}</q></a
       >
       and it was written on <time
         datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
@@ -52,7 +52,7 @@ const mostRecentBlogPost = posts[0];
               <h2>
                 <a href={`/blog/${post.id}/`}>
                   {post.data.draft && "Rough Draft: "}
-                  {post.data.title}
+                  {getPostTitle(post)}
                 </a>
               </h2>
               <time datetime={toISODateString(post.data.pubDate)}>

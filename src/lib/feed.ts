@@ -1,4 +1,4 @@
-import { getPublishedPosts, type BlogPost } from "./blog";
+import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
 import { Feed } from "feed";
 import MarkdownIt from "markdown-it";
 import sanitizeHtml from "sanitize-html";
@@ -90,7 +90,7 @@ export function createBlogFeed(
     const link = new URL(`/blog/${post.id}/`, site).href;
 
     feed.addItem({
-      title: post.data.title ?? "A post from Carter's blog",
+      title: getPostTitle(post),
       id: link,
       link,
       date: post.data.pubDate,

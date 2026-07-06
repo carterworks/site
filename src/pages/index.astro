@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getPublishedPosts } from "../lib/blog";
+import { getPostTitle, getPublishedPosts } from "../lib/blog";
 import { formatDateLong, toISODateString } from "../lib/date";
 import NameTag from "../components/NameTag.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
@@ -56,7 +56,7 @@ const mostRecentBlogPost = posts[0];
       He has written
       <a href="/blog/">{blogPostCount} {blogPostLabel}.</a> The most recent was <a
         href={`/blog/${mostRecentBlogPost.id}/`}
-        ><q>{mostRecentBlogPost.data.title}</q></a
+        ><q>{getPostTitle(mostRecentBlogPost)}</q></a
       >
       and it was written on <time
         datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
