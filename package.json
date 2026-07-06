@@ -20,7 +20,7 @@
     "assets": "node scripts/assets.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
-    "check": "astro check",
+    "check": "astro check && tsc --noEmit",
     "deploy": "astro build && wrangler pages deploy"
   },
   "devDependencies": {
