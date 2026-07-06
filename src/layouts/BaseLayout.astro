@@ -98,6 +98,10 @@ const { title, class: className } = Astro.props;
       .stack > * + * {
         margin-block-start: var(--flow-space, var(--size-md, 1lh));
       }
+      a[href^="http"]:not(:has(img))::after {
+        content: "↗";
+        font-size: 0.8em;
+      }
     </style>
     <slot name="head" />
   </head>
