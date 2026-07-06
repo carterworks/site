@@ -10,7 +10,7 @@ For the bonus wrap-up, Sam chose the prompt:
 **"One thing you like about each other's blogs--content, design, etc"**
 
 - [Sam: "April Blogging Challenge Wrap-Up"](https://samwarnick.com/blog/april-blogging-challenge-wrap-up/)
-- [Jared: ""](https://jaredezz.tech)
+- [Jared: "April Blogging Challenge Wrap-Up"](https://jaredezz.tech/posts/april-blogging-challenge-wrap-up)
 - [Dave: "April Blogging Challenge Wrap-Up"](https://catskull.net/april-blogging-challenge-wrapup.html)
 
 ---
@@ -68,12 +68,11 @@ My favorite of his pieces is ["Fantastic Computers and Where to Find Them"](http
 
 - [Carter: "Get small, muchachos"](/blog/2026-04-28-get-small-muchachos/)
 - [Sam: "Talents for Good"](https://samwarnick.com/blog/talents-for-good/)
-- [Jared: ""](https://jaredezz.tech)
 - [Dave: "Doing the most good"](https://catskull.net/doing-the-most-good.html)
 
 ### Bonus—"One thing you like about each other's blogs--content, design, etc"
 
 - [Carter: "April blogging challenge wrap-up"](/blog/2026-04-29-april-blogging-challenge-wrap-up/)
 - [Sam: "April Blogging Challenge Wrap-Up"](https://samwarnick.com/blog/april-blogging-challenge-wrap-up/)
-- [Jared: ""](https://jaredezz.tech)
+- [Jared: "April Blogging Challenge Wrap-Up"](https://jaredezz.tech/posts/april-blogging-challenge-wrap-up)
 - [Dave: "April Blogging Challenge Wrap-Up"](https://catskull.net/april-blogging-challenge-wrapup.html)
