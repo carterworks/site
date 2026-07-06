@@ -1,11 +1,19 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import NameTag from "../components/NameTag.astro";
+import { getPageMetadata, type PageMetadata } from "../lib/pages";
 interface Props {
-  title: string;
+  title?: string;
   class?: string;
+  metadata?: PageMetadata;
 }
-const { title, class: className } = Astro.props;
+const { class: className } = Astro.props;
+const metadata = Astro.props.metadata ?? getPageMetadata(Astro.url.pathname);
+const title = Astro.props.title ?? metadata?.title;
+if (!title) throw new Error(`Missing page title: ${Astro.url.pathname}`);
+const ogImage = metadata?.ogImage
+  ? new URL(metadata.ogImage, Astro.site)
+  : undefined;
 const fediverseCreator = "@literallyacar@mastodon.social";
 ---
 
@@ -30,6 +38,15 @@ const fediverseCreator = "@literallyacar@mastodon.social";
       href="/blog/rss.xml"
     />
     <title>{title}</title>
+    {metadata?.description && <meta name="description" content={metadata.description} />}
+    {metadata && <meta property="og:title" content={metadata.title} />}
+    {metadata?.description && <meta property="og:description" content={metadata.description} />}
+    {metadata?.ogType && <meta property="og:type" content={metadata.ogType} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:type" content="image/webp" />}
+    {ogImage && <meta property="og:image:width" content="1200" />}
+    {ogImage && <meta property="og:image:height" content="630" />}
+    {metadata && <meta property="og:image:alt" content={metadata.title} />}
     <style is:global>
       @layer reset {
         *,

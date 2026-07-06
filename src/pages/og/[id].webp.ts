@@ -6,6 +6,7 @@ import {
   getPostTitle,
   getPublishedPosts,
 } from "../../lib/blog";
+import { getPageMetadata } from "../../lib/pages";
 
 type Card = {
   description?: string;
@@ -52,20 +53,24 @@ function card(
   `;
 }
 
+function pathLabel(path: string): string {
+  return path === "/" ? "" : path.replace(/\/$/, "");
+}
+
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
+  const pagePaths = ["/", "/blog/"];
   const cards: Card[] = [
-    {
-      id: "index",
-      pathLabel: "",
-      title: "Carter | A developer from Utah.",
-    },
-    {
-      description: "A software engineer's blog? How original.",
-      id: "blog",
-      pathLabel: "/blog",
-      title: "All blog posts",
-    },
+    ...pagePaths.map((path) => {
+      const metadata = getPageMetadata(path);
+      if (!metadata) throw new Error(`Missing page metadata: ${path}`);
+      return {
+        description: metadata.description,
+        id: metadata.id,
+        pathLabel: pathLabel(path),
+        title: metadata.ogTitle,
+      };
+    }),
     ...posts.map((post) => ({
       description: getPostDescription(post),
       id: post.id,
