@@ -18,7 +18,6 @@
     "build": "astro build",
     "preview": "astro preview",
     "assets": "node scripts/assets.mjs",
-    "og": "node scripts/og-images.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
