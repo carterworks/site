@@ -57,3 +57,10 @@ content:
 settings:
   content:
     merge: true
+
+actions:
+  - name: deploy-site
+    label: Deploy site
+    workflow: deploy.yml
+    ref: current
+    cancelable: false
