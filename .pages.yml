@@ -1,16 +1,11 @@
 media:
-  - name: blog_assets
-    label: Blog assets
+  - name: assets
+    label: Assets
     input: public/assets
     output: /assets
     rename: safe
-    categories: [image]
-  - name: public_assets
-    label: Public assets
-    input: public/assets
-    output: /assets
-    rename: safe
-    categories: [image, video, audio]
+    categories: [image, video]
+    extensions: [avif, jpg, jpeg, png, webp, m4v, mov, mp4, webm]
     actions:
       - name: optimize-media
         label: Optimize media
@@ -29,6 +24,7 @@ content:
       field: create
     exclude:
       - assets/**
+      - _*.md
     view:
       fields: [pubDate, title, description, draft]
       primary: pubDate
@@ -56,7 +52,7 @@ content:
         type: boolean
         default: false
       - name: body
-        label: Body
+        label: Markdown / HTML
         type: code
         options:
           format: markdown
