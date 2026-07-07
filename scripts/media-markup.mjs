@@ -5,16 +5,34 @@ import sharp from "sharp";
 const defaultInput = "public/assets";
 const imageExtensions = new Set([".avif", ".jpeg", ".jpg", ".png", ".webp"]);
 
+/** @typedef {{ file: string, height: number, width: number }} ImageVariant */
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
 const toPosix = (value) => value.split(path.sep).join("/");
 
+/**
+ * @param {string} value
+ * @returns {string}
+ */
 const escapeAttribute = (value) =>
   value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
+/**
+ * @param {string} file
+ * @returns {string}
+ */
 const publicPath = (file) => {
   const relative = toPosix(path.relative("public", file));
   return relative.startsWith("..") ? toPosix(file) : `/${relative}`;
 };
 
+/**
+ * @param {string} input
+ * @returns {Promise<string[]>}
+ */
 const collect = async (input) => {
   const inputPath = path.resolve(input);
   const inputStat = await stat(inputPath);
@@ -30,12 +48,20 @@ const collect = async (input) => {
   return files;
 };
 
+/**
+ * @param {string} file
+ * @returns {string}
+ */
 const groupKey = (file) => {
   const extension = path.extname(file).toLowerCase();
   const basename = path.basename(file, extension);
   return path.join(path.dirname(file), basename.replace(/-\d+$/, ""));
 };
 
+/**
+ * @param {string} file
+ * @returns {Promise<ImageVariant>}
+ */
 const image = async (file) => {
   const metadata = await sharp(file).metadata();
   if (!metadata.width || !metadata.height) {
@@ -44,6 +70,10 @@ const image = async (file) => {
   return { file, height: metadata.height, width: metadata.width };
 };
 
+/**
+ * @param {ImageVariant[]} variants
+ * @returns {string}
+ */
 const markup = (variants) => {
   const sorted = variants.toSorted((a, b) => a.width - b.width);
   const largest = sorted.at(-1);
@@ -74,7 +104,9 @@ const markup = (variants) => {
 const inputs = process.argv.slice(2);
 const files = [
   ...new Set(
-    (await Promise.all((inputs.length ? inputs : [defaultInput]).map(collect))).flat(),
+    (
+      await Promise.all((inputs.length ? inputs : [defaultInput]).map(collect))
+    ).flat(),
   ),
 ];
 const groups = Map.groupBy(files, groupKey);
