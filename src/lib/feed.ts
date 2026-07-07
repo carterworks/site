@@ -1,9 +1,10 @@
 import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
+import { createSatteriMarkdownProcessor } from "@astrojs/markdown-satteri";
 import { Feed } from "feed";
 import sanitizeHtml from "sanitize-html";
-import { markdownToHtml } from "satteri";
 
 const feeds = new Map<string, Promise<Feed>>();
+const markdownProcessor = createSatteriMarkdownProcessor();
 type FeedFormat = "atom" | "rss";
 
 function absolutizeUrl(url: string, site: string) {
@@ -37,15 +38,22 @@ function absolutizeHtmlUrls(html: string, site: string) {
   );
 }
 
-function renderPostContent(markdown: string, site: string) {
-  const { html } = markdownToHtml(markdown, {
-    features: { frontmatter: false },
+async function renderPostContent(post: BlogPost, site: string) {
+  const processor = await markdownProcessor;
+  const { code } = await processor.render(post.body ?? "", {
+    frontmatter: post.data,
   });
 
-  return sanitizeHtml(absolutizeHtmlUrls(html, site), {
+  return sanitizeHtml(absolutizeHtmlUrls(code, site), {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
     allowedAttributes: {
       ...sanitizeHtml.defaults.allowedAttributes,
+      h1: ["id"],
+      h2: ["id"],
+      h3: ["id"],
+      h4: ["id"],
+      h5: ["id"],
+      h6: ["id"],
       img: [
         "src",
         "srcset",
@@ -61,7 +69,7 @@ function renderPostContent(markdown: string, site: string) {
   });
 }
 
-export function createBlogFeed(
+export async function createBlogFeed(
   posts: BlogPost[],
   site: string,
   format: FeedFormat = "atom",
@@ -97,7 +105,7 @@ export function createBlogFeed(
       id: link,
       link,
       date: post.data.pubDate,
-      content: renderPostContent(post.body, site),
+      content: await renderPostContent(post, site),
     });
   }
 
