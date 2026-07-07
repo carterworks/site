@@ -18,12 +18,14 @@ content:
     type: collection
     path: content/blog
     format: yaml-frontmatter
-    filename: "{year}-{month}-{day}-{primary}.md"
+    filename:
+      template: "{year}-{month}-{day}-{title}.md"
+      field: create
     exclude:
       - assets/**
     view:
-      fields: [title, pubDate, draft]
-      primary: title
+      fields: [pubDate, title, description, draft]
+      primary: pubDate
       sort: [pubDate, title]
       default:
         sort: pubDate
@@ -32,13 +34,21 @@ content:
       - name: title
         label: Title
         type: string
+        required: false
+      - name: description
+        label: Description
+        type: text
+        required: false
       - name: pubDate
         label: Publication date
         type: date
         required: true
+        options:
+          format: yyyy-MM-dd
       - name: draft
         label: Draft
         type: boolean
+        default: false
       - name: body
         label: Body
         type: rich-text
