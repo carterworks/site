@@ -1,7 +1,6 @@
 import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
 import { createSatteriMarkdownProcessor } from "@astrojs/markdown-satteri";
 import { Feed } from "feed";
-import sanitizeHtml from "sanitize-html";
 
 const feeds = new Map<string, Promise<Feed>>();
 const markdownProcessor = createSatteriMarkdownProcessor();
@@ -44,29 +43,7 @@ async function renderPostContent(post: BlogPost, site: string) {
     frontmatter: post.data,
   });
 
-  return sanitizeHtml(absolutizeHtmlUrls(code, site), {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
-    allowedAttributes: {
-      ...sanitizeHtml.defaults.allowedAttributes,
-      h1: ["id"],
-      h2: ["id"],
-      h3: ["id"],
-      h4: ["id"],
-      h5: ["id"],
-      h6: ["id"],
-      img: [
-        "src",
-        "srcset",
-        "sizes",
-        "alt",
-        "title",
-        "width",
-        "height",
-        "loading",
-        "decoding",
-      ],
-    },
-  });
+  return absolutizeHtmlUrls(code, site);
 }
 
 export async function createBlogFeed(
