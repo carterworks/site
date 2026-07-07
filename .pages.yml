@@ -11,6 +11,12 @@ media:
     output: /assets
     rename: safe
     categories: [image, video, audio]
+    actions:
+      - name: optimize-media
+        label: Optimize media
+        workflow: pages-cms-media.yml
+        ref: current
+        cancelable: false
 
 content:
   - name: blog
