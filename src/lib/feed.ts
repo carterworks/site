@@ -1,9 +1,8 @@
 import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
 import { Feed } from "feed";
-import MarkdownIt from "markdown-it";
 import sanitizeHtml from "sanitize-html";
+import { markdownToHtml } from "satteri";
 
-const parser = new MarkdownIt({ html: true });
 const feeds = new Map<string, Promise<Feed>>();
 type FeedFormat = "atom" | "rss";
 
@@ -39,7 +38,11 @@ function absolutizeHtmlUrls(html: string, site: string) {
 }
 
 function renderPostContent(markdown: string, site: string) {
-  return sanitizeHtml(absolutizeHtmlUrls(parser.render(markdown), site), {
+  const { html } = markdownToHtml(markdown, {
+    features: { frontmatter: false },
+  });
+
+  return sanitizeHtml(absolutizeHtmlUrls(html, site), {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
     allowedAttributes: {
       ...sanitizeHtml.defaults.allowedAttributes,
