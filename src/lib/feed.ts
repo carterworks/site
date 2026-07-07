@@ -1,10 +1,9 @@
 import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
+import { createSatteriMarkdownProcessor } from "@astrojs/markdown-satteri";
 import { Feed } from "feed";
-import MarkdownIt from "markdown-it";
-import sanitizeHtml from "sanitize-html";
 
-const parser = new MarkdownIt({ html: true });
 const feeds = new Map<string, Promise<Feed>>();
+const markdownProcessor = createSatteriMarkdownProcessor();
 type FeedFormat = "atom" | "rss";
 
 function absolutizeUrl(url: string, site: string) {
@@ -38,27 +37,16 @@ function absolutizeHtmlUrls(html: string, site: string) {
   );
 }
 
-function renderPostContent(markdown: string, site: string) {
-  return sanitizeHtml(absolutizeHtmlUrls(parser.render(markdown), site), {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
-    allowedAttributes: {
-      ...sanitizeHtml.defaults.allowedAttributes,
-      img: [
-        "src",
-        "srcset",
-        "sizes",
-        "alt",
-        "title",
-        "width",
-        "height",
-        "loading",
-        "decoding",
-      ],
-    },
+async function renderPostContent(post: BlogPost, site: string) {
+  const processor = await markdownProcessor;
+  const { code } = await processor.render(post.body ?? "", {
+    frontmatter: post.data,
   });
+
+  return absolutizeHtmlUrls(code, site);
 }
 
-export function createBlogFeed(
+export async function createBlogFeed(
   posts: BlogPost[],
   site: string,
   format: FeedFormat = "atom",
@@ -94,7 +82,7 @@ export function createBlogFeed(
       id: link,
       link,
       date: post.data.pubDate,
-      content: renderPostContent(post.body, site),
+      content: await renderPostContent(post, site),
     });
   }
 
