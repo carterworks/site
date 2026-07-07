@@ -1,0 +1,71 @@
+name: Pages CMS Media
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Pages CMS payload as JSON
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CI: true
+
+concurrency:
+  group: pages-cms-media-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    name: Optimize media
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install
+      - name: Optimize assets
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --silent assets public/assets --out=same | tee generated-assets.txt
+      - name: Generate image markup
+        shell: bash
+        run: |
+          if [ -s generated-assets.txt ]; then
+            pnpm --silent media:markup $(cat generated-assets.txt) | tee media-markup.html
+          else
+            : > media-markup.html
+          fi
+
+          {
+            printf '## Generated image markup\n\n'
+            if [ -s media-markup.html ]; then
+              printf '```html\n'
+              cat media-markup.html
+              printf '\n```\n'
+            else
+              printf 'No image markup generated.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit optimized assets
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets
+          if git diff --cached --quiet; then
+            printf 'No optimized asset changes to commit.\n'
+          else
+            git commit -m "Optimize CMS media"
+            git push
+          fi
