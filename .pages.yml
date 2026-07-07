@@ -51,11 +51,9 @@ content:
         default: false
       - name: body
         label: Body
-        type: rich-text
+        type: code
         options:
           format: markdown
-          media: blog_assets
-          switcher: true
 settings:
   content:
     merge: true
