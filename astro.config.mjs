@@ -4,6 +4,7 @@ import { defineConfig, envField } from "astro/config";
 // https://astro.build/config
 export default defineConfig({
   site: "https://carter.works",
+  compressHTML: true,
   integrations: [sitemap()],
   output: "static",
   env: {
