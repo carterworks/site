@@ -2,6 +2,17 @@
 
 👋 and ‹ from [Google's Noto Emoji](https://fonts.google.com/noto/specimen/Noto+Emoji).
 
+## Development
+
+This project uses Node.js and [Nub](https://nubjs.com) for dependency management and command execution.
+
+```sh
+nub install
+nub run dev
+nub run check
+nub run build
+```
+
 # Blog post format
 
 Blog posts are `/content/blog/*.md`. They are `[slug].md`. `pubDate` is required frontmatter in the format `YYYY-MM-DD`. `title` and `description` are optional. Posts without a title derive one from the first non-empty line of the body.

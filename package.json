@@ -2,7 +2,11 @@
   "name": "site",
   "version": "6.3.1",
   "private": true,
-  "packageManager": "pnpm@11.8.0",
+  "dependencies": {
+    "@astrojs/markdown-satteri": "0.3.3",
+    "@astrojs/sitemap": "3.7.3",
+    "feed": "5.2.1"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -17,8 +21,8 @@
     "start": "DEV=true astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "assets": "node scripts/assets.mjs",
-    "media:markup": "node scripts/media-markup.mjs",
+    "assets": "nub scripts/assets.mjs",
+    "media:markup": "nub scripts/media-markup.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
@@ -35,9 +39,27 @@
     "typescript": "6.0.3",
     "wrangler": "4.102.0"
   },
-  "dependencies": {
-    "@astrojs/markdown-satteri": "0.3.3",
-    "@astrojs/sitemap": "3.7.3",
-    "feed": "5.2.1"
+  "devEngines": {
+    "packageManager": {
+      "name": "nub",
+      "version": "^0.6.0",
+      "onFail": "warn"
+    }
+  },
+  "workspaces": [
+    "."
+  ],
+  "overrides": {
+    "astro-remark-eleventy-image>sharp": "0.35.1",
+    "devalue": ">=5.8.1",
+    "esbuild": "0.28.1",
+    "fast-uri": ">=3.1.2",
+    "fast-xml-builder": ">=1.1.7",
+    "yaml": ">=2.8.3"
+  },
+  "allowBuilds": {
+    "esbuild": true,
+    "sharp": true,
+    "workerd": true
   }
 }

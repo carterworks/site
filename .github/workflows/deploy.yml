@@ -20,15 +20,14 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: nubjs/setup-nub@v0
         with:
           node-version-file: package.json
-          cache: pnpm
+          cache: true
       - name: Install dependencies
-        run: pnpm install
+        run: nub install
       - name: Build
-        run: pnpm run build
+        run: nub run build
       - name: Deploy
         id: deploy
         uses: cloudflare/wrangler-action@v3

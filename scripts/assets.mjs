@@ -8,14 +8,14 @@ const exec = promisify(execFile);
 const imageExtensions = new Set([".jpeg", ".jpg", ".png", ".webp"]);
 const videoExtensions = new Set([".m4v", ".mov", ".mp4"]);
 
-const usage = `Usage: pnpm assets [path...] [--widths=600,1000,1400] [--quality=60] [--out=public/assets|same]
+const usage = `Usage: nub run assets [path...] [--widths=600,1000,1400] [--quality=60] [--out=public/assets|same]
 
 Examples:
-  pnpm assets
-  pnpm assets ./incoming
-  pnpm assets ./photo.png ./more-photos
-  pnpm assets ./incoming --out=same
-  pnpm assets ./incoming --widths=480,960 --quality=55`;
+  nub run assets
+  nub run assets ./incoming
+  nub run assets ./photo.png ./more-photos
+  nub run assets ./incoming --out=same
+  nub run assets ./incoming --widths=480,960 --quality=55`;
 
 /** @typedef {{ inputs: string[], out: string, outDir?: string, quality: number, widths: number[] }} Options */
 /** @typedef {"image" | "video"} AssetKind */
