@@ -182,13 +182,12 @@
         const sourceLinks = [...document.querySelectorAll<HTMLAnchorElement>("body a[href]")].filter(
           (link) => !this.contains(link),
         );
-        const pageUrls = new Set(sourceLinks.map((link) => normalizeUrl(link.href)));
+        const sitemapLinks = [...this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]")];
+        const sitemapUrls = new Set(sitemapLinks.map((link) => normalizeUrl(link.href)));
+        const pageOnlyLinks = sourceLinks.filter((source) => !sitemapUrls.has(normalizeUrl(source.href)));
+        sitemapLinks.forEach((link) => (link.dataset.available = "true"));
 
-        this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]").forEach((link) => {
-          link.dataset.available = String(!pageUrls.has(normalizeUrl(link.href)));
-        });
-
-        sourceLinks.forEach((source, index) => {
+        pageOnlyLinks.forEach((source, index) => {
           const label = (source.getAttribute("aria-label") || source.textContent || source.href)
             .replace(/\s+/g, " ")
             .trim();
