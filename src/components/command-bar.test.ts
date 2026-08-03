@@ -8,7 +8,7 @@ const markup = `
     <button class="command-trigger" type="button"><span>Navigate</span><kbd class="shortcut">⌘ K</kbd></button>
     <dialog>
       <search>
-        <svg data-search-icon></svg>
+        <span data-search-icon>/</span>
         <button data-back type="button" hidden>Back</button>
         <input type="search" aria-label="Search commands" aria-controls="command-root" />
         <button data-close type="button">Close</button>

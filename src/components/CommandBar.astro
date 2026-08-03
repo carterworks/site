@@ -18,22 +18,15 @@ const sitemapPages = [
     aria-haspopup="dialog"
     aria-keyshortcuts="Meta+K Control+K"
   >
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="11" cy="11" r="6" />
-      <path d="m16 16 4 4" />
-    </svg>
     <span>Navigate</span>
     <kbd class="shortcut">⌘ K</kbd>
   </button>
 
   <dialog id="command-dialog" closedby="any" aria-label="Navigate">
     <search class="search-row" aria-label="Command palette">
-      <svg data-search-icon aria-hidden="true" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="6" />
-        <path d="m16 16 4 4" />
-      </svg>
+      <span data-search-icon aria-hidden="true">/</span>
       <button data-back type="button" aria-label="Back to all commands" hidden>
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+        <span aria-hidden="true">←</span>
       </button>
       <input
         id="command-search"
@@ -58,14 +51,16 @@ const sitemapPages = [
     <div id="command-root" class="commands panel" data-panel="root">
       <section data-group>
         <h2 class="group-label">Actions</h2>
-        <button
-          type="button"
-          data-command
-          data-settings
-          data-search="settings appearance theme light dark"
-        >
-          <span>Settings</span><span class="command-detail" aria-hidden="true">›</span>
-        </button>
+        <div>
+          <button
+            type="button"
+            data-command
+            data-settings
+            data-search="settings appearance theme light dark"
+          >
+            <span>Settings</span><span class="command-detail" aria-hidden="true">›</span>
+          </button>
+        </div>
       </section>
 
       <section data-group>
@@ -102,15 +97,17 @@ const sitemapPages = [
     >
       <section data-group>
         <h2 class="group-label">Settings</h2>
-        <button
-          type="button"
-          aria-pressed="false"
-          data-command
-          data-appearance
-          data-search="toggle appearance theme light dark"
-        >
-          <span>Dark mode</span><span class="command-detail" data-scheme aria-live="polite"></span>
-        </button>
+        <div>
+          <button
+            type="button"
+            aria-pressed="false"
+            data-command
+            data-appearance
+            data-search="toggle appearance theme light dark"
+          >
+            <span>Dark mode</span><span class="command-detail" data-scheme aria-live="polite"></span>
+          </button>
+        </div>
       </section>
       <output class="empty" for="command-search" hidden>No matching commands</output>
     </div>
@@ -130,12 +127,11 @@ const sitemapPages = [
 
 <style>
   command-bar {
-    --bar-surface: var(--color-bg);
-    --bar-border: light-dark(rgb(0 0 0 / 14%), rgb(255 255 255 / 16%));
-    --bar-muted: light-dark(#626262, #b8b8b8);
     color: var(--color-text);
     display: block;
     font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.3;
     inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
     position: fixed;
     z-index: 10;
@@ -151,41 +147,25 @@ const sitemapPages = [
     cursor: pointer;
   }
 
-  command-bar svg {
-    fill: none;
-    inline-size: 1rem;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.7;
-  }
-
   .command-trigger {
     align-items: center;
     background: transparent;
     display: flex;
-    gap: 0.5rem;
-    padding: 0.35rem 0;
-  }
-
-  .command-trigger > span {
-    text-decoration: underline;
-    text-underline-offset: 0.12em;
+    gap: var(--size-md);
+    padding: var(--size-sm) 0;
   }
 
   .command-trigger kbd {
-    margin-inline-start: 0.35rem;
+    margin-inline-start: var(--size-sm);
   }
 
   command-bar kbd {
-    color: var(--bar-muted);
-    font: 0.75rem/1 "InterVariable", sans-serif;
+    font: inherit;
   }
 
   dialog {
-    background: var(--bar-surface);
-    border: 1px solid var(--bar-border);
-    border-radius: 0.25rem;
+    background: var(--color-bg);
+    border: 0;
     color: inherit;
     inline-size: min(34rem, calc(100% - 2rem));
     inset: min(20svh, 10rem) 0 auto;
@@ -207,22 +187,22 @@ const sitemapPages = [
 
   .search-row {
     align-items: center;
-    border-block-end: 1px solid var(--bar-border);
+    border-block-end: 1px solid currentColor;
     display: grid;
-    gap: 0.75rem;
+    gap: var(--size-md);
     grid-template-columns: auto minmax(0, 1fr) auto;
-    padding: 0.75rem 0.9rem;
+    padding: var(--size-md);
   }
 
   .search-row > button:not([hidden]) {
     align-items: center;
     background: transparent;
     display: flex;
-    margin: -0.35rem;
-    padding: 0.35rem;
+    margin: calc(-1 * var(--size-sm));
+    padding: var(--size-sm);
   }
 
-  .search-row > svg[hidden] {
+  .search-row > [data-search-icon][hidden] {
     display: none;
   }
 
@@ -232,17 +212,29 @@ const sitemapPages = [
     outline: 0;
   }
 
-  dialog input::placeholder,
-  .commands :global(.command-detail),
-  .group-label,
-  .command-help {
-    color: var(--bar-muted);
+  dialog input::placeholder {
+    color: inherit;
+    opacity: 1;
   }
 
   .commands {
+    counter-reset: command-group;
     min-block-size: 0;
     overflow-y: auto;
-    padding-block: 0.35rem;
+    padding-block: var(--size-sm);
+  }
+
+  .commands section {
+    counter-increment: command-group;
+  }
+
+  .commands section + section {
+    margin-block-start: var(--size-xs);
+  }
+
+  .commands section > div {
+    border-inline-start: 1px solid currentColor;
+    margin-inline: var(--size-md);
   }
 
   .commands :global([data-command]:not([hidden])) {
@@ -250,21 +242,31 @@ const sitemapPages = [
     background: transparent;
     border-radius: 0;
     color: inherit;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    padding: 0.6rem 0.9rem;
+    display: grid;
+    gap: var(--size-sm);
+    grid-template-columns: 1ch minmax(0, 1fr) auto;
+    padding: var(--size-xs) 0 var(--size-xs) var(--size-sm);
     text-align: start;
     text-decoration: none;
     inline-size: 100%;
+  }
+
+  .commands :global([data-command]::before) {
+    content: "";
   }
 
   .commands :global([data-command]::after) {
     content: none;
   }
 
-  .commands :global([data-command][data-active]) {
-    background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
+  .commands :global([data-command][data-active]::before) {
+    content: "→";
+  }
+
+  .commands :global([data-command][data-active] > span:first-child) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
   }
 
   .commands :global([data-command] > span) {
@@ -275,33 +277,35 @@ const sitemapPages = [
   }
 
   .commands :global(.command-detail) {
-    flex: none;
-    font-size: 0.75rem;
-    max-inline-size: 55%;
+    justify-self: end;
+    max-inline-size: 18ch;
     overflow: hidden;
+    text-align: end;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .group-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.65rem 0.9rem 0.25rem;
+    font: inherit;
+    padding: var(--size-xs) var(--size-md);
+  }
+
+  .group-label::before {
+    content: counter(command-group, decimal-leading-zero) " / ";
   }
 
   .empty {
-    color: var(--bar-muted);
-    padding: 2rem 0.65rem;
+    color: inherit;
+    padding: var(--size-lg) var(--size-md);
     text-align: center;
   }
 
   .command-help {
-    border-block-start: 1px solid var(--bar-border);
+    border-block-start: 1px solid currentColor;
     display: flex;
-    font-size: 0.75rem;
-    gap: 1rem;
+    gap: var(--size-md);
     justify-content: flex-end;
-    padding: 0.55rem 0.9rem;
+    padding: var(--size-sm) var(--size-md);
   }
 
   command-bar :is(a, button):focus-visible {
@@ -324,7 +328,6 @@ const sitemapPages = [
     }
 
     dialog {
-      border-radius: 0;
       inline-size: calc(100% - 2rem);
       inset-block-start: 1rem;
       max-block-size: 70svh;

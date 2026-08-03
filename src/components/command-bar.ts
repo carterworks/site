@@ -12,7 +12,7 @@ class CommandBarElement extends HTMLElement {
     const input = this.querySelector<HTMLInputElement>("input");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
     const close = this.querySelector<HTMLButtonElement>("[data-close]");
-    const searchIcon = this.querySelector<SVGElement>("[data-search-icon]");
+    const searchIcon = this.querySelector<HTMLElement>("[data-search-icon]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
     const appearance =
       this.querySelector<HTMLButtonElement>("[data-appearance]");
