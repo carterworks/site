@@ -6,7 +6,6 @@ const sitemapPages = [
   { href: "/", label: "Home" },
   { href: "/blog/", label: "Writing" },
   ...posts.map((post) => ({ href: `/blog/${post.id}/`, label: getPostTitle(post) })),
-  { href: "/command-bar/", label: "Command bar demo" },
 ];
 ---
 
