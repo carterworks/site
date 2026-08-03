@@ -30,6 +30,8 @@
   src: url("/InterVariable-Italic.woff2") format("woff2");
 }
 :root {
+  color-scheme: light dark;
+
   --spacer: 0.25lh;
   --size-2xs: calc(var(--spacer) * 0.5);
   --size-xs: calc(var(--spacer) * 1);
