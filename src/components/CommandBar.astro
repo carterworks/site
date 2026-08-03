@@ -1,3 +1,15 @@
+---
+import { getPostTitle, getPublishedPosts } from "../lib/blog";
+
+const posts = await getPublishedPosts();
+const sitemapPages = [
+  { href: "/", label: "Home" },
+  { href: "/blog/", label: "Writing" },
+  ...posts.map((post) => ({ href: `/blog/${post.id}/`, label: getPostTitle(post) })),
+  { href: "/command-bar/", label: "Command bar demo" },
+];
+---
+
 <command-bar>
   <button class="command-trigger" type="button" aria-haspopup="dialog">
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -31,26 +43,22 @@
     <div id="command-root" class="commands panel" data-panel="root" role="listbox" aria-label="Commands">
       <section data-group>
         <p class="group-label">Sitemap</p>
-        <a
-          id="command-home"
-          href="/"
-          role="option"
-          data-command
-          data-sitemap
-          data-search="home carter about"
-        >
-          <span>Home</span><small>/</small>
-        </a>
-        <a
-          id="command-blog"
-          href="/blog/"
-          role="option"
-          data-command
-          data-sitemap
-          data-search="writing blog posts articles"
-        >
-          <span>Writing</span><small>/blog</small>
-        </a>
+        <div data-sitemap-links>
+          {
+            sitemapPages.map(({ href, label }, index) => (
+              <a
+                id={`command-sitemap-${index}`}
+                href={href}
+                role="option"
+                data-command
+                data-sitemap
+                data-search={`${label} ${href}`.toLowerCase()}
+              >
+                <span>{label}</span><small>{href}</small>
+              </a>
+            ))
+          }
+        </div>
       </section>
 
       <section data-group>
@@ -119,8 +127,9 @@
       const input = this.querySelector<HTMLInputElement>("input");
       const back = this.querySelector<HTMLButtonElement>("[data-back]");
       const searchIcon = this.querySelector<SVGElement>("[data-search-icon]");
+      const sitemapLinks = this.querySelector<HTMLElement>("[data-sitemap-links]");
       const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-      if (!dialog || !trigger || !input || !back || !searchIcon || !pageLinks) return;
+      if (!dialog || !trigger || !input || !back || !searchIcon || !sitemapLinks || !pageLinks) return;
 
       let activePanel = "root";
 
@@ -133,6 +142,58 @@
       const commands = () => [...panel().querySelectorAll<HTMLElement>("[data-command]")];
       const visibleCommands = () => commands().filter((command) => !command.hidden);
       const normalizeUrl = (href: string) => new URL(href, location.href).href.replace(/#.*$/, "");
+
+      const createLink = (id: string, href: string, label: string, detail: string) => {
+        const link = document.createElement("a");
+        link.id = id;
+        link.href = href;
+        link.role = "option";
+        link.className = "page-command";
+        link.dataset.command = "";
+        link.dataset.search = `${label} ${href}`.toLowerCase();
+        const name = document.createElement("span");
+        const destination = document.createElement("small");
+        name.textContent = label;
+        destination.textContent = detail;
+        link.appendChild(name);
+        link.appendChild(destination);
+        return link;
+      };
+
+      const refreshSitemap = async () => {
+        const labels = new Map(
+          [...sitemapLinks.querySelectorAll<HTMLAnchorElement>("a")].map((link) => [
+            new URL(link.href).pathname,
+            link.querySelector("span")?.textContent ?? link.pathname,
+          ]),
+        );
+        const indexResponse = await fetch("/sitemap-index.xml");
+        if (!indexResponse.ok) return;
+        const index = new DOMParser().parseFromString(await indexResponse.text(), "application/xml");
+        const sitemapPaths = [...index.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href).pathname);
+        const responses = await Promise.all(sitemapPaths.map((path) => fetch(path)));
+        if (responses.some((response) => !response.ok)) return;
+        const documents = await Promise.all(
+          responses.map(async (response) => new DOMParser().parseFromString(await response.text(), "application/xml")),
+        );
+        const urls = documents.flatMap((document) =>
+          [...document.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href)),
+        );
+
+        sitemapLinks.replaceChildren();
+        urls.forEach((url, index) => {
+          const path = url.pathname;
+          const slug = decodeURIComponent(path.split("/").filter(Boolean).at(-1) ?? "home").replace(/^\d{4}-\d{2}-\d{2}-/, "");
+          const fallbackLabel = slug.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
+          const link = createLink(`command-sitemap-${index}`, path, labels.get(path) ?? fallbackLabel, path);
+          link.dataset.sitemap = "";
+          sitemapLinks.appendChild(link);
+        });
+        if (dialog.open && activePanel === "root") {
+          rebuildPageLinks();
+          filter();
+        }
+      };
 
       const select = (command?: HTMLElement) => {
         this.querySelectorAll<HTMLElement>("[data-command]").forEach((item) => {
@@ -193,20 +254,7 @@
             .trim();
           const url = new URL(source.href);
           const detail = url.origin === location.origin ? `${url.pathname}${url.hash}` : url.hostname.replace(/^www\./, "");
-          const link = document.createElement("a");
-          link.id = `command-page-link-${index}`;
-          link.href = source.href;
-          link.role = "option";
-          link.className = "page-command";
-          link.dataset.command = "";
-          link.dataset.search = `${label} ${source.href}`.toLowerCase();
-          const name = document.createElement("span");
-          const destination = document.createElement("small");
-          name.textContent = label;
-          destination.textContent = detail;
-          link.appendChild(name);
-          link.appendChild(destination);
-          pageLinks.appendChild(link);
+          pageLinks.appendChild(createLink(`command-page-link-${index}`, source.href, label, detail));
         });
       };
 
@@ -282,6 +330,7 @@
           if (!dialog.open) open();
         }
       });
+      void refreshSitemap().catch(() => {});
     }
   }
 
