@@ -366,7 +366,7 @@ const sitemapPages = [
     --bar-muted: light-dark(#626262, #b8b8b8);
     color: var(--color-text);
     display: block;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
     position: fixed;
     z-index: 10;
@@ -395,8 +395,7 @@ const sitemapPages = [
     align-items: center;
     background: var(--bar-surface);
     border: 1px solid var(--bar-border);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 1px rgb(0 0 0 / 5%), 0 8px 28px rgb(0 0 0 / 8%);
+    border-radius: 0.25rem;
     display: flex;
     gap: 0.5rem;
     padding: 0.55rem 0.6rem;
@@ -408,14 +407,13 @@ const sitemapPages = [
 
   command-bar kbd {
     color: var(--bar-muted);
-    font: 0.6875rem/1 "InterVariable", sans-serif;
+    font: 0.75rem/1 "InterVariable", sans-serif;
   }
 
   dialog {
     background: var(--bar-surface);
     border: 1px solid var(--bar-border);
-    border-radius: 0.7rem;
-    box-shadow: 0 24px 80px rgb(0 0 0 / 22%);
+    border-radius: 0.25rem;
     color: inherit;
     inline-size: min(34rem, calc(100vw - 2rem));
     inset: min(20svh, 10rem) auto auto 50%;
@@ -428,8 +426,7 @@ const sitemapPages = [
   }
 
   dialog::backdrop {
-    background: light-dark(rgb(255 255 255 / 45%), rgb(0 0 0 / 28%));
-    backdrop-filter: blur(3px);
+    background: light-dark(rgb(0 0 0 / 5%), rgb(0 0 0 / 18%));
   }
 
   .search-row {
@@ -470,17 +467,17 @@ const sitemapPages = [
   .commands {
     max-block-size: min(27rem, calc(100svh - 10rem));
     overflow-y: auto;
-    padding: 0.35rem;
+    padding-block: 0.35rem;
   }
 
   .commands :is(a, button) {
     align-items: baseline;
     background: transparent;
-    border-radius: 0.4rem;
+    border-radius: 0;
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    padding: 0.6rem 0.65rem;
+    padding: 0.6rem 0.9rem;
     text-align: start;
     text-decoration: none;
     width: 100%;
@@ -488,12 +485,12 @@ const sitemapPages = [
 
   .commands :global(.page-command) {
     align-items: baseline;
-    border-radius: 0.4rem;
+    border-radius: 0;
     color: inherit;
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    padding: 0.6rem 0.65rem;
+    padding: 0.6rem 0.9rem;
     text-decoration: none;
   }
 
@@ -527,7 +524,7 @@ const sitemapPages = [
 
   .commands small {
     flex: none;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     max-inline-size: 55%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -537,7 +534,7 @@ const sitemapPages = [
   .commands :global(.page-command small) {
     color: var(--bar-muted);
     flex: none;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     max-inline-size: 55%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -545,11 +542,9 @@ const sitemapPages = [
   }
 
   .group-label {
-    font-size: 0.625rem;
-    font-weight: 650;
-    letter-spacing: 0.08em;
-    padding: 0.65rem 0.65rem 0.25rem;
-    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.65rem 0.9rem 0.25rem;
   }
 
   .empty {
@@ -561,7 +556,7 @@ const sitemapPages = [
   dialog footer {
     border-block-start: 1px solid var(--bar-border);
     display: flex;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     gap: 1rem;
     justify-content: flex-end;
     padding: 0.55rem 0.9rem;
