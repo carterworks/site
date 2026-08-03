@@ -26,6 +26,7 @@
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
+    "test": "vitest run",
     "deploy": "astro build && wrangler pages deploy"
   },
   "devDependencies": {
@@ -33,10 +34,12 @@
     "@astrojs/ts-plugin": "1.10.10",
     "@types/node": "25.9.3",
     "astro": "7.0.6",
+    "happy-dom": "20.11.1",
     "oxfmt": "0.55.0",
     "sharp": "0.35.1",
     "takumi-js": "2.0.0-rc.9",
     "typescript": "6.0.3",
+    "vitest": "4.1.6",
     "wrangler": "4.102.0"
   },
   "devEngines": {
