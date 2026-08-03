@@ -21,7 +21,7 @@ const sitemapPages = [
   </button>
 
   <dialog aria-label="Navigate">
-    <div class="search-row">
+    <search class="search-row" aria-label="Command palette">
       <svg data-search-icon aria-hidden="true" viewBox="0 0 24 24">
         <circle cx="11" cy="11" r="6" />
         <path d="m16 16 4 4" />
@@ -30,89 +30,85 @@ const sitemapPages = [
         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
       </button>
       <input
+        id="command-search"
         type="search"
         aria-label="Search commands"
         aria-controls="command-root"
-        aria-autocomplete="list"
         placeholder="Search commands"
         autocomplete="off"
       />
       <kbd>esc</kbd>
-    </div>
+    </search>
 
-    <div id="command-root" class="commands panel" data-panel="root" role="listbox" aria-label="Commands">
+    <div id="command-root" class="commands panel" data-panel="root">
       <section data-group>
-        <p class="group-label">Actions</p>
+        <h2 id="command-actions-heading" class="group-label">Actions</h2>
         <button
           id="command-settings"
           type="button"
-          role="option"
           data-command
           data-settings
           data-search="settings appearance theme light dark"
         >
-          <span>Settings</span><small>›</small>
+          <span>Settings</span><span class="command-detail" aria-hidden="true">›</span>
         </button>
       </section>
 
       <section data-group>
-        <p class="group-label">Links on this page</p>
+        <h2 id="command-page-links-heading" class="group-label">Links on this page</h2>
         <div data-page-links></div>
       </section>
 
       <section data-group>
-        <p class="group-label">Sitemap</p>
+        <h2 id="command-sitemap-heading" class="group-label">Sitemap</h2>
         <div data-sitemap-links>
           {
             sitemapPages.map(({ href, label }, index) => (
               <a
                 id={`command-sitemap-${index}`}
                 href={href}
-                role="option"
                 data-command
                 data-sitemap
                 data-search={`${label} ${href}`.toLowerCase()}
               >
-                <span>{label}</span><small>{href}</small>
+                <span>{label}</span><span class="command-detail">{href}</span>
               </a>
             ))
           }
         </div>
       </section>
 
-      <p class="empty" hidden>No matching commands</p>
+      <output class="empty" for="command-search" hidden>No matching commands</output>
     </div>
 
     <div
       id="command-settings-menu"
       class="commands panel"
       data-panel="settings"
-      role="listbox"
-      aria-label="Settings"
       hidden
     >
       <section data-group>
-        <p class="group-label">Settings</p>
+        <h2 id="command-settings-heading" class="group-label">Settings</h2>
         <button
           id="command-appearance"
           type="button"
-          role="option"
+          aria-pressed="false"
           data-command
           data-appearance
           data-search="toggle appearance theme light dark"
         >
-          <span>Toggle light / dark</span><small data-scheme aria-live="polite"></small>
+          <span>Dark mode</span><span class="command-detail" data-scheme aria-live="polite"></span>
         </button>
       </section>
-      <p class="empty" hidden>No matching commands</p>
+      <output class="empty" for="command-search" hidden>No matching commands</output>
     </div>
 
-    <footer>
-      <span data-root-help>↑ ↓ navigate</span>
-      <span data-root-help>↵ open</span>
-      <span data-settings-help hidden>⇧ ↵ toggle and stay</span>
-      <span data-settings-help hidden>↵ toggle and close</span>
-    </footer>
+    <div class="command-help">
+      <span data-root-help><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>
+      <span data-root-help><kbd>↵</kbd> open</span>
+      <span data-settings-help hidden><kbd>⇧</kbd> <kbd>↵</kbd> toggle and stay</span>
+      <span data-settings-help hidden><kbd>↵</kbd> toggle and close</span>
+    </div>
   </dialog>
 </command-bar>
 
@@ -153,12 +149,12 @@ const sitemapPages = [
         const link = document.createElement("a");
         link.id = id;
         link.href = href;
-        link.role = "option";
         link.className = "page-command";
         link.dataset.command = "";
         link.dataset.search = `${label} ${href}`.toLowerCase();
         const name = document.createElement("span");
-        const destination = document.createElement("small");
+        const destination = document.createElement("span");
+        destination.className = "command-detail";
         name.textContent = label;
         destination.textContent = detail;
         link.appendChild(name);
@@ -208,14 +204,11 @@ const sitemapPages = [
         }
       };
 
-      const select = (command?: HTMLElement) => {
+      const select = (command?: HTMLElement, focus = false) => {
         this.querySelectorAll<HTMLElement>("[data-command]").forEach((item) => {
-          const active = item === command;
-          item.toggleAttribute("data-active", active);
-          item.setAttribute("aria-selected", String(active));
+          item.toggleAttribute("data-active", item === command);
         });
-        if (command) input.setAttribute("aria-activedescendant", command.id);
-        else input.removeAttribute("aria-activedescendant");
+        if (focus) command?.focus();
       };
 
       const filter = () => {
@@ -279,7 +272,10 @@ const sitemapPages = [
 
       const updateSchemeLabel = () => {
         const label = this.querySelector<HTMLElement>("[data-scheme]");
-        if (label) label.textContent = currentScheme() === "dark" ? "Dark" : "Light";
+        const button = this.querySelector<HTMLButtonElement>("[data-appearance]");
+        const dark = currentScheme() === "dark";
+        if (label) label.textContent = dark ? "On" : "Off";
+        if (button) button.setAttribute("aria-pressed", String(dark));
       };
 
       const toggleAppearance = (close: boolean) => {
@@ -299,9 +295,9 @@ const sitemapPages = [
       const move = (direction: number) => {
         const visible = visibleCommands();
         if (!visible.length) return;
-        const current = visible.findIndex((command) => command.hasAttribute("data-active"));
-        const next = (current + direction + visible.length) % visible.length;
-        select(visible[next]);
+        const current = visible.indexOf(document.activeElement as HTMLElement);
+        const next = current === -1 ? (direction > 0 ? 0 : visible.length - 1) : (current + direction + visible.length) % visible.length;
+        select(visible[next], true);
         visible[next].scrollIntoView({ block: "nearest" });
       };
 
@@ -322,6 +318,18 @@ const sitemapPages = [
           visibleCommands().find((command) => command.hasAttribute("data-active"))?.click();
         }
       });
+      this.addEventListener("keydown", (event) => {
+        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        if (!command || !panel().contains(command)) return;
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          move(event.key === "ArrowDown" ? 1 : -1);
+        }
+        if (event.key === "Enter" && event.shiftKey && activePanel === "settings") {
+          event.preventDefault();
+          toggleAppearance(false);
+        }
+      });
       dialog.addEventListener("cancel", (event) => {
         if (activePanel === "settings") {
           event.preventDefault();
@@ -332,6 +340,10 @@ const sitemapPages = [
         if (event.target === dialog) dialog.close();
       });
       this.addEventListener("pointermove", (event) => {
+        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        if (command && panel().contains(command)) select(command);
+      });
+      this.addEventListener("focusin", (event) => {
         const command = (event.target as Element).closest<HTMLElement>("[data-command]");
         if (command && panel().contains(command)) select(command);
       });
@@ -441,16 +453,12 @@ const sitemapPages = [
     padding: 0.75rem 0.9rem;
   }
 
-  .search-row > button {
+  .search-row > button:not([hidden]) {
     align-items: center;
     background: transparent;
     display: flex;
     margin: -0.35rem;
     padding: 0.35rem;
-  }
-
-  .search-row > [hidden] {
-    display: none;
   }
 
   dialog input {
@@ -461,9 +469,9 @@ const sitemapPages = [
   }
 
   dialog input::placeholder,
-  .commands small,
+  .command-detail,
   .group-label,
-  dialog footer {
+  .command-help {
     color: var(--bar-muted);
   }
 
@@ -473,7 +481,7 @@ const sitemapPages = [
     padding-block: 0.35rem;
   }
 
-  .commands :is(a, button) {
+  .commands :is(a, button):not([hidden]) {
     align-items: baseline;
     background: transparent;
     border-radius: 0;
@@ -486,7 +494,7 @@ const sitemapPages = [
     width: 100%;
   }
 
-  .commands :global(.page-command) {
+  .commands :global(.page-command:not([hidden])) {
     align-items: baseline;
     border-radius: 0;
     color: inherit;
@@ -509,14 +517,6 @@ const sitemapPages = [
     background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
   }
 
-  .commands :global(.page-command[hidden]) {
-    display: none;
-  }
-
-  .commands [hidden] {
-    display: none;
-  }
-
   .commands :is(a, button) > span,
   .commands :global(.page-command > span) {
     min-inline-size: 0;
@@ -525,7 +525,7 @@ const sitemapPages = [
     white-space: nowrap;
   }
 
-  .commands small {
+  .command-detail {
     flex: none;
     font-size: 0.75rem;
     max-inline-size: 55%;
@@ -534,7 +534,7 @@ const sitemapPages = [
     white-space: nowrap;
   }
 
-  .commands :global(.page-command small) {
+  .commands :global(.page-command .command-detail) {
     color: var(--bar-muted);
     flex: none;
     font-size: 0.75rem;
@@ -556,7 +556,7 @@ const sitemapPages = [
     text-align: center;
   }
 
-  dialog footer {
+  .command-help {
     border-block-start: 1px solid var(--bar-border);
     display: flex;
     font-size: 0.75rem;
@@ -595,7 +595,7 @@ const sitemapPages = [
       max-block-size: calc(70svh - 3rem);
     }
 
-    dialog footer {
+    .command-help {
       display: none;
     }
   }
