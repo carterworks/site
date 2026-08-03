@@ -110,7 +110,7 @@ const sitemapPages = [
     <footer>
       <span data-root-help>↑ ↓ navigate</span>
       <span data-root-help>↵ open</span>
-      <span data-settings-help hidden>tab toggle and stay</span>
+      <span data-settings-help hidden>⇧ ↵ toggle and stay</span>
       <span data-settings-help hidden>↵ toggle and close</span>
     </footer>
   </dialog>
@@ -304,11 +304,11 @@ const sitemapPages = [
         }
         if (event.key === "Enter") {
           event.preventDefault();
+          if (event.shiftKey && activePanel === "settings") {
+            toggleAppearance(false);
+            return;
+          }
           visibleCommands().find((command) => command.hasAttribute("data-active"))?.click();
-        }
-        if (event.key === "Tab" && !event.shiftKey && activePanel === "settings") {
-          event.preventDefault();
-          toggleAppearance(false);
         }
       });
       dialog.addEventListener("cancel", (event) => {
