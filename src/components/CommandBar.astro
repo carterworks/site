@@ -118,6 +118,7 @@ const sitemapPages = [
 
 <script>
   class CommandBarElement extends HTMLElement {
+    private static sitemapRequest?: Promise<URL[]>;
     private shortcutHandler?: (event: KeyboardEvent) => void;
 
     connectedCallback() {
@@ -165,36 +166,43 @@ const sitemapPages = [
         return link;
       };
 
-      const refreshSitemap = async () => {
-        const labels = new Map(
-          [...sitemapLinks.querySelectorAll<HTMLAnchorElement>("a")].map((link) => [
-            new URL(link.href).pathname,
-            link.querySelector("span")?.textContent ?? link.pathname,
-          ]),
-        );
-        const indexResponse = await fetch("/sitemap-index.xml");
-        if (!indexResponse.ok) return;
-        const index = new DOMParser().parseFromString(await indexResponse.text(), "application/xml");
-        const sitemapPaths = [...index.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href).pathname);
-        const responses = await Promise.all(sitemapPaths.map((path) => fetch(path)));
-        if (responses.some((response) => !response.ok)) return;
-        const documents = await Promise.all(
-          responses.map(async (response) => new DOMParser().parseFromString(await response.text(), "application/xml")),
-        );
-        const urls = documents.flatMap((document) =>
-          [...document.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href)),
-        );
+      const loadGeneratedSitemap = () => {
+        CommandBarElement.sitemapRequest ??= (async () => {
+          const indexResponse = await fetch("/sitemap-index.xml");
+          if (!indexResponse.ok) return [];
+          const index = new DOMParser().parseFromString(await indexResponse.text(), "application/xml");
+          const sitemapPaths = [...index.getElementsByTagName("loc")].map(
+            (node) => new URL(node.textContent ?? "", location.href).pathname,
+          );
+          const responses = await Promise.all(sitemapPaths.map((path) => fetch(path)));
+          if (responses.some((response) => !response.ok)) return [];
+          const documents = await Promise.all(
+            responses.map(async (response) => new DOMParser().parseFromString(await response.text(), "application/xml")),
+          );
+          return documents.flatMap((document) =>
+            [...document.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href)),
+          );
+        })();
+        return CommandBarElement.sitemapRequest;
+      };
 
-        sitemapLinks.replaceChildren();
+      const appendMissingSitemapLinks = async () => {
+        const existingPaths = new Set(
+          [...sitemapLinks.querySelectorAll<HTMLAnchorElement>("a")].map((link) => new URL(link.href).pathname),
+        );
+        const urls = await loadGeneratedSitemap();
+        let added = false;
         urls.forEach((url, index) => {
           const path = url.pathname;
+          if (existingPaths.has(path)) return;
           const slug = decodeURIComponent(path.split("/").filter(Boolean).at(-1) ?? "home").replace(/^\d{4}-\d{2}-\d{2}-/, "");
           const fallbackLabel = slug.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
-          const link = createLink(`command-sitemap-${index}`, path, labels.get(path) ?? fallbackLabel, path);
+          const link = createLink(`command-sitemap-generated-${index}`, path, fallbackLabel, path);
           link.dataset.sitemap = "";
           sitemapLinks.appendChild(link);
+          added = true;
         });
-        if (dialog.open && activePanel === "root") {
+        if (added && dialog.open && activePanel === "root") {
           rebuildPageLinks();
           filter();
         }
@@ -283,6 +291,7 @@ const sitemapPages = [
         updateSchemeLabel();
         dialog.showModal();
         showPanel("root");
+        void appendMissingSitemapLinks().catch(() => {});
       };
 
       const move = (direction: number) => {
@@ -336,7 +345,6 @@ const sitemapPages = [
         }
       };
       document.addEventListener("keydown", this.shortcutHandler);
-      void refreshSitemap().catch(() => {});
     }
 
     disconnectedCallback() {
