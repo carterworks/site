@@ -156,7 +156,6 @@ const sitemapPages = [
         const link = document.createElement("a");
         link.id = id;
         link.href = href;
-        link.className = "page-command";
         link.dataset.command = "";
         link.dataset.search = `${label} ${href}`.toLowerCase();
         const name = document.createElement("span");
@@ -433,14 +432,18 @@ const sitemapPages = [
     border: 1px solid var(--bar-border);
     border-radius: 0.25rem;
     color: inherit;
-    inline-size: min(34rem, calc(100vw - 2rem));
-    inset: min(20svh, 10rem) auto auto 50%;
-    margin: 0;
+    inline-size: min(34rem, calc(100% - 2rem));
+    inset: min(20svh, 10rem) 0 auto;
+    margin: 0 auto;
     max-block-size: min(36rem, calc(100svh - 2rem));
     overflow: hidden;
     padding: 0;
     position: fixed;
-    transform: translateX(-50%);
+  }
+
+  dialog:open {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
   dialog::backdrop {
@@ -452,7 +455,7 @@ const sitemapPages = [
     border-block-end: 1px solid var(--bar-border);
     display: grid;
     gap: 0.75rem;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     padding: 0.75rem 0.9rem;
   }
 
@@ -471,78 +474,52 @@ const sitemapPages = [
   dialog input {
     background: transparent;
     border: 0;
-    min-inline-size: 0;
     outline: 0;
   }
 
   dialog input::placeholder,
-  .command-detail,
+  .commands :global(.command-detail),
   .group-label,
   .command-help {
     color: var(--bar-muted);
   }
 
   .commands {
-    max-block-size: min(27rem, calc(100svh - 10rem));
+    min-block-size: 0;
     overflow-y: auto;
     padding-block: 0.35rem;
   }
 
-  .commands :is(a, button):not([hidden]) {
+  .commands :global([data-command]:not([hidden])) {
     align-items: baseline;
     background: transparent;
-    border-radius: 0;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    padding: 0.6rem 0.9rem;
-    text-align: start;
-    text-decoration: none;
-    width: 100%;
-  }
-
-  .commands :global(.page-command:not([hidden])) {
-    align-items: baseline;
     border-radius: 0;
     color: inherit;
     display: flex;
     gap: 1rem;
     justify-content: space-between;
     padding: 0.6rem 0.9rem;
+    text-align: start;
     text-decoration: none;
+    inline-size: 100%;
   }
 
-  .commands :global(.page-command::after) {
+  .commands :global([data-command]::after) {
     content: none;
   }
 
-  .commands :is(a, button)[data-active] {
+  .commands :global([data-command][data-active]) {
     background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
   }
 
-  .commands :global(.page-command[data-active]) {
-    background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
-  }
-
-  .commands :is(a, button) > span,
-  .commands :global(.page-command > span) {
+  .commands :global([data-command] > span) {
     min-inline-size: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .command-detail {
-    flex: none;
-    font-size: 0.75rem;
-    max-inline-size: 55%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .commands :global(.page-command .command-detail) {
-    color: var(--bar-muted);
+  .commands :global(.command-detail) {
     flex: none;
     font-size: 0.75rem;
     max-inline-size: 55%;
@@ -581,7 +558,7 @@ const sitemapPages = [
     transform: scale(0.97);
   }
 
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     command-bar {
       inset-inline: 1rem;
     }
@@ -596,10 +573,6 @@ const sitemapPages = [
       inline-size: calc(100% - 2rem);
       inset-block-start: 1rem;
       max-block-size: 70svh;
-    }
-
-    .commands {
-      max-block-size: calc(70svh - 3rem);
     }
 
     .command-help {
