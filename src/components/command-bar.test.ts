@@ -67,3 +67,177 @@ describe("command bar", () => {
     expect(getElement<HTMLDialogElement>("dialog").open).toBe(false);
   });
 });
+
+describe("command bar keyboard navigation", () => {
+  beforeEach(setupCommandBar);
+
+  test("ArrowUp and ArrowDown wrap through visible commands", () => {
+    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+      new MouseEvent("click", { bubbles: true }),
+    );
+    const input = getElement<HTMLInputElement>("input");
+    input.value = "t";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+
+    const settings = getElement<HTMLElement>("[data-settings]");
+    const external = getElement<HTMLElement>(
+      "[data-page-links] [data-command]",
+    );
+    const home = getElement<HTMLElement>('a[data-sitemap][href="/"]');
+    const article = getElement<HTMLElement>(
+      'a[data-sitemap][href="/blog/post/"]',
+    );
+    expect(home.hidden).toBe(true);
+    expect(settings.hasAttribute("data-active")).toBe(true);
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowUp",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(article.hasAttribute("data-active")).toBe(true);
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(settings.hasAttribute("data-active")).toBe(true);
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(external.hasAttribute("data-active")).toBe(true);
+  });
+
+  test("Enter activates the selected command", () => {
+    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+      new MouseEvent("click", { bubbles: true }),
+    );
+
+    getElement<HTMLInputElement>("input").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
+    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
+      false,
+    );
+    expect(
+      getElement<HTMLInputElement>("input").getAttribute("aria-label"),
+    ).toBe("Search settings");
+  });
+});
+
+describe("command bar dialog", () => {
+  beforeEach(setupCommandBar);
+
+  test("Escape returns from settings before closing the dialog", () => {
+    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLButtonElement>("[data-settings]").click();
+    const dialog = getElement<HTMLDialogElement>("dialog");
+
+    const firstCancel = new Event("cancel", { cancelable: true });
+    if (dialog.dispatchEvent(firstCancel)) dialog.close();
+
+    expect(dialog.open).toBe(true);
+    expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(false);
+    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
+      true,
+    );
+
+    const secondCancel = new Event("cancel", { cancelable: true });
+    if (dialog.dispatchEvent(secondCancel)) dialog.close();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  test("Shift+Enter toggles appearance without closing the dialog", () => {
+    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLButtonElement>("[data-settings]").click();
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    const input = getElement<HTMLInputElement>("input");
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(document.documentElement.style.colorScheme).toBe("dark");
+    expect(
+      getElement<HTMLButtonElement>("[data-appearance]").getAttribute(
+        "aria-pressed",
+      ),
+    ).toBe("true");
+    expect(dialog.open).toBe(true);
+  });
+});
+
+describe("command bar dynamic behavior", () => {
+  beforeEach(setupCommandBar);
+
+  test("rebuilds page links when reopened after page content changes", () => {
+    const trigger = getElement<HTMLButtonElement>(".command-trigger");
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(
+      [...getElement("[data-page-links]").querySelectorAll("a")].map(
+        (link) => link.textContent,
+      ),
+    ).toEqual(["External referenceexample.com"]);
+
+    getElement<HTMLButtonElement>("[data-close]").dispatchEvent(
+      new MouseEvent("click", { bubbles: true }),
+    );
+    const externalLink = getElement<HTMLAnchorElement>(
+      'body > a[href="https://example.com/reference"]',
+    );
+    externalLink.href = "https://example.org/updated";
+    externalLink.textContent = "Updated reference";
+
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    const pageLinks = [
+      ...getElement("[data-page-links]").querySelectorAll("a"),
+    ];
+    expect(pageLinks.map((link) => link.textContent)).toEqual([
+      "Updated referenceexample.org",
+    ]);
+    expect(pageLinks[0]?.href).toBe("https://example.org/updated");
+  });
+
+  test("selects a visible result when filtering hides the prior selection", () => {
+    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+      new MouseEvent("click", { bubbles: true }),
+    );
+    const settings = getElement<HTMLElement>("[data-settings]");
+    expect(settings.hasAttribute("data-active")).toBe(true);
+
+    const input = getElement<HTMLInputElement>("input");
+    input.value = "home";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+
+    const active = getElement<HTMLElement>(
+      '[data-panel="root"] [data-command][data-active]',
+    );
+    expect(settings.hidden).toBe(true);
+    expect(active.hidden).toBe(false);
+    expect(active.textContent).toBe("Home");
+  });
+});
