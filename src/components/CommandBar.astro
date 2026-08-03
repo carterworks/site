@@ -1,0 +1,534 @@
+<command-bar>
+  <button class="command-trigger" type="button" aria-haspopup="dialog">
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
+    </svg>
+    <span>Navigate</span>
+    <kbd class="shortcut">⌘ P</kbd>
+  </button>
+
+  <dialog aria-label="Navigate">
+    <div class="search-row">
+      <svg data-search-icon aria-hidden="true" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="6" />
+        <path d="m16 16 4 4" />
+      </svg>
+      <button data-back type="button" aria-label="Back to all commands" hidden>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+      </button>
+      <input
+        type="search"
+        aria-label="Search commands"
+        aria-controls="command-root"
+        aria-autocomplete="list"
+        placeholder="Search commands"
+        autocomplete="off"
+      />
+      <kbd>esc</kbd>
+    </div>
+
+    <div id="command-root" class="commands panel" data-panel="root" role="listbox" aria-label="Commands">
+      <section data-group>
+        <p class="group-label">Sitemap</p>
+        <a
+          id="command-home"
+          href="/"
+          role="option"
+          data-command
+          data-sitemap
+          data-search="home carter about"
+        >
+          <span>Home</span><small>/</small>
+        </a>
+        <a
+          id="command-blog"
+          href="/blog/"
+          role="option"
+          data-command
+          data-sitemap
+          data-search="writing blog posts articles"
+        >
+          <span>Writing</span><small>/blog</small>
+        </a>
+      </section>
+
+      <section data-group>
+        <p class="group-label">Links on this page</p>
+        <div data-page-links></div>
+      </section>
+
+      <section data-group>
+        <p class="group-label">Actions</p>
+        <button
+          id="command-settings"
+          type="button"
+          role="option"
+          data-command
+          data-settings
+          data-search="settings appearance theme light dark"
+        >
+          <span>Settings</span><small>›</small>
+        </button>
+      </section>
+
+      <p class="empty" hidden>No matching commands</p>
+    </div>
+
+    <div
+      id="command-settings-menu"
+      class="commands panel"
+      data-panel="settings"
+      role="listbox"
+      aria-label="Settings"
+      hidden
+    >
+      <section data-group>
+        <p class="group-label">Settings</p>
+        <button
+          id="command-appearance"
+          type="button"
+          role="option"
+          data-command
+          data-appearance
+          data-search="toggle appearance theme light dark"
+        >
+          <span>Toggle light / dark</span><small data-scheme aria-live="polite"></small>
+        </button>
+      </section>
+      <p class="empty" hidden>No matching commands</p>
+    </div>
+
+    <footer>
+      <span data-root-help>↑ ↓ navigate</span>
+      <span data-root-help>↵ open</span>
+      <span data-settings-help hidden>tab toggle and stay</span>
+      <span data-settings-help hidden>↵ toggle and close</span>
+    </footer>
+  </dialog>
+</command-bar>
+
+<script>
+  class CommandBarElement extends HTMLElement {
+    connectedCallback() {
+      if (this.dataset.ready) return;
+      this.dataset.ready = "true";
+
+      const dialog = this.querySelector<HTMLDialogElement>("dialog");
+      const trigger = this.querySelector<HTMLButtonElement>(".command-trigger");
+      const input = this.querySelector<HTMLInputElement>("input");
+      const back = this.querySelector<HTMLButtonElement>("[data-back]");
+      const searchIcon = this.querySelector<SVGElement>("[data-search-icon]");
+      const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
+      if (!dialog || !trigger || !input || !back || !searchIcon || !pageLinks) return;
+
+      let activePanel = "root";
+
+      if (!navigator.platform.toLowerCase().includes("mac")) {
+        const shortcut = this.querySelector<HTMLElement>(".shortcut");
+        if (shortcut) shortcut.textContent = "Ctrl P";
+      }
+
+      const panel = () => this.querySelector<HTMLElement>(`[data-panel="${activePanel}"]`)!;
+      const commands = () => [...panel().querySelectorAll<HTMLElement>("[data-command]")];
+      const visibleCommands = () => commands().filter((command) => !command.hidden);
+      const normalizeUrl = (href: string) => new URL(href, location.href).href.replace(/#.*$/, "");
+
+      const select = (command?: HTMLElement) => {
+        this.querySelectorAll<HTMLElement>("[data-command]").forEach((item) => {
+          const active = item === command;
+          item.toggleAttribute("data-active", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+        if (command) input.setAttribute("aria-activedescendant", command.id);
+        else input.removeAttribute("aria-activedescendant");
+      };
+
+      const filter = () => {
+        const words = input.value.toLowerCase().trim().split(/\s+/);
+        commands().forEach((command) => {
+          const matches = words.every((word) => (command.dataset.search ?? "").includes(word));
+          command.hidden = command.dataset.available === "false" || !matches;
+        });
+        panel().querySelectorAll<HTMLElement>("[data-group]").forEach((group) => {
+          group.hidden = !group.querySelector("[data-command]:not([hidden])");
+        });
+        const visible = visibleCommands();
+        const empty = panel().querySelector<HTMLElement>(".empty");
+        if (empty) empty.hidden = visible.length !== 0;
+        select(visible[0]);
+      };
+
+      const showPanel = (name: "root" | "settings") => {
+        activePanel = name;
+        this.querySelectorAll<HTMLElement>("[data-panel]").forEach((item) => {
+          item.hidden = item.dataset.panel !== name;
+        });
+        back.hidden = name === "root";
+        searchIcon.toggleAttribute("hidden", name !== "root");
+        input.value = "";
+        input.placeholder = name === "root" ? "Search commands" : "Search settings";
+        input.setAttribute("aria-controls", name === "root" ? "command-root" : "command-settings-menu");
+        this.querySelectorAll<HTMLElement>("[data-root-help]").forEach((item) => (item.hidden = name !== "root"));
+        this.querySelectorAll<HTMLElement>("[data-settings-help]").forEach(
+          (item) => (item.hidden = name === "root"),
+        );
+        filter();
+        input.focus();
+      };
+
+      const rebuildPageLinks = () => {
+        pageLinks.replaceChildren();
+        const sourceLinks = [...document.querySelectorAll<HTMLAnchorElement>("body a[href]")].filter(
+          (link) => !this.contains(link),
+        );
+        const pageUrls = new Set(sourceLinks.map((link) => normalizeUrl(link.href)));
+
+        this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]").forEach((link) => {
+          link.dataset.available = String(!pageUrls.has(normalizeUrl(link.href)));
+        });
+
+        sourceLinks.forEach((source, index) => {
+          const label = (source.getAttribute("aria-label") || source.textContent || source.href)
+            .replace(/\s+/g, " ")
+            .trim();
+          const url = new URL(source.href);
+          const detail = url.origin === location.origin ? `${url.pathname}${url.hash}` : url.hostname.replace(/^www\./, "");
+          const link = document.createElement("a");
+          link.id = `command-page-link-${index}`;
+          link.href = source.href;
+          link.role = "option";
+          link.className = "page-command";
+          link.dataset.command = "";
+          link.dataset.search = `${label} ${source.href}`.toLowerCase();
+          const name = document.createElement("span");
+          const destination = document.createElement("small");
+          name.textContent = label;
+          destination.textContent = detail;
+          link.appendChild(name);
+          link.appendChild(destination);
+          pageLinks.appendChild(link);
+        });
+      };
+
+      const currentScheme = () =>
+        document.documentElement.style.colorScheme ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+      const updateSchemeLabel = () => {
+        const label = this.querySelector<HTMLElement>("[data-scheme]");
+        if (label) label.textContent = currentScheme() === "dark" ? "Dark" : "Light";
+      };
+
+      const toggleAppearance = (close: boolean) => {
+        document.documentElement.style.colorScheme = currentScheme() === "dark" ? "light" : "dark";
+        updateSchemeLabel();
+        if (close) dialog.close();
+      };
+
+      const open = () => {
+        rebuildPageLinks();
+        updateSchemeLabel();
+        dialog.showModal();
+        showPanel("root");
+      };
+
+      const move = (direction: number) => {
+        const visible = visibleCommands();
+        if (!visible.length) return;
+        const current = visible.findIndex((command) => command.hasAttribute("data-active"));
+        const next = (current + direction + visible.length) % visible.length;
+        select(visible[next]);
+        visible[next].scrollIntoView({ block: "nearest" });
+      };
+
+      trigger.addEventListener("click", open);
+      back.addEventListener("click", () => showPanel("root"));
+      input.addEventListener("input", filter);
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          move(event.key === "ArrowDown" ? 1 : -1);
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          visibleCommands().find((command) => command.hasAttribute("data-active"))?.click();
+        }
+        if (event.key === "Tab" && !event.shiftKey && activePanel === "settings") {
+          event.preventDefault();
+          toggleAppearance(false);
+        }
+      });
+      dialog.addEventListener("cancel", (event) => {
+        if (activePanel === "settings") {
+          event.preventDefault();
+          showPanel("root");
+        }
+      });
+      dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+      this.addEventListener("pointermove", (event) => {
+        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        if (command && panel().contains(command)) select(command);
+      });
+      this.addEventListener("click", (event) => {
+        const target = event.target as Element;
+        if (target.closest("[data-settings]")) showPanel("settings");
+        if (target.closest("[data-appearance]")) toggleAppearance(true);
+      });
+      document.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p") {
+          event.preventDefault();
+          if (!dialog.open) open();
+        }
+      });
+    }
+  }
+
+  if (!customElements.get("command-bar")) {
+    customElements.define("command-bar", CommandBarElement);
+  }
+</script>
+
+<style>
+  command-bar {
+    --bar-surface: light-dark(#fff, #232323);
+    --bar-border: light-dark(rgb(0 0 0 / 14%), rgb(255 255 255 / 16%));
+    --bar-muted: light-dark(#626262, #b8b8b8);
+    color: light-dark(#171717, #f7f7f7);
+    display: block;
+    font-size: 0.8125rem;
+    inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
+    position: fixed;
+    z-index: 10;
+  }
+
+  command-bar :is(a, button, input) {
+    color: inherit;
+    font: inherit;
+  }
+
+  command-bar button {
+    border: 0;
+    cursor: pointer;
+  }
+
+  command-bar svg {
+    fill: none;
+    inline-size: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+  }
+
+  .command-trigger {
+    align-items: center;
+    background: var(--bar-surface);
+    border: 1px solid var(--bar-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 1px rgb(0 0 0 / 5%), 0 8px 28px rgb(0 0 0 / 8%);
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.55rem 0.6rem;
+  }
+
+  .command-trigger kbd {
+    margin-inline-start: 0.35rem;
+  }
+
+  command-bar kbd {
+    color: var(--bar-muted);
+    font: 0.6875rem/1 "InterVariable", sans-serif;
+  }
+
+  dialog {
+    background: var(--bar-surface);
+    border: 1px solid var(--bar-border);
+    border-radius: 0.7rem;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 22%);
+    color: inherit;
+    inline-size: min(34rem, calc(100vw - 2rem));
+    inset: min(20svh, 10rem) auto auto 50%;
+    margin: 0;
+    max-block-size: min(36rem, calc(100svh - 2rem));
+    overflow: hidden;
+    padding: 0;
+    position: fixed;
+    transform: translateX(-50%);
+  }
+
+  dialog::backdrop {
+    background: light-dark(rgb(255 255 255 / 45%), rgb(0 0 0 / 28%));
+    backdrop-filter: blur(3px);
+  }
+
+  .search-row {
+    align-items: center;
+    border-block-end: 1px solid var(--bar-border);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: auto 1fr auto;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .search-row > button {
+    align-items: center;
+    background: transparent;
+    display: flex;
+    margin: -0.35rem;
+    padding: 0.35rem;
+  }
+
+  .search-row > [hidden] {
+    display: none;
+  }
+
+  dialog input {
+    background: transparent;
+    border: 0;
+    min-inline-size: 0;
+    outline: 0;
+  }
+
+  dialog input::placeholder,
+  .commands small,
+  .group-label,
+  dialog footer {
+    color: var(--bar-muted);
+  }
+
+  .commands {
+    max-block-size: min(27rem, calc(100svh - 10rem));
+    overflow-y: auto;
+    padding: 0.35rem;
+  }
+
+  .commands :is(a, button) {
+    align-items: baseline;
+    background: transparent;
+    border-radius: 0.4rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.6rem 0.65rem;
+    text-align: start;
+    text-decoration: none;
+    width: 100%;
+  }
+
+  .commands :global(.page-command) {
+    align-items: baseline;
+    border-radius: 0.4rem;
+    color: inherit;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.6rem 0.65rem;
+    text-decoration: none;
+  }
+
+  .commands :global(.page-command::after) {
+    content: none;
+  }
+
+  .commands :is(a, button)[data-active] {
+    background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
+  }
+
+  .commands :global(.page-command[data-active]) {
+    background: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 9%));
+  }
+
+  .commands :global(.page-command[hidden]) {
+    display: none;
+  }
+
+  .commands [hidden] {
+    display: none;
+  }
+
+  .commands :is(a, button) > span,
+  .commands :global(.page-command > span) {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .commands small {
+    flex: none;
+    font-size: 0.6875rem;
+    max-inline-size: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .commands :global(.page-command small) {
+    color: var(--bar-muted);
+    flex: none;
+    font-size: 0.6875rem;
+    max-inline-size: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .group-label {
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    padding: 0.65rem 0.65rem 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .empty {
+    color: var(--bar-muted);
+    padding: 2rem 0.65rem;
+    text-align: center;
+  }
+
+  dialog footer {
+    border-block-start: 1px solid var(--bar-border);
+    display: flex;
+    font-size: 0.6875rem;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding: 0.55rem 0.9rem;
+  }
+
+  command-bar :is(a, button):focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .command-trigger:active {
+    transform: scale(0.97);
+  }
+
+  @media (max-width: 480px) {
+    command-bar {
+      inset-inline: 1rem;
+    }
+
+    .command-trigger {
+      justify-content: center;
+      margin-inline-start: auto;
+    }
+
+    dialog {
+      inset-block-start: 1rem;
+      max-block-size: calc(100svh - 2rem);
+    }
+
+    .commands {
+      max-block-size: calc(100svh - 7rem);
+    }
+
+    dialog footer {
+      display: none;
+    }
+  }
+</style>
