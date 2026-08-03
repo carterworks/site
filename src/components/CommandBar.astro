@@ -70,9 +70,8 @@ const sitemapPages = [
         <h2 id="command-sitemap-heading" class="group-label">Sitemap</h2>
         <div data-sitemap-links>
           {
-            sitemapPages.map(({ href, label }, index) => (
+            sitemapPages.map(({ href, label }) => (
               <a
-                id={`command-sitemap-${index}`}
                 href={href}
                 data-command
                 data-sitemap
@@ -121,7 +120,6 @@ const sitemapPages = [
 
 <script>
   class CommandBarElement extends HTMLElement {
-    private static sitemapRequest?: Promise<URL[]>;
     private shortcutHandler?: (event: KeyboardEvent) => void;
 
     connectedCallback() {
@@ -136,9 +134,8 @@ const sitemapPages = [
       const input = this.querySelector<HTMLInputElement>("input");
       const back = this.querySelector<HTMLButtonElement>("[data-back]");
       const searchIcon = this.querySelector<SVGElement>("[data-search-icon]");
-      const sitemapLinks = this.querySelector<HTMLElement>("[data-sitemap-links]");
       const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-      if (!dialog || !trigger || !input || !back || !searchIcon || !sitemapLinks || !pageLinks) return;
+      if (!dialog || !trigger || !input || !back || !searchIcon || !pageLinks) return;
 
       let activePanel = "root";
 
@@ -152,9 +149,8 @@ const sitemapPages = [
       const visibleCommands = () => commands().filter((command) => !command.hidden);
       const normalizeUrl = (href: string) => new URL(href, location.href).href.replace(/#.*$/, "");
 
-      const createLink = (id: string, href: string, label: string, detail: string) => {
+      const createLink = (href: string, label: string, detail: string) => {
         const link = document.createElement("a");
-        link.id = id;
         link.href = href;
         link.dataset.command = "";
         link.dataset.search = `${label} ${href}`.toLowerCase();
@@ -168,48 +164,6 @@ const sitemapPages = [
         return link;
       };
 
-      const loadGeneratedSitemap = () => {
-        CommandBarElement.sitemapRequest ??= (async () => {
-          const indexResponse = await fetch("/sitemap-index.xml");
-          if (!indexResponse.ok) return [];
-          const index = new DOMParser().parseFromString(await indexResponse.text(), "application/xml");
-          const sitemapPaths = [...index.getElementsByTagName("loc")].map(
-            (node) => new URL(node.textContent ?? "", location.href).pathname,
-          );
-          const responses = await Promise.all(sitemapPaths.map((path) => fetch(path)));
-          if (responses.some((response) => !response.ok)) return [];
-          const documents = await Promise.all(
-            responses.map(async (response) => new DOMParser().parseFromString(await response.text(), "application/xml")),
-          );
-          return documents.flatMap((document) =>
-            [...document.getElementsByTagName("loc")].map((node) => new URL(node.textContent ?? "", location.href)),
-          );
-        })();
-        return CommandBarElement.sitemapRequest;
-      };
-
-      const appendMissingSitemapLinks = async () => {
-        const existingPaths = new Set(
-          [...sitemapLinks.querySelectorAll<HTMLAnchorElement>("a")].map((link) => new URL(link.href).pathname),
-        );
-        const urls = await loadGeneratedSitemap();
-        let added = false;
-        urls.forEach((url, index) => {
-          const path = url.pathname;
-          if (existingPaths.has(path)) return;
-          const slug = decodeURIComponent(path.split("/").filter(Boolean).at(-1) ?? "home").replace(/^\d{4}-\d{2}-\d{2}-/, "");
-          const fallbackLabel = slug.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
-          const link = createLink(`command-sitemap-generated-${index}`, path, fallbackLabel, path);
-          link.dataset.sitemap = "";
-          sitemapLinks.appendChild(link);
-          added = true;
-        });
-        if (added && dialog.open && activePanel === "root") {
-          rebuildPageLinks();
-          filter();
-        }
-      };
-
       const select = (command?: HTMLElement, focus = false) => {
         this.querySelectorAll<HTMLElement>("[data-command]").forEach((item) => {
           item.toggleAttribute("data-active", item === command);
@@ -221,7 +175,7 @@ const sitemapPages = [
         const words = input.value.toLowerCase().trim().split(/\s+/);
         commands().forEach((command) => {
           const matches = words.every((word) => (command.dataset.search ?? "").includes(word));
-          command.hidden = command.dataset.available === "false" || !matches;
+          command.hidden = !matches;
         });
         panel().querySelectorAll<HTMLElement>("[data-group]").forEach((group) => {
           group.hidden = !group.querySelector("[data-command]:not([hidden])");
@@ -260,15 +214,14 @@ const sitemapPages = [
         const sitemapLinks = [...this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]")];
         const sitemapUrls = new Set(sitemapLinks.map((link) => normalizeUrl(link.href)));
         const pageOnlyLinks = sourceLinks.filter((source) => !sitemapUrls.has(normalizeUrl(source.href)));
-        sitemapLinks.forEach((link) => (link.dataset.available = "true"));
 
-        pageOnlyLinks.forEach((source, index) => {
+        pageOnlyLinks.forEach((source) => {
           const label = (source.getAttribute("aria-label") || source.textContent || source.href)
             .replace(/\s+/g, " ")
             .trim();
           const url = new URL(source.href);
           const detail = url.origin === location.origin ? `${url.pathname}${url.hash}` : url.hostname.replace(/^www\./, "");
-          pageLinks.appendChild(createLink(`command-page-link-${index}`, source.href, label, detail));
+          pageLinks.appendChild(createLink(source.href, label, detail));
         });
       };
 
@@ -294,7 +247,6 @@ const sitemapPages = [
         rebuildPageLinks();
         updateSchemeLabel();
         showPanel("root");
-        void appendMissingSitemapLinks().catch(() => {});
       };
 
       const move = (direction: number) => {
