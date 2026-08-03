@@ -16,6 +16,7 @@ const sitemapPages = [
     type="button"
     commandfor="command-dialog"
     command="show-modal"
+    aria-haspopup="dialog"
     aria-keyshortcuts="Meta+K Control+K"
   >
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -44,14 +45,21 @@ const sitemapPages = [
         autocomplete="off"
         autofocus
       />
-      <kbd>esc</kbd>
+      <button
+        type="button"
+        commandfor="command-dialog"
+        command="request-close"
+        aria-label="Close command bar"
+        data-close
+      >
+        <kbd aria-hidden="true">esc</kbd>
+      </button>
     </search>
 
     <div id="command-root" class="commands panel" data-panel="root">
       <section data-group>
-        <h2 id="command-actions-heading" class="group-label">Actions</h2>
+        <h2 class="group-label">Actions</h2>
         <button
-          id="command-settings"
           type="button"
           data-command
           data-settings
@@ -62,13 +70,13 @@ const sitemapPages = [
       </section>
 
       <section data-group>
-        <h2 id="command-page-links-heading" class="group-label">Links on this page</h2>
+        <h2 class="group-label">Links on this page</h2>
         <div data-page-links></div>
       </section>
 
       <section data-group>
-        <h2 id="command-sitemap-heading" class="group-label">Sitemap</h2>
-        <div data-sitemap-links>
+        <h2 class="group-label">Sitemap</h2>
+        <div>
           {
             sitemapPages.map(({ href, label }) => (
               <a
@@ -94,9 +102,8 @@ const sitemapPages = [
       hidden
     >
       <section data-group>
-        <h2 id="command-settings-heading" class="group-label">Settings</h2>
+        <h2 class="group-label">Settings</h2>
         <button
-          id="command-appearance"
           type="button"
           aria-pressed="false"
           data-command
@@ -127,27 +134,50 @@ const sitemapPages = [
         if (this.shortcutHandler) document.addEventListener("keydown", this.shortcutHandler);
         return;
       }
-      this.dataset.ready = "true";
-
       const dialog = this.querySelector<HTMLDialogElement>("dialog");
       const trigger = this.querySelector<HTMLButtonElement>(".command-trigger");
       const input = this.querySelector<HTMLInputElement>("input");
       const back = this.querySelector<HTMLButtonElement>("[data-back]");
+      const close = this.querySelector<HTMLButtonElement>("[data-close]");
       const searchIcon = this.querySelector<SVGElement>("[data-search-icon]");
       const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-      if (!dialog || !trigger || !input || !back || !searchIcon || !pageLinks) return;
+      const appearance = this.querySelector<HTMLButtonElement>("[data-appearance]");
+      const scheme = this.querySelector<HTMLElement>("[data-scheme]");
+      const rootPanel = this.querySelector<HTMLElement>('[data-panel="root"]');
+      const settingsPanel = this.querySelector<HTMLElement>('[data-panel="settings"]');
+      if (
+        !dialog ||
+        !trigger ||
+        !input ||
+        !back ||
+        !close ||
+        !searchIcon ||
+        !pageLinks ||
+        !appearance ||
+        !scheme ||
+        !rootPanel ||
+        !settingsPanel
+      ) {
+        return;
+      }
 
-      let activePanel = "root";
+      this.dataset.ready = "true";
+
+      const panels = { root: rootPanel, settings: settingsPanel };
+      let activePanel: keyof typeof panels = "root";
+      const supportsInvokerCommands = "commandForElement" in trigger;
 
       if (!navigator.platform.toLowerCase().includes("mac")) {
         const shortcut = this.querySelector<HTMLElement>(".shortcut");
         if (shortcut) shortcut.textContent = "Ctrl K";
       }
 
-      const panel = () => this.querySelector<HTMLElement>(`[data-panel="${activePanel}"]`)!;
+      const panel = () => panels[activePanel];
       const commands = () => [...panel().querySelectorAll<HTMLElement>("[data-command]")];
       const visibleCommands = () => commands().filter((command) => !command.hidden);
-      const normalizeUrl = (href: string) => new URL(href, location.href).href.replace(/#.*$/, "");
+      const absoluteUrl = (href: string) => new URL(href, location.href).href;
+      const commandFrom = (target: EventTarget | null) =>
+        target instanceof Element ? target.closest<HTMLElement>("[data-command]") : null;
 
       const createLink = (href: string, label: string, detail: string) => {
         const link = document.createElement("a");
@@ -172,7 +202,7 @@ const sitemapPages = [
       };
 
       const filter = () => {
-        const words = input.value.toLowerCase().trim().split(/\s+/);
+        const words = input.value.toLowerCase().match(/\S+/g) ?? [];
         commands().forEach((command) => {
           const matches = words.every((word) => (command.dataset.search ?? "").includes(word));
           command.hidden = !matches;
@@ -186,10 +216,10 @@ const sitemapPages = [
         select(visible[0]);
       };
 
-      const showPanel = (name: "root" | "settings") => {
+      const showPanel = (name: keyof typeof panels) => {
         activePanel = name;
-        this.querySelectorAll<HTMLElement>("[data-panel]").forEach((item) => {
-          item.hidden = item.dataset.panel !== name;
+        Object.entries(panels).forEach(([panelName, item]) => {
+          item.hidden = panelName !== name;
         });
         back.hidden = name === "root";
         searchIcon.toggleAttribute("hidden", name !== "root");
@@ -212,15 +242,18 @@ const sitemapPages = [
           (link) => !this.contains(link),
         );
         const sitemapLinks = [...this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]")];
-        const sitemapUrls = new Set(sitemapLinks.map((link) => normalizeUrl(link.href)));
-        const pageOnlyLinks = sourceLinks.filter((source) => !sitemapUrls.has(normalizeUrl(source.href)));
+        const sitemapUrls = new Set(sitemapLinks.map((link) => absoluteUrl(link.href)));
+        const pageOnlyLinks = sourceLinks.filter((source) => !sitemapUrls.has(absoluteUrl(source.href)));
 
         pageOnlyLinks.forEach((source) => {
           const label = (source.getAttribute("aria-label") || source.textContent || source.href)
             .replace(/\s+/g, " ")
             .trim();
           const url = new URL(source.href);
-          const detail = url.origin === location.origin ? `${url.pathname}${url.hash}` : url.hostname.replace(/^www\./, "");
+          const detail =
+            url.origin === location.origin
+              ? `${url.pathname}${url.search}${url.hash}`
+              : url.hostname.replace(/^www\./, "") || url.protocol.slice(0, -1);
           pageLinks.appendChild(createLink(source.href, label, detail));
         });
       };
@@ -230,11 +263,9 @@ const sitemapPages = [
         (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
       const updateSchemeLabel = () => {
-        const label = this.querySelector<HTMLElement>("[data-scheme]");
-        const button = this.querySelector<HTMLButtonElement>("[data-appearance]");
         const dark = currentScheme() === "dark";
-        if (label) label.textContent = dark ? "On" : "Off";
-        if (button) button.setAttribute("aria-pressed", String(dark));
+        scheme.textContent = dark ? "On" : "Off";
+        appearance.setAttribute("aria-pressed", String(dark));
       };
 
       const toggleAppearance = (close: boolean) => {
@@ -247,6 +278,7 @@ const sitemapPages = [
         rebuildPageLinks();
         updateSchemeLabel();
         showPanel("root");
+        if (!supportsInvokerCommands) dialog.showModal();
       };
 
       const move = (direction: number) => {
@@ -260,6 +292,11 @@ const sitemapPages = [
 
       trigger.addEventListener("click", prepare);
       back.addEventListener("click", () => showPanel("root"));
+      close.addEventListener("click", () => {
+        if (supportsInvokerCommands) return;
+        if (activePanel === "settings") showPanel("root");
+        else dialog.close();
+      });
       input.addEventListener("input", filter);
       input.addEventListener("keydown", (event) => {
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -276,7 +313,7 @@ const sitemapPages = [
         }
       });
       this.addEventListener("keydown", (event) => {
-        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        const command = commandFrom(event.target);
         if (!command || !panel().contains(command)) return;
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {
           event.preventDefault();
@@ -294,20 +331,26 @@ const sitemapPages = [
         }
       });
       this.addEventListener("pointermove", (event) => {
-        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        const command = commandFrom(event.target);
         if (command && panel().contains(command)) select(command);
       });
       this.addEventListener("focusin", (event) => {
-        const command = (event.target as Element).closest<HTMLElement>("[data-command]");
+        const command = commandFrom(event.target);
         if (command && panel().contains(command)) select(command);
       });
       this.addEventListener("click", (event) => {
-        const target = event.target as Element;
+        if (!(event.target instanceof Element)) return;
+        const target = event.target;
         if (target.closest("[data-settings]")) showPanel("settings");
         if (target.closest("[data-appearance]")) toggleAppearance(true);
       });
       this.shortcutHandler = (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (
+          !event.altKey &&
+          !event.shiftKey &&
+          (event.metaKey || event.ctrlKey) &&
+          event.key.toLowerCase() === "k"
+        ) {
           event.preventDefault();
           if (!dialog.open) trigger.click();
         }
