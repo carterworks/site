@@ -11,16 +11,22 @@ const sitemapPages = [
 ---
 
 <command-bar>
-  <button class="command-trigger" type="button" aria-haspopup="dialog">
+  <button
+    class="command-trigger"
+    type="button"
+    commandfor="command-dialog"
+    command="show-modal"
+    aria-keyshortcuts="Meta+K Control+K"
+  >
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="6" />
       <path d="m16 16 4 4" />
     </svg>
     <span>Navigate</span>
-    <kbd class="shortcut">⌘ P</kbd>
+    <kbd class="shortcut">⌘ K</kbd>
   </button>
 
-  <dialog aria-label="Navigate">
+  <dialog id="command-dialog" closedby="any" aria-label="Navigate">
     <search class="search-row" aria-label="Command palette">
       <svg data-search-icon aria-hidden="true" viewBox="0 0 24 24">
         <circle cx="11" cy="11" r="6" />
@@ -36,6 +42,7 @@ const sitemapPages = [
         aria-controls="command-root"
         placeholder="Search commands"
         autocomplete="off"
+        autofocus
       />
       <kbd>esc</kbd>
     </search>
@@ -137,7 +144,7 @@ const sitemapPages = [
 
       if (!navigator.platform.toLowerCase().includes("mac")) {
         const shortcut = this.querySelector<HTMLElement>(".shortcut");
-        if (shortcut) shortcut.textContent = "Ctrl P";
+        if (shortcut) shortcut.textContent = "Ctrl K";
       }
 
       const panel = () => this.querySelector<HTMLElement>(`[data-panel="${activePanel}"]`)!;
@@ -284,10 +291,9 @@ const sitemapPages = [
         if (close) dialog.close();
       };
 
-      const open = () => {
+      const prepare = () => {
         rebuildPageLinks();
         updateSchemeLabel();
-        dialog.showModal();
         showPanel("root");
         void appendMissingSitemapLinks().catch(() => {});
       };
@@ -301,7 +307,7 @@ const sitemapPages = [
         visible[next].scrollIntoView({ block: "nearest" });
       };
 
-      trigger.addEventListener("click", open);
+      trigger.addEventListener("click", prepare);
       back.addEventListener("click", () => showPanel("root"));
       input.addEventListener("input", filter);
       input.addEventListener("keydown", (event) => {
@@ -336,9 +342,6 @@ const sitemapPages = [
           showPanel("root");
         }
       });
-      dialog.addEventListener("click", (event) => {
-        if (event.target === dialog) dialog.close();
-      });
       this.addEventListener("pointermove", (event) => {
         const command = (event.target as Element).closest<HTMLElement>("[data-command]");
         if (command && panel().contains(command)) select(command);
@@ -353,9 +356,9 @@ const sitemapPages = [
         if (target.closest("[data-appearance]")) toggleAppearance(true);
       });
       this.shortcutHandler = (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p") {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
           event.preventDefault();
-          if (!dialog.open) open();
+          if (!dialog.open) trigger.click();
         }
       };
       document.addEventListener("keydown", this.shortcutHandler);
