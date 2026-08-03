@@ -241,7 +241,9 @@ const sitemapPages = [
         back.hidden = name === "root";
         searchIcon.toggleAttribute("hidden", name !== "root");
         input.value = "";
-        input.placeholder = name === "root" ? "Search commands" : "Search settings";
+        const searchLabel = name === "root" ? "Search commands" : "Search settings";
+        input.placeholder = searchLabel;
+        input.setAttribute("aria-label", searchLabel);
         input.setAttribute("aria-controls", name === "root" ? "command-root" : "command-settings-menu");
         this.querySelectorAll<HTMLElement>("[data-root-help]").forEach((item) => (item.hidden = name !== "root"));
         this.querySelectorAll<HTMLElement>("[data-settings-help]").forEach(
