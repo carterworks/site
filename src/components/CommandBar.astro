@@ -118,8 +118,13 @@ const sitemapPages = [
 
 <script>
   class CommandBarElement extends HTMLElement {
+    private shortcutHandler?: (event: KeyboardEvent) => void;
+
     connectedCallback() {
-      if (this.dataset.ready) return;
+      if (this.dataset.ready) {
+        if (this.shortcutHandler) document.addEventListener("keydown", this.shortcutHandler);
+        return;
+      }
       this.dataset.ready = "true";
 
       const dialog = this.querySelector<HTMLDialogElement>("dialog");
@@ -324,13 +329,18 @@ const sitemapPages = [
         if (target.closest("[data-settings]")) showPanel("settings");
         if (target.closest("[data-appearance]")) toggleAppearance(true);
       });
-      document.addEventListener("keydown", (event) => {
+      this.shortcutHandler = (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "p") {
           event.preventDefault();
           if (!dialog.open) open();
         }
-      });
+      };
+      document.addEventListener("keydown", this.shortcutHandler);
       void refreshSitemap().catch(() => {});
+    }
+
+    disconnectedCallback() {
+      if (this.shortcutHandler) document.removeEventListener("keydown", this.shortcutHandler);
     }
   }
 
