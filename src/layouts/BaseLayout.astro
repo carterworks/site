@@ -1,6 +1,7 @@
 ---
 import "./global.css";
 import { ClientRouter } from "astro:transitions";
+import CommandBar from "../components/CommandBar.astro";
 import NameTag from "../components/NameTag.astro";
 import { getPageMetadata, type PageMetadata } from "../lib/pages";
 interface Props {
@@ -81,5 +82,6 @@ const socialTitle = metadata?.ogTitle ?? title;
         <slot />
       </main>
     </div>
+    <CommandBar />
   </body>
 </html>
