@@ -283,9 +283,9 @@ const sitemapPages = [
       const move = (direction: number) => {
         const visible = visibleCommands();
         if (!visible.length) return;
-        const current = visible.indexOf(document.activeElement as HTMLElement);
+        const current = visible.findIndex((command) => command.hasAttribute("data-active"));
         const next = current === -1 ? (direction > 0 ? 0 : visible.length - 1) : (current + direction + visible.length) % visible.length;
-        select(visible[next], true);
+        select(visible[next], document.activeElement !== input);
         visible[next].scrollIntoView({ block: "nearest" });
       };
 
