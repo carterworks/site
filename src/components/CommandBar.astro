@@ -393,12 +393,15 @@ const sitemapPages = [
 
   .command-trigger {
     align-items: center;
-    background: var(--bar-surface);
-    border: 1px solid var(--bar-border);
-    border-radius: 0.25rem;
+    background: transparent;
     display: flex;
     gap: 0.5rem;
-    padding: 0.55rem 0.6rem;
+    padding: 0.35rem 0;
+  }
+
+  .command-trigger > span {
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
   }
 
   .command-trigger kbd {
@@ -582,12 +585,14 @@ const sitemapPages = [
     }
 
     dialog {
+      border-radius: 0;
+      inline-size: calc(100% - 2rem);
       inset-block-start: 1rem;
-      max-block-size: calc(100svh - 2rem);
+      max-block-size: 70svh;
     }
 
     .commands {
-      max-block-size: calc(100svh - 7rem);
+      max-block-size: calc(70svh - 3rem);
     }
 
     dialog footer {
