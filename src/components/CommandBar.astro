@@ -42,6 +42,25 @@ const sitemapPages = [
 
     <div id="command-root" class="commands panel" data-panel="root" role="listbox" aria-label="Commands">
       <section data-group>
+        <p class="group-label">Actions</p>
+        <button
+          id="command-settings"
+          type="button"
+          role="option"
+          data-command
+          data-settings
+          data-search="settings appearance theme light dark"
+        >
+          <span>Settings</span><small>›</small>
+        </button>
+      </section>
+
+      <section data-group>
+        <p class="group-label">Links on this page</p>
+        <div data-page-links></div>
+      </section>
+
+      <section data-group>
         <p class="group-label">Sitemap</p>
         <div data-sitemap-links>
           {
@@ -59,25 +78,6 @@ const sitemapPages = [
             ))
           }
         </div>
-      </section>
-
-      <section data-group>
-        <p class="group-label">Links on this page</p>
-        <div data-page-links></div>
-      </section>
-
-      <section data-group>
-        <p class="group-label">Actions</p>
-        <button
-          id="command-settings"
-          type="button"
-          role="option"
-          data-command
-          data-settings
-          data-search="settings appearance theme light dark"
-        >
-          <span>Settings</span><small>›</small>
-        </button>
       </section>
 
       <p class="empty" hidden>No matching commands</p>
