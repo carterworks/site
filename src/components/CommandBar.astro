@@ -13,69 +13,67 @@ const sitemapPages = [
 ---
 
 <command-bar>
-  <label class="command-label" for="command-search">Search</label>
+  <label class="command-label" for="command-navigate">Navigate</label>
   <input
-    id="command-search"
+    id="command-navigate"
     class="command-trigger"
     type="search"
     aria-controls="command-dialog"
     aria-haspopup="dialog"
     accesskey="k"
-    placeholder="Search"
+    placeholder="Navigate"
   />
 
   <dialog id="command-dialog" popover aria-label="Navigate">
-    <div class="search-row">
-      <button data-back type="button" aria-label="Back to all commands" hidden>
-        <span aria-hidden="true">←</span>
-      </button>
-      <span data-dialog-label>Navigate</span>
-      <button type="button" aria-label="Close command bar" data-close>
-        <kbd aria-hidden="true">esc</kbd>
-      </button>
-    </div>
+    <button class="panel-back" data-back type="button" hidden>← Back</button>
 
-    <div id="command-root" class="commands panel" data-panel="root">
+    <div id="command-root" class="commands panel stack" data-panel="root">
       <section data-group>
         <h2 class="group-label">Actions</h2>
-        <div>
-          <button
-            type="button"
-            data-command
-            data-settings
-            data-search="settings appearance theme light dark"
-          >
-            <span>Settings</span><span class="command-detail" aria-hidden="true"
-              >›</span
+        <ul>
+          <li>
+            <button
+              type="button"
+              data-command
+              data-settings
+              data-search="settings appearance theme light dark"
             >
-          </button>
-        </div>
+              <span>Settings</span><span
+                class="command-detail"
+                aria-hidden="true">›</span
+              >
+            </button>
+          </li>
+        </ul>
       </section>
 
       <section data-group>
         <h2 class="group-label">Links on this page</h2>
-        <div data-page-links></div>
+        <ul data-page-links></ul>
       </section>
 
       <section data-group>
         <h2 class="group-label">Sitemap</h2>
-        <div>
+        <ul>
           {
             sitemapPages.map(({ href, label }) => (
-              <a
-                href={href}
-                data-command
-                data-sitemap
-                data-search={`${label} ${href}`.toLowerCase()}
-              >
-                <>
+              <li>
+                <a
+                  href={href}
+                  data-command
+                  data-sitemap
+                  data-search={`${label} ${href}`.toLowerCase()}
+                >
                   <span>{label}</span>
+                  <span class="command-separator" aria-hidden="true">
+                    {" — "}
+                  </span>
                   <span class="command-detail">{href}</span>
-                </>
-              </a>
+                </a>
+              </li>
             ))
           }
-        </div>
+        </ul>
       </section>
 
       <output class="empty" hidden>No matching commands</output>
@@ -83,37 +81,30 @@ const sitemapPages = [
 
     <div
       id="command-settings-menu"
-      class="commands panel"
+      class="commands panel stack"
       data-panel="settings"
       hidden
     >
       <section data-group>
         <h2 class="group-label">Settings</h2>
-        <div>
-          <button
-            type="button"
-            aria-pressed="false"
-            data-command
-            data-appearance
-            data-search="toggle appearance theme light dark"
-          >
-            <span>Dark mode</span><span
-              class="command-detail"
-              data-scheme
-              aria-live="polite"></span>
-          </button>
-        </div>
+        <ul>
+          <li>
+            <button
+              type="button"
+              aria-pressed="false"
+              data-command
+              data-appearance
+              data-search="toggle appearance theme light dark"
+            >
+              <span>Dark mode</span><span
+                class="command-detail"
+                data-scheme
+                aria-live="polite"></span>
+            </button>
+          </li>
+        </ul>
       </section>
       <output class="empty" hidden>No matching commands</output>
-    </div>
-
-    <div class="command-help">
-      <span data-root-help><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>
-      <span data-root-help><kbd>↵</kbd> open</span>
-      <span data-settings-help hidden
-        ><kbd>⇧</kbd> <kbd>↵</kbd> toggle and stay</span
-      >
-      <span data-settings-help hidden><kbd>↵</kbd> toggle and close</span>
     </div>
   </dialog>
 </command-bar>
@@ -133,7 +124,7 @@ const sitemapPages = [
     line-height: 1.3;
   }
 
-  dialog :is(a, button, input) {
+  dialog :is(button, input) {
     color: inherit;
     font: inherit;
   }
@@ -156,88 +147,54 @@ const sitemapPages = [
     white-space: nowrap;
   }
 
-  dialog kbd {
-    font: inherit;
-  }
-
   dialog {
     background: var(--color-bg);
-    border: 0;
+    border: 1px solid currentColor;
     color: inherit;
-    inline-size: min(34rem, calc(100% - 2rem));
+    inline-size: min(30rem, calc(100% - 2rem));
     inset: min(20svh, 10rem) 0 auto;
     margin: 0 auto;
-    max-block-size: min(36rem, calc(100svh - 2rem));
-    overflow: hidden;
-    padding: 0;
+    max-block-size: min(30rem, calc(100svh - 2rem));
+    overflow-y: auto;
+    padding-block: var(--size-xs);
     position: fixed;
   }
 
   dialog:popover-open {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    display: block;
   }
 
   dialog::backdrop {
-    background: light-dark(rgb(0 0 0 / 5%), rgb(0 0 0 / 18%));
+    background: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 30%));
   }
 
-  .search-row {
-    align-items: center;
-    border-block-end: 1px solid currentColor;
-    display: grid;
-    gap: var(--size-md);
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    padding: var(--size-md);
-  }
-
-  .search-row > button:not([hidden]) {
-    align-items: center;
+  .panel-back:not([hidden]) {
     background: transparent;
-    display: flex;
-    margin: calc(-1 * var(--size-sm));
-    padding: var(--size-sm);
-  }
-
-  .search-row > [data-dialog-label] {
-    grid-column: 2;
-  }
-
-  .search-row > [data-close] {
-    grid-column: 3;
+    display: block;
+    inline-size: 100%;
+    padding: var(--size-xs) var(--size-sm);
+    text-align: start;
   }
 
   .commands {
-    counter-reset: command-group;
-    min-block-size: 0;
-    overflow-y: auto;
-    padding-block: var(--size-sm);
+    --flow-space: var(--size-xs);
+
+    padding-block: var(--size-xs);
   }
 
-  .commands section {
-    counter-increment: command-group;
-  }
-
-  .commands section + section {
-    margin-block-start: var(--size-xs);
-  }
-
-  .commands section > div {
-    border-inline-start: 1px solid currentColor;
-    margin-inline: var(--size-md);
+  .commands ul {
+    list-style: none;
   }
 
   .commands :global([data-command]:not([hidden])) {
     align-items: baseline;
     background: transparent;
     border-radius: 0;
-    color: inherit;
     display: grid;
     gap: var(--size-sm);
     grid-template-columns: minmax(0, 1fr) auto;
     padding: var(--size-xs) var(--size-sm);
     text-align: start;
-    text-decoration: none;
     inline-size: 100%;
   }
 
@@ -246,8 +203,8 @@ const sitemapPages = [
   }
 
   .commands :global([data-command][data-active]) {
-    background: var(--color-text);
-    color: var(--color-bg);
+    outline: 1px dotted currentColor;
+    outline-offset: -1px;
   }
 
   .commands :global([data-command] > span) {
@@ -266,28 +223,19 @@ const sitemapPages = [
     white-space: nowrap;
   }
 
-  .group-label {
-    font: inherit;
-    padding: var(--size-xs) var(--size-md);
+  .commands :global(.command-separator) {
+    display: none;
   }
 
-  .group-label::before {
-    content: counter(command-group, decimal-leading-zero) " / ";
+  .group-label {
+    font-size: inherit;
+    padding: var(--size-xs) var(--size-sm);
   }
 
   .empty {
     color: inherit;
     padding: var(--size-lg) var(--size-md);
     text-align: center;
-  }
-
-  .command-help {
-    border-block-start: 1px solid currentColor;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--size-md);
-    justify-content: flex-end;
-    padding: var(--size-sm) var(--size-md);
   }
 
   dialog :is(a, button):focus-visible {
@@ -300,28 +248,10 @@ const sitemapPages = [
       inset: auto;
       justify-self: end;
       margin: var(--size-sm) 0 0;
-      max-block-size: min(36rem, 100%);
+      max-block-size: min(30rem, calc(100svh - 2rem));
       position-anchor: --command-trigger;
       position-area: block-end span-inline-start;
       position-try: flip-block;
-    }
-  }
-
-  @media (width <= 640px) {
-    dialog {
-      inline-size: calc(100vw - var(--size-lg));
-      inset: 0;
-      margin: auto;
-      max-block-size: calc(100svh - var(--size-lg));
-      position-anchor: auto;
-      position-area: none;
-      position-try: none;
-    }
-  }
-
-  @media (width <= 480px) {
-    .command-help {
-      display: none;
     }
   }
 </style>

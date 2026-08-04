@@ -6,7 +6,6 @@ class CommandBarElement extends HTMLElement {
     const dialog = this.querySelector<HTMLDialogElement>("dialog");
     const trigger = this.querySelector<HTMLInputElement>(".command-trigger");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
-    const close = this.querySelector<HTMLButtonElement>("[data-close]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
     const appearance =
       this.querySelector<HTMLButtonElement>("[data-appearance]");
@@ -19,7 +18,6 @@ class CommandBarElement extends HTMLElement {
       !dialog ||
       !trigger ||
       !back ||
-      !close ||
       !pageLinks ||
       !appearance ||
       !scheme ||
@@ -53,12 +51,19 @@ class CommandBarElement extends HTMLElement {
       link.dataset.search = `${label} ${href}`.toLowerCase();
       const name = document.createElement("span");
       const destination = document.createElement("span");
+      const separator = document.createElement("span");
       destination.className = "command-detail";
+      separator.className = "command-separator";
+      separator.ariaHidden = "true";
       name.textContent = label;
+      separator.textContent = " — ";
       destination.textContent = detail;
       link.appendChild(name);
+      link.appendChild(separator);
       link.appendChild(destination);
-      return link;
+      const item = document.createElement("li");
+      item.appendChild(link);
+      return item;
     };
 
     const select = (command?: HTMLElement, focus = false) => {
@@ -98,12 +103,6 @@ class CommandBarElement extends HTMLElement {
       trigger.setAttribute(
         "aria-controls",
         name === "root" ? "command-root" : "command-settings-menu",
-      );
-      this.querySelectorAll<HTMLElement>("[data-root-help]").forEach(
-        (item) => (item.hidden = name !== "root"),
-      );
-      this.querySelectorAll<HTMLElement>("[data-settings-help]").forEach(
-        (item) => (item.hidden = name === "root"),
       );
       filter();
       trigger.focus();
@@ -186,10 +185,6 @@ class CommandBarElement extends HTMLElement {
     trigger.addEventListener("focus", prepare);
     trigger.addEventListener("click", prepare);
     back.addEventListener("click", () => showPanel("root"));
-    close.addEventListener("click", () => {
-      if (activePanel === "settings") showPanel("root");
-      else dialog.hidePopover();
-    });
     trigger.addEventListener("input", filter);
     trigger.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
