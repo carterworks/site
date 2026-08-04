@@ -14,7 +14,7 @@
     block-size: auto;
   }
   p {
-    text-wrap: balance;
+    text-wrap: pretty;
   }
 }
 @font-face {
