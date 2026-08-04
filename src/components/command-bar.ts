@@ -1,3 +1,5 @@
+import { rankSearchResults } from "../lib/search";
+
 class CommandBarElement extends HTMLElement {
   private shortcutHandler?: (event: KeyboardEvent) => void;
 
@@ -83,22 +85,23 @@ class CommandBarElement extends HTMLElement {
     };
 
     const filter = () => {
-      const words = input.value.toLowerCase().match(/\S+/g) ?? [];
+      const rankedCommands = rankSearchResults(
+        commands(),
+        input.value,
+        (command) => command.dataset.search ?? "",
+      );
+      const matches = new Set(rankedCommands);
       commands().forEach((command) => {
-        const matches = words.every((word) =>
-          (command.dataset.search ?? "").includes(word),
-        );
-        command.hidden = !matches;
+        command.hidden = !matches.has(command);
       });
       panel()
         .querySelectorAll<HTMLElement>("[data-group]")
         .forEach((group) => {
           group.hidden = !group.querySelector("[data-command]:not([hidden])");
         });
-      const visible = visibleCommands();
       const empty = panel().querySelector<HTMLElement>(".empty");
-      if (empty) empty.hidden = visible.length !== 0;
-      select(visible[0]);
+      if (empty) empty.hidden = rankedCommands.length !== 0;
+      select(rankedCommands[0]);
     };
 
     const showPanel = (name: keyof typeof panels) => {
