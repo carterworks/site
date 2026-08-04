@@ -5,48 +5,35 @@ const posts = await getPublishedPosts();
 const sitemapPages = [
   { href: "/", label: "Home" },
   { href: "/blog/", label: "Writing" },
-  ...posts.map((post) => ({ href: `/blog/${post.id}/`, label: getPostTitle(post) })),
+  ...posts.map((post) => ({
+    href: `/blog/${post.id}/`,
+    label: getPostTitle(post),
+  })),
 ];
 ---
 
 <command-bar>
-  <button
+  <label class="command-label" for="command-search">Search</label>
+  <input
+    id="command-search"
     class="command-trigger"
-    type="button"
-    commandfor="command-dialog"
-    command="show-modal"
+    type="search"
+    aria-controls="command-dialog"
     aria-haspopup="dialog"
-    aria-keyshortcuts="Meta+K Control+K"
-  >
-    <span>Navigate</span>
-    <kbd class="shortcut">⌘ K</kbd>
-  </button>
+    accesskey="k"
+    placeholder="Search"
+  />
 
-  <dialog id="command-dialog" closedby="any" aria-label="Navigate">
-    <search class="search-row" aria-label="Command palette">
-      <span data-search-icon aria-hidden="true">/</span>
+  <dialog id="command-dialog" popover aria-label="Navigate">
+    <div class="search-row">
       <button data-back type="button" aria-label="Back to all commands" hidden>
         <span aria-hidden="true">←</span>
       </button>
-      <input
-        id="command-search"
-        type="search"
-        aria-label="Search commands"
-        aria-controls="command-root"
-        placeholder="Search commands"
-        autocomplete="off"
-        autofocus
-      />
-      <button
-        type="button"
-        commandfor="command-dialog"
-        command="request-close"
-        aria-label="Close command bar"
-        data-close
-      >
+      <span data-dialog-label>Navigate</span>
+      <button type="button" aria-label="Close command bar" data-close>
         <kbd aria-hidden="true">esc</kbd>
       </button>
-    </search>
+    </div>
 
     <div id="command-root" class="commands panel" data-panel="root">
       <section data-group>
@@ -58,7 +45,9 @@ const sitemapPages = [
             data-settings
             data-search="settings appearance theme light dark"
           >
-            <span>Settings</span><span class="command-detail" aria-hidden="true">›</span>
+            <span>Settings</span><span class="command-detail" aria-hidden="true"
+              >›</span
+            >
           </button>
         </div>
       </section>
@@ -79,14 +68,17 @@ const sitemapPages = [
                 data-sitemap
                 data-search={`${label} ${href}`.toLowerCase()}
               >
-                <span>{label}</span><span class="command-detail">{href}</span>
+                <>
+                  <span>{label}</span>
+                  <span class="command-detail">{href}</span>
+                </>
               </a>
             ))
           }
         </div>
       </section>
 
-      <output class="empty" for="command-search" hidden>No matching commands</output>
+      <output class="empty" hidden>No matching commands</output>
     </div>
 
     <div
@@ -105,17 +97,22 @@ const sitemapPages = [
             data-appearance
             data-search="toggle appearance theme light dark"
           >
-            <span>Dark mode</span><span class="command-detail" data-scheme aria-live="polite"></span>
+            <span>Dark mode</span><span
+              class="command-detail"
+              data-scheme
+              aria-live="polite"></span>
           </button>
         </div>
       </section>
-      <output class="empty" for="command-search" hidden>No matching commands</output>
+      <output class="empty" hidden>No matching commands</output>
     </div>
 
     <div class="command-help">
       <span data-root-help><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>
       <span data-root-help><kbd>↵</kbd> open</span>
-      <span data-settings-help hidden><kbd>⇧</kbd> <kbd>↵</kbd> toggle and stay</span>
+      <span data-settings-help hidden
+        ><kbd>⇧</kbd> <kbd>↵</kbd> toggle and stay</span
+      >
       <span data-settings-help hidden><kbd>↵</kbd> toggle and close</span>
     </div>
   </dialog>
@@ -127,39 +124,39 @@ const sitemapPages = [
 
 <style>
   command-bar {
+    align-items: center;
     color: var(--color-text);
-    display: block;
+    display: flex;
     font-size: 0.875rem;
     font-weight: 400;
+    gap: var(--size-sm);
     line-height: 1.3;
-    inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
-    position: fixed;
-    z-index: 10;
   }
 
-  command-bar :is(a, button, input) {
+  dialog :is(a, button, input) {
     color: inherit;
     font: inherit;
   }
 
-  command-bar button {
+  dialog button {
     border: 0;
     cursor: pointer;
   }
 
   .command-trigger {
-    align-items: center;
-    background: transparent;
-    display: flex;
-    gap: var(--size-md);
-    padding: var(--size-sm) 0;
+    anchor-name: --command-trigger;
   }
 
-  .command-trigger kbd {
-    margin-inline-start: var(--size-sm);
+  .command-label {
+    block-size: 1px;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
   }
 
-  command-bar kbd {
+  dialog kbd {
     font: inherit;
   }
 
@@ -176,7 +173,7 @@ const sitemapPages = [
     position: fixed;
   }
 
-  dialog:open {
+  dialog:popover-open {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
@@ -202,19 +199,12 @@ const sitemapPages = [
     padding: var(--size-sm);
   }
 
-  .search-row > [data-search-icon][hidden] {
-    display: none;
+  .search-row > [data-dialog-label] {
+    grid-column: 2;
   }
 
-  dialog input {
-    background: transparent;
-    border: 0;
-    outline: 0;
-  }
-
-  dialog input::placeholder {
-    color: inherit;
-    opacity: 1;
+  .search-row > [data-close] {
+    grid-column: 3;
   }
 
   .commands {
@@ -244,29 +234,20 @@ const sitemapPages = [
     color: inherit;
     display: grid;
     gap: var(--size-sm);
-    grid-template-columns: 1ch minmax(0, 1fr) auto;
-    padding: var(--size-xs) 0 var(--size-xs) var(--size-sm);
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--size-xs) var(--size-sm);
     text-align: start;
     text-decoration: none;
     inline-size: 100%;
-  }
-
-  .commands :global([data-command]::before) {
-    content: "";
   }
 
   .commands :global([data-command]::after) {
     content: none;
   }
 
-  .commands :global([data-command][data-active]::before) {
-    content: "→";
-  }
-
-  .commands :global([data-command][data-active] > span:first-child) {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.2em;
+  .commands :global([data-command][data-active]) {
+    background: var(--color-text);
+    color: var(--color-bg);
   }
 
   .commands :global([data-command] > span) {
@@ -303,36 +284,42 @@ const sitemapPages = [
   .command-help {
     border-block-start: 1px solid currentColor;
     display: flex;
+    flex-wrap: wrap;
     gap: var(--size-md);
     justify-content: flex-end;
     padding: var(--size-sm) var(--size-md);
   }
 
-  command-bar :is(a, button):focus-visible {
+  dialog :is(a, button):focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
   }
 
-  .command-trigger:active {
-    transform: scale(0.97);
+  @supports (position-area: block-end) {
+    dialog {
+      inset: auto;
+      justify-self: end;
+      margin: var(--size-sm) 0 0;
+      max-block-size: min(36rem, 100%);
+      position-anchor: --command-trigger;
+      position-area: block-end span-inline-start;
+      position-try: flip-block;
+    }
+  }
+
+  @media (width <= 640px) {
+    dialog {
+      inline-size: calc(100vw - var(--size-lg));
+      inset: 0;
+      margin: auto;
+      max-block-size: calc(100svh - var(--size-lg));
+      position-anchor: auto;
+      position-area: none;
+      position-try: none;
+    }
   }
 
   @media (width <= 480px) {
-    command-bar {
-      inset-inline: 1rem;
-    }
-
-    .command-trigger {
-      justify-content: center;
-      margin-inline-start: auto;
-    }
-
-    dialog {
-      inline-size: calc(100% - 2rem);
-      inset-block-start: 1rem;
-      max-block-size: 70svh;
-    }
-
     .command-help {
       display: none;
     }

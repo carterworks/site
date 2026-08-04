@@ -1,18 +1,17 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import "./command-bar";
 
 const markup = `
   <a href="/blog/post/">Article on this page</a>
   <a href="https://example.com/reference">External reference</a>
   <command-bar>
-    <button class="command-trigger" type="button"><span>Navigate</span><kbd class="shortcut">⌘ K</kbd></button>
-    <dialog>
-      <search>
-        <span data-search-icon>/</span>
+    <label for="command-search">Search</label>
+    <input id="command-search" class="command-trigger" type="search" accesskey="k" placeholder="Search" />
+    <dialog popover>
+      <div>
         <button data-back type="button" hidden>Back</button>
-        <input type="search" aria-label="Search commands" aria-controls="command-root" />
         <button data-close type="button">Close</button>
-      </search>
+      </div>
       <div id="command-root" data-panel="root">
         <section data-group>
           <button type="button" data-command data-settings data-search="settings appearance theme light dark">Settings</button>
@@ -43,6 +42,21 @@ function setupCommandBar() {
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
+
+  const dialog = document.querySelector<HTMLDialogElement>("dialog");
+  if (!dialog || typeof dialog.showPopover === "function") return;
+  const matches = dialog.matches.bind(dialog);
+  dialog.matches = ((selector: string) =>
+    selector === ":popover-open"
+      ? dialog.hasAttribute("data-popover-open")
+      : matches(selector)) as typeof dialog.matches;
+  dialog.showPopover = () => dialog.setAttribute("data-popover-open", "");
+  dialog.hidePopover = () => {
+    dialog.removeAttribute("data-popover-open");
+    const event = new Event("toggle");
+    Object.defineProperty(event, "newState", { value: "closed" });
+    dialog.dispatchEvent(event);
+  };
 }
 
 function getElement<T extends Element>(
@@ -58,9 +72,11 @@ describe("command bar", () => {
   beforeEach(setupCommandBar);
 
   test("opens with links from the current page and omits sitemap duplicates", () => {
-    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLInputElement>(".command-trigger").click();
 
-    expect(getElement<HTMLDialogElement>("dialog").open).toBe(true);
+    expect(
+      getElement<HTMLDialogElement>("dialog").matches(":popover-open"),
+    ).toBe(true);
     const links = [...getElement("[data-page-links]").querySelectorAll("a")];
     expect(links.map((link) => link.textContent)).toEqual([
       "External referenceexample.com",
@@ -68,20 +84,24 @@ describe("command bar", () => {
     expect(links[0]?.href).toBe("https://example.com/reference");
   });
 
-  test("opens with the keyboard shortcut", () => {
-    document.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "k",
-        ctrlKey: true,
-        bubbles: true,
-      }),
-    );
+  test("uses a native access key", () => {
+    expect(
+      getElement<HTMLInputElement>(".command-trigger").getAttribute(
+        "accesskey",
+      ),
+    ).toBe("k");
+  });
 
-    expect(getElement<HTMLDialogElement>("dialog").open).toBe(true);
+  test("scrolls to the top before opening", () => {
+    const scrollTo = vi.spyOn(window, "scrollTo");
+
+    getElement<HTMLInputElement>(".command-trigger").click();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
   test("filters commands by every search word and reports an empty result", () => {
-    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLInputElement>(".command-trigger").click();
     const input = getElement<HTMLInputElement>("input");
 
     input.value = "appearance dark";
@@ -101,23 +121,26 @@ describe("command bar", () => {
   });
 
   test("opens settings and toggles dark mode", () => {
-    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLInputElement>(".command-trigger").click();
     getElement<HTMLButtonElement>("[data-settings]").click();
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
       false,
     );
-    expect(
-      getElement<HTMLInputElement>("input").getAttribute("aria-label"),
-    ).toBe("Search settings");
+    expect(getElement<HTMLInputElement>("input").labels?.[0]?.textContent).toBe(
+      "Search",
+    );
+    expect(getElement<HTMLInputElement>("input").placeholder).toBe("Search");
 
     const appearance = getElement<HTMLButtonElement>("[data-appearance]");
     appearance.click();
 
     expect(document.documentElement.style.colorScheme).toBe("dark");
     expect(appearance.getAttribute("aria-pressed")).toBe("true");
-    expect(getElement<HTMLDialogElement>("dialog").open).toBe(false);
+    expect(
+      getElement<HTMLDialogElement>("dialog").matches(":popover-open"),
+    ).toBe(false);
   });
 });
 
@@ -125,7 +148,7 @@ describe("command bar keyboard navigation", () => {
   beforeEach(setupCommandBar);
 
   test("ArrowUp and ArrowDown wrap through visible commands", () => {
-    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
       new MouseEvent("click", { bubbles: true }),
     );
     const input = getElement<HTMLInputElement>("input");
@@ -172,7 +195,7 @@ describe("command bar keyboard navigation", () => {
   });
 
   test("Enter activates the selected command", () => {
-    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
       new MouseEvent("click", { bubbles: true }),
     );
 
@@ -188,9 +211,6 @@ describe("command bar keyboard navigation", () => {
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
       false,
     );
-    expect(
-      getElement<HTMLInputElement>("input").getAttribute("aria-label"),
-    ).toBe("Search settings");
   });
 });
 
@@ -198,27 +218,37 @@ describe("command bar dialog", () => {
   beforeEach(setupCommandBar);
 
   test("Escape returns from settings before closing the dialog", () => {
-    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLInputElement>(".command-trigger").click();
     getElement<HTMLButtonElement>("[data-settings]").click();
     const dialog = getElement<HTMLDialogElement>("dialog");
 
-    const firstCancel = new Event("cancel", { cancelable: true });
-    if (dialog.dispatchEvent(firstCancel)) dialog.close();
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
 
-    expect(dialog.open).toBe(true);
+    expect(dialog.matches(":popover-open")).toBe(true);
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(false);
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
       true,
     );
 
-    const secondCancel = new Event("cancel", { cancelable: true });
-    if (dialog.dispatchEvent(secondCancel)) dialog.close();
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
 
-    expect(dialog.open).toBe(false);
+    expect(dialog.matches(":popover-open")).toBe(false);
   });
 
   test("Shift+Enter toggles appearance without closing the dialog", () => {
-    getElement<HTMLButtonElement>(".command-trigger").click();
+    getElement<HTMLInputElement>(".command-trigger").click();
     getElement<HTMLButtonElement>("[data-settings]").click();
     const dialog = getElement<HTMLDialogElement>("dialog");
     const input = getElement<HTMLInputElement>("input");
@@ -238,7 +268,7 @@ describe("command bar dialog", () => {
         "aria-pressed",
       ),
     ).toBe("true");
-    expect(dialog.open).toBe(true);
+    expect(dialog.matches(":popover-open")).toBe(true);
   });
 });
 
@@ -246,7 +276,7 @@ describe("command bar dynamic behavior", () => {
   beforeEach(setupCommandBar);
 
   test("rebuilds page links when reopened after page content changes", () => {
-    const trigger = getElement<HTMLButtonElement>(".command-trigger");
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
     trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(
@@ -276,7 +306,7 @@ describe("command bar dynamic behavior", () => {
   });
 
   test("selects a visible result when filtering hides the prior selection", () => {
-    getElement<HTMLButtonElement>(".command-trigger").dispatchEvent(
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
       new MouseEvent("click", { bubbles: true }),
     );
     const settings = getElement<HTMLElement>("[data-settings]");

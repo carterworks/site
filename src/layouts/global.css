@@ -89,6 +89,18 @@ body {
     grid-area: content;
   }
 }
+input {
+  background: var(--color-bg);
+  border: 1px solid currentColor;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  padding: var(--size-xs) var(--size-sm);
+}
+input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
 :is(ol, ul) > li + li {
   /* match the line-height on the body */
   margin-block-start: calc(1lh - 1em);

@@ -1,20 +1,12 @@
 import { rankSearchResults } from "../lib/search";
 
 class CommandBarElement extends HTMLElement {
-  private shortcutHandler?: (event: KeyboardEvent) => void;
-
   connectedCallback() {
-    if (this.dataset.ready) {
-      if (this.shortcutHandler)
-        document.addEventListener("keydown", this.shortcutHandler);
-      return;
-    }
+    if (this.dataset.ready) return;
     const dialog = this.querySelector<HTMLDialogElement>("dialog");
-    const trigger = this.querySelector<HTMLButtonElement>(".command-trigger");
-    const input = this.querySelector<HTMLInputElement>("input");
+    const trigger = this.querySelector<HTMLInputElement>(".command-trigger");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
     const close = this.querySelector<HTMLButtonElement>("[data-close]");
-    const searchIcon = this.querySelector<HTMLElement>("[data-search-icon]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
     const appearance =
       this.querySelector<HTMLButtonElement>("[data-appearance]");
@@ -26,10 +18,8 @@ class CommandBarElement extends HTMLElement {
     if (
       !dialog ||
       !trigger ||
-      !input ||
       !back ||
       !close ||
-      !searchIcon ||
       !pageLinks ||
       !appearance ||
       !scheme ||
@@ -43,12 +33,6 @@ class CommandBarElement extends HTMLElement {
 
     const panels = { root: rootPanel, settings: settingsPanel };
     let activePanel: keyof typeof panels = "root";
-    const supportsInvokerCommands = "commandForElement" in trigger;
-
-    if (!navigator.platform.toLowerCase().includes("mac")) {
-      const shortcut = this.querySelector<HTMLElement>(".shortcut");
-      if (shortcut) shortcut.textContent = "Ctrl K";
-    }
 
     const panel = () => panels[activePanel];
     const commands = () => [
@@ -87,7 +71,7 @@ class CommandBarElement extends HTMLElement {
     const filter = () => {
       const rankedCommands = rankSearchResults(
         commands(),
-        input.value,
+        trigger.value,
         (command) => command.dataset.search ?? "",
       );
       const matches = new Set(rankedCommands);
@@ -110,13 +94,8 @@ class CommandBarElement extends HTMLElement {
         item.hidden = panelName !== name;
       });
       back.hidden = name === "root";
-      searchIcon.toggleAttribute("hidden", name !== "root");
-      input.value = "";
-      const searchLabel =
-        name === "root" ? "Search commands" : "Search settings";
-      input.placeholder = searchLabel;
-      input.setAttribute("aria-label", searchLabel);
-      input.setAttribute(
+      trigger.value = "";
+      trigger.setAttribute(
         "aria-controls",
         name === "root" ? "command-root" : "command-settings-menu",
       );
@@ -127,7 +106,7 @@ class CommandBarElement extends HTMLElement {
         (item) => (item.hidden = name === "root"),
       );
       filter();
-      input.focus();
+      trigger.focus();
     };
 
     const rebuildPageLinks = () => {
@@ -176,14 +155,16 @@ class CommandBarElement extends HTMLElement {
       document.documentElement.style.colorScheme =
         currentScheme() === "dark" ? "light" : "dark";
       updateSchemeLabel();
-      if (close) dialog.close();
+      if (close) dialog.hidePopover();
     };
 
     const prepare = () => {
+      if (dialog.matches(":popover-open")) return;
+      window.scrollTo(0, 0);
       rebuildPageLinks();
       updateSchemeLabel();
+      dialog.showPopover();
       showPanel("root");
-      if (!supportsInvokerCommands) dialog.showModal();
     };
 
     const move = (direction: number) => {
@@ -198,19 +179,28 @@ class CommandBarElement extends HTMLElement {
             ? 0
             : visible.length - 1
           : (current + direction + visible.length) % visible.length;
-      select(visible[next], document.activeElement !== input);
+      select(visible[next], document.activeElement !== trigger);
       visible[next].scrollIntoView({ block: "nearest" });
     };
 
+    trigger.addEventListener("focus", prepare);
     trigger.addEventListener("click", prepare);
     back.addEventListener("click", () => showPanel("root"));
     close.addEventListener("click", () => {
-      if (supportsInvokerCommands) return;
       if (activePanel === "settings") showPanel("root");
-      else dialog.close();
+      else dialog.hidePopover();
     });
-    input.addEventListener("input", filter);
-    input.addEventListener("keydown", (event) => {
+    trigger.addEventListener("input", filter);
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        if (activePanel === "settings") {
+          event.preventDefault();
+          showPanel("root");
+        } else {
+          dialog.hidePopover();
+        }
+        return;
+      }
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         move(event.key === "ArrowDown" ? 1 : -1);
@@ -242,11 +232,8 @@ class CommandBarElement extends HTMLElement {
         toggleAppearance(false);
       }
     });
-    dialog.addEventListener("cancel", (event) => {
-      if (activePanel === "settings") {
-        event.preventDefault();
-        showPanel("root");
-      }
+    dialog.addEventListener("toggle", (event) => {
+      if (event.newState === "closed") trigger.blur();
     });
     this.addEventListener("pointermove", (event) => {
       const command = commandFrom(event.target);
@@ -262,23 +249,6 @@ class CommandBarElement extends HTMLElement {
       if (target.closest("[data-settings]")) showPanel("settings");
       if (target.closest("[data-appearance]")) toggleAppearance(true);
     });
-    this.shortcutHandler = (event) => {
-      if (
-        !event.altKey &&
-        !event.shiftKey &&
-        (event.metaKey || event.ctrlKey) &&
-        event.key.toLowerCase() === "k"
-      ) {
-        event.preventDefault();
-        if (!dialog.open) trigger.click();
-      }
-    };
-    document.addEventListener("keydown", this.shortcutHandler);
-  }
-
-  disconnectedCallback() {
-    if (this.shortcutHandler)
-      document.removeEventListener("keydown", this.shortcutHandler);
   }
 }
 

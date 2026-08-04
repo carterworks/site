@@ -77,11 +77,45 @@ const socialTitle = metadata?.ogTitle ?? title;
     <div class="stack">
       <header>
         <NameTag href="/" />
+        <CommandBar />
       </header>
       <main class={className}>
         <slot />
       </main>
     </div>
-    <CommandBar />
   </body>
 </html>
+
+<style>
+  header {
+    align-items: center;
+    background: var(--color-bg);
+    container-name: sticky-header;
+    container-type: scroll-state;
+    display: flex;
+    inline-size: 100vw;
+    justify-content: space-between;
+    margin-inline: calc(50% - 50vw);
+    padding-block: var(--size-sm);
+    padding-inline: max(var(--size-md), calc((100vw - var(--size-prose)) / 2));
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  header::after {
+    background: linear-gradient(var(--color-bg), transparent);
+    block-size: var(--size-lg);
+    content: "";
+    inset: 100% 0 auto;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  @container sticky-header scroll-state(stuck: top) {
+    header::after {
+      opacity: 1;
+    }
+  }
+</style>
