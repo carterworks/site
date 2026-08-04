@@ -159,7 +159,6 @@ class CommandBarElement extends HTMLElement {
 
     const prepare = () => {
       if (dialog.matches(":popover-open")) return;
-      window.scrollTo(0, 0);
       rebuildPageLinks();
       updateSchemeLabel();
       dialog.showPopover();

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import "./command-bar";
 
 const markup = `
@@ -86,14 +86,6 @@ describe("command bar", () => {
         "accesskey",
       ),
     ).toBe("k");
-  });
-
-  test("scrolls to the top before opening", () => {
-    const scrollTo = vi.spyOn(window, "scrollTo");
-
-    getElement<HTMLInputElement>(".command-trigger").click();
-
-    expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
   test("filters commands by every search word and reports an empty result", () => {
