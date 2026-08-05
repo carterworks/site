@@ -18,23 +18,18 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content, remarkPluginFrontmatter } = await render(entry);
-const frontmatter = {
-  ...entry.data,
-  articleClass: remarkPluginFrontmatter.articleClass,
-};
-const pubDateISO = frontmatter.pubDate.toISOString();
-const humanFriendlyDate = formatDateLong(frontmatter.pubDate);
+const pubDateISO = entry.data.pubDate.toISOString();
+const humanFriendlyDate = formatDateLong(entry.data.pubDate);
 const title = getPostTitle(entry);
 const pageTitle = `${title} | carter.works`;
 const description = getPostDescription(entry);
-const ogImage = new URL(`/og/${entry.id}.webp`, Astro.site);
 ---
 
 <BaseLayout
   metadata={{
     description,
     id: entry.id,
-    ogImage,
+    ogImage: `/og/${entry.id}.webp`,
     ogTitle: title,
     ogType: "article",
     title: pageTitle,
@@ -50,10 +45,10 @@ const ogImage = new URL(`/og/${entry.id}.webp`, Astro.site);
       }
     </style>
   </Fragment>
-  <article class:list={["stack", frontmatter.articleClass]}>
+  <article class:list={["stack", remarkPluginFrontmatter.articleClass]}>
     <header class="stack">
       <h1>
-        {frontmatter.draft && "Rough Draft: "}{title}
+        {entry.data.draft && "Rough Draft: "}{title}
       </h1>
       <p>
         <time datetime={pubDateISO}>{humanFriendlyDate}</time>

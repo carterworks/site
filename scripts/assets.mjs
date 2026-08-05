@@ -17,7 +17,7 @@ Examples:
   nub run assets ./incoming --out=same
   nub run assets ./incoming --widths=480,960 --quality=55`;
 
-/** @typedef {{ inputs: string[], out: string, outDir?: string, quality: number, widths: number[] }} Options */
+/** @typedef {{ inputs: string[], out: string, quality: number, widths: number[] }} Options */
 /** @typedef {"image" | "video"} AssetKind */
 
 /**
@@ -153,20 +153,10 @@ const gitFiles = async () => {
 /**
  * @param {string} input
  * @param {Options} opts
- * @returns {Promise<string>}
- */
-const outputDir = async (input, opts) => {
-  const dir = opts.out === "same" ? path.dirname(input) : opts.out;
-  await mkdir(dir, { recursive: true });
-  return dir;
-};
-
-/**
- * @param {string} input
- * @param {Options} opts
+ * @param {string} outDir
  * @returns {Promise<string[]>}
  */
-const convertImage = async (input, opts) => {
+const convertImage = async (input, opts, outDir) => {
   const metadata = await sharp(input).metadata();
   if (!metadata.width)
     throw new Error(`Could not determine image width: ${input}`);
@@ -180,7 +170,7 @@ const convertImage = async (input, opts) => {
   /** @type {{ width: number, output: string }[]} */
   const outputs = (widths.length ? widths : [metadata.width]).map((width) => ({
     width,
-    output: path.join(opts.outDir, `${name}-${width}.avif`),
+    output: path.join(outDir, `${name}-${width}.avif`),
   }));
 
   /** @type {string[]} */
@@ -198,14 +188,14 @@ const convertImage = async (input, opts) => {
 
 /**
  * @param {string} input
- * @param {Options} opts
+ * @param {string} outDir
  * @returns {Promise<string[]>}
  */
-const convertVideo = async (input, opts) => {
+const convertVideo = async (input, outDir) => {
   const name = slug(path.basename(input, path.extname(input)));
   if (!name) throw new Error(`Invalid output name: ${input}`);
 
-  const output = path.join(opts.outDir, `${name}.webm`);
+  const output = path.join(outDir, `${name}.webm`);
   if (await exists(output)) return [];
 
   await run([
@@ -258,11 +248,12 @@ if (inputs.some((input) => kind(input) === "video")) await requireFfmpeg();
 /** @type {string[]} */
 const generated = [];
 for (const input of inputs) {
-  opts.outDir = await outputDir(input, opts);
+  const outDir = opts.out === "same" ? path.dirname(input) : opts.out;
+  await mkdir(outDir, { recursive: true });
   generated.push(
     ...(kind(input) === "video"
-      ? await convertVideo(input, opts)
-      : await convertImage(input, opts)),
+      ? await convertVideo(input, outDir)
+      : await convertImage(input, opts, outDir)),
   );
 }
 

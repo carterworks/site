@@ -46,7 +46,7 @@ async function renderPostContent(post: BlogPost, site: string) {
   return absolutizeHtmlUrls(code, site);
 }
 
-export async function createBlogFeed(
+async function createBlogFeed(
   posts: BlogPost[],
   site: string,
   format: FeedFormat = "atom",
@@ -91,11 +91,9 @@ export async function createBlogFeed(
 
 export function getBlogFeed(site: string, format: FeedFormat = "atom") {
   const cacheKey = `${format}:${new URL(site).href}`;
-  const feed = feeds.get(cacheKey) ?? createCachedBlogFeed(site, format);
+  const feed =
+    feeds.get(cacheKey) ??
+    getPublishedPosts().then((posts) => createBlogFeed(posts, site, format));
   feeds.set(cacheKey, feed);
   return feed;
-}
-
-async function createCachedBlogFeed(site: string, format: FeedFormat) {
-  return createBlogFeed(await getPublishedPosts(), site, format);
 }

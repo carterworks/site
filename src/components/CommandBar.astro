@@ -27,7 +27,7 @@ const sitemapPages = [
   <dialog id="command-dialog" popover aria-label="Navigate">
     <button class="panel-back" data-back type="button" hidden>← Back</button>
 
-    <div id="command-root" class="commands panel stack" data-panel="root">
+    <div id="command-root" class="commands stack" data-panel="root">
       <section data-group>
         <h2 class="group-label">Actions</h2>
         <ul>
@@ -62,7 +62,7 @@ const sitemapPages = [
                   href={href}
                   data-command
                   data-sitemap
-                  data-search={`${label} ${href}`.toLowerCase()}
+                  data-search={`${label} ${href}`}
                 >
                   <span>{label}</span>
                   <span class="command-separator" aria-hidden="true">
@@ -81,7 +81,7 @@ const sitemapPages = [
 
     <div
       id="command-settings-menu"
-      class="commands panel stack"
+      class="commands stack"
       data-panel="settings"
       hidden
     >

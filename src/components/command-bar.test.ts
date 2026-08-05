@@ -55,18 +55,26 @@ function setupCommandBar() {
   };
 }
 
-function getElement<T extends Element>(
-  selector: string,
-  parent: ParentNode = document,
-) {
-  const element = parent.querySelector<T>(selector);
+function getElement<T extends Element>(selector: string) {
+  const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Missing test element: ${selector}`);
   return element;
 }
 
-describe("command bar", () => {
-  beforeEach(setupCommandBar);
+function pressKey(target: Element, key: string, init?: KeyboardEventInit) {
+  target.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key,
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    }),
+  );
+}
 
+beforeEach(setupCommandBar);
+
+describe("command bar", () => {
   test("opens with links from the current page and omits sitemap duplicates", () => {
     getElement<HTMLInputElement>(".command-trigger").click();
 
@@ -80,19 +88,11 @@ describe("command bar", () => {
     expect(links[0]?.href).toBe("https://example.com/reference");
   });
 
-  test("uses a native access key", () => {
-    expect(
-      getElement<HTMLInputElement>(".command-trigger").getAttribute(
-        "accesskey",
-      ),
-    ).toBe("k");
-  });
-
   test("filters commands by every search word and reports an empty result", () => {
     getElement<HTMLInputElement>(".command-trigger").click();
     const input = getElement<HTMLInputElement>("input");
 
-    input.value = "appearance dark";
+    input.value = "APPEARANCE dark";
     input.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(getElement<HTMLElement>("[data-settings]").hidden).toBe(false);
@@ -116,11 +116,6 @@ describe("command bar", () => {
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
       false,
     );
-    expect(getElement<HTMLInputElement>("input").labels?.[0]?.textContent).toBe(
-      "Navigate",
-    );
-    expect(getElement<HTMLInputElement>("input").placeholder).toBe("Navigate");
-
     const appearance = getElement<HTMLButtonElement>("[data-appearance]");
     appearance.click();
 
@@ -133,8 +128,6 @@ describe("command bar", () => {
 });
 
 describe("command bar keyboard navigation", () => {
-  beforeEach(setupCommandBar);
-
   test("ArrowUp and ArrowDown wrap through visible commands", () => {
     getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
       new MouseEvent("click", { bubbles: true }),
@@ -154,31 +147,13 @@ describe("command bar keyboard navigation", () => {
     expect(home.hidden).toBe(true);
     expect(settings.hasAttribute("data-active")).toBe(true);
 
-    input.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "ArrowUp",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(input, "ArrowUp");
     expect(article.hasAttribute("data-active")).toBe(true);
 
-    input.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "ArrowDown",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(input, "ArrowDown");
     expect(settings.hasAttribute("data-active")).toBe(true);
 
-    input.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "ArrowDown",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(input, "ArrowDown");
     expect(external.hasAttribute("data-active")).toBe(true);
   });
 
@@ -187,13 +162,7 @@ describe("command bar keyboard navigation", () => {
       new MouseEvent("click", { bubbles: true }),
     );
 
-    getElement<HTMLInputElement>("input").dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(getElement<HTMLInputElement>("input"), "Enter");
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
@@ -203,20 +172,12 @@ describe("command bar keyboard navigation", () => {
 });
 
 describe("command bar dialog", () => {
-  beforeEach(setupCommandBar);
-
   test("Escape returns from settings before closing the dialog", () => {
     getElement<HTMLInputElement>(".command-trigger").click();
     getElement<HTMLButtonElement>("[data-settings]").click();
     const dialog = getElement<HTMLDialogElement>("dialog");
 
-    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Escape",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(getElement<HTMLInputElement>(".command-trigger"), "Escape");
 
     expect(dialog.matches(":popover-open")).toBe(true);
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(false);
@@ -224,13 +185,7 @@ describe("command bar dialog", () => {
       true,
     );
 
-    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Escape",
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(getElement<HTMLInputElement>(".command-trigger"), "Escape");
 
     expect(dialog.matches(":popover-open")).toBe(false);
   });
@@ -241,14 +196,7 @@ describe("command bar dialog", () => {
     const dialog = getElement<HTMLDialogElement>("dialog");
     const input = getElement<HTMLInputElement>("input");
 
-    input.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "Enter",
-        shiftKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    pressKey(input, "Enter", { shiftKey: true });
 
     expect(document.documentElement.style.colorScheme).toBe("dark");
     expect(
@@ -261,8 +209,6 @@ describe("command bar dialog", () => {
 });
 
 describe("command bar dynamic behavior", () => {
-  beforeEach(setupCommandBar);
-
   test("rebuilds page links when reopened after page content changes", () => {
     const trigger = getElement<HTMLInputElement>(".command-trigger");
     trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));

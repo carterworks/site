@@ -1,39 +1,27 @@
 ---
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { formatDateLong, toISODateString } from "../../lib/date";
+import { formatDateLong } from "../../lib/date";
 
 const posts = await getPublishedPosts();
 const blogPostCount = posts.length;
-const blogPostLabel =
-  new Intl.PluralRules("en-US").select(blogPostCount) === "one"
-    ? "blog post"
-    : "blog posts";
+const blogPostLabel = blogPostCount === 1 ? "blog post" : "blog posts";
 const mostRecentBlogPost = posts[0];
 ---
 
 <BaseLayout class="stack">
-  <Fragment slot="head">
-    <style>
-      ol {
-        list-style: none;
-      }
-    </style>
-  </Fragment>
-  <section>
-    <p>
-      He has written {blogPostCount}
-      {blogPostLabel}. The most recent was <a
-        href={`/blog/${mostRecentBlogPost.id}/`}
-        ><q>{getPostTitle(mostRecentBlogPost)}</q></a
-      >
-      and it was written on <time
-        datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
-      >
-        {formatDateLong(mostRecentBlogPost.data.pubDate)}
-      </time>. You can get updates <a href="/blog/atom.xml">via Atom.</a>
-    </p>
-  </section>
+  <p>
+    He has written {blogPostCount}
+    {blogPostLabel}. The most recent was <a
+      href={`/blog/${mostRecentBlogPost.id}/`}
+      ><q>{getPostTitle(mostRecentBlogPost)}</q></a
+    >
+    and it was written on <time
+      datetime={mostRecentBlogPost.data.pubDate.toISOString()}
+    >
+      {formatDateLong(mostRecentBlogPost.data.pubDate)}
+    </time>. You can get updates <a href="/blog/atom.xml">via Atom.</a>
+  </p>
   <section class="stack">
     <h1>All blog posts</h1>
     <ol class="stack">
@@ -47,7 +35,7 @@ const mostRecentBlogPost = posts[0];
                   {getPostTitle(post)}
                 </a>
               </h2>
-              <time datetime={toISODateString(post.data.pubDate)}>
+              <time datetime={post.data.pubDate.toISOString()}>
                 {formatDateLong(post.data.pubDate)}
               </time>
             </article>
@@ -57,3 +45,9 @@ const mostRecentBlogPost = posts[0];
     </ol>
   </section>
 </BaseLayout>
+
+<style>
+  ol {
+    list-style: none;
+  }
+</style>

@@ -1,15 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getPostTitle, getPublishedPosts } from "../lib/blog";
-import { formatDateLong, toISODateString } from "../lib/date";
+import { formatDateLong } from "../lib/date";
 import InlineAvatar from "../components/InlineAvatar.astro";
 
 const posts = await getPublishedPosts();
 const blogPostCount = posts.length;
-const blogPostLabel =
-  new Intl.PluralRules("en-US").select(blogPostCount) === "one"
-    ? "blog post"
-    : "blog posts";
+const blogPostLabel = blogPostCount === 1 ? "blog post" : "blog posts";
 const mostRecentBlogPost = posts[0];
 ---
 
@@ -48,7 +45,7 @@ const mostRecentBlogPost = posts[0];
       ><cite>“{getPostTitle(mostRecentBlogPost)}”</cite></a
     >
     and it was written on <time
-      datetime={toISODateString(mostRecentBlogPost.data.pubDate)}
+      datetime={mostRecentBlogPost.data.pubDate.toISOString()}
       >{formatDateLong(mostRecentBlogPost.data.pubDate)}</time
     >. You can get updates <a href="/blog/atom.xml">via Atom</a>.
   </p>

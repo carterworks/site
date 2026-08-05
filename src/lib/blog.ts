@@ -24,8 +24,7 @@ export function getPostTitle(post: BlogPost): string {
 
   const firstLine = post.body
     ?.split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean);
+    .find((line) => line.trim());
 
   if (!firstLine)
     return `Post from ${post.data.pubDate.toISOString().slice(0, 10)}`;
@@ -42,17 +41,10 @@ export function getPostDescription(post: BlogPost): string | undefined {
   return post.data.description?.trim() || undefined;
 }
 
-export function filterPublishedPosts(posts: BlogPost[]): BlogPost[] {
-  return posts.filter((post) => (DEV ? true : post.data.draft !== true));
-}
-
-export function sortPostsByDate(posts: BlogPost[]): BlogPost[] {
-  return posts.toSorted(
-    (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
-  );
-}
-
 export async function getPublishedPosts(): Promise<BlogPost[]> {
-  const allPosts = await getCollection("blog");
-  return sortPostsByDate(filterPublishedPosts(allPosts));
+  return (await getCollection("blog"))
+    .filter((post) => DEV || post.data.draft !== true)
+    .toSorted(
+      (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
+    );
 }

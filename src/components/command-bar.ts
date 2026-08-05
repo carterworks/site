@@ -1,5 +1,3 @@
-import { rankSearchResults } from "../lib/search";
-
 class CommandBarElement extends HTMLElement {
   connectedCallback() {
     if (this.dataset.ready) return;
@@ -38,7 +36,6 @@ class CommandBarElement extends HTMLElement {
     ];
     const visibleCommands = () =>
       commands().filter((command) => !command.hidden);
-    const absoluteUrl = (href: string) => new URL(href, location.href).href;
     const commandFrom = (target: EventTarget | null) =>
       target instanceof Element
         ? target.closest<HTMLElement>("[data-command]")
@@ -48,7 +45,7 @@ class CommandBarElement extends HTMLElement {
       const link = document.createElement("a");
       link.href = href;
       link.dataset.command = "";
-      link.dataset.search = `${label} ${href}`.toLowerCase();
+      link.dataset.search = `${label} ${href}`;
       const name = document.createElement("span");
       const destination = document.createElement("span");
       const separator = document.createElement("span");
@@ -74,13 +71,15 @@ class CommandBarElement extends HTMLElement {
     };
 
     const filter = () => {
-      const rankedCommands = rankSearchResults(
-        commands(),
-        trigger.value,
-        (command) => command.dataset.search ?? "",
+      const panelCommands = commands();
+      const terms = trigger.value.toLowerCase().match(/\S+/g) ?? [];
+      const rankedCommands = panelCommands.filter((command) =>
+        terms.every((term) =>
+          (command.dataset.search ?? "").toLowerCase().includes(term),
+        ),
       );
       const matches = new Set(rankedCommands);
-      commands().forEach((command) => {
+      panelCommands.forEach((command) => {
         command.hidden = !matches.has(command);
       });
       panel()
@@ -102,7 +101,7 @@ class CommandBarElement extends HTMLElement {
       trigger.value = "";
       trigger.setAttribute(
         "aria-controls",
-        name === "root" ? "command-root" : "command-settings-menu",
+        panels[name].id,
       );
       filter();
       trigger.focus();
@@ -116,11 +115,9 @@ class CommandBarElement extends HTMLElement {
       const sitemapLinks = [
         ...this.querySelectorAll<HTMLAnchorElement>("[data-sitemap]"),
       ];
-      const sitemapUrls = new Set(
-        sitemapLinks.map((link) => absoluteUrl(link.href)),
-      );
+      const sitemapUrls = new Set(sitemapLinks.map((link) => link.href));
       const pageOnlyLinks = sourceLinks.filter(
-        (source) => !sitemapUrls.has(absoluteUrl(source.href)),
+        (source) => !sitemapUrls.has(source.href),
       );
 
       pageOnlyLinks.forEach((source) => {
@@ -150,11 +147,10 @@ class CommandBarElement extends HTMLElement {
       appearance.setAttribute("aria-pressed", String(dark));
     };
 
-    const toggleAppearance = (close: boolean) => {
+    const toggleAppearance = () => {
       document.documentElement.style.colorScheme =
         currentScheme() === "dark" ? "light" : "dark";
       updateSchemeLabel();
-      if (close) dialog.hidePopover();
     };
 
     const prepare = () => {
@@ -202,7 +198,7 @@ class CommandBarElement extends HTMLElement {
       if (event.key === "Enter") {
         event.preventDefault();
         if (event.shiftKey && activePanel === "settings") {
-          toggleAppearance(false);
+          toggleAppearance();
           return;
         }
         visibleCommands()
@@ -223,7 +219,7 @@ class CommandBarElement extends HTMLElement {
         activePanel === "settings"
       ) {
         event.preventDefault();
-        toggleAppearance(false);
+        toggleAppearance();
       }
     });
     dialog.addEventListener("toggle", (event) => {
@@ -241,7 +237,10 @@ class CommandBarElement extends HTMLElement {
       if (!(event.target instanceof Element)) return;
       const target = event.target;
       if (target.closest("[data-settings]")) showPanel("settings");
-      if (target.closest("[data-appearance]")) toggleAppearance(true);
+      if (target.closest("[data-appearance]")) {
+        toggleAppearance();
+        dialog.hidePopover();
+      }
     });
   }
 }
