@@ -136,6 +136,8 @@ const sitemapPages = [
 
   .command-trigger {
     anchor-name: --command-trigger;
+    font-size: 1rem;
+    inline-size: min(12rem, 50vw);
   }
 
   .command-label {
@@ -148,13 +150,18 @@ const sitemapPages = [
   }
 
   dialog {
+    --command-dialog-offset: min(20svh, 10rem);
+
     background: var(--color-bg);
     border: 1px solid currentColor;
     color: inherit;
     inline-size: min(30rem, calc(100% - 2rem));
-    inset: min(20svh, 10rem) 0 auto;
+    inset: var(--command-dialog-offset) 0 auto;
     margin: 0 auto;
-    max-block-size: min(30rem, calc(100svh - 2rem));
+    max-block-size: min(
+      30rem,
+      calc(100svh - var(--command-dialog-offset) - 1rem)
+    );
     overflow-y: auto;
     padding-block: var(--size-xs);
     position: fixed;
@@ -243,15 +250,17 @@ const sitemapPages = [
     outline-offset: 2px;
   }
 
-  @supports (position-area: block-end) {
-    dialog {
-      inset: auto;
-      justify-self: end;
-      margin: var(--size-sm) 0 0;
-      max-block-size: min(30rem, calc(100svh - 2rem));
-      position-anchor: --command-trigger;
-      position-area: block-end span-inline-start;
-      position-try: flip-block;
+  @media (min-height: 40rem) {
+    @supports (position-area: block-end) {
+      dialog {
+        inset: auto;
+        justify-self: end;
+        margin: var(--size-sm) 0 0;
+        max-block-size: min(30rem, calc(100svh - 2rem));
+        position-anchor: --command-trigger;
+        position-area: block-end span-inline-start;
+        position-try: flip-block;
+      }
     }
   }
 </style>
