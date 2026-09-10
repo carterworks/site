@@ -37,7 +37,7 @@
     "happy-dom": "20.14.0",
     "oxfmt": "0.67.0",
     "sharp": "0.35.4",
-    "takumi-js": "2.0.0-rc.9",
+    "takumi-js": "2.13.7",
     "typescript": "6.0.3",
     "vitest": "4.1.6",
     "wrangler": "4.102.0"
