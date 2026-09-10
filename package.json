@@ -35,7 +35,7 @@
     "@types/node": "25.9.3",
     "astro": "7.3.2",
     "happy-dom": "20.14.0",
-    "oxfmt": "0.55.0",
+    "oxfmt": "0.67.0",
     "sharp": "0.35.1",
     "takumi-js": "2.0.0-rc.9",
     "typescript": "6.0.3",
