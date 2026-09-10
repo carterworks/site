@@ -2,6 +2,7 @@
   "name": "site",
   "version": "6.3.1",
   "private": true,
+  "packageManager": "pnpm@11.8.0",
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.1",
     "@astrojs/sitemap": "3.7.4",
@@ -42,24 +43,9 @@
     "vitest": "5.0.0",
     "wrangler": "4.130.0"
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "nub",
-      "version": "^0.6.0",
-      "onFail": "warn"
-    }
-  },
   "workspaces": [
     "."
   ],
-  "overrides": {
-    "astro-remark-eleventy-image>sharp": "0.35.1",
-    "devalue": ">=5.8.1",
-    "esbuild": "0.28.1",
-    "fast-uri": ">=3.1.2",
-    "fast-xml-builder": ">=1.1.7",
-    "yaml": ">=2.8.3"
-  },
   "allowScripts": {
     "esbuild": true,
     "sharp": true,
