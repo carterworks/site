@@ -4,13 +4,13 @@
 
 ## Development
 
-This project uses Node.js, [pnpm](https://pnpm.io), and [Nub](https://nubjs.com). pnpm is the declared package manager, while Nub provides dependency management and command execution.
+This project uses Node.js and [pnpm](https://pnpm.io) for dependency management and command execution.
 
 ```sh
-nub install
-nub run dev
-nub run check
-nub run build
+pnpm install
+pnpm run dev
+pnpm run check
+pnpm run build
 ```
 
 # Blog post format

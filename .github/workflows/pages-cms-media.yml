@@ -26,22 +26,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref_name }}
-      - uses: nubjs/setup-nub@21b317c170eee658503996209cf87b63481be35a # v0.5.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: package.json
-          cache: true
+          node-version-file: .node-version
+          cache: pnpm
       - name: Install dependencies
-        run: nub install
+        run: pnpm install --frozen-lockfile
       - name: Optimize assets
         shell: bash
         run: |
           set -o pipefail
-          nub run --silent assets public/assets --out=same | tee generated-assets.txt
+          pnpm --silent assets public/assets --out=same | tee generated-assets.txt
       - name: Generate image markup
         shell: bash
         run: |
           if [ -s generated-assets.txt ]; then
-            nub run --silent media:markup $(cat generated-assets.txt) | tee media-markup.html
+            pnpm --silent media:markup $(cat generated-assets.txt) | tee media-markup.html
           else
             : > media-markup.html
           fi
