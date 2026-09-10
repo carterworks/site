@@ -3,8 +3,8 @@
   "version": "6.3.1",
   "private": true,
   "dependencies": {
-    "@astrojs/markdown-satteri": "0.3.3",
-    "@astrojs/sitemap": "3.7.3",
+    "@astrojs/markdown-satteri": "0.4.1",
+    "@astrojs/sitemap": "3.7.4",
     "feed": "5.2.1"
   },
   "engines": {
@@ -30,10 +30,10 @@
     "deploy": "astro build && wrangler pages deploy"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.9",
-    "@astrojs/ts-plugin": "1.10.10",
+    "@astrojs/check": "0.9.10",
+    "@astrojs/ts-plugin": "1.10.11",
     "@types/node": "25.9.3",
-    "astro": "7.0.6",
+    "astro": "7.3.2",
     "happy-dom": "20.11.1",
     "oxfmt": "0.55.0",
     "sharp": "0.35.1",
@@ -60,7 +60,7 @@
     "fast-xml-builder": ">=1.1.7",
     "yaml": ">=2.8.3"
   },
-  "allowBuilds": {
+  "allowScripts": {
     "esbuild": true,
     "sharp": true,
     "workerd": true
