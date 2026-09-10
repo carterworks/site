@@ -22,8 +22,8 @@
     "start": "DEV=true astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "assets": "nub scripts/assets.mjs",
-    "media:markup": "nub scripts/media-markup.mjs",
+    "assets": "node scripts/assets.mjs",
+    "media:markup": "node scripts/media-markup.mjs",
     "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
@@ -45,10 +45,5 @@
   },
   "workspaces": [
     "."
-  ],
-  "allowScripts": {
-    "esbuild": true,
-    "sharp": true,
-    "workerd": true
-  }
+  ]
 }

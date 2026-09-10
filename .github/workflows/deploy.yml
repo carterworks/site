@@ -20,14 +20,15 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nubjs/setup-nub@21b317c170eee658503996209cf87b63481be35a # v0.5.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: package.json
-          cache: true
+          node-version-file: .node-version
+          cache: pnpm
       - name: Install dependencies
-        run: nub install
+        run: pnpm install --frozen-lockfile
       - name: Build
-        run: nub run build
+        run: pnpm run build
       - name: Deploy
         id: deploy
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
