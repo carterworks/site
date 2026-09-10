@@ -5,7 +5,7 @@
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.1",
     "@astrojs/sitemap": "3.7.4",
-    "feed": "5.2.1"
+    "feed": "6.0.0"
   },
   "engines": {
     "node": ">=22"
