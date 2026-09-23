@@ -182,6 +182,26 @@ function circleMask(grid: Grid): Path2D {
 const SHADERS: Shader[] = [ghost, magnify, circles];
 
 /**
+ * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
+ * keyed by the `dataset` name each one comes from. Every knob is optional: an
+ * omitted one falls back to the matching `EmulatedCanvas.DEFAULT_*`.
+ */
+export type EmulatedCanvasProps = {
+  /** Logical width of the source bitmap, in pixels. Defaults to 64. */
+  width?: number;
+  /** Logical height of the source bitmap, in pixels. Defaults to 64. */
+  height?: number;
+  /** Cell size, in display pixels. Defaults to 1. */
+  scale?: number;
+  /** Space between cells, in display pixels. Defaults to 0. */
+  gap?: number;
+  /** Cell form. Defaults to "square". */
+  shape?: PixelShape;
+  /** Share of the previous frame the panel keeps, 0–100. Defaults to 0. */
+  ghost?: number;
+};
+
+/**
  * A canvas stand-in that hides its display surface. Consumers draw into an
  * `OffscreenCanvas` through `getContext`, and a real `<canvas>` in a closed
  * shadow root is blitted from that bitmap.
