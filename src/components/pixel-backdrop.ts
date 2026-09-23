@@ -83,6 +83,13 @@ export function readDefaults(): PixelBackdropOptions {
     const value = Number.parseFloat(text(name));
     return Number.isFinite(value) ? value : fallback;
   };
+  // The CSS minifier rewrites durations to their shortest form (`900ms` ->
+  // `.9s`), so the unit must be honoured, not stripped.
+  const duration = (name: string, fallback: number) => {
+    const value = text(name);
+    const ms = Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
+    return Number.isFinite(ms) ? ms : fallback;
+  };
   const flag = (name: string, fallback: boolean) => {
     const value = text(name);
     return value === "" ? fallback : value === "true";
@@ -100,12 +107,12 @@ export function readDefaults(): PixelBackdropOptions {
         ? shape
         : PIXEL_BACKDROP_DEFAULTS.shape,
     ghost: number("--backdrop-ghost", PIXEL_BACKDROP_DEFAULTS.ghost),
-    trail: number("--backdrop-trail", PIXEL_BACKDROP_DEFAULTS.trail),
+    trail: duration("--backdrop-trail", PIXEL_BACKDROP_DEFAULTS.trail),
     rippleSize: number(
       "--backdrop-ripple-size",
       PIXEL_BACKDROP_DEFAULTS.rippleSize,
     ),
-    rippleSpeed: number(
+    rippleSpeed: duration(
       "--backdrop-ripple-speed",
       PIXEL_BACKDROP_DEFAULTS.rippleSpeed,
     ),
