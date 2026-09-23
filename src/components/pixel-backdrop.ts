@@ -34,6 +34,12 @@ export type PixelBackdropOptions = {
   panelOpacity: number;
   /** Gaussian blur of the frosted content panel, in pixels. */
   panelBlur: number;
+  /** Opacity of the drifting background noise field, 0–100. */
+  noise: number;
+  /** Feature size of the noise field, in cells. Larger is softer. */
+  noiseScale: number;
+  /** Drift speed of the noise field, 0–100. */
+  noiseSpeed: number;
   /** Colour of the "off" pixels in light mode. */
   lightBase: string;
   /** Colour of the trail and ripples in light mode. */
@@ -48,14 +54,17 @@ export const PIXEL_BACKDROP_DEFAULTS: PixelBackdropOptions = {
   enabled: true,
   autoFit: true,
   scale: 20,
-  gap: 2,
-  shape: "circle",
-  ghost: 90,
+  gap: 5,
+  shape: "square",
+  ghost: 70,
   trail: 1000,
   rippleSize: 25,
   rippleSpeed: 900,
-  panelOpacity: 41,
-  panelBlur: 4,
+  panelOpacity: 40,
+  panelBlur: 5,
+  noise: 25,
+  noiseScale: 15,
+  noiseSpeed: 5,
   lightBase: "#ffffff",
   lightInk: "#c7c7c7",
   darkBase: "#141414",
@@ -108,6 +117,15 @@ export function readDefaults(): PixelBackdropOptions {
       "--backdrop-panel-blur",
       PIXEL_BACKDROP_DEFAULTS.panelBlur,
     ),
+    noise: number("--backdrop-noise", PIXEL_BACKDROP_DEFAULTS.noise),
+    noiseScale: number(
+      "--backdrop-noise-scale",
+      PIXEL_BACKDROP_DEFAULTS.noiseScale,
+    ),
+    noiseSpeed: number(
+      "--backdrop-noise-speed",
+      PIXEL_BACKDROP_DEFAULTS.noiseSpeed,
+    ),
     lightBase: colour(
       "--backdrop-light-base",
       PIXEL_BACKDROP_DEFAULTS.lightBase,
@@ -142,6 +160,142 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+/**
+ * A small 2D simplex noise, after Stefan Gustavson's public-domain reference.
+ * Simplex is preferred over Perlin here: it has no axis-aligned directional
+ * artifacts, so the field reads as organic rather than gridded.
+ */
+const F2 = 0.5 * (Math.sqrt(3) - 1);
+const G2 = (3 - Math.sqrt(3)) / 6;
+/** Twelve gradients, flattened to two components each. */
+const GRADIENTS = [
+  1, 1, -1, 1, 1, -1, -1, -1, 1, 0, -1, 0, 1, 0, -1, 0, 0, 1, 0, -1, 0, 1, 0,
+  -1,
+];
+const NOISE_SEED = 0x9e3779b9;
+/**
+ * Simplex is exactly zero on integer lattice points, so sample off-lattice:
+ * without this a 1-cell feature size would flatten to a constant.
+ */
+const NOISE_OFFSET_X = 12.9898;
+const NOISE_OFFSET_Y = 78.233;
+
+/** A tiny deterministic PRNG, so the noise field is stable across reloads. */
+function mulberry32(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Build a seeded 2D simplex field, returning values in [-1, 1]. */
+function makeNoise2D(seed: number): (x: number, y: number) => number {
+  const random = mulberry32(seed);
+  const source = new Uint8Array(256);
+  for (let i = 0; i < 256; i += 1) source[i] = i;
+  for (let i = 255; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    const swap = source[i];
+    source[i] = source[j];
+    source[j] = swap;
+  }
+  const permutation = new Uint8Array(512);
+  const mod12 = new Uint8Array(512);
+  for (let i = 0; i < 512; i += 1) {
+    permutation[i] = source[i & 255];
+    mod12[i] = permutation[i] % 12;
+  }
+
+  return (x, y) => {
+    const s = (x + y) * F2;
+    const i = Math.floor(x + s);
+    const j = Math.floor(y + s);
+    const t = (i + j) * G2;
+    const x0 = x - (i - t);
+    const y0 = y - (j - t);
+
+    const i1 = x0 > y0 ? 1 : 0;
+    const j1 = x0 > y0 ? 0 : 1;
+
+    const x1 = x0 - i1 + G2;
+    const y1 = y0 - j1 + G2;
+    const x2 = x0 - 1 + 2 * G2;
+    const y2 = y0 - 1 + 2 * G2;
+
+    const ii = i & 255;
+    const jj = j & 255;
+
+    let n0 = 0;
+    let n1 = 0;
+    let n2 = 0;
+
+    let t0 = 0.5 - x0 * x0 - y0 * y0;
+    if (t0 > 0) {
+      const g = mod12[ii + permutation[jj]] * 2;
+      t0 *= t0;
+      n0 = t0 * t0 * (GRADIENTS[g] * x0 + GRADIENTS[g + 1] * y0);
+    }
+
+    let t1 = 0.5 - x1 * x1 - y1 * y1;
+    if (t1 > 0) {
+      const g = mod12[ii + i1 + permutation[jj + j1]] * 2;
+      t1 *= t1;
+      n1 = t1 * t1 * (GRADIENTS[g] * x1 + GRADIENTS[g + 1] * y1);
+    }
+
+    let t2 = 0.5 - x2 * x2 - y2 * y2;
+    if (t2 > 0) {
+      const g = mod12[ii + 1 + permutation[jj + 1]] * 2;
+      t2 *= t2;
+      n2 = t2 * t2 * (GRADIENTS[g] * x2 + GRADIENTS[g + 1] * y2);
+    }
+
+    return 70 * (n0 + n1 + n2);
+  };
+}
+
+const rgbCache = new Map<string, [number, number, number]>();
+let rgbContext: CanvasRenderingContext2D | null | undefined;
+
+/** Resolve any CSS colour to `[r, g, b]`, caching per string. */
+function colourRgb(value: string): [number, number, number] {
+  const cached = rgbCache.get(value);
+  if (cached !== undefined) return cached;
+
+  let rgb: [number, number, number];
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
+  if (hex !== null) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1].replace(/./g, (digit) => digit + digit)
+        : hex[1];
+    rgb = [
+      Number.parseInt(digits.slice(0, 2), 16),
+      Number.parseInt(digits.slice(2, 4), 16),
+      Number.parseInt(digits.slice(4, 6), 16),
+    ];
+  } else {
+    if (rgbContext === undefined) {
+      rgbContext = document
+        .createElement("canvas")
+        .getContext("2d", { willReadFrequently: true });
+    }
+    if (rgbContext === null) return [0, 0, 0];
+    rgbContext.clearRect(0, 0, 1, 1);
+    rgbContext.fillStyle = value;
+    rgbContext.fillRect(0, 0, 1, 1);
+    const [r, g, b] = rgbContext.getImageData(0, 0, 1, 1).data;
+    rgb = [r, g, b];
+  }
+
+  rgbCache.set(value, rgb);
+  return rgb;
+}
+
 class PixelBackdrop extends HTMLElement {
   #options: PixelBackdropOptions = { ...PIXEL_BACKDROP_DEFAULTS };
   #canvas?: EmulatedCanvasElement;
@@ -151,6 +305,8 @@ class PixelBackdrop extends HTMLElement {
   #rows = 0;
   #ripples: { x: number; y: number; born: number }[] = [];
   #saveTimeout?: number;
+  #noise = makeNoise2D(NOISE_SEED);
+  #noiseImage?: ImageData;
   #pointer = {
     x: -1,
     y: -1,
@@ -287,8 +443,12 @@ class PixelBackdrop extends HTMLElement {
     const base = dark ? this.#options.darkBase : this.#options.lightBase;
     const ink = dark ? this.#options.darkInk : this.#options.lightInk;
 
-    context.fillStyle = base;
-    context.fillRect(0, 0, this.#columns, this.#rows);
+    if (this.#options.noise > 0) {
+      this.#paintNoise(context, now, base, ink);
+    } else {
+      context.fillStyle = base;
+      context.fillRect(0, 0, this.#columns, this.#rows);
+    }
 
     const pointer = this.#pointer;
     if (pointer.active && now - pointer.moved < this.#options.trail) {
@@ -329,6 +489,53 @@ class PixelBackdrop extends HTMLElement {
       context.stroke();
       context.globalAlpha = 1;
     }
+  }
+
+  /**
+   * Fills the bitmap with the base colour lifted toward the ink by a drifting
+   * simplex field, so the "off" pixels shimmer. Built as one `ImageData` and
+   * blitted in a single call — far cheaper than a `fillRect` per cell.
+   */
+  #paintNoise(
+    context: CanvasRenderingContext2D,
+    now: number,
+    base: string,
+    ink: string,
+  ) {
+    const columns = this.#columns;
+    const rows = this.#rows;
+    let image = this.#noiseImage;
+    if (
+      image === undefined ||
+      image.width !== columns ||
+      image.height !== rows
+    ) {
+      image = context.createImageData(columns, rows);
+      this.#noiseImage = image;
+    }
+
+    const data = image.data;
+    const [baseR, baseG, baseB] = colourRgb(base);
+    const [inkR, inkG, inkB] = colourRgb(ink);
+    const amount = this.#options.noise / 100;
+    const frequency = 1 / Math.max(1, this.#options.noiseScale);
+    const drift = now * this.#options.noiseSpeed * 0.00005;
+
+    let offset = 0;
+    for (let y = 0; y < rows; y += 1) {
+      const ny = y * frequency + drift * 0.5 + NOISE_OFFSET_Y;
+      for (let x = 0; x < columns; x += 1) {
+        const value = this.#noise(x * frequency + drift + NOISE_OFFSET_X, ny);
+        const mix = amount * (value * 0.5 + 0.5);
+        data[offset] = baseR + (inkR - baseR) * mix;
+        data[offset + 1] = baseG + (inkG - baseG) * mix;
+        data[offset + 2] = baseB + (inkB - baseB) * mix;
+        data[offset + 3] = 255;
+        offset += 4;
+      }
+    }
+
+    context.putImageData(image, 0, 0);
   }
 
   /** Viewport point -> logical cell in the source bitmap. */

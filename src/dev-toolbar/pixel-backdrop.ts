@@ -341,6 +341,28 @@ function renderPane(canvas: ShadowRoot) {
     suffix: "px",
   });
 
+  const noise = document.createElement("div");
+  noise.className = "heading";
+  noise.textContent = "Background noise";
+  panel.appendChild(noise);
+
+  addRange(panel, refreshers, "Intensity", "noise", {
+    min: 0,
+    max: 100,
+    step: 1,
+    suffix: "%",
+  });
+  addRange(panel, refreshers, "Feature size", "noiseScale", {
+    min: 1,
+    max: 40,
+    step: 1,
+  });
+  addRange(panel, refreshers, "Drift speed", "noiseSpeed", {
+    min: 0,
+    max: 100,
+    step: 1,
+  });
+
   const colors = document.createElement("div");
   colors.className = "heading";
   colors.textContent = "Pixel colours";
