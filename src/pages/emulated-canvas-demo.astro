@@ -2,6 +2,13 @@
 // Demo page for <emulated-canvas>: it draws into a hidden OffscreenCanvas and
 // mirrors the result into a sealed display surface, optionally magnifying each
 // logical pixel into a square or circular cell.
+//
+// Every demo shares one logical bitmap size, so the reference canvas and each
+// scene agree on the pixels they draw.
+const size = 64;
+const cell = { scale: 4, gap: 1, shape: "square" };
+// Default ghosting percentage for the LCD demo, in the component's 0–100 range.
+const ghost = 65;
 ---
 
 <!doctype html>
@@ -20,6 +27,10 @@
         max-width: 46rem;
         padding: 0 1rem;
       }
+
+      /* Controls — one row of labelled inputs. The scale/gap/shape row below
+         drives every demo; a section that needs knobs of its own nests a
+         `.controls` block after its prose. */
       .controls {
         align-items: center;
         display: flex;
@@ -41,17 +52,36 @@
         min-inline-size: 1.25rem;
         opacity: 0.7;
       }
-      .grid {
+
+      /* Demos — every section is a heading, prose, optional controls, then one
+         or more stages. `.stages` is the row for sections that compare more
+         than one. */
+      .demo {
+        margin-top: 2.5rem;
+      }
+      .demo h2 {
+        font-size: 1.1rem;
+      }
+      .stages {
         align-items: start;
         display: flex;
         flex-wrap: wrap;
         gap: 1.5rem;
         justify-content: center;
       }
+
       figure {
         flex: 0 0 auto;
         margin: 0;
       }
+      figcaption {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        padding-top: 0.5rem;
+      }
+
+      /* The framed surface around a canvas. Every stage wears the same chrome,
+         so the emulated and plain canvases read as the same object. */
       .stage {
         border-radius: 8px;
         box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
@@ -61,81 +91,107 @@
         display: block;
         inline-size: max-content;
       }
-      .touch-test {
-        margin-top: 2.5rem;
-      }
-      .touch-test h2 {
-        font-size: 1.1rem;
-      }
-      .touch-test .stage {
-        cursor: crosshair;
-        touch-action: none;
-      }
-      figure canvas {
+      .stage canvas {
         block-size: auto;
-        border-radius: 8px;
-        box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+        border-radius: inherit;
         display: block;
         image-rendering: pixelated;
         inline-size: 16rem;
       }
-      figcaption {
-        font-size: 0.8rem;
-        opacity: 0.7;
-        padding-top: 0.5rem;
+      /* Interactive stages take drags instead of scrolling the page. */
+      .stage--interactive {
+        cursor: crosshair;
+        touch-action: none;
       }
     </style>
   </head>
   <body>
     <h1>EmulatedCanvas demo</h1>
     <p>
-      The left canvas is an <code>&lt;emulated-canvas&gt;</code>. Its display
-      surface lives in a <strong>closed shadow root</strong>, so the page can't
-      reach or style it — the element is a sealed box. The right is a plain
-      <code>&lt;canvas&gt;</code> drawn with the exact same calls, for
-      eyeballing. The controls change the left element's
+      <code>&lt;emulated-canvas&gt;</code> mirrors a hidden
+      <code>OffscreenCanvas</code> into a display surface the page can't reach
+      or style — it lives in a <strong>closed shadow root</strong>. Each demo
+      below is live, and the shared controls change the elements'
       <code>data-scale</code>, <code>data-gap</code> and
-      <code>data-shape</code> live.
+      <code>data-shape</code> as you drag.
     </p>
 
     <div class="controls">
-      <label for="scale">Scale <output id="scale-value">4</output></label>
-      <input id="scale" type="range" min="1" max="16" step="1" value="4" />
+      <label for="scale">Scale <output id="scale-value">{cell.scale}</output></label>
+      <input id="scale" type="range" min="1" max="16" step="1" value={cell.scale} />
 
-      <label for="gap">Gap <output id="gap-value">1</output></label>
-      <input id="gap" type="range" min="0" max="16" step="1" value="1" />
+      <label for="gap">Gap <output id="gap-value">{cell.gap}</output></label>
+      <input id="gap" type="range" min="0" max="16" step="1" value={cell.gap} />
 
       <label for="shape">Shape</label>
       <select id="shape">
-        <option value="square" selected>Square</option>
-        <option value="circle">Circle</option>
+        <option value="square" selected={cell.shape === "square"}>Square</option>
+        <option value="circle" selected={cell.shape === "circle"}>Circle</option>
       </select>
     </div>
 
-    <div class="grid">
+    <section class="demo">
+      <h2>Sealed shadow root</h2>
+      <p>
+        The left canvas is an <code>&lt;emulated-canvas&gt;</code>, sealed
+        inside its shadow root; the right is a plain <code>&lt;canvas&gt;</code>
+        drawn with the exact same calls, for eyeballing. They may differ at
+        antialiased clip edges — Chrome rasterizes <code>OffscreenCanvas</code>
+        clips slightly differently.
+      </p>
+      <div class="stages">
+        <figure>
+          <div class="stage">
+            <emulated-canvas
+              id="emulated"
+              data-width={size}
+              data-height={size}
+              data-scale={cell.scale}
+              data-gap={cell.gap}
+              data-shape={cell.shape}></emulated-canvas>
+          </div>
+          <figcaption>emulated-canvas (internals sealed)</figcaption>
+        </figure>
+        <figure>
+          <div class="stage">
+            <canvas id="reference" width={size} height={size}></canvas>
+          </div>
+          <figcaption>plain canvas (same calls)</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="demo">
+      <h2>LCD ghosting</h2>
+      <p>
+        Real LCD pixels take time to change, so fast motion leaves a fading
+        smear. <code>data-ghost</code> is the percentage of each previous frame
+        the panel keeps: at <code>0</code> the hand is crisp, and as it rises it
+        drags a longer trail behind it. It follows the same <code>Scale</code>,
+        <code>Gap</code> and <code>Shape</code> controls as the demos above.
+      </p>
+      <div class="controls">
+        <label for="ghost">Ghosting <output id="ghost-value">{ghost}</output>%</label>
+        <input id="ghost" type="range" min="0" max="100" step="1" value={ghost} />
+      </div>
       <figure>
         <div class="stage">
           <emulated-canvas
-            id="emulated"
-            data-width="64"
-            data-height="64"
-            data-scale="4"
-            data-gap="1"
-            data-shape="square"></emulated-canvas>
+            id="lcd"
+            data-width={size}
+            data-height={size}
+            data-scale={cell.scale}
+            data-gap={cell.gap}
+            data-shape={cell.shape}
+            data-ghost={ghost}></emulated-canvas>
         </div>
-        <figcaption>emulated-canvas (internals sealed)</figcaption>
-      </figure>
-      <figure>
-        <canvas id="reference" width="64" height="64"></canvas>
         <figcaption>
-          plain canvas (same calls; may differ at antialiased clip edges —
-          Chrome rasterizes <code>OffscreenCanvas</code> clips slightly
-          differently)
+          emulated-canvas — monochrome motion with LCD ghosting
         </figcaption>
       </figure>
-    </div>
+    </section>
 
-    <section class="touch-test">
+    <section class="demo">
       <h2>Touch events</h2>
       <p>
         Touch the canvas below (or drag across it with a mouse): every new cell
@@ -144,14 +200,14 @@
         <code>Shape</code> controls as the canvas above.
       </p>
       <figure>
-        <div class="stage">
+        <div class="stage stage--interactive">
           <emulated-canvas
             id="touch"
-            data-width="64"
-            data-height="64"
-            data-scale="4"
-            data-gap="1"
-            data-shape="square"></emulated-canvas>
+            data-width={size}
+            data-height={size}
+            data-scale={cell.scale}
+            data-gap={cell.gap}
+            data-shape={cell.shape}></emulated-canvas>
         </div>
         <figcaption>emulated-canvas — touch to emit ripples</figcaption>
       </figure>
@@ -161,8 +217,20 @@
       // @ts-nocheck — demo page; the canvas/DOM types here aren't worth annotating.
       import "../components/emulated-canvas";
 
-      const WIDTH = 64;
-      const HEIGHT = 64;
+      const emulated = document.querySelector("#emulated");
+      const reference = document.querySelector("#reference");
+      const touch = document.querySelector("#touch");
+      const lcd = document.querySelector("#lcd");
+
+      // The markup owns the logical bitmap size; the scenes and the ripple
+      // maths both derive from it, so they can't drift apart.
+      const WIDTH = Number(emulated.dataset.width);
+      const HEIGHT = Number(emulated.dataset.height);
+
+      const emulatedContext = emulated.getContext("2d");
+      const referenceContext = reference.getContext("2d");
+      const touchContext = touch.getContext("2d");
+      const lcdContext = lcd.getContext("2d");
 
       /** Draws a scene exercising gradients, paths, clips, transforms and text. */
       function drawScene(ctx, time) {
@@ -206,13 +274,39 @@
         ctx.fillText("hi", WIDTH / 2, HEIGHT / 2 + 1);
       }
 
-      const emulated = document.querySelector("#emulated");
-      const innerContext = emulated.getContext("2d");
-      const reference = document.querySelector("#reference");
-      const referenceContext = reference.getContext("2d");
-      const touch = document.querySelector("#touch");
-      const touchContext = touch.getContext("2d");
+      /**
+       * Monochrome motion for the LCD demo: a rotating hand whose bright tip
+       * drags a smear behind it once `data-ghost` keeps earlier frames alive.
+       */
+      function drawMono(ctx, time) {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+        const angle = time * 0.002;
+        const radius = 26;
+
+        ctx.save();
+        ctx.translate(WIDTH / 2, HEIGHT / 2);
+        ctx.rotate(angle);
+
+        ctx.strokeStyle = "rgb(255 255 255 / 0.55)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -radius);
+        ctx.stroke();
+
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(0, -radius, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // --- Shared controls --------------------------------------------------
+      // Scale, gap and shape are display knobs on every <emulated-canvas>, so
+      // one row of inputs drives every demo at once.
       const scale = document.querySelector("#scale");
       const gap = document.querySelector("#gap");
       const shape = document.querySelector("#shape");
@@ -220,7 +314,7 @@
       const gapValue = document.querySelector("#gap-value");
 
       function applyControls() {
-        for (const canvas of [emulated, touch]) {
+        for (const canvas of [emulated, lcd, touch]) {
           canvas.dataset.scale = scale.value;
           canvas.dataset.gap = gap.value;
           canvas.dataset.shape = shape.value;
@@ -234,8 +328,22 @@
       }
       applyControls();
 
-      // --- Touch events ----------------------------------------------------
-      // The display surface is sealed away in a closed shadow root, so these
+      // --- LCD ghosting -----------------------------------------------------
+      // `data-ghost` is the only knob this effect reads, so the slider just
+      // mirrors its value onto the element.
+      const ghost = document.querySelector("#ghost");
+      const ghostValue = document.querySelector("#ghost-value");
+
+      function applyGhost() {
+        lcd.dataset.ghost = ghost.value;
+        ghostValue.textContent = ghost.value;
+      }
+
+      ghost.addEventListener("input", applyGhost);
+      applyGhost();
+
+      // --- Ripples ----------------------------------------------------------
+      // The display surface is sealed inside a closed shadow root, so these
       // listeners sit on the host: touch events retarget from the inner canvas
       // to <emulated-canvas> and bubble out.
       const RIPPLE_MS = 800;
@@ -243,19 +351,21 @@
       const MAX_RIPPLES = 32;
       const ripples = [];
 
-      /** Viewport point -> logical cell in the 64×64 source bitmap. */
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      /** Viewport point -> logical cell in the source bitmap. */
       function logicalCell(clientX, clientY) {
         const rect = touch.getBoundingClientRect();
-        const cell = Number(scale.value);
+        const cellSize = Number(scale.value);
         const space = Number(gap.value);
-        const stride = cell + space;
-        const displayWidth = WIDTH * cell + (WIDTH - 1) * space;
-        const displayHeight = HEIGHT * cell + (HEIGHT - 1) * space;
+        const stride = cellSize + space;
+        const displayWidth = WIDTH * cellSize + (WIDTH - 1) * space;
+        const displayHeight = HEIGHT * cellSize + (HEIGHT - 1) * space;
         const px = ((clientX - rect.left) / rect.width) * displayWidth;
         const py = ((clientY - rect.top) / rect.height) * displayHeight;
         return {
-          x: Math.min(WIDTH - 1, Math.max(0, Math.floor(px / stride))),
-          y: Math.min(HEIGHT - 1, Math.max(0, Math.floor(py / stride))),
+          x: clamp(Math.floor(px / stride), 0, WIDTH - 1),
+          y: clamp(Math.floor(py / stride), 0, HEIGHT - 1),
         };
       }
 
@@ -265,7 +375,7 @@
         if (ripples.length > MAX_RIPPLES) ripples.shift();
       }
 
-      function drawTouch(now) {
+      function drawRipples(now) {
         touchContext.clearRect(0, 0, WIDTH, HEIGHT);
         touchContext.fillStyle = "#0b1020";
         touchContext.fillRect(0, 0, WIDTH, HEIGHT);
@@ -342,12 +452,13 @@
         pointerDown = false;
       });
 
-      const animate = (now) => {
-        drawScene(innerContext, now);
+      function animate(now) {
+        drawScene(emulatedContext, now);
         drawScene(referenceContext, now);
-        drawTouch(now);
+        drawMono(lcdContext, now);
+        drawRipples(now);
         requestAnimationFrame(animate);
-      };
+      }
       requestAnimationFrame(animate);
     </script>
   </body>

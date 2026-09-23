@@ -46,9 +46,16 @@ function gridOf(
   };
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 /** Everything a shader is handed when it paints a frame. */
 type ShaderFrame = {
-  /** The bitmap the consumer drew into. */
+  /**
+   * The bitmap to display. A shader may replace it — `ghost` swaps in the
+   * panel buffer it maintains.
+   */
   source: OffscreenCanvas;
   /** The display context, already holding whatever earlier shaders painted. */
   context: CanvasRenderingContext2D;
@@ -56,6 +63,8 @@ type ShaderFrame = {
   grid: Grid;
   /** Cell form. */
   shape: PixelShape;
+  /** How much of the previous frame the panel keeps, 0–1. */
+  ghost: number;
 };
 
 /**
@@ -64,6 +73,50 @@ type ShaderFrame = {
  * Write one and add it to `SHADERS`; that is the whole contract.
  */
 type Shader = (frame: ShaderFrame) => void;
+
+/** One panel buffer per source bitmap, so its state survives between frames. */
+const panels = new WeakMap<OffscreenCanvas, OffscreenCanvas>();
+
+/** Retention is capped below 1 so the panel can never freeze on one frame. */
+const MAX_GHOST = 0.98;
+
+/**
+ * Emulates an LCD's slow pixel response: each frame the panel keeps `ghost` of
+ * its previous state and moves the rest of the way toward the new frame, so
+ * fast motion leaves a fading trail. Runs before `magnify` and hands the later
+ * shaders a persistent buffer holding the smeared image.
+ */
+const ghost: Shader = (frame) => {
+  const retention = frame.ghost;
+  if (retention <= 0) return;
+
+  const source = frame.source;
+  let panel = panels.get(source);
+  if (
+    panel === undefined ||
+    panel.width !== source.width ||
+    panel.height !== source.height
+  ) {
+    panel = new OffscreenCanvas(source.width, source.height);
+    panels.set(source, panel);
+    // Seed the panel with this frame so it starts opaque; otherwise a high
+    // retention would fade in from transparent over many frames.
+    panel.getContext("2d")?.drawImage(source, 0, 0);
+    frame.source = panel;
+    return;
+  }
+
+  const context = panel.getContext("2d");
+  if (context === null) return;
+
+  // `source-over` with `1 - retention` opacity: the new frame fills that
+  // fraction of the panel and the previous one supplies the rest.
+  context.globalAlpha = 1 - retention;
+  context.drawImage(source, 0, 0);
+  context.globalAlpha = 1;
+
+  frame.source = panel;
+};
 
 /** Paints the logical bitmap, magnifying each pixel into a `scale`-sized cell. */
 const magnify: Shader = ({ source, context, grid }) => {
@@ -126,7 +179,7 @@ function circleMask(grid: Grid): Path2D {
  * The display pipeline, top to bottom. To add an effect, write a `Shader` and
  * add it to this list.
  */
-const SHADERS: Shader[] = [magnify, circles];
+const SHADERS: Shader[] = [ghost, magnify, circles];
 
 /**
  * A canvas stand-in that hides its display surface. Consumers draw into an
@@ -138,8 +191,12 @@ const SHADERS: Shader[] = [magnify, circles];
  * cell size in canvas pixels (default 1), `data-gap` the space between cells
  * (default 0), and `data-shape` the cell form — `"square"` (default) or
  * `"circle"`, a circle inscribed in the cell. With the defaults the outer
- * canvas is a straight 1:1 mirror. The magnification knobs are live: changing
- * them re-renders on the spot.
+ * canvas is a straight 1:1 mirror.
+ *
+ * `data-ghost` (0–100, default 0) emulates an LCD's slow pixel response: it is
+ * the percentage of the previous frame the panel keeps each frame, so moving
+ * content smears into a fading trail. It is capped just below 100 so the panel
+ * can never freeze. The knobs are live: changing them re-renders on the spot.
  *
  * Painting goes through `SHADERS`, an ordered list of whole-frame passes. The
  * gap and scale are themselves a shader (`magnify`), and every pass shares the
@@ -154,7 +211,13 @@ class EmulatedCanvas extends HTMLElement {
   static DEFAULT_SCALE = 1;
   static DEFAULT_GAP = 0;
   static DEFAULT_SHAPE: PixelShape = "square";
-  static observedAttributes = ["data-scale", "data-gap", "data-shape"];
+  static DEFAULT_GHOST = 0;
+  static observedAttributes = [
+    "data-scale",
+    "data-gap",
+    "data-shape",
+    "data-ghost",
+  ];
 
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
@@ -163,6 +226,7 @@ class EmulatedCanvas extends HTMLElement {
   #scale = EmulatedCanvas.DEFAULT_SCALE;
   #gap = EmulatedCanvas.DEFAULT_GAP;
   #shape: PixelShape = EmulatedCanvas.DEFAULT_SHAPE;
+  #ghost = EmulatedCanvas.DEFAULT_GHOST / 100;
   #mirrorFrame?: number;
   #mirrorRequested = false;
 
@@ -196,8 +260,8 @@ class EmulatedCanvas extends HTMLElement {
   #initialize() {
     if (this.#innerCanvas !== undefined) return;
 
-    const width = this.#dimension("width", EmulatedCanvas.DEFAULT_WIDTH);
-    const height = this.#dimension("height", EmulatedCanvas.DEFAULT_HEIGHT);
+    const width = this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH);
+    const height = this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT);
     this.#configure();
 
     this.#innerCanvas = new OffscreenCanvas(width, height);
@@ -214,14 +278,22 @@ class EmulatedCanvas extends HTMLElement {
   }
 
   #configure() {
-    this.#scale = this.#dimension("scale", EmulatedCanvas.DEFAULT_SCALE);
-    this.#gap = this.#dimension("gap", EmulatedCanvas.DEFAULT_GAP);
+    this.#scale = this.#integer("scale", EmulatedCanvas.DEFAULT_SCALE);
+    this.#gap = this.#integer("gap", EmulatedCanvas.DEFAULT_GAP);
     this.#shape =
       this.dataset.shape === "circle" ? "circle" : EmulatedCanvas.DEFAULT_SHAPE;
+    this.#ghost = clamp(
+      this.#integer("ghost", EmulatedCanvas.DEFAULT_GHOST) / 100,
+      0,
+      MAX_GHOST,
+    );
     this.#grid = undefined;
   }
 
-  #dimension(name: "width" | "height" | "scale" | "gap", fallback: number) {
+  #integer(
+    name: "width" | "height" | "scale" | "gap" | "ghost",
+    fallback: number,
+  ) {
     const value = this.dataset[name];
     return value !== undefined ? Number.parseInt(value) : fallback;
   }
@@ -282,6 +354,7 @@ class EmulatedCanvas extends HTMLElement {
       context,
       grid,
       shape: this.#shape,
+      ghost: this.#ghost,
     };
     for (const shader of SHADERS) shader(frame);
   }
