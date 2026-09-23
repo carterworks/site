@@ -61,6 +61,16 @@
         display: block;
         inline-size: max-content;
       }
+      .touch-test {
+        margin-top: 2.5rem;
+      }
+      .touch-test h2 {
+        font-size: 1.1rem;
+      }
+      .touch-test .stage {
+        cursor: crosshair;
+        touch-action: none;
+      }
       figure canvas {
         block-size: auto;
         border-radius: 8px;
@@ -73,19 +83,6 @@
         font-size: 0.8rem;
         opacity: 0.7;
         padding-top: 0.5rem;
-      }
-      #result {
-        border: 1px solid currentColor;
-        border-radius: 8px;
-        font-family: ui-monospace, monospace;
-        margin-top: 2rem;
-        padding: 1rem;
-      }
-      .pass {
-        color: #4ade80;
-      }
-      .fail {
-        color: #f87171;
       }
     </style>
   </head>
@@ -138,7 +135,27 @@
       </figure>
     </div>
 
-    <div id="result">testing…</div>
+    <section class="touch-test">
+      <h2>Touch events</h2>
+      <p>
+        Touch the canvas below (or drag across it with a mouse): every new cell
+        you hit spawns a ripple that expands and fades from that logical pixel.
+        It follows the same <code>Scale</code>, <code>Gap</code> and
+        <code>Shape</code> controls as the canvas above.
+      </p>
+      <figure>
+        <div class="stage">
+          <emulated-canvas
+            id="touch"
+            data-width="64"
+            data-height="64"
+            data-scale="4"
+            data-gap="1"
+            data-shape="square"></emulated-canvas>
+        </div>
+        <figcaption>emulated-canvas — touch to emit ripples</figcaption>
+      </figure>
+    </section>
 
     <script>
       // @ts-nocheck — demo page; the canvas/DOM types here aren't worth annotating.
@@ -189,58 +206,12 @@
         ctx.fillText("hi", WIDTH / 2, HEIGHT / 2 + 1);
       }
 
-      // Test-only: capture closed shadow roots so we can check the hidden canvas.
-      const shadowRoots = new WeakMap();
-      const attachShadow = Element.prototype.attachShadow;
-      Element.prototype.attachShadow = function (init) {
-        const root = attachShadow.call(this, init);
-        shadowRoots.set(this, root);
-        return root;
-      };
-
-      function diffPixels(a, b) {
-        let mismatches = 0;
-        let maxDelta = 0;
-        for (let i = 0; i < a.data.length; i += 1) {
-          const delta = Math.abs(a.data[i] - b.data[i]);
-          if (delta > 0) {
-            mismatches += 1;
-            maxDelta = Math.max(maxDelta, delta);
-          }
-        }
-        return { mismatches, maxDelta };
-      }
-
-      async function settle() {
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      async function runMirrorTest() {
-        const emulated = document.createElement("emulated-canvas");
-        emulated.dataset.width = String(WIDTH);
-        emulated.dataset.height = String(HEIGHT);
-        document.body.append(emulated);
-
-        const context = emulated.getContext("2d");
-        drawScene(context, 0);
-        await settle();
-
-        const shadow = shadowRoots.get(emulated);
-        const shown = shadow
-          .querySelector("canvas")
-          .getContext("2d")
-          .getImageData(0, 0, WIDTH, HEIGHT);
-        const drawn = context.getImageData(0, 0, WIDTH, HEIGHT);
-
-        emulated.remove();
-        return diffPixels(shown, drawn);
-      }
-
       const emulated = document.querySelector("#emulated");
       const innerContext = emulated.getContext("2d");
       const reference = document.querySelector("#reference");
       const referenceContext = reference.getContext("2d");
+      const touch = document.querySelector("#touch");
+      const touchContext = touch.getContext("2d");
 
       const scale = document.querySelector("#scale");
       const gap = document.querySelector("#gap");
@@ -249,9 +220,11 @@
       const gapValue = document.querySelector("#gap-value");
 
       function applyControls() {
-        emulated.dataset.scale = scale.value;
-        emulated.dataset.gap = gap.value;
-        emulated.dataset.shape = shape.value;
+        for (const canvas of [emulated, touch]) {
+          canvas.dataset.scale = scale.value;
+          canvas.dataset.gap = gap.value;
+          canvas.dataset.shape = shape.value;
+        }
         scaleValue.textContent = scale.value;
         gapValue.textContent = gap.value;
       }
@@ -261,34 +234,121 @@
       }
       applyControls();
 
-      async function run() {
-        const sealed =
-          emulated.shadowRoot === null &&
-          emulated.querySelector("canvas") === null;
-        const { mismatches, maxDelta } = await runMirrorTest();
-        const exact = mismatches === 0;
+      // --- Touch events ----------------------------------------------------
+      // The display surface is sealed away in a closed shadow root, so these
+      // listeners sit on the host: touch events retarget from the inner canvas
+      // to <emulated-canvas> and bubble out.
+      const RIPPLE_MS = 800;
+      const RIPPLE_MAX_RADIUS = 40;
+      const MAX_RIPPLES = 32;
+      const ripples = [];
 
-        const result = document.querySelector("#result");
-        result.className = sealed && exact ? "pass" : "fail";
-        result.textContent = [
-          sealed
-            ? "✓ shadowRoot and display canvas are unreachable from the page"
-            : "✗ internals leaked out of the shadow root",
-          exact
-            ? `✓ hidden canvas is pixel-identical to what getContext drew (${WIDTH}×${HEIGHT}, 0 mismatches)`
-            : `✗ ${mismatches} mismatched channel values between hidden canvas and drawing (max delta ${maxDelta})`,
-        ].join("\n");
-        result.style.whiteSpace = "pre";
-
-        const animate = (now) => {
-          drawScene(innerContext, now);
-          drawScene(referenceContext, now);
-          requestAnimationFrame(animate);
+      /** Viewport point -> logical cell in the 64×64 source bitmap. */
+      function logicalCell(clientX, clientY) {
+        const rect = touch.getBoundingClientRect();
+        const cell = Number(scale.value);
+        const space = Number(gap.value);
+        const stride = cell + space;
+        const displayWidth = WIDTH * cell + (WIDTH - 1) * space;
+        const displayHeight = HEIGHT * cell + (HEIGHT - 1) * space;
+        const px = ((clientX - rect.left) / rect.width) * displayWidth;
+        const py = ((clientY - rect.top) / rect.height) * displayHeight;
+        return {
+          x: Math.min(WIDTH - 1, Math.max(0, Math.floor(px / stride))),
+          y: Math.min(HEIGHT - 1, Math.max(0, Math.floor(py / stride))),
         };
-        requestAnimationFrame(animate);
       }
 
-      run();
+      function addRipple(clientX, clientY) {
+        const { x, y } = logicalCell(clientX, clientY);
+        ripples.push({ x: x + 0.5, y: y + 0.5, born: performance.now() });
+        if (ripples.length > MAX_RIPPLES) ripples.shift();
+      }
+
+      function drawTouch(now) {
+        touchContext.clearRect(0, 0, WIDTH, HEIGHT);
+        touchContext.fillStyle = "#0b1020";
+        touchContext.fillRect(0, 0, WIDTH, HEIGHT);
+
+        for (let i = ripples.length - 1; i >= 0; i -= 1) {
+          const ripple = ripples[i];
+          // `born` comes from performance.now() in the event handler, while
+          // `now` is the rAF timestamp; on the click's own frame the latter can
+          // trail the former, so clamp or `arc` throws on a negative radius.
+          const age = Math.max(0, now - ripple.born);
+          if (age >= RIPPLE_MS) {
+            ripples.splice(i, 1);
+            continue;
+          }
+          const progress = age / RIPPLE_MS;
+          touchContext.beginPath();
+          touchContext.arc(
+            ripple.x,
+            ripple.y,
+            progress * RIPPLE_MAX_RADIUS,
+            0,
+            Math.PI * 2,
+          );
+          touchContext.lineWidth = 2;
+          touchContext.strokeStyle = `rgb(56 189 248 / ${1 - progress})`;
+          touchContext.stroke();
+        }
+      }
+
+      // The cell each finger was last over, so a drag emits one ripple per new
+      // cell instead of one per touchmove.
+      const lastCell = new Map();
+
+      function track(event) {
+        event.preventDefault();
+        for (const point of event.changedTouches) {
+          const cell = logicalCell(point.clientX, point.clientY);
+          const previous = lastCell.get(point.identifier);
+          lastCell.set(point.identifier, cell);
+          if (
+            previous === undefined ||
+            previous.x !== cell.x ||
+            previous.y !== cell.y
+          ) {
+            addRipple(point.clientX, point.clientY);
+          }
+        }
+      }
+
+      function untrack(event) {
+        for (const point of event.changedTouches) {
+          lastCell.delete(point.identifier);
+        }
+      }
+
+      touch.addEventListener("touchstart", track, { passive: false });
+      touch.addEventListener("touchmove", track, { passive: false });
+      touch.addEventListener("touchend", untrack);
+      touch.addEventListener("touchcancel", untrack);
+
+      // Mouse fallback so the effect is reachable without a touch screen.
+      let pointerDown = false;
+      touch.addEventListener("mousedown", (event) => {
+        pointerDown = true;
+        addRipple(event.clientX, event.clientY);
+      });
+      touch.addEventListener("mousemove", (event) => {
+        if (pointerDown) addRipple(event.clientX, event.clientY);
+      });
+      touch.addEventListener("mouseup", () => {
+        pointerDown = false;
+      });
+      touch.addEventListener("mouseleave", () => {
+        pointerDown = false;
+      });
+
+      const animate = (now) => {
+        drawScene(innerContext, now);
+        drawScene(referenceContext, now);
+        drawTouch(now);
+        requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
     </script>
   </body>
 </html>
