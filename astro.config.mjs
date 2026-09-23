@@ -1,11 +1,12 @@
 import sitemap from "@astrojs/sitemap";
 import { defineConfig, envField } from "astro/config";
+import pixelBackdropToolbar from "./src/integrations/pixel-backdrop-toolbar";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://carter.works",
   compressHTML: true,
-  integrations: [sitemap()],
+  integrations: [sitemap(), pixelBackdropToolbar()],
   output: "static",
   env: {
     schema: {

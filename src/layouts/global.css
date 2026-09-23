@@ -49,6 +49,27 @@
   --color-text: light-dark(var(--color-black), var(--color-white));
   --color-bg: light-dark(var(--color-white), var(--color-black));
 
+  /* Pixel backdrop defaults. `<pixel-backdrop>` reads these once at startup;
+     the dev-toolbar app can override any of them at runtime. */
+  --backdrop-enabled: true;
+  --backdrop-auto-fit: true;
+  --backdrop-scale: 20;
+  --backdrop-gap: 5;
+  --backdrop-shape: square;
+  --backdrop-ghost: 70%;
+  --backdrop-trail: 1000ms;
+  --backdrop-ripple-size: 25;
+  --backdrop-ripple-speed: 900ms;
+  --backdrop-panel-opacity: 40%;
+  --backdrop-panel-blur: 5px;
+  --backdrop-noise: 25%;
+  --backdrop-noise-scale: 15;
+  --backdrop-noise-speed: 5;
+  --backdrop-light-base: #ffffff;
+  --backdrop-light-ink: #c7c7c7;
+  --backdrop-dark-base: #141414;
+  --backdrop-dark-ink: #9e9e9e;
+
   scrollbar-gutter: stable;
 }
 body {
