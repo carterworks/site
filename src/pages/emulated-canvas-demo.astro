@@ -1,0 +1,294 @@
+---
+// Demo page for <emulated-canvas>: it draws into a hidden OffscreenCanvas and
+// mirrors the result into a sealed display surface, optionally magnifying each
+// logical pixel into a square or circular cell.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EmulatedCanvas demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem auto;
+        max-width: 46rem;
+        padding: 0 1rem;
+      }
+      .controls {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+        margin: 1.5rem 0;
+      }
+      .controls label {
+        align-items: center;
+        display: flex;
+        font-size: 0.9rem;
+        gap: 0.5rem;
+      }
+      .controls input[type="range"] {
+        inline-size: 9rem;
+      }
+      .controls output {
+        font-variant-numeric: tabular-nums;
+        min-inline-size: 1.25rem;
+        opacity: 0.7;
+      }
+      .grid {
+        align-items: start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: center;
+      }
+      figure {
+        flex: 0 0 auto;
+        margin: 0;
+      }
+      .stage {
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+        inline-size: max-content;
+      }
+      .stage emulated-canvas {
+        display: block;
+        inline-size: max-content;
+      }
+      figure canvas {
+        block-size: auto;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+        display: block;
+        image-rendering: pixelated;
+        inline-size: 16rem;
+      }
+      figcaption {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        padding-top: 0.5rem;
+      }
+      #result {
+        border: 1px solid currentColor;
+        border-radius: 8px;
+        font-family: ui-monospace, monospace;
+        margin-top: 2rem;
+        padding: 1rem;
+      }
+      .pass {
+        color: #4ade80;
+      }
+      .fail {
+        color: #f87171;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>EmulatedCanvas demo</h1>
+    <p>
+      The left canvas is an <code>&lt;emulated-canvas&gt;</code>. Its display
+      surface lives in a <strong>closed shadow root</strong>, so the page can't
+      reach or style it — the element is a sealed box. The right is a plain
+      <code>&lt;canvas&gt;</code> drawn with the exact same calls, for
+      eyeballing. The controls change the left element's
+      <code>data-scale</code>, <code>data-gap</code> and
+      <code>data-shape</code> live.
+    </p>
+
+    <div class="controls">
+      <label for="scale">Scale <output id="scale-value">4</output></label>
+      <input id="scale" type="range" min="1" max="8" step="1" value="4" />
+
+      <label for="gap">Gap <output id="gap-value">1</output></label>
+      <input id="gap" type="range" min="0" max="8" step="1" value="1" />
+
+      <label for="shape">Shape</label>
+      <select id="shape">
+        <option value="square" selected>Square</option>
+        <option value="circle">Circle</option>
+      </select>
+    </div>
+
+    <div class="grid">
+      <figure>
+        <div class="stage">
+          <emulated-canvas
+            id="emulated"
+            data-width="64"
+            data-height="64"
+            data-scale="4"
+            data-gap="1"
+            data-shape="square"></emulated-canvas>
+        </div>
+        <figcaption>emulated-canvas (internals sealed)</figcaption>
+      </figure>
+      <figure>
+        <canvas id="reference" width="64" height="64"></canvas>
+        <figcaption>
+          plain canvas (same calls; may differ at antialiased clip edges —
+          Chrome rasterizes <code>OffscreenCanvas</code> clips slightly
+          differently)
+        </figcaption>
+      </figure>
+    </div>
+
+    <div id="result">testing…</div>
+
+    <script>
+      // @ts-nocheck — demo page; the canvas/DOM types here aren't worth annotating.
+      import "../components/emulated-canvas";
+
+      const WIDTH = 64;
+      const HEIGHT = 64;
+
+      /** Draws a scene exercising gradients, paths, clips, transforms and text. */
+      function drawScene(ctx, time) {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+        const background = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+        background.addColorStop(0, "#1e3a8a");
+        background.addColorStop(1, "#7c3aed");
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        ctx.save();
+        ctx.translate(WIDTH / 2, HEIGHT / 2);
+        ctx.rotate(time * 0.001);
+        for (let i = 0; i < 4; i += 1) {
+          ctx.rotate(Math.PI / 2);
+          ctx.fillStyle = `rgb(255 255 255 / ${0.12 + i * 0.12})`;
+          ctx.fillRect(-16, -16, 32, 32);
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(WIDTH / 2, HEIGHT / 2, 17, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.moveTo(4, HEIGHT - 6);
+        ctx.quadraticCurveTo(WIDTH / 2, HEIGHT - 32, WIDTH - 4, HEIGHT - 6);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#22d3ee";
+        ctx.stroke();
+
+        ctx.font = "bold 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgb(0 0 0 / 0.65)";
+        ctx.fillText("hi", WIDTH / 2, HEIGHT / 2 + 1);
+      }
+
+      // Test-only: capture closed shadow roots so we can check the hidden canvas.
+      const shadowRoots = new WeakMap();
+      const attachShadow = Element.prototype.attachShadow;
+      Element.prototype.attachShadow = function (init) {
+        const root = attachShadow.call(this, init);
+        shadowRoots.set(this, root);
+        return root;
+      };
+
+      function diffPixels(a, b) {
+        let mismatches = 0;
+        let maxDelta = 0;
+        for (let i = 0; i < a.data.length; i += 1) {
+          const delta = Math.abs(a.data[i] - b.data[i]);
+          if (delta > 0) {
+            mismatches += 1;
+            maxDelta = Math.max(maxDelta, delta);
+          }
+        }
+        return { mismatches, maxDelta };
+      }
+
+      async function settle() {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      async function runMirrorTest() {
+        const emulated = document.createElement("emulated-canvas");
+        emulated.dataset.width = String(WIDTH);
+        emulated.dataset.height = String(HEIGHT);
+        document.body.append(emulated);
+
+        const context = emulated.getContext("2d");
+        drawScene(context, 0);
+        await settle();
+
+        const shadow = shadowRoots.get(emulated);
+        const shown = shadow
+          .querySelector("canvas")
+          .getContext("2d")
+          .getImageData(0, 0, WIDTH, HEIGHT);
+        const drawn = context.getImageData(0, 0, WIDTH, HEIGHT);
+
+        emulated.remove();
+        return diffPixels(shown, drawn);
+      }
+
+      const emulated = document.querySelector("#emulated");
+      const innerContext = emulated.getContext("2d");
+      const reference = document.querySelector("#reference");
+      const referenceContext = reference.getContext("2d");
+
+      const scale = document.querySelector("#scale");
+      const gap = document.querySelector("#gap");
+      const shape = document.querySelector("#shape");
+      const scaleValue = document.querySelector("#scale-value");
+      const gapValue = document.querySelector("#gap-value");
+
+      function applyControls() {
+        emulated.dataset.scale = scale.value;
+        emulated.dataset.gap = gap.value;
+        emulated.dataset.shape = shape.value;
+        scaleValue.textContent = scale.value;
+        gapValue.textContent = gap.value;
+      }
+
+      for (const control of [scale, gap, shape]) {
+        control.addEventListener("input", applyControls);
+      }
+      applyControls();
+
+      async function run() {
+        const sealed =
+          emulated.shadowRoot === null &&
+          emulated.querySelector("canvas") === null;
+        const { mismatches, maxDelta } = await runMirrorTest();
+        const exact = mismatches === 0;
+
+        const result = document.querySelector("#result");
+        result.className = sealed && exact ? "pass" : "fail";
+        result.textContent = [
+          sealed
+            ? "✓ shadowRoot and display canvas are unreachable from the page"
+            : "✗ internals leaked out of the shadow root",
+          exact
+            ? `✓ hidden canvas is pixel-identical to what getContext drew (${WIDTH}×${HEIGHT}, 0 mismatches)`
+            : `✗ ${mismatches} mismatched channel values between hidden canvas and drawing (max delta ${maxDelta})`,
+        ].join("\n");
+        result.style.whiteSpace = "pre";
+
+        const animate = (now) => {
+          drawScene(innerContext, now);
+          drawScene(referenceContext, now);
+          requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      }
+
+      run();
+    </script>
+  </body>
+</html>
