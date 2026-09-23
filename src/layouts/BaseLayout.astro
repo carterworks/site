@@ -3,6 +3,7 @@ import "./global.css";
 import { ClientRouter } from "astro:transitions";
 import CommandBar from "../components/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
+import PixelBackdrop from "../components/PixelBackdrop.astro";
 import { getPageMetadata, type PageMetadata } from "../lib/pages";
 interface Props {
   class?: string;
@@ -73,6 +74,7 @@ const socialTitle = metadata.ogTitle ?? title;
     <slot name="head" />
   </head>
   <body>
+    <PixelBackdrop />
     <div class="stack">
       <header>
         <a href="/">
@@ -95,24 +97,61 @@ const socialTitle = metadata.ogTitle ?? title;
 </html>
 
 <style>
+  /* The backdrop is a fixed layer at z-index 0; the content stacks above it. */
+  .stack {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Frost the content: a little page colour over a gaussian blur of the pixel
+     grid behind it. The header shares the base's width and padding so the two
+     surfaces line up. Both knobs are driven by the backdrop's dev toolbar app. */
+  main,
+  header {
+    backdrop-filter: blur(var(--backdrop-panel-blur, 4px));
+    background: color-mix(
+      in oklab,
+      var(--color-bg) var(--backdrop-panel-opacity, 41%),
+      transparent
+    );
+    border: 0.5px solid var(--color-bg);
+    border-radius: var(--size-sm);
+    /* The inline padding holds the hanging list markers; the matching negative
+       margin keeps the text on its original column. The roomier value applies
+       once the body gutters are wide enough to absorb it. */
+    margin-inline: calc(var(--size-sm) * -1);
+    padding-block: var(--size-sm);
+    padding-inline: var(--size-md);
+  }
+
+  @media (min-width: 48rem) {
+    main,
+    header {
+      margin-inline: calc(var(--size-lg) * -1);
+      padding-inline: var(--size-lg);
+    }
+  }
+
   header {
     align-items: center;
-    background: var(--color-bg);
     container-name: sticky-header;
     container-type: scroll-state;
     display: flex;
-    inline-size: 100vw;
     justify-content: space-between;
-    margin-inline: calc(50% - 50vw);
-    padding-block: var(--size-sm);
-    padding-inline: max(var(--size-md), calc((100vw - var(--size-prose)) / 2));
     position: sticky;
-    top: 0;
+    top: var(--size-sm);
     z-index: 1;
   }
 
   header::after {
-    background: linear-gradient(var(--color-bg), transparent);
+    background: linear-gradient(
+      color-mix(
+          in oklab,
+          var(--color-bg) var(--backdrop-panel-opacity, 41%),
+          transparent
+        ),
+      transparent
+    );
     block-size: var(--size-lg);
     content: "";
     inset: 100% 0 auto;

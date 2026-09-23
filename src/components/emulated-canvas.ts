@@ -243,6 +243,7 @@ class EmulatedCanvas extends HTMLElement {
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
   #grid?: Grid;
+  #gridKey = "";
   #scale = EmulatedCanvas.DEFAULT_SCALE;
   #gap = EmulatedCanvas.DEFAULT_GAP;
   #shape: PixelShape = EmulatedCanvas.DEFAULT_SHAPE;
@@ -260,7 +261,9 @@ class EmulatedCanvas extends HTMLElement {
     if (this.#innerCanvas === undefined) return;
     this.#configure();
     this.#resizeOuter();
-    this.#blit();
+    // While mirroring, the rAF loop repaints every frame anyway, so blitting
+    // here would only duplicate work — and a live slider fires many changes.
+    if (this.#mirrorFrame === undefined) this.#blit();
   }
 
   disconnectedCallback() {
@@ -293,7 +296,7 @@ class EmulatedCanvas extends HTMLElement {
     const shadow = this.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
     style.textContent =
-      ":host { display: inline-block; line-height: 0; } canvas { display: block; inline-size: 100%; block-size: auto; }";
+      ":host { display: inline-block; line-height: 0; } canvas { display: block; image-rendering: pixelated; inline-size: 100%; block-size: auto; }";
     shadow.append(style, outerCanvas);
   }
 
@@ -307,7 +310,9 @@ class EmulatedCanvas extends HTMLElement {
       0,
       MAX_GHOST,
     );
-    this.#grid = undefined;
+    // The grid is rebuilt lazily in #gridFor, keyed by the numbers that size
+    // it. Leaving the cache alone here lets a non-geometric knob (shape,
+    // ghost) reuse the same Grid — and with it the cached circle mask.
   }
 
   #integer(
@@ -318,16 +323,20 @@ class EmulatedCanvas extends HTMLElement {
     return value !== undefined ? Number.parseInt(value) : fallback;
   }
 
-  /** The current cell geometry, rebuilt only when a knob changes. */
+  /** The current cell geometry, rebuilt only when its numbers change. */
   #gridFor() {
     const innerCanvas = this.#innerCanvas;
     if (innerCanvas === undefined) return undefined;
-    this.#grid ??= gridOf(
-      innerCanvas.width,
-      innerCanvas.height,
-      this.#scale,
-      this.#gap,
-    );
+    const key = `${innerCanvas.width}x${innerCanvas.height}:${this.#scale}:${this.#gap}`;
+    if (this.#grid === undefined || this.#gridKey !== key) {
+      this.#grid = gridOf(
+        innerCanvas.width,
+        innerCanvas.height,
+        this.#scale,
+        this.#gap,
+      );
+      this.#gridKey = key;
+    }
     return this.#grid;
   }
 
@@ -335,6 +344,13 @@ class EmulatedCanvas extends HTMLElement {
     const outerCanvas = this.#outerCanvas;
     const grid = this.#gridFor();
     if (outerCanvas === undefined || grid === undefined) return;
+    // Assigning width/height resets the canvas, so only do it on a real change.
+    if (
+      outerCanvas.width === grid.width &&
+      outerCanvas.height === grid.height
+    ) {
+      return;
+    }
 
     outerCanvas.width = grid.width;
     outerCanvas.height = grid.height;

@@ -1,0 +1,50 @@
+---
+import EmulatedCanvas from "./EmulatedCanvas.astro";
+
+/**
+ * The site-wide pixel backdrop. `<pixel-backdrop>` is a fixed, non-interactive
+ * layer that fills the viewport with a live `<emulated-canvas>`; the custom
+ * element drives it from pointer input and owns its tweakable render knobs.
+ * The square bitmap is sized to cover the viewport, so its pixel grid can
+ * never run out at the edges.
+ */
+const size = 80;
+---
+
+<pixel-backdrop aria-hidden="true">
+  <EmulatedCanvas width={size} height={size} />
+</pixel-backdrop>
+
+<script>
+  import "./pixel-backdrop";
+</script>
+
+<style>
+  pixel-backdrop {
+    display: block;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: fixed;
+    z-index: 0;
+  }
+
+  pixel-backdrop[data-disabled] {
+    display: none;
+  }
+
+  /* Centre the oversized grid so its middle always covers the viewport. */
+  pixel-backdrop :global(emulated-canvas) {
+    inline-size: max-content;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    translate: -50% -50%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    pixel-backdrop {
+      display: none;
+    }
+  }
+</style>
