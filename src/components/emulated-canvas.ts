@@ -12,6 +12,123 @@ function getInnerContext(
 type PixelShape = "square" | "circle";
 
 /**
+ * Cell geometry for one frame. The same numbers drive the outer canvas's size
+ * and every shader, so the display and its contents can never disagree.
+ */
+type Grid = {
+  /** Logical dimensions, in source pixels. */
+  columns: number;
+  rows: number;
+  /** Cell size and the gap between cells, in display pixels. */
+  scale: number;
+  gap: number;
+  /** Distance between one cell's origin and the next. */
+  stride: number;
+  /** Display dimensions, in pixels. */
+  width: number;
+  height: number;
+};
+
+function gridOf(
+  columns: number,
+  rows: number,
+  scale: number,
+  gap: number,
+): Grid {
+  return {
+    columns,
+    rows,
+    scale,
+    gap,
+    stride: scale + gap,
+    width: columns * scale + Math.max(0, columns - 1) * gap,
+    height: rows * scale + Math.max(0, rows - 1) * gap,
+  };
+}
+
+/** Everything a shader is handed when it paints a frame. */
+type ShaderFrame = {
+  /** The bitmap the consumer drew into. */
+  source: OffscreenCanvas;
+  /** The display context, already holding whatever earlier shaders painted. */
+  context: CanvasRenderingContext2D;
+  /** Cell geometry for this frame. */
+  grid: Grid;
+  /** Cell form. */
+  shape: PixelShape;
+};
+
+/**
+ * One stage of the display pipeline. Shaders run in order against the same
+ * display context, so each sees — and may paint over — what came before.
+ * Write one and add it to `SHADERS`; that is the whole contract.
+ */
+type Shader = (frame: ShaderFrame) => void;
+
+/** Paints the logical bitmap, magnifying each pixel into a `scale`-sized cell. */
+const magnify: Shader = ({ source, context, grid }) => {
+  // Identity: the display surface is the bitmap, so a straight copy suffices.
+  if (grid.scale === 1 && grid.gap === 0) {
+    context.drawImage(source, 0, 0);
+    return;
+  }
+
+  context.imageSmoothingEnabled = false;
+  for (let y = 0; y < grid.rows; y += 1) {
+    for (let x = 0; x < grid.columns; x += 1) {
+      context.drawImage(
+        source,
+        x,
+        y,
+        1,
+        1,
+        x * grid.stride,
+        y * grid.stride,
+        grid.scale,
+        grid.scale,
+      );
+    }
+  }
+};
+
+/** Masks the frame to the circle inscribed in every cell. */
+const circles: Shader = ({ context, grid, shape }) => {
+  if (shape !== "circle") return;
+
+  context.fillStyle = "#000";
+  context.globalCompositeOperation = "destination-in";
+  context.fill(circleMask(grid));
+  context.globalCompositeOperation = "source-over";
+};
+
+/** Circle masks are built once per geometry and reused across frames. */
+const circleMasks = new WeakMap<Grid, Path2D>();
+
+function circleMask(grid: Grid): Path2D {
+  const cached = circleMasks.get(grid);
+  if (cached !== undefined) return cached;
+
+  const radius = grid.scale / 2;
+  const path = new Path2D();
+  for (let y = 0; y < grid.rows; y += 1) {
+    for (let x = 0; x < grid.columns; x += 1) {
+      const cx = x * grid.stride + radius;
+      const cy = y * grid.stride + radius;
+      path.moveTo(cx + radius, cy);
+      path.arc(cx, cy, radius, 0, Math.PI * 2);
+    }
+  }
+  circleMasks.set(grid, path);
+  return path;
+}
+
+/**
+ * The display pipeline, top to bottom. To add an effect, write a `Shader` and
+ * add it to this list.
+ */
+const SHADERS: Shader[] = [magnify, circles];
+
+/**
  * A canvas stand-in that hides its display surface. Consumers draw into an
  * `OffscreenCanvas` through `getContext`, and a real `<canvas>` in a closed
  * shadow root is blitted from that bitmap.
@@ -21,8 +138,12 @@ type PixelShape = "square" | "circle";
  * cell size in canvas pixels (default 1), `data-gap` the space between cells
  * (default 0), and `data-shape` the cell form — `"square"` (default) or
  * `"circle"`, a circle inscribed in the cell. With the defaults the outer
- * canvas is a straight 1:1 mirror. The three magnification knobs are live:
- * changing them re-renders on the spot.
+ * canvas is a straight 1:1 mirror. The magnification knobs are live: changing
+ * them re-renders on the spot.
+ *
+ * Painting goes through `SHADERS`, an ordered list of whole-frame passes. The
+ * gap and scale are themselves a shader (`magnify`), and every pass shares the
+ * frame's `Grid`, so a new effect is just another function in that list.
  *
  * The consumer's context is returned untouched — no proxying or replaying — so
  * mirroring is just a copy of the finished pixels each frame.
@@ -38,11 +159,11 @@ class EmulatedCanvas extends HTMLElement {
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
-  #mask?: Path2D;
+  #grid?: Grid;
   #scale = EmulatedCanvas.DEFAULT_SCALE;
   #gap = EmulatedCanvas.DEFAULT_GAP;
   #shape: PixelShape = EmulatedCanvas.DEFAULT_SHAPE;
-  #frame?: number;
+  #mirrorFrame?: number;
   #mirrorRequested = false;
 
   connectedCallback() {
@@ -97,7 +218,7 @@ class EmulatedCanvas extends HTMLElement {
     this.#gap = this.#dimension("gap", EmulatedCanvas.DEFAULT_GAP);
     this.#shape =
       this.dataset.shape === "circle" ? "circle" : EmulatedCanvas.DEFAULT_SHAPE;
-    this.#mask = undefined;
+    this.#grid = undefined;
   }
 
   #dimension(name: "width" | "height" | "scale" | "gap", fallback: number) {
@@ -105,54 +226,41 @@ class EmulatedCanvas extends HTMLElement {
     return value !== undefined ? Number.parseInt(value) : fallback;
   }
 
-  /** The onscreen size of `count` cells laid end to end, gaps included. */
-  #footprint(count: number) {
-    return count * this.#scale + Math.max(0, count - 1) * this.#gap;
+  /** The current cell geometry, rebuilt only when a knob changes. */
+  #gridFor() {
+    const innerCanvas = this.#innerCanvas;
+    if (innerCanvas === undefined) return undefined;
+    this.#grid ??= gridOf(
+      innerCanvas.width,
+      innerCanvas.height,
+      this.#scale,
+      this.#gap,
+    );
+    return this.#grid;
   }
 
   #resizeOuter() {
-    const innerCanvas = this.#innerCanvas;
     const outerCanvas = this.#outerCanvas;
-    if (innerCanvas === undefined || outerCanvas === undefined) return;
+    const grid = this.#gridFor();
+    if (outerCanvas === undefined || grid === undefined) return;
 
-    outerCanvas.width = this.#footprint(innerCanvas.width);
-    outerCanvas.height = this.#footprint(innerCanvas.height);
-  }
-
-  /** A single path covering every cell's inscribed circle, built once. */
-  #circleMask() {
-    if (this.#mask !== undefined) return this.#mask;
-    const innerCanvas = this.#innerCanvas;
-    if (innerCanvas === undefined) return undefined;
-
-    const radius = this.#scale / 2;
-    const stride = this.#scale + this.#gap;
-    const path = new Path2D();
-    for (let y = 0; y < innerCanvas.height; y += 1) {
-      for (let x = 0; x < innerCanvas.width; x += 1) {
-        const cx = x * stride + radius;
-        const cy = y * stride + radius;
-        path.moveTo(cx + radius, cy);
-        path.arc(cx, cy, radius, 0, Math.PI * 2);
-      }
-    }
-    this.#mask = path;
-    return path;
+    outerCanvas.width = grid.width;
+    outerCanvas.height = grid.height;
   }
 
   #startMirroring() {
-    if (this.#frame !== undefined) return;
+    if (this.#mirrorFrame !== undefined) return;
     const step = () => {
       this.#blit();
-      this.#frame = requestAnimationFrame(step);
+      this.#mirrorFrame = requestAnimationFrame(step);
     };
-    this.#frame = requestAnimationFrame(step);
+    this.#mirrorFrame = requestAnimationFrame(step);
   }
 
   #stopMirroring() {
-    if (this.#frame === undefined) return;
-    cancelAnimationFrame(this.#frame);
-    this.#frame = undefined;
+    if (this.#mirrorFrame === undefined) return;
+    cancelAnimationFrame(this.#mirrorFrame);
+    this.#mirrorFrame = undefined;
   }
 
   #blit() {
@@ -164,41 +272,18 @@ class EmulatedCanvas extends HTMLElement {
     if (context === null) return;
     this.#outerContext = context;
 
+    const grid = this.#gridFor();
+    if (grid === undefined) return;
+
     context.clearRect(0, 0, outerCanvas.width, outerCanvas.height);
 
-    // Identity: the display surface is the bitmap, so a straight copy suffices.
-    if (this.#scale === 1 && this.#gap === 0 && this.#shape === "square") {
-      context.drawImage(innerCanvas, 0, 0);
-      return;
-    }
-
-    context.imageSmoothingEnabled = false;
-    const stride = this.#scale + this.#gap;
-    for (let y = 0; y < innerCanvas.height; y += 1) {
-      for (let x = 0; x < innerCanvas.width; x += 1) {
-        context.drawImage(
-          innerCanvas,
-          x,
-          y,
-          1,
-          1,
-          x * stride,
-          y * stride,
-          this.#scale,
-          this.#scale,
-        );
-      }
-    }
-
-    if (this.#shape === "circle") {
-      const mask = this.#circleMask();
-      if (mask !== undefined) {
-        context.fillStyle = "#000";
-        context.globalCompositeOperation = "destination-in";
-        context.fill(mask);
-        context.globalCompositeOperation = "source-over";
-      }
-    }
+    const frame: ShaderFrame = {
+      source: innerCanvas,
+      context,
+      grid,
+      shape: this.#shape,
+    };
+    for (const shader of SHADERS) shader(frame);
   }
 }
 
