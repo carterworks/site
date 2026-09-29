@@ -24,7 +24,6 @@
     "preview": "astro preview",
     "assets": "node scripts/assets.mjs",
     "media:markup": "node scripts/media-markup.mjs",
-    "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
