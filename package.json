@@ -2,7 +2,7 @@
   "name": "site",
   "version": "6.3.1",
   "private": true,
-  "packageManager": "pnpm@11.8.0",
+  "packageManager": "pnpm@12.6.0",
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.1",
     "@astrojs/sitemap": "3.7.4",
