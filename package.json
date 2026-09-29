@@ -1,6 +1,7 @@
 {
   "name": "site",
   "version": "6.3.1",
+  "type": "module",
   "private": true,
   "packageManager": "pnpm@12.6.0",
   "dependencies": {
