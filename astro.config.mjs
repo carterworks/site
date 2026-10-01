@@ -6,6 +6,8 @@ import pixelBackdropToolbar from "./src/integrations/pixel-backdrop-toolbar";
 export default defineConfig({
   site: "https://carter.works",
   compressHTML: true,
+  // Small shared styles should arrive with the document, not block its paint.
+  build: { inlineStylesheets: "always" },
   integrations: [sitemap(), pixelBackdropToolbar()],
   output: "static",
   env: {

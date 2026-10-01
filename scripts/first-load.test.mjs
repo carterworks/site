@@ -27,3 +27,8 @@ test("the first-load font is small and discovered in the document", () => {
   );
   assert.match(css, /unicode-range:/);
 });
+
+test("the homepage has no render-blocking stylesheet request", () => {
+  assert.equal(/<link[^>]*rel="stylesheet"/.test(html), false);
+  assert.match(html, /<style[^>]*>/);
+});
