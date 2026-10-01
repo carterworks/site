@@ -127,20 +127,23 @@ const magnify: Shader = ({ source, context, grid }) => {
   }
 
   context.imageSmoothingEnabled = false;
-  for (let y = 0; y < grid.rows; y += 1) {
-    for (let x = 0; x < grid.columns; x += 1) {
-      context.drawImage(
-        source,
-        x,
-        y,
-        1,
-        1,
-        x * grid.stride,
-        y * grid.stride,
-        grid.scale,
-        grid.scale,
-      );
-    }
+  // Scale each source pixel to a full stride, then clear the gap strips. The
+  // display bounds clip the trailing gap. This preserves cell geometry while
+  // replacing columns × rows bitmap draws with one draw and columns + rows
+  // cheap clears (6,400 draws -> one for the site's 80×80 backdrop).
+  context.drawImage(
+    source,
+    0,
+    0,
+    grid.columns * grid.stride,
+    grid.rows * grid.stride,
+  );
+  if (grid.gap === 0) return;
+  for (let x = 0; x < grid.columns - 1; x += 1) {
+    context.clearRect(x * grid.stride + grid.scale, 0, grid.gap, grid.height);
+  }
+  for (let y = 0; y < grid.rows - 1; y += 1) {
+    context.clearRect(0, y * grid.stride + grid.scale, grid.width, grid.gap);
   }
 };
 
