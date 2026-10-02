@@ -1,8 +1,9 @@
 {
   "name": "site",
   "version": "6.3.1",
+  "type": "module",
   "private": true,
-  "packageManager": "pnpm@11.8.0",
+  "packageManager": "pnpm@12.6.0",
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.1",
     "@astrojs/sitemap": "3.7.4",
@@ -24,24 +25,24 @@
     "preview": "astro preview",
     "assets": "node scripts/assets.mjs",
     "media:markup": "node scripts/media-markup.mjs",
-    "cf-typegen": "wrangler types",
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
-    "deploy": "astro build && wrangler pages deploy"
+    "deploy": "astro build && cf deploy"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@astrojs/ts-plugin": "1.10.11",
     "@types/node": "25.9.3",
     "astro": "7.3.2",
+    "cf": "1.0.0-beta.3",
     "happy-dom": "20.14.0",
     "oxfmt": "0.67.0",
     "sharp": "0.35.4",
     "takumi-js": "2.13.7",
     "typescript": "6.0.3",
     "vitest": "5.0.0",
-    "wrangler": "4.130.0"
+    "wrangler": "4.143.0"
   },
   "workspaces": [
     "."
