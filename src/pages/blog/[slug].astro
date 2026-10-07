@@ -43,6 +43,10 @@ const description = getPostDescription(entry);
         border-inline-start: 2px solid black;
         padding-inline-start: var(--size-xs);
       }
+
+      article :is(ul, ol) :is(ul, ol) {
+        padding-inline-start: 1.5em;
+      }
     </style>
   </Fragment>
   <article class:list={["stack", remarkPluginFrontmatter.articleClass]}>
