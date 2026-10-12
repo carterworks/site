@@ -21,15 +21,20 @@ export default Alchemy.Stack(
       assets: { notFoundHandling: "404-page" },
     });
 
-    // Serve the Worker on carter.works with a route instead of a custom
-    // domain. The hostname already carries proxied DNS records from the old
-    // Pages project, which a Workers custom domain refuses to attach over.
-    // Routes win over custom domains, so adopting the existing route (if
-    // Pages created one) repoints the hostname at this Worker without
-    // touching DNS.
     if (stage === "prod") {
       const zone = yield* Cloudflare.Zone.Zone("CarterWorks", {
         name: "carter.works",
+      }).pipe(adopt(true));
+
+      // The apex record the route depends on. It points at a long-gone Pages
+      // project, but the route serves ahead of the origin so the target is
+      // vestigial; adopting it keeps the hostname resolving, unchanged.
+      yield* Cloudflare.DNS.Record("CarterWorksApex", {
+        zoneId: zone.zoneId,
+        name: "carter.works",
+        type: "CNAME",
+        content: "carterworks.pages.dev",
+        proxied: true,
       }).pipe(adopt(true));
 
       yield* Cloudflare.Workers.WorkerRoute("CarterWorksRoute", {
