@@ -26,14 +26,14 @@ export default Alchemy.Stack(
         name: "carter.works",
       }).pipe(adopt(true));
 
-      // The apex record the route depends on. It points at a long-gone Pages
-      // project, but the route serves ahead of the origin so the target is
-      // vestigial; adopting it keeps the hostname resolving, unchanged.
+      // The apex record the route depends on. Points at the Worker's
+      // workers.dev origin rather than the retired Pages project, so the
+      // record still resolves even if the route is ever dropped.
       yield* Cloudflare.DNS.Record("CarterWorksApex", {
         zoneId: zone.zoneId,
         name: "carter.works",
         type: "CNAME",
-        content: "carterworks.pages.dev",
+        content: "carterworks.carterworks.workers.dev",
         proxied: true,
       }).pipe(adopt(true));
 
