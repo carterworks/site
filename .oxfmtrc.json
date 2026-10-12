@@ -22,5 +22,5 @@
   "embeddedLanguageFormatting": "auto",
   "singleAttributePerLine": true,
   "sortPackageJson": false,
-  "ignorePatterns": [".obsidian/", "worker-configuration.d.ts"]
+  "ignorePatterns": [".obsidian/"]
 }
