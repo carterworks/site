@@ -1,3 +1,4 @@
+import { adopt } from "alchemy/AdoptPolicy";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Stage from "alchemy/Stage";
@@ -18,10 +19,25 @@ export default Alchemy.Stack(
       outdir: "dist",
       dev: { command: "pnpm run dev" },
       assets: { notFoundHandling: "404-page" },
-      // Only production owns the public domain; other stages stay on
-      // workers.dev.
-      ...(stage === "prod" ? { domain: "carter.works" } : {}),
     });
+
+    // Serve the Worker on carter.works with a route instead of a custom
+    // domain. The hostname already carries proxied DNS records from the old
+    // Pages project, which a Workers custom domain refuses to attach over.
+    // Routes win over custom domains, so adopting the existing route (if
+    // Pages created one) repoints the hostname at this Worker without
+    // touching DNS.
+    if (stage === "prod") {
+      const zone = yield* Cloudflare.Zone.Zone("CarterWorks", {
+        name: "carter.works",
+      }).pipe(adopt(true));
+
+      yield* Cloudflare.Workers.WorkerRoute("CarterWorksRoute", {
+        zoneId: zone.zoneId,
+        pattern: "carter.works/*",
+        script: site.workerName,
+      }).pipe(adopt(true));
+    }
 
     return { url: site.url };
   }),
