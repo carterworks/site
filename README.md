@@ -13,6 +13,20 @@ pnpm run check
 pnpm run build
 ```
 
+## Deployment
+
+The site deploys to Cloudflare as a Worker serving static assets, defined in
+[`alchemy.run.ts`](./alchemy.run.ts). Alchemy builds the site, hashes `dist/`,
+and uploads it.
+
+```sh
+pnpm run deploy
+```
+
+Locally, authenticate first with `pnpm exec alchemy profile edit`. CI runs the
+same command as `alchemy deploy --stage prod` using `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID`.
+
 # Blog post format
 
 Blog posts are `/content/blog/*.md`. They are `[slug].md`. `pubDate` is required frontmatter in the format `YYYY-MM-DD`. `title` and `description` are optional. Posts without a title derive one from the first non-empty line of the body.
