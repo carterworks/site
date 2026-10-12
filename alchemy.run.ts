@@ -12,7 +12,6 @@ export default Alchemy.Stack(
     const site = yield* Cloudflare.Website.StaticSite("Website", {
       name: "carterworks",
       compatibility: { date: "2024-09-03" },
-      // Pin the build so local dev and deploys share one command.
       command: "pnpm run build",
       outdir: "dist",
       dev: { command: "pnpm run dev" },
