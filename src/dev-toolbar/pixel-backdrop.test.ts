@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { readDefaults } from "../components/pixel-backdrop";
+import {
+  type PixelBackdropOptions,
+  readDefaults,
+} from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/pixel-backdrop-pacing";
 import {
   CONTROLS,
@@ -77,4 +80,20 @@ test("drops a key set back to its default", () => {
   persistChanges({ ...defaults, gap: defaults.gap + 1 });
   persistChanges(defaults);
   expect(stored()).toEqual({});
+});
+
+test("persists a panel knob the live backdrop has tweaked", () => {
+  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
+    options: PixelBackdropOptions;
+    configure(options: object): void;
+  };
+  backdrop.append(document.createElement("emulated-canvas"));
+  document.body.append(backdrop);
+  const defaults = readDefaults();
+
+  backdrop.configure({ panelBlur: defaults.panelBlur + 15 });
+  persistChanges(backdrop.options);
+
+  expect(stored()).toEqual({ panelBlur: defaults.panelBlur + 15 });
+  backdrop.remove();
 });

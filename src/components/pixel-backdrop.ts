@@ -357,11 +357,6 @@ class PixelBackdrop extends HTMLElement {
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
-    // #apply shadows the panel defaults with inline styles; drop them or the
-    // read below returns the tweaked values.
-    const root = document.documentElement.style;
-    root.removeProperty("--backdrop-panel-opacity");
-    root.removeProperty("--backdrop-panel-blur");
     this.#options = readDefaults();
     this.#apply();
     this.#start();
@@ -393,7 +388,7 @@ class PixelBackdrop extends HTMLElement {
     this.#context = undefined;
   }
 
-  /** Mirror every knob onto the component, and the panel knobs onto the root. */
+  /** Mirror every knob onto the component, and the panel knobs onto the body. */
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
@@ -417,9 +412,11 @@ class PixelBackdrop extends HTMLElement {
       canvas.style.setProperty("--emulated-canvas-scale", this.#fit());
     else canvas.style.removeProperty("--emulated-canvas-scale");
 
-    const root = document.documentElement.style;
-    root.setProperty("--backdrop-panel-opacity", `${panelOpacity}%`);
-    root.setProperty("--backdrop-panel-blur", `${panelBlur}px`);
+    // On <body>, not <html>: readDefaults reads <html>'s computed style, which
+    // would otherwise return these live values as the "defaults".
+    const body = document.body.style;
+    body.setProperty("--backdrop-panel-opacity", `${panelOpacity}%`);
+    body.setProperty("--backdrop-panel-blur", `${panelBlur}px`);
 
     this.toggleAttribute("data-disabled", !enabled);
   }
