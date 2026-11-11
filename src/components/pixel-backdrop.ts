@@ -19,8 +19,9 @@ import { clamp } from "./emulated-canvas-limits";
  * solid panels over the result.
  *
  * The element owns its render knobs so the dev-toolbar app can tweak them
- * live. Every knob is mirrored onto the inner `<emulated-canvas>`'s `data-*`
- * attributes — the component's public API.
+ * live. The ones the canvas draws with (gap, shape, ghost, scale) are mirrored
+ * onto the inner `<emulated-canvas>`'s `data-*` attributes — its public API;
+ * the rest are read by the element and the modes directly.
  */
 
 export type PixelBackdropOptions = {
@@ -48,11 +49,11 @@ export type PixelBackdropOptions = {
   noiseSpeed: number;
   /** Colour of the "off" pixels in light mode. */
   lightBase: string;
-  /** Colour of the trail and ripples in light mode. */
+  /** Colour of the lit pixels in light mode, across every mode and the noise. */
   lightInk: string;
   /** Colour of the "off" pixels in dark mode. */
   darkBase: string;
-  /** Colour of the trail and ripples in dark mode. */
+  /** Colour of the lit pixels in dark mode, across every mode and the noise. */
   darkInk: string;
 };
 
@@ -477,7 +478,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#outgoing = undefined;
   }
 
-  /** Mirror every knob onto the component. */
+  /** Mirror the knobs the canvas draws with onto its attributes. */
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;

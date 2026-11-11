@@ -37,11 +37,7 @@ export function createBackdropMode(
 
   const show = (id: string) => {
     last = id;
-    document
-      .querySelector<HTMLElement & { setMode(id: string): void }>(
-        "pixel-backdrop",
-      )
-      ?.setMode(id);
+    document.querySelector("pixel-backdrop")?.setMode(id);
   };
 
   const showRandom = () => {
