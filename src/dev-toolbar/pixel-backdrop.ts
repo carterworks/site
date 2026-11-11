@@ -23,21 +23,6 @@ type BackdropElement = HTMLElement & {
   reset(): void;
 };
 
-type ToolbarToggleElement = HTMLElement & {
-  input: HTMLInputElement;
-  toggleStyle?: string;
-};
-
-type ToolbarSelectElement = HTMLElement & {
-  element: HTMLSelectElement;
-  selectStyle?: string;
-};
-
-type ToolbarButtonElement = HTMLElement & {
-  buttonStyle?: string;
-  size?: string;
-};
-
 type Refresher = () => void;
 
 const backdrop = () =>
@@ -269,9 +254,7 @@ function addControl(
     });
   } else if (control.kind === "toggle") {
     output.remove();
-    const toggle = document.createElement(
-      "astro-dev-toolbar-toggle",
-    ) as ToolbarToggleElement;
+    const toggle = document.createElement("astro-dev-toolbar-toggle");
     toggle.toggleStyle = "gray";
     cell.appendChild(toggle);
 
@@ -298,9 +281,7 @@ function addControl(
     });
   } else {
     output.remove();
-    const select = document.createElement(
-      "astro-dev-toolbar-select",
-    ) as ToolbarSelectElement;
+    const select = document.createElement("astro-dev-toolbar-select");
     select.selectStyle = "gray";
     select.setAttribute("aria-label", control.label);
     for (const [value, text] of Object.entries(control.choices)) {
@@ -401,9 +382,7 @@ function renderPane(canvas: ShadowRoot) {
 
   const actions = document.createElement("div");
   actions.className = "actions";
-  const reset = document.createElement(
-    "astro-dev-toolbar-button",
-  ) as ToolbarButtonElement;
+  const reset = document.createElement("astro-dev-toolbar-button");
   reset.buttonStyle = "gray";
   reset.size = "small";
   reset.textContent = "Reset";
