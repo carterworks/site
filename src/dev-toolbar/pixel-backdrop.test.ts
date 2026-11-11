@@ -168,3 +168,31 @@ test("choosing a mode calls setMode without saving a user preference", () => {
   expect(localStorage.getItem(MODE_KEY)).toBeNull();
   backdrop.remove();
 });
+
+function modeSelect(canvas: HTMLElement) {
+  return canvas.querySelector<StubSelect>(
+    'astro-dev-toolbar-select[aria-label="Mode"]',
+  )!;
+}
+
+test("mode select opens on the backdrop's current mode", () => {
+  const backdrop = mountBackdrop();
+  backdrop.setMode(MODES[2].id);
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  expect(modeSelect(canvas).element.value).toBe(MODES[2].id);
+  backdrop.remove();
+});
+
+test("mode select follows the backdrop's mode after a navigation", () => {
+  const backdrop = mountBackdrop();
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  backdrop.setMode(MODES[2].id);
+  document.dispatchEvent(new Event("astro:page-load"));
+
+  expect(modeSelect(canvas).element.value).toBe(MODES[2].id);
+  backdrop.remove();
+});

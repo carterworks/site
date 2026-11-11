@@ -239,3 +239,13 @@ describe("a mode change", () => {
     expect(log.steps.blank ?? 0).toBeLessThan(10);
   });
 });
+
+describe("mode", () => {
+  test("reports the chosen mode, including one requested mid-dissolve", () => {
+    const backdrop = mount();
+    expect(backdrop.mode).toBe("blank");
+
+    backdrop.setMode("half");
+    expect(backdrop.mode).toBe("half");
+  });
+});

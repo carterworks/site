@@ -279,6 +279,10 @@ function addControl(
     output.remove();
     // Not persisted: the dev picker is for tuning, not a user preference.
     const select = addSelect(cell, control.label, modeChoices);
+    // Modes are random per navigation, so the select must not assume one.
+    refreshers.push(() => {
+      select.value = backdrop()?.mode ?? select.value;
+    });
     select.addEventListener("change", () => {
       backdrop()?.setMode(select.value);
     });
@@ -318,6 +322,8 @@ function addSelect(
 }
 
 /** (Re)build the pane in the app's shadow root, replacing any earlier mount. */
+let paneLife: AbortController | undefined;
+
 function renderPane(canvas: ShadowRoot) {
   canvas.querySelector("[data-pixel-backdrop-pane]")?.remove();
   canvas.querySelector("style[data-pixel-backdrop]")?.remove();
@@ -390,6 +396,15 @@ function renderPane(canvas: ShadowRoot) {
   const refreshers: Refresher[] = [];
   for (const control of CONTROLS) addControl(panel, refreshers, control);
   for (const refresh of refreshers) refresh();
+  paneLife?.abort();
+  paneLife = new AbortController();
+  document.addEventListener(
+    "astro:page-load",
+    () => {
+      for (const refresh of refreshers) refresh();
+    },
+    { signal: paneLife.signal },
+  );
 
   const actions = document.createElement("div");
   actions.className = "actions";

@@ -282,6 +282,11 @@ export class PixelBackdrop extends HTMLElement {
   #shades?: { key: string; table: Uint8ClampedArray };
   #rect?: DOMRect;
 
+  /** The id of the chosen mode, which is the incoming one mid-dissolve. */
+  get mode(): string {
+    return this.#chosen.id;
+  }
+
   /** A copy of the current knobs, for the dev toolbar to read. */
   get options(): PixelBackdropOptions {
     return { ...this.#options };
