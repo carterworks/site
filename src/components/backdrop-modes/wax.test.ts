@@ -186,7 +186,7 @@ test("an untouched lamp cools to a stop and a touch warms it again", () => {
 
 test("the bounded render matches summing every blob over every cell but for cells on a band edge", () => {
   const random = mulberry32(11);
-  const blobs = Array.from({ length: 40 }, () => ({
+  const blobs = Array.from({ length: 7 }, () => ({
     x: visible.left + random() * span,
     y: visible.top + random() * span,
     r: 2.5 + random() * 2.5,
@@ -220,4 +220,22 @@ test("the bounded render matches summing every blob over every cell but for cell
 
   const differing = bounded.filter((value, i) => value !== full[i]).length;
   expect(differing).toBeLessThan(span * span * 0.005);
+});
+
+test("the lamp holds the same few blobs however much glass is visible", () => {
+  const wax_ = (rect: typeof visible) => {
+    const mode = wax.create({
+      columns,
+      rows,
+      random: mulberry32(3),
+      options: {} as never,
+    });
+    const field = new Float32Array(columns * rows);
+    mode.step({ lastInputAt: 0, visible: rect }, 0);
+    mode.render(field);
+    return field.reduce((sum, value) => sum + value, 0);
+  };
+  const viewport = { left: 0, top: 30, right: columns, bottom: 130 };
+
+  expect(wax_(viewport) / wax_(visible)).toBeLessThan(1.5);
 });

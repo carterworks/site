@@ -8,11 +8,10 @@ import type { BackdropInput, CellRect, Mode } from "./mode";
 const PROTOTYPE_CELL_PX = 8;
 const REFERENCE_WIDTH_PX = 1440;
 /**
- * Fewer than the tile's 6 per area: every blob's slow tail adds to every cell,
- * so on the whole viewport the same density merges into one mass.
+ * A handful of blobs however big the glass: every blob's slow tail adds to
+ * every cell, so a count that grows with the area merges into one mass.
  */
-const PROTOTYPE_BLOBS = 4.5;
-const PROTOTYPE_AREA = 48 * 48;
+const BLOBS = 7;
 /** The lamp is left on this long after the last input, then cools. */
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
@@ -65,14 +64,8 @@ export const wax: Mode = {
     const spawn = () => {
       const width = visible.right - visible.left;
       const height = visible.bottom - visible.top;
-      const count = Math.max(
-        2,
-        Math.round(
-          (PROTOTYPE_BLOBS * width * height) / scale ** 2 / PROTOTYPE_AREA,
-        ),
-      );
-      for (let k = 0; k < count; k += 1) {
-        const share = k / (count - 1);
+      for (let k = 0; k < BLOBS; k += 1) {
+        const share = k / (BLOBS - 1);
         blobs.push({
           x: visible.left + width * (0.1 + 0.8 * random()),
           y: visible.top + height * (0.125 + 0.75 * share),
