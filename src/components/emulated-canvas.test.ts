@@ -312,3 +312,14 @@ test("present reports a ghost fade as changing until it lands on the frame", () 
   clock += 1000 / 60;
   expect(canvas.present()).toBe(false);
 });
+
+test("a one-level step settles at once, so a slowly drifting frame lets its owner idle", () => {
+  const canvas = mountCanvas({ ghost: "100" });
+  draw(canvas, 100);
+  canvas.present();
+  draw(canvas, 101);
+  clock += 1000 / 60;
+
+  expect(canvas.present()).toBe(false);
+  expect(shown()[0]).toBe(101);
+});

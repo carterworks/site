@@ -117,10 +117,12 @@ export type Shader = () => ShaderPass;
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
 /**
- * Within half a level the display already shows the target, so snapping there
- * is invisible and ends the fade instead of approaching it forever.
+ * A channel within one 8-bit level of its target snaps to it. The step is
+ * invisible and ends the fade instead of approaching it forever, and a slowly
+ * drifting frame, whose pixels creep a level at a time, then counts as settled
+ * instead of keeping its owner presenting at full rate.
  */
-const SETTLED_LEVELS = 0.5;
+const SETTLED_LEVELS = 1;
 
 /**
  * Emulates an LCD's slow pixel response: every channel moves toward the new
