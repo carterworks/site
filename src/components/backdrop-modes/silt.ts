@@ -76,6 +76,12 @@ export const silt: Mode = {
     let right = columns - 1;
     let top = 0;
     let bottom = rows - 1;
+    // Rows that may hold grains, so a sweep and a render skip the empty rest.
+    // Both only ever hold a superset of the grains, never fewer.
+    let minRow = rows;
+    let maxRow = -1;
+    // Set once a sweep moves nothing; anything that can move a grain clears it.
+    let settled = false;
 
     const put = (x: number, y: number) => {
       const cx = Math.floor(x);
@@ -85,6 +91,9 @@ export const silt: Mode = {
       if (grains[i] === 0) {
         grains[i] = 1 + Math.floor(random() * 3);
         count += 1;
+        settled = false;
+        minRow = Math.min(minRow, cy);
+        maxRow = Math.max(maxRow, cy);
       }
     };
 
@@ -133,6 +142,7 @@ export const silt: Mode = {
           grains[i] = 0;
           count -= 1;
           allowed -= 1;
+          settled = false;
         }
       }
     };
@@ -157,6 +167,8 @@ export const silt: Mode = {
     const seedDune = () => {
       grains.fill(0);
       count = 0;
+      minRow = rows;
+      maxRow = -1;
       const width = Math.round((right - left + 1) * DUNE_WIDTH_SHARE);
       const height = width * DUNE_HEIGHT_SHARE;
       const start = Math.round((left + right - width) / 2);
@@ -174,6 +186,9 @@ export const silt: Mode = {
         Math.hypot(press.x - lastTap.x, press.y - lastTap.y) < tapCells
       ) {
         gravity = -gravity;
+        settled = false;
+        minRow = top;
+        maxRow = bottom;
         tipped = gravity < 0;
         lastTap = { at: -Infinity, x: 0, y: 0 };
       } else {
@@ -198,6 +213,7 @@ export const silt: Mode = {
           right !== nextRight ||
           top !== nextTop ||
           bottom !== nextBottom;
+        if (moved) settled = false;
         left = nextLeft;
         right = nextRight;
         top = nextTop;
@@ -250,8 +266,16 @@ export const silt: Mode = {
         }
 
         const floorRow = gravity > 0 ? bottom : top;
-        const farRow = gravity > 0 ? top : bottom;
-        for (let s = 0; s < sweepsPerStep; s += 1) {
+        let farthest = floorRow;
+        let swept = false;
+        for (let s = 0; !settled && s < sweepsPerStep; s += 1) {
+          const farRow =
+            gravity > 0
+              ? Math.min(bottom, Math.max(top, minRow))
+              : Math.max(top, Math.min(bottom, maxRow));
+          farthest = floorRow;
+          swept = true;
+          let shifted = false;
           for (
             let y = floorRow - gravity;
             y !== farRow - gravity;
@@ -262,9 +286,16 @@ export const silt: Mode = {
             const forward = (y + sweep + s) & 1;
             for (let k = 0; k < right - left + 1; k += 1) {
               const x = forward ? left + k : right - k;
-              if (grains[row + x] !== 0) fall(x, row, next);
+              if (grains[row + x] === 0) continue;
+              farthest = y;
+              if (fall(x, row, next)) shifted = true;
             }
           }
+          settled = !shifted;
+        }
+        if (swept) {
+          minRow = Math.min(farthest, floorRow);
+          maxRow = Math.max(farthest, floorRow);
         }
 
         if (tipped) {
@@ -282,7 +313,10 @@ export const silt: Mode = {
       },
 
       render(field) {
-        for (let i = 0; i < field.length; i += 1) field[i] = SHADES[grains[i]];
+        const end = Math.min(field.length, (maxRow + 1) * columns);
+        for (let i = Math.max(0, minRow) * columns; i < end; i += 1) {
+          field[i] = SHADES[grains[i]];
+        }
       },
 
       pace() {
