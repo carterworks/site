@@ -225,6 +225,10 @@ export type EmulatedCanvasProps = {
  * gap and scale are themselves a shader (`magnify`), and every pass shares the
  * frame's `Grid`, so a new effect is just another function in that list.
  *
+ * By default the bitmap is mirrored every animation frame. `data-manual` opts
+ * out: the consumer already runs its own loop, so a second one would only
+ * present the previous draw. It calls `present()` after drawing instead.
+ *
  * The consumer's context is returned untouched — no proxying or replaying — so
  * mirroring is just a copy of the finished pixels each frame.
  */
@@ -277,10 +281,17 @@ class EmulatedCanvas extends HTMLElement {
     const innerCanvas = this.#innerCanvas;
     if (innerCanvas === undefined) return null;
 
-    this.#mirrorRequested = true;
-    if (this.isConnected) this.#startMirroring();
+    if (this.dataset.manual === undefined) {
+      this.#mirrorRequested = true;
+      if (this.isConnected) this.#startMirroring();
+    }
 
     return getInnerContext(innerCanvas, contextId, options);
+  }
+
+  /** Paints the current bitmap now; the owner of a `data-manual` canvas calls this. */
+  present() {
+    this.#blit();
   }
 
   #initialize() {

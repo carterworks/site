@@ -67,3 +67,31 @@ test("identity geometry copies the bitmap without adding gaps", () => {
   expect(display.drawImage).toHaveBeenCalledTimes(1);
   expect(display.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0);
 });
+
+type TestCanvas = HTMLElement & {
+  getContext(id: "2d"): unknown;
+  present(): void;
+};
+
+test("a data-manual canvas only paints when told to present", () => {
+  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  Object.assign(canvas.dataset, { width: "2", height: "2", manual: "" });
+  document.body.replaceChildren(canvas);
+  const request = vi.spyOn(globalThis, "requestAnimationFrame");
+
+  canvas.getContext("2d");
+  expect(request).not.toHaveBeenCalled();
+
+  display.drawImage.mockClear();
+  canvas.present();
+  expect(display.drawImage).toHaveBeenCalledTimes(1);
+});
+
+test("without data-manual, getContext starts mirroring on its own", () => {
+  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  document.body.replaceChildren(canvas);
+  const request = vi.spyOn(globalThis, "requestAnimationFrame");
+
+  canvas.getContext("2d");
+  expect(request).toHaveBeenCalledTimes(1);
+});
