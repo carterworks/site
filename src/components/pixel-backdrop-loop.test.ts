@@ -26,20 +26,19 @@ const motion = vi.hoisted(() => {
 vi.mock("./emulated-canvas", () => ({}));
 
 const context = {
-  fillRect: vi.fn(),
-  fillStyle: "",
   createImageData: (width: number, height: number) => ({
     width,
     height,
     data: new Uint8ClampedArray(width * height * 4),
   }),
-  putImageData: vi.fn(),
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  arc: vi.fn(),
-  stroke: vi.fn(),
+  putImageData: vi.fn((_image: ImageData) => {}),
 };
+
+/** A cell's red channel in the latest frame: 255 is the light base, 0 the ink. */
+function shownAt(x: number, y: number) {
+  const [image] = context.putImageData.mock.lastCall!;
+  return image.data[(y * 64 + x) * 4];
+}
 
 /** What the stub's `present()` reports, like a ghost fade still in progress. */
 let shadersChanging = false;
@@ -151,16 +150,24 @@ test("a static frame holds full rate for a fade after input, however long, until
 test("with no ghost, a hover cell is drawn once after a move and not on the frames after", async () => {
   mount();
   await vi.advanceTimersByTimeAsync(100);
-  const hoverCells = () =>
-    context.fillRect.mock.calls.filter(([, , w, h]) => w === 1 && h === 1);
 
   movePointer();
   await vi.advanceTimersByTimeAsync(20);
-  expect(hoverCells().length).toBeGreaterThan(0);
+  expect(shownAt(10, 10)).toBe(0);
 
-  context.fillRect.mockClear();
   await vi.advanceTimersByTimeAsync(50);
-  expect(hoverCells()).toHaveLength(0);
+  expect(shownAt(10, 10)).toBe(255);
+});
+
+test("the noise lifts the base under the mode, which draws on top of it", async () => {
+  const backdrop = mount();
+  backdrop.configure({ noise: 30 });
+  movePointer();
+  await vi.advanceTimersByTimeAsync(20);
+
+  expect(shownAt(10, 10)).toBe(0);
+  expect(shownAt(40, 40)).toBeLessThan(255);
+  expect(shownAt(40, 40)).toBeGreaterThanOrEqual(178);
 });
 
 test("once the pointer stops, a static frame goes back to stopped", async () => {

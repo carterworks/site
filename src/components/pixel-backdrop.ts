@@ -1,13 +1,17 @@
 import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
-import { makeNoise2D } from "./backdrop-noise";
+import { MODES } from "./backdrop-modes";
+import type { BackdropInput, ModeInstance } from "./backdrop-modes/mode";
+import { makeNoise2D, mulberry32 } from "./backdrop-noise";
 import { clamp } from "./emulated-canvas-limits";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
- * feeds it pointer input: moving the mouse drags a smeared trail, clicking
- * drops an expanding ripple. The layer is fixed and non-interactive, so the
- * page above it paints its own solid panels over the result.
+ * feeds pointer input to a backdrop mode, which simulates on a fixed timestep
+ * and reports a 0–1 intensity per cell. The element owns everything else: the
+ * drifting noise drawn under every mode, colour, and pacing the loop. The
+ * layer is fixed and non-interactive, so the page above it paints its own
+ * solid panels over the result.
  *
  * The element owns its render knobs so the dev-toolbar app can tweak them
  * live. Every knob is mirrored onto the inner `<emulated-canvas>`'s `data-*`
@@ -27,9 +31,9 @@ export type PixelBackdropOptions = {
   shape: "square" | "circle";
   /** Share of each previous frame the panel keeps, 0–100. */
   ghost: number;
-  /** Maximum ripple radius, in logical pixels. */
+  /** Shimmer's maximum ripple radius, in logical pixels. */
   rippleSize: number;
-  /** Ripple lifetime, in milliseconds. */
+  /** Shimmer's ripple lifetime, in milliseconds. */
   rippleSpeed: number;
   /** Opacity of the drifting background noise field, 0–100. */
   noise: number;
@@ -89,7 +93,10 @@ export function readDefaults(): PixelBackdropOptions {
   ) as PixelBackdropOptions;
 }
 
-const MAX_RIPPLES = 24;
+const STEP = 1000 / 60;
+
+/** Time a mode may catch up after a stall, so a long pause doesn't replay in a burst. */
+const MAX_CATCH_UP = 250;
 
 /** At the default speed the noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
 const IDLE_FRAME_INTERVAL = 1000 / 8;
@@ -208,20 +215,25 @@ export class PixelBackdrop extends HTMLElement {
   #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
   #rows = 0;
-  #ripples: { x: number; y: number; born: number }[] = [];
+  #mode?: ModeInstance;
+  /** The mode clock, advanced in whole steps. */
+  #time = 0;
+  #lastTick?: number;
+  #accumulated = 0;
+  /**
+   * Set by input and cleared by a step, so a tick too short for a whole step
+   * keeps the loop running until the mode has seen the input.
+   */
+  #inputPending = false;
+  #input: BackdropInput = {
+    lastInputAt: -Infinity,
+    visible: { left: 0, top: 0, right: 0, bottom: 0 },
+  };
   #noise = makeNoise2D(NOISE_SEED);
   #field = new Float32Array(0);
   #image?: ImageData;
   #shades?: { key: string; table: Uint8ClampedArray };
   #rect?: DOMRect;
-  #pointer = {
-    x: -1,
-    y: -1,
-    fromX: -1,
-    fromY: -1,
-    moved: false,
-    active: false,
-  };
 
   /** A copy of the current knobs, for the dev toolbar to read. */
   get options(): PixelBackdropOptions {
@@ -238,13 +250,29 @@ export class PixelBackdrop extends HTMLElement {
     this.#columns = canvas.width;
     this.#rows = canvas.height;
     this.#field = new Float32Array(this.#columns * this.#rows);
+    this.#input.visible = {
+      left: 0,
+      top: 0,
+      right: this.#columns,
+      bottom: this.#rows,
+    };
     this.#options ??= readDefaults();
+    this.#mode ??= MODES[0].create({
+      columns: this.#columns,
+      rows: this.#rows,
+      random: mulberry32(Math.random() * 2 ** 32),
+      options: this.#options,
+    });
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {
       passive: true,
     });
     window.addEventListener("pointerdown", this.#onPointerDown, {
+      passive: true,
+    });
+    window.addEventListener("pointerup", this.#onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", this.#onPointerUp, {
       passive: true,
     });
     window.addEventListener("resize", this.#onResize);
@@ -264,6 +292,8 @@ export class PixelBackdrop extends HTMLElement {
     this.#stop();
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
+    window.removeEventListener("pointerup", this.#onPointerUp);
+    window.removeEventListener("pointercancel", this.#onPointerUp);
     window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
@@ -273,7 +303,8 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Merge a partial set of knobs, and repaint. */
   configure(partial: Partial<PixelBackdropOptions>) {
-    this.#options = { ...this.#options, ...partial };
+    // In place, as the mode holds this object to read its knobs live.
+    this.#options = Object.assign(this.#options ?? readDefaults(), partial);
     this.#apply();
     if (this.#options.enabled) {
       this.#start();
@@ -300,6 +331,7 @@ export class PixelBackdrop extends HTMLElement {
     clearTimeout(this.#idleTimer);
     this.#frame = undefined;
     this.#idleTimer = undefined;
+    this.#lastTick = undefined;
     this.#context = undefined;
   }
 
@@ -334,7 +366,10 @@ export class PixelBackdrop extends HTMLElement {
 
   #tick = (now: number) => {
     this.#frame = undefined;
-    const busy = this.#pointer.moved || this.#ripples.length > 0;
+    this.#advance(now);
+    // Asked before render, which may consume what made the mode busy: the
+    // frame after it must still be drawn, to clear it.
+    const busy = this.#inputPending || this.#mode?.pace() === "active";
     if (busy) this.#busyAt = now;
 
     this.#draw(now);
@@ -349,8 +384,32 @@ export class PixelBackdrop extends HTMLElement {
       this.#frame = requestAnimationFrame(this.#tick);
     } else if (drifting) {
       this.#idleTimer = window.setTimeout(this.#wake, IDLE_FRAME_INTERVAL);
+    } else {
+      this.#lastTick = undefined;
     }
   };
+
+  /**
+   * Steps the mode in whole fixed steps for the time since the last tick, so it
+   * runs at the same speed at any refresh rate. A tick after a stop counts as
+   * one step.
+   */
+  #advance(now: number) {
+    const mode = this.#mode;
+    if (mode === undefined) return;
+    const elapsed =
+      this.#lastTick === undefined
+        ? STEP
+        : Math.min(now - this.#lastTick, MAX_CATCH_UP);
+    this.#lastTick = now;
+    this.#accumulated += elapsed;
+    while (this.#accumulated >= STEP) {
+      this.#accumulated -= STEP;
+      this.#time += STEP;
+      mode.step(this.#input, this.#time);
+      this.#inputPending = false;
+    }
+  }
 
   /** A static frame has nothing left to redraw until input or `configure`. */
   #isDrifting() {
@@ -380,54 +439,13 @@ export class PixelBackdrop extends HTMLElement {
     const ink = dark ? this.#options.darkInk : this.#options.lightInk;
 
     this.#paint(context, now, base, ink);
-
-    const pointer = this.#pointer;
-    if (pointer.moved) {
-      context.strokeStyle = ink;
-      context.fillStyle = ink;
-      context.lineWidth = 1;
-      if (pointer.fromX >= 0) {
-        context.beginPath();
-        context.moveTo(pointer.fromX + 0.5, pointer.fromY + 0.5);
-        context.lineTo(pointer.x + 0.5, pointer.y + 0.5);
-        context.stroke();
-      }
-      context.fillRect(pointer.x, pointer.y, 1, 1);
-      pointer.moved = false;
-    }
-
-    for (let i = this.#ripples.length - 1; i >= 0; i -= 1) {
-      const ripple = this.#ripples[i];
-      // `born` comes from performance.now() in the event handler while `now` is
-      // the rAF timestamp, which can trail it on the click's own frame; clamp
-      // or `arc` throws on a negative radius and kills the loop.
-      const age = Math.max(0, now - ripple.born);
-      if (age >= this.#options.rippleSpeed) {
-        this.#ripples.splice(i, 1);
-        continue;
-      }
-      const progress = age / this.#options.rippleSpeed;
-      context.beginPath();
-      context.arc(
-        ripple.x,
-        ripple.y,
-        progress * this.#options.rippleSize,
-        0,
-        Math.PI * 2,
-      );
-      context.lineWidth = 1;
-      context.strokeStyle = ink;
-      context.globalAlpha = 1 - progress;
-      context.stroke();
-      context.globalAlpha = 1;
-    }
   }
 
   /**
-   * Fills the bitmap from the intensity field, with the base lifted toward the
-   * ink by a drifting simplex field so the "off" pixels shimmer. Built as one
-   * `ImageData` and blitted in a single call — far cheaper than a `fillRect`
-   * per cell.
+   * Fills the bitmap from the mode's intensity field, with the base lifted
+   * toward the ink by a drifting simplex field under it, so the "off" pixels
+   * shimmer and the mode draws on top. Built as one `ImageData` and blitted in
+   * a single call — far cheaper than a `fillRect` per cell.
    */
   #paint(
     context: OffscreenCanvasRenderingContext2D,
@@ -456,6 +474,7 @@ export class PixelBackdrop extends HTMLElement {
     }
 
     field.fill(0);
+    this.#mode?.render(field);
     if (this.#options.noise > 0) {
       const amount = this.#options.noise / 100;
       const frequency = 1 / Math.max(1, this.#options.noiseScale);
@@ -473,7 +492,7 @@ export class PixelBackdrop extends HTMLElement {
     context.putImageData(image, 0, 0);
   }
 
-  /** Viewport point -> position in the source bitmap, in logical pixels. */
+  /** Viewport point -> position on the grid in logical cells, if it is on it. */
   #logical(clientX: number, clientY: number) {
     const canvas = this.#canvas;
     if (canvas === undefined) return undefined;
@@ -483,38 +502,30 @@ export class PixelBackdrop extends HTMLElement {
       return undefined;
     }
     const gap = this.#options.gap;
-    return {
-      x: gridCoordinate(clientX - rect.left, rect.width, this.#columns, gap),
-      y: gridCoordinate(clientY - rect.top, rect.height, this.#rows, gap),
-    };
+    const x = gridCoordinate(
+      clientX - rect.left,
+      rect.width,
+      this.#columns,
+      gap,
+    );
+    const y = gridCoordinate(clientY - rect.top, rect.height, this.#rows, gap);
+    if (x < 0 || y < 0 || x > this.#columns || y > this.#rows) return undefined;
+    return { x, y };
   }
 
-  /** Viewport point -> logical cell in the source bitmap. */
-  #cell(clientX: number, clientY: number) {
-    const point = this.#logical(clientX, clientY);
-    if (point === undefined) return undefined;
-    return {
-      x: clamp(Math.floor(point.x), 0, this.#columns - 1),
-      y: clamp(Math.floor(point.y), 0, this.#rows - 1),
-    };
+  #touched() {
+    this.#input.lastInputAt = this.#time;
+    this.#inputPending = true;
+    this.#wake();
   }
 
   #onPointerMove = (event: PointerEvent) => {
-    // Touch has no hover; taps alone drive ripples.
+    // Touch has no hover; taps alone are presses.
     if (event.pointerType === "touch") return;
-    const cell = this.#cell(event.clientX, event.clientY);
-    if (cell === undefined) return;
-
-    const pointer = this.#pointer;
-    if (!pointer.active || cell.x !== pointer.x || cell.y !== pointer.y) {
-      pointer.fromX = pointer.active ? pointer.x : cell.x;
-      pointer.fromY = pointer.active ? pointer.y : cell.y;
-    }
-    pointer.x = cell.x;
-    pointer.y = cell.y;
-    pointer.moved = true;
-    pointer.active = true;
-    this.#wake();
+    const point = this.#logical(event.clientX, event.clientY);
+    if (point === undefined) return;
+    this.#input.pointer = point;
+    this.#touched();
   };
 
   /** The host is fixed, so only a resize moves its box. */
@@ -523,19 +534,19 @@ export class PixelBackdrop extends HTMLElement {
   };
 
   #onPointerLeave = () => {
-    this.#pointer.active = false;
-    this.#pointer.moved = false;
+    this.#input.pointer = undefined;
   };
 
+  /** A new object per press, so a mode tells presses apart by identity. */
   #onPointerDown = (event: PointerEvent) => {
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
-    const { x, y } = point;
-    if (x < 0 || y < 0 || x > this.#columns || y > this.#rows) return;
+    this.#input.press = { ...point, at: this.#time, held: true };
+    this.#touched();
+  };
 
-    this.#ripples.push({ x, y, born: performance.now() });
-    if (this.#ripples.length > MAX_RIPPLES) this.#ripples.shift();
-    this.#wake();
+  #onPointerUp = () => {
+    if (this.#input.press !== undefined) this.#input.press.held = false;
   };
 
   #onMotionChange = () => {
