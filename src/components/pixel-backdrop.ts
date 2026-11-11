@@ -369,18 +369,21 @@ export class PixelBackdrop extends HTMLElement {
     this.#advance(now);
     // Asked before render, which may consume what made the mode busy: the
     // frame after it must still be drawn, to clear it.
-    const busy = this.#inputPending || this.#mode?.pace() === "active";
-    if (busy) this.#busyAt = now;
+    const pace = this.#inputPending
+      ? "active"
+      : (this.#mode?.pace() ?? "still");
+    if (pace === "active") this.#busyAt = now;
 
     this.#draw(now);
     // A fade in flight keeps full rate: at the idle rate it would visibly step,
     // and a static frame that stopped would freeze it half-faded.
     const changing = this.#canvas?.present() ?? false;
-    const drifting = this.#isDrifting();
+    // Like drifting noise, an idle mode changes on every redraw.
+    const drifting = pace === "idle" || this.#noiseDrifts();
     const fading =
       changing && (!drifting || now - this.#busyAt < DRIFTING_FADE_WINDOW);
 
-    if (busy || fading) {
+    if (pace === "active" || fading) {
       this.#frame = requestAnimationFrame(this.#tick);
     } else if (drifting) {
       this.#idleTimer = window.setTimeout(this.#wake, IDLE_FRAME_INTERVAL);
@@ -411,8 +414,8 @@ export class PixelBackdrop extends HTMLElement {
     }
   }
 
-  /** A static frame has nothing left to redraw until input or `configure`. */
-  #isDrifting() {
+  /** Static noise has nothing left to redraw until input or `configure`. */
+  #noiseDrifts() {
     return this.#options.noise > 0 && this.#options.noiseSpeed > 0;
   }
 

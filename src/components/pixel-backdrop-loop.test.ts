@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import type { ModeSetup, Pace } from "./backdrop-modes/mode";
 import "./pixel-backdrop";
 
 const motion = vi.hoisted(() => {
@@ -24,6 +25,22 @@ const motion = vi.hoisted(() => {
 });
 
 vi.mock("./emulated-canvas", () => ({}));
+
+/** When set, the backdrop's mode reports this pace instead of Shimmer's own. */
+const pace = vi.hoisted(() => ({ forced: undefined as Pace | undefined }));
+
+vi.mock("./backdrop-modes", async (importOriginal) => {
+  const { MODES } = await importOriginal<typeof import("./backdrop-modes")>();
+  return {
+    MODES: MODES.map((mode) => ({
+      ...mode,
+      create(setup: ModeSetup) {
+        const instance = mode.create(setup);
+        return { ...instance, pace: () => pace.forced ?? instance.pace() };
+      },
+    })),
+  };
+});
 
 const context = {
   createImageData: (width: number, height: number) => ({
@@ -101,6 +118,7 @@ beforeEach(() => {
   }`;
   document.head.append(style);
   shadersChanging = false;
+  pace.forced = undefined;
 });
 
 afterEach(() => {
@@ -336,4 +354,31 @@ test("a backdrop removed and re-appended starts its loop again", async () => {
 
   document.body.append(backdrop);
   expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
+
+test("an active mode holds full rate over a static frame", async () => {
+  pace.forced = "active";
+  mount();
+  await vi.advanceTimersByTimeAsync(100);
+
+  expect(await presentsOver(1000)).toBeGreaterThan(50);
+});
+
+test("an idle mode runs at the idle rate over a static frame, even while the canvas is changing", async () => {
+  pace.forced = "idle";
+  shadersChanging = true;
+  mount();
+  await vi.advanceTimersByTimeAsync(1500);
+
+  const presents = await presentsOver(1000);
+  expect(presents).toBeGreaterThanOrEqual(6);
+  expect(presents).toBeLessThanOrEqual(8);
+});
+
+test("a still mode over a static frame stops", async () => {
+  pace.forced = "still";
+  mount();
+  await vi.advanceTimersByTimeAsync(100);
+
+  expect(vi.getTimerCount()).toBe(0);
 });
