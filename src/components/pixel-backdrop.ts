@@ -275,6 +275,7 @@ export class PixelBackdrop extends HTMLElement {
    * keeps the loop running until the mode has seen the input.
    */
   #inputPending = false;
+  #holdPointer?: number;
   #input: BackdropInput = {
     lastInputAt: -Infinity,
     visible: { left: 0, top: 0, right: 0, bottom: 0 },
@@ -332,8 +333,10 @@ export class PixelBackdrop extends HTMLElement {
     window.addEventListener("pointerdown", this.#onPointerDown, {
       passive: true,
     });
-    window.addEventListener("pointerup", this.#endHold, { passive: true });
-    window.addEventListener("pointercancel", this.#endHold, { passive: true });
+    window.addEventListener("pointerup", this.#onPointerEnd, { passive: true });
+    window.addEventListener("pointercancel", this.#onPointerEnd, {
+      passive: true,
+    });
     window.addEventListener("blur", this.#endHold, { passive: true });
     document.addEventListener("selectionchange", this.#onSelectionChange, {
       passive: true,
@@ -356,8 +359,8 @@ export class PixelBackdrop extends HTMLElement {
     this.#stop();
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
-    window.removeEventListener("pointerup", this.#endHold);
-    window.removeEventListener("pointercancel", this.#endHold);
+    window.removeEventListener("pointerup", this.#onPointerEnd);
+    window.removeEventListener("pointercancel", this.#onPointerEnd);
     window.removeEventListener("blur", this.#endHold);
     document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
@@ -726,10 +729,12 @@ export class PixelBackdrop extends HTMLElement {
   /** The host is fixed, so only a resize moves its box. */
   #onResize = () => {
     this.#rect = undefined;
+    this.#wake();
   };
 
   #onPointerLeave = () => {
     this.#input.pointer = undefined;
+    this.#wake();
   };
 
   /** A new object per press, so a mode tells presses apart by identity. */
@@ -738,8 +743,14 @@ export class PixelBackdrop extends HTMLElement {
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#input.press = { ...point, at: this.#time, held: true };
+    this.#holdPointer = event.pointerId;
     if (this.#chosen.holds) this.#suppressSelection();
     this.#touched();
+  };
+
+  /** Only the pointer that began the hold may end it; another finger lifting must not. */
+  #onPointerEnd = (event: PointerEvent) => {
+    if (event.pointerId === this.#holdPointer) this.#endHold();
   };
 
   /**

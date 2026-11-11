@@ -619,3 +619,30 @@ test("a press from before a mode switch never reaches the new mode", async () =>
 
   expect((await latestInput()).press).toBeUndefined();
 });
+
+test("a second finger lifting does not end the first finger's hold", async () => {
+  mount();
+  press(document.body, { pointerId: 1 });
+
+  window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 2 }));
+  expect((await latestInput()).press?.held).toBe(true);
+
+  window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
+  expect((await latestInput()).press?.held).toBe(false);
+});
+
+test.each([
+  ["a resize", () => window.dispatchEvent(new Event("resize"))],
+  [
+    "the pointer leaving",
+    () => document.dispatchEvent(new Event("mouseleave")),
+  ],
+])("%s wakes a settled loop", async (_, trigger) => {
+  mount();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(vi.getTimerCount()).toBe(0);
+
+  trigger();
+
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
