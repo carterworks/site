@@ -93,7 +93,10 @@
   --backdrop-dark-base: #141414;
   --backdrop-dark-ink: #6e6e7a;
 
-  scrollbar-color: light-dark(var(--backdrop-light-ink), var(--backdrop-dark-ink))
+  scrollbar-color: light-dark(
+      var(--backdrop-light-ink),
+      var(--backdrop-dark-ink)
+    )
     transparent;
 }
 body {
