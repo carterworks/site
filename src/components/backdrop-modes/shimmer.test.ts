@@ -1,10 +1,12 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
-import type { BackdropInput } from "./mode";
+import { GRID_SIZE, type BackdropInput } from "./mode";
 import { shimmer } from "./shimmer";
 
-const columns = 16;
-const rows = 16;
+const columns = GRID_SIZE;
+const rows = GRID_SIZE;
+const RIPPLE_REFERENCE_GRID = 80;
+const gridScale = GRID_SIZE / RIPPLE_REFERENCE_GRID;
 
 function setup() {
   const mode = shimmer.create({
@@ -29,7 +31,7 @@ function setup() {
   return { mode, input, field, frame, at };
 }
 
-test("a move draws the hover segment from the previous cell once, then nothing", () => {
+test("a move draws a two-cell-thick hover segment once, then nothing", () => {
   const { input, field, frame, at } = setup();
   input.pointer = { x: 2.5, y: 2.5 };
   frame(0);
@@ -37,7 +39,8 @@ test("a move draws the hover segment from the previous cell once, then nothing",
 
   expect(frame(16)).toBe("active");
   expect([2, 3, 4, 5].map((x) => at(x, 2))).toEqual([1, 1, 1, 1]);
-  expect(field.reduce((sum, value) => sum + value)).toBe(4);
+  expect([2, 3, 4, 5].map((x) => at(x, 3))).toEqual([1, 1, 1, 1]);
+  expect(field.reduce((sum, value) => sum + value)).toBe(10);
 
   expect(frame(32)).toBe("still");
   expect(field.every((value) => value === 0)).toBe(true);
@@ -58,7 +61,7 @@ test("a press grows a fading ring that lasts the ripple speed", () => {
   input.press = { x: 8.5, y: 8.5, at: 0, held: false };
 
   expect(frame(50)).toBe("active");
-  expect(at(8 + 3, 8)).toBeCloseTo(0.5);
+  expect(at(8 + 3 * gridScale, 8)).toBeCloseTo(0.5);
   expect(at(8, 8)).toBe(0);
 
   expect(frame(100)).toBe("still");
@@ -72,5 +75,5 @@ test("a later press starts its own ripple after the first has finished", () => {
   input.press = { x: 8.5, y: 8.5, at: 60, held: false };
 
   expect(frame(110)).toBe("active");
-  expect(at(8 + 3, 8)).toBeCloseTo(0.5);
+  expect(at(8 + 3 * gridScale, 8)).toBeCloseTo(0.5);
 });

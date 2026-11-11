@@ -1,8 +1,11 @@
 import { clamp } from "../emulated-canvas-limits";
 import { line } from "./line";
-import type { Mode, Point } from "./mode";
+import { GRID_SIZE, type Mode, type Point } from "./mode";
 
 const MAX_RIPPLES = 24;
+
+// rippleSize is authored in cells of the 80-cell grid the look was tuned on.
+const RIPPLE_SIZE_SCALE = GRID_SIZE / 80;
 
 /**
  * The original backdrop: moving the pointer smears a segment from the cell it
@@ -26,6 +29,16 @@ export const shimmer: Mode = {
       x: clamp(Math.floor(x), 0, columns - 1),
       y: clamp(Math.floor(y), 0, rows - 1),
     });
+
+    // Two cells thick keeps the segment as heavy on screen as one cell was at 80.
+    let target: Float32Array = new Float32Array(0);
+    const stamp = (x: number, y: number) => {
+      const right = Math.min(x + 1, columns - 1);
+      const bottom = Math.min(y + 1, rows - 1);
+      for (let row = y; row <= bottom; row += 1)
+        for (let column = x; column <= right; column += 1)
+          target[row * columns + column] = 1;
+    };
 
     return {
       step({ pointer, press }, time) {
@@ -57,16 +70,15 @@ export const shimmer: Mode = {
       },
 
       render(field) {
+        target = field;
         if (moved && hovered !== undefined) {
-          line(from, hovered, (x, y) => {
-            field[y * columns + x] = 1;
-          });
+          line(from, hovered, stamp);
           moved = false;
         }
 
         for (const ripple of ripples) {
           const progress = (now - ripple.born) / options.rippleSpeed;
-          const radius = progress * options.rippleSize;
+          const radius = progress * options.rippleSize * RIPPLE_SIZE_SCALE;
           const strength = 1 - progress;
           const reach = Math.ceil(radius + 1);
           const top = Math.max(0, Math.floor(ripple.y) - reach);
