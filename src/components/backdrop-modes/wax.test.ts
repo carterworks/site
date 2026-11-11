@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
 import { GRID_SIZE, type BackdropInput, type Point } from "./mode";
-import { wax } from "./wax";
+import { renderBlobs, wax } from "./wax";
 
 const columns = GRID_SIZE;
 const rows = GRID_SIZE;
@@ -182,4 +182,42 @@ test("an untouched lamp cools to a stop and a touch warms it again", () => {
 
   input.lastInputAt = jump(1);
   expect(frame()).toBe("active");
+});
+
+test("the bounded render matches summing every blob over every cell but for cells on a band edge", () => {
+  const random = mulberry32(11);
+  const blobs = Array.from({ length: 40 }, () => ({
+    x: visible.left + random() * span,
+    y: visible.top + random() * span,
+    r: 2.5 + random() * 2.5,
+  }));
+  const bands = (sum: number) =>
+    sum >= 1 ? 1 : sum > 0.72 ? 0.55 : sum > 0.5 ? 0.22 : 0;
+  const full = new Float32Array(columns * rows);
+  for (let y = Math.floor(visible.top); y < visible.bottom; y += 1) {
+    for (let x = Math.floor(visible.left); x < visible.right; x += 1) {
+      let sum = 0;
+      for (const { x: bx, y: by, r } of blobs) {
+        const dx = x + 0.5 - bx;
+        const dy = y + 0.5 - by;
+        sum += (r * r) / (dx * dx + dy * dy + 0.5);
+      }
+      full[y * columns + x] = bands(sum);
+    }
+  }
+
+  const bounded = new Float32Array(columns * rows);
+  renderBlobs(
+    blobs,
+    visible,
+    columns,
+    {
+      near: new Float64Array(columns * rows),
+      far: new Float64Array(columns * rows),
+    },
+    bounded,
+  );
+
+  const differing = bounded.filter((value, i) => value !== full[i]).length;
+  expect(differing).toBeLessThan(span * span * 0.005);
 });
