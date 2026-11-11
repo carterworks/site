@@ -1,5 +1,9 @@
 import "./emulated-canvas";
-import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
+import {
+  clamp,
+  IDLE_FRAME_INTERVAL,
+  settleFrames,
+} from "./pixel-backdrop-pacing";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
@@ -118,10 +122,6 @@ function prefersDark() {
   if (override === "dark") return true;
   if (override === "light") return false;
   return darkScheme.matches;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 /**

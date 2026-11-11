@@ -14,3 +14,7 @@ export function settleFrames(ghostPercent: number) {
   if (retention <= 0) return 0;
   return Math.ceil(Math.log(1 / 255) / Math.log(retention));
 }
+
+export function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}

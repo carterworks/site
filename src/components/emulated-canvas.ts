@@ -1,4 +1,4 @@
-import { MAX_GHOST } from "./pixel-backdrop-pacing";
+import { clamp, MAX_GHOST } from "./pixel-backdrop-pacing";
 
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
 function getInnerContext(
@@ -12,10 +12,6 @@ function getInnerContext(
 }
 
 type PixelShape = "square" | "circle";
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
 
 type Geometry = {
   columns: number;
