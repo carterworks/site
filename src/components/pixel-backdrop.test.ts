@@ -57,3 +57,18 @@ test("a reconnected backdrop keeps its tweaks and restores the root panel proper
     document.documentElement.style.getPropertyValue("--backdrop-panel-blur"),
   ).toBe("9px");
 });
+
+test("the grid reads the same whole-number size the canvas bitmap uses", () => {
+  const canvas = document.createElement("emulated-canvas");
+  canvas.dataset.width = "80.5";
+  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
+    configure(options: object): void;
+  };
+  backdrop.append(canvas);
+  document.body.append(backdrop);
+  backdrop.configure({ autoFit: true });
+
+  expect(canvas.style.getPropertyValue("--emulated-canvas-scale")).toContain(
+    "/ 80,",
+  );
+});

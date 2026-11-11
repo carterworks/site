@@ -99,9 +99,15 @@ export function readDefaults(): PixelBackdropOptions {
 
 const MAX_RIPPLES = 24;
 
+/** Mirrors `<emulated-canvas>`'s own parse so the grid matches its bitmap. */
+function bitmapSize(attribute: string | undefined): number {
+  const parsed = Number.parseInt(attribute ?? "");
+  return parsed >= 1 ? parsed : 64;
+}
+
 /** The bits of `<emulated-canvas>` this element needs. */
 type EmulatedCanvasElement = HTMLElement & {
-  getContext(id: "2d"): CanvasRenderingContext2D | null;
+  getContext(id: "2d"): OffscreenCanvasRenderingContext2D | null;
   present(): void;
 };
 
@@ -274,7 +280,7 @@ function colourRgb(value: string): [number, number, number] {
 class PixelBackdrop extends HTMLElement {
   #options!: PixelBackdropOptions;
   #canvas?: EmulatedCanvasElement;
-  #context?: CanvasRenderingContext2D;
+  #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
   #idleTimer?: number;
   #quietFrames = 0;
@@ -302,8 +308,8 @@ class PixelBackdrop extends HTMLElement {
     if (canvas === null) return;
     this.#canvas = canvas;
     canvas.dataset.manual = "";
-    this.#columns = Number(canvas.dataset.width) || 64;
-    this.#rows = Number(canvas.dataset.height) || 64;
+    this.#columns = bitmapSize(canvas.dataset.width);
+    this.#rows = bitmapSize(canvas.dataset.height);
     this.#options ??= readDefaults();
     this.#apply();
 
@@ -511,7 +517,7 @@ class PixelBackdrop extends HTMLElement {
    * blitted in a single call — far cheaper than a `fillRect` per cell.
    */
   #paintNoise(
-    context: CanvasRenderingContext2D,
+    context: OffscreenCanvasRenderingContext2D,
     now: number,
     base: string,
     ink: string,
