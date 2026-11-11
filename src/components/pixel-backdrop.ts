@@ -288,6 +288,8 @@ export class PixelBackdrop extends HTMLElement {
   connectedCallback() {
     const canvas = this.querySelector("emulated-canvas");
     if (canvas === null) return;
+    // Parents upgrade before children, so the child may still be a bare element.
+    customElements.upgrade(canvas);
     this.#canvas = canvas;
     canvas.dataset.manual = "";
     this.#columns = canvas.width;

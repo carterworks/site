@@ -197,3 +197,9 @@ test("importing the module again does not redefine the element", async () => {
   vi.resetModules();
   await expect(import("./emulated-canvas")).resolves.toBeDefined();
 });
+
+test("the context is available before the element is connected", () => {
+  const canvas = document.createElement("emulated-canvas");
+
+  expect(canvas.getContext("2d")).not.toBeNull();
+});

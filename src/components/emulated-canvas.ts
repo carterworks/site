@@ -163,7 +163,6 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   attributeChangedCallback() {
-    if (this.#innerCanvas === undefined) return;
     this.#configure();
   }
 
@@ -177,8 +176,7 @@ export class EmulatedCanvas extends HTMLElement {
     options?: unknown,
   ): object | null;
   getContext(contextId: OffscreenRenderingContextId, options?: unknown) {
-    const innerCanvas = this.#innerCanvas;
-    if (innerCanvas === undefined) return null;
+    const innerCanvas = this.#bitmap();
 
     if (this.dataset.manual === undefined) {
       this.#mirrorRequested = true;
@@ -213,11 +211,15 @@ export class EmulatedCanvas extends HTMLElement {
     this.#panel = undefined;
   }
 
+  /** Created on demand: a consumer may ask for the context before connection. */
+  #bitmap() {
+    return (this.#innerCanvas ??= new OffscreenCanvas(this.width, this.height));
+  }
+
   #initialize() {
-    if (this.#innerCanvas !== undefined) return;
+    if (this.#outerCanvas !== undefined) return;
 
     const { width, height } = this;
-    this.#innerCanvas = new OffscreenCanvas(width, height);
 
     const outerCanvas = document.createElement("canvas");
     outerCanvas.width = width;
@@ -232,9 +234,9 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   #configure() {
-    const innerCanvas = this.#innerCanvas;
     const style = this.#style;
-    if (innerCanvas === undefined || style === undefined) return;
+    if (style === undefined) return;
+    const innerCanvas = this.#bitmap();
 
     style.textContent = displayStyle({
       columns: innerCanvas.width,
@@ -278,9 +280,9 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   #blit() {
-    const innerCanvas = this.#innerCanvas;
     const outerCanvas = this.#outerCanvas;
-    if (innerCanvas === undefined || outerCanvas === undefined) return;
+    if (outerCanvas === undefined) return;
+    const innerCanvas = this.#bitmap();
 
     let context = this.#outerContext;
     if (context === undefined) {
