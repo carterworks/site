@@ -177,8 +177,15 @@ class CommandBarElement extends HTMLElement {
     osScheme.addEventListener?.("change", renderRows);
     this.cleanup = () => osScheme.removeEventListener?.("change", renderRows);
 
+    // Dismissing the popover restores focus to the trigger before the popover
+    // reports closed, so that focus event would call showPopover mid-hide.
+    let closing = false;
+    dialog.addEventListener("beforetoggle", (event) => {
+      closing = event.newState === "closed";
+    });
+
     const prepare = () => {
-      if (dialog.matches(":popover-open")) return;
+      if (closing || dialog.matches(":popover-open")) return;
       rebuildPageLinks();
       renderRows();
       dialog.showPopover();
@@ -247,7 +254,9 @@ class CommandBarElement extends HTMLElement {
       }
     });
     dialog.addEventListener("toggle", (event) => {
-      if (event.newState === "closed") trigger.blur();
+      if (event.newState !== "closed") return;
+      closing = false;
+      trigger.blur();
     });
     this.addEventListener("pointermove", (event) => {
       const command = commandFrom(event.target);

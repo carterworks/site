@@ -290,6 +290,22 @@ describe("command bar dialog", () => {
     expect(dialog.matches(":popover-open")).toBe(false);
   });
 
+  test("focus restored to the trigger while the dialog closes does not reopen it", () => {
+    openSettings();
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    const show = vi.spyOn(dialog, "showPopover");
+    const closing = new Event("beforetoggle");
+    Object.defineProperty(closing, "newState", { value: "closed" });
+
+    dialog.dispatchEvent(closing);
+    dialog.removeAttribute("data-popover-open");
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
+      new FocusEvent("focus"),
+    );
+
+    expect(show).not.toHaveBeenCalled();
+  });
+
   test("Shift+Enter advances the theme without closing the dialog", () => {
     osPrefers("dark");
     openSettings();
