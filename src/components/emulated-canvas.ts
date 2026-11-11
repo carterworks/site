@@ -1,4 +1,4 @@
-import { clamp, MAX_GHOST } from "./pixel-backdrop-pacing";
+import { clamp, MAX_GHOST } from "./emulated-canvas-limits";
 
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
 function getInnerContext(

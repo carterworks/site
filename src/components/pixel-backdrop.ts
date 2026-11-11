@@ -1,10 +1,7 @@
 import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
-import {
-  clamp,
-  IDLE_FRAME_INTERVAL,
-  settleFrames,
-} from "./pixel-backdrop-pacing";
+import { clamp } from "./emulated-canvas-limits";
+import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and

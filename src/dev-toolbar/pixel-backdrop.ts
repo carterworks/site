@@ -1,5 +1,5 @@
 import { defineToolbarApp } from "astro/toolbar";
-import { MAX_GHOST } from "../components/pixel-backdrop-pacing";
+import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   readDefaults,
   type PixelBackdropOptions,

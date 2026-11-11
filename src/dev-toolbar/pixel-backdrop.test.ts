@@ -3,7 +3,7 @@ import {
   type PixelBackdropOptions,
   readDefaults,
 } from "../components/pixel-backdrop";
-import { MAX_GHOST } from "../components/pixel-backdrop-pacing";
+import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   CONTROLS,
   STORAGE_KEY,
