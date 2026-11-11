@@ -129,3 +129,54 @@ test("a pond that is about to rain idles between drops instead of stopping", () 
   expect(["idle", "active"]).toContain(frame());
   expect(frame()).not.toBe("still");
 });
+
+test("a lone ripple costs far less to step than one that fills the pond", () => {
+  const { press: warmPress, frames } = setup();
+  warmPress(middle, middle);
+  frames(300);
+
+  const { input, press, frame } = setup();
+  const timeFrames = (count: number) => {
+    const started = performance.now();
+    for (let i = 0; i < count; i += 1) frame();
+    return performance.now() - started;
+  };
+  press(size / 16, size / 16);
+  const lone = timeFrames(6);
+  for (let x = 0; x < size; x += 1) {
+    input.pointer = { x, y: middle };
+    input.lastInputAt = 1;
+    frame();
+  }
+  input.press = undefined;
+  const filled = timeFrames(6);
+
+  expect(lone * 4).toBeLessThan(filled);
+});
+
+test("a scripted session paints the same frames as the unbounded pond", () => {
+  const { input, press, frame, field } = setup();
+  let digest = 0;
+  const fold = () => {
+    for (let j = 0; j < field.length; j += 1)
+      digest += field[j] * ((j % 251) + 1);
+  };
+  press(size / 5, size / 3);
+  for (let f = 0; f < 60 * 30; f += 1) {
+    if (f < 200) {
+      input.lastInputAt = f * STEP;
+      input.pointer = {
+        x: size / 5 + f * 0.4,
+        y: size / 3 + Math.sin(f / 9) * 20,
+      };
+    } else if (f === 200) {
+      input.pointer = undefined;
+      input.press = { x: size * 0.8, y: size * 0.7, at: f * STEP, held: true };
+      input.lastInputAt = f * STEP;
+    }
+    frame();
+    if (f % 7 === 0) fold();
+  }
+
+  expect(digest).toBe(40637979.74715558);
+});
