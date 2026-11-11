@@ -35,6 +35,7 @@ function inside(dx: number, dy: number, radiusX: number, radiusY: number) {
 export const culture: Mode = {
   id: "culture",
   label: "Culture",
+  holds: true,
   create({ columns, rows, random }) {
     const size = columns * rows;
     const dish = new Uint8Array(size);

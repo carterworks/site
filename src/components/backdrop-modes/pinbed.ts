@@ -30,6 +30,7 @@ const LIT_RISE = 0.04 / SCALE;
 export const pinbed: Mode = {
   id: "pinbed",
   label: "Pinbed",
+  holds: true,
   create({ columns, rows, random }) {
     const depth = new Float32Array(columns * rows);
     const pushedAt = new Float32Array(columns * rows).fill(-Infinity);
