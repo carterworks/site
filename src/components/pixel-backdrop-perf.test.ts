@@ -202,6 +202,39 @@ async function presentsPerSecond(seconds: number) {
   return counts;
 }
 
+const BUFFERS = [
+  "Float32Array",
+  "Uint8Array",
+  "Uint8ClampedArray",
+  "Uint32Array",
+  "ImageData",
+] as const;
+
+/** Counts buffers constructed until `restore`. */
+function countAllocations() {
+  let count = 0;
+  const globals = globalThis as unknown as Record<string, object>;
+  const originals = BUFFERS.map((name) => globals[name]);
+  BUFFERS.forEach((name, index) => {
+    globals[name] = new Proxy(originals[index] as new () => object, {
+      construct(target, args, newTarget) {
+        count += 1;
+        return Reflect.construct(target, args, newTarget);
+      },
+    });
+  });
+  return {
+    count: () => count,
+    restore() {
+      BUFFERS.forEach((name, index) => (globals[name] = originals[index]));
+    },
+  };
+}
+
+/** The mode after `id`, so a change always goes somewhere else. */
+const otherThan = (id: string) =>
+  MODES[(MODES.findIndex((mode) => mode.id === id) + 1) % MODES.length].id;
+
 beforeEach(() => {
   vi.useFakeTimers({
     toFake: [
@@ -276,6 +309,34 @@ describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
     );
     expect(unbounded).toEqual([]);
     expect(frames.some((frame) => frame.hostNoise > 0)).toBe(true);
+  });
+
+  test("a mode change keeps every frame within bounds and allocates no buffers once the first change has warmed up", async () => {
+    const backdrop = mount(id);
+    await vi.advanceTimersByTimeAsync(500);
+    backdrop.setMode(otherThan(id));
+    await vi.advanceTimersByTimeAsync(1500);
+
+    backdrop.setMode(id);
+    frames = [];
+    const allocations = countAllocations();
+    try {
+      await vi.advanceTimersByTimeAsync(1000);
+    } finally {
+      allocations.restore();
+    }
+
+    expect(frames.length).toBeGreaterThan(40);
+    const unbounded = frames.filter(
+      (frame) =>
+        frame.bitmapPuts !== 1 ||
+        frame.displayCopies !== 1 ||
+        frame.readbackDraws > 1 ||
+        frame.readbackReads > 1 ||
+        frame.hostNoise > SIZE * SIZE,
+    );
+    expect(unbounded).toEqual([]);
+    expect(allocations.count()).toBe(0);
   });
 
   test("the display keeps a bitmap-sized backing store", async () => {
