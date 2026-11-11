@@ -141,3 +141,8 @@ function displayStyleFor(data: Record<string, string>) {
   document.body.replaceChildren(canvas);
   return shadow?.querySelector("style")?.textContent ?? "";
 }
+
+test("importing the module again does not redefine the element", async () => {
+  vi.resetModules();
+  await expect(import("./emulated-canvas")).resolves.toBeDefined();
+});

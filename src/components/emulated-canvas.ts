@@ -1,3 +1,5 @@
+import { MAX_GHOST } from "./pixel-backdrop-pacing";
+
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
 function getInnerContext(
   canvas: OffscreenCanvas,
@@ -10,9 +12,6 @@ function getInnerContext(
 }
 
 type PixelShape = "square" | "circle";
-
-/** Retention is capped below 1 so the panel can never freeze on one frame. */
-export const MAX_GHOST = 0.98;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -309,4 +308,6 @@ class EmulatedCanvas extends HTMLElement {
   }
 }
 
-customElements.define("emulated-canvas", EmulatedCanvas);
+if (!customElements.get("emulated-canvas")) {
+  customElements.define("emulated-canvas", EmulatedCanvas);
+}

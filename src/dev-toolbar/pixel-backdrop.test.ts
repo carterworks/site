@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from "vitest";
-import { MAX_GHOST } from "../components/emulated-canvas";
+import { MAX_GHOST } from "../components/pixel-backdrop-pacing";
 import { CONTROLS, STORAGE_KEY, loadSaved } from "./pixel-backdrop";
 
 const range = (key: string) =>
