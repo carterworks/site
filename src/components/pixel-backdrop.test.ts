@@ -31,11 +31,7 @@ test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   const style = document.createElement("style");
   style.textContent = ":root { --backdrop-ghost: 40%; }";
   document.head.append(style);
-  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
-    options: { ghost: number };
-    configure(options: object): void;
-    reset(): void;
-  };
+  const backdrop = document.createElement("pixel-backdrop");
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
 
@@ -46,10 +42,7 @@ test("reset restores the stylesheet defaults after a knob was tweaked", () => {
 });
 
 test("a reconnected backdrop keeps its tweaks", () => {
-  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
-    options: { ghost: number };
-    configure(options: object): void;
-  };
+  const backdrop = document.createElement("pixel-backdrop");
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
   backdrop.configure({ ghost: 20 });

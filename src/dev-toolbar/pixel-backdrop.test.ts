@@ -84,10 +84,7 @@ test("drops a key set back to its default", () => {
 });
 
 test("persists a knob the live backdrop has tweaked", () => {
-  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
-    options: PixelBackdropOptions;
-    configure(options: object): void;
-  };
+  const backdrop = document.createElement("pixel-backdrop");
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
   const defaults = readDefaults();

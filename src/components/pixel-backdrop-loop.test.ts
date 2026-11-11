@@ -53,10 +53,8 @@ class StubCanvas extends HTMLElement {
 }
 customElements.define("emulated-canvas", StubCanvas);
 
-type Backdrop = HTMLElement & { configure(options: object): void };
-
 function mount() {
-  const backdrop = document.createElement("pixel-backdrop") as Backdrop;
+  const backdrop = document.createElement("pixel-backdrop");
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
   return backdrop;
