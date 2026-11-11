@@ -84,6 +84,95 @@ function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
   `;
 }
 
+/** What every shader is told about the frame it is processing. */
+export type ShaderFrame = {
+  /** Logical dimensions, in source pixels. */
+  width: number;
+  height: number;
+  /** Time since the previous present, in milliseconds. */
+  elapsedMs: number;
+  /** Share of the previous frame the panel keeps per 60 Hz frame, 0–`MAX_GHOST`. */
+  ghost: number;
+};
+
+/**
+ * One element's instance of a shader. `apply` edits the logical bitmap's RGBA
+ * bytes in place and returns true while its output is still changing, so the
+ * owner knows to keep presenting. A pass whose knobs leave it off reports so
+ * through `active`, which is checked first: when no pass is active the bitmap
+ * skips the pixel read-back and goes to the display in one copy.
+ */
+export type ShaderPass = {
+  active(frame: ShaderFrame): boolean;
+  apply(pixels: Uint8ClampedArray, frame: ShaderFrame): boolean;
+};
+
+/**
+ * Builds a pass for one element, so any state it keeps between frames belongs
+ * to that element. Write one and add it to `SHADERS`; that is the whole
+ * contract.
+ */
+export type Shader = () => ShaderPass;
+
+const SIXTY_HZ_FRAME_MS = 1000 / 60;
+
+/**
+ * Within half a level the display already shows the target, so snapping there
+ * is invisible and ends the fade instead of approaching it forever.
+ */
+const SETTLED_LEVELS = 0.5;
+
+/**
+ * Emulates an LCD's slow pixel response: every channel moves toward the new
+ * frame along an exponential with time constant τ, so fast motion leaves a
+ * fading trail. Driving it by elapsed time rather than per frame keeps the
+ * trail the same length at any refresh rate, and keeping the state in floats
+ * lets it land on the frame exactly instead of stalling a few 8-bit steps
+ * short.
+ */
+const ghost: Shader = () => {
+  let panel: Float32Array | undefined;
+  return {
+    active({ ghost }) {
+      if (ghost > 0) return true;
+      // Turning the ghost back on then starts from the current frame, not a
+      // stale one.
+      panel = undefined;
+      return false;
+    },
+    apply(pixels, { elapsedMs, ghost }) {
+      if (panel?.length !== pixels.length) {
+        // Seed the panel with this frame so it starts opaque; otherwise a high
+        // retention would fade in from transparent.
+        panel = Float32Array.from(pixels);
+        return false;
+      }
+      // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
+      const tau = SIXTY_HZ_FRAME_MS / -Math.log(ghost);
+      const response = 1 - Math.exp(-elapsedMs / tau);
+      let changing = false;
+      for (let i = 0; i < pixels.length; i += 1) {
+        const target = pixels[i];
+        const level = panel[i] + (target - panel[i]) * response;
+        if (Math.abs(target - level) < SETTLED_LEVELS) {
+          panel[i] = target;
+        } else {
+          panel[i] = level;
+          pixels[i] = level;
+          changing = true;
+        }
+      }
+      return changing;
+    },
+  };
+};
+
+/**
+ * Per-pixel passes over the logical bitmap, in order. To add an effect, write a
+ * `Shader` and add it to this list.
+ */
+export const SHADERS: Shader[] = [ghost];
+
 /**
  * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
  * keyed by the `dataset` name each one comes from. Every knob is optional: an
@@ -123,9 +212,14 @@ export type EmulatedCanvasProps = {
  * background); set it to whatever shows behind the element.
  *
  * `data-ghost` (0–100, default 0) emulates an LCD's slow pixel response: it is
- * the percentage of the previous frame the panel keeps each frame, so moving
- * content smears into a fading trail. It is capped just below 100 so the panel
- * can never freeze. The knobs are live.
+ * the percentage of the previous frame the panel keeps per 60 Hz frame, so
+ * moving content smears into a fading trail that lasts as long at any refresh
+ * rate. It is capped just below 100 so the panel can never freeze. The knobs
+ * are live.
+ *
+ * Effects like the ghost are `SHADERS`, an ordered list of per-pixel passes
+ * that run on the logical bitmap, never at display resolution, so each costs
+ * the same however large the cells are drawn.
  *
  * By default the bitmap is mirrored every animation frame. `data-manual` opts
  * out: the consumer already runs its own loop, so a second one would only
@@ -151,9 +245,11 @@ export class EmulatedCanvas extends HTMLElement {
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
-  #panel?: OffscreenCanvas;
+  #readback?: OffscreenCanvasRenderingContext2D | null;
+  #passes = SHADERS.map((shader) => shader());
+  #frame: ShaderFrame = { width: 0, height: 0, elapsedMs: 0, ghost: 0 };
+  #presentedAt?: number;
   #style?: HTMLStyleElement;
-  #ghost = EmulatedCanvas.DEFAULT_GHOST / 100;
   #mirrorFrame?: number;
   #mirrorRequested = false;
 
@@ -206,9 +302,9 @@ export class EmulatedCanvas extends HTMLElement {
     this.#blit();
   }
 
-  /** Drops the ghost trail so the next present shows the bitmap opaque. */
+  /** Drops every pass's state, so the next present shows the bitmap opaque. */
   reset() {
-    this.#panel = undefined;
+    this.#passes = SHADERS.map((shader) => shader());
   }
 
   /** Created on demand: a consumer may ask for the context before connection. */
@@ -248,7 +344,7 @@ export class EmulatedCanvas extends HTMLElement {
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
     });
-    this.#ghost = clamp(
+    this.#frame.ghost = clamp(
       this.#integer("ghost", EmulatedCanvas.DEFAULT_GHOST, 0) / 100,
       0,
       MAX_GHOST,
@@ -293,40 +389,44 @@ export class EmulatedCanvas extends HTMLElement {
       context = this.#outerContext = created;
     }
 
-    context.drawImage(this.#smear(innerCanvas), 0, 0);
+    const frame = this.#frame;
+    const now = performance.now();
+    frame.width = innerCanvas.width;
+    frame.height = innerCanvas.height;
+    frame.elapsedMs = now - (this.#presentedAt ?? now);
+    this.#presentedAt = now;
+
+    let image: ImageData | undefined;
+    for (const pass of this.#passes) {
+      if (!pass.active(frame)) continue;
+      image ??= this.#read(innerCanvas);
+      if (image === undefined) break;
+      pass.apply(image.data, frame);
+    }
+
+    if (image === undefined) context.drawImage(innerCanvas, 0, 0);
+    else context.putImageData(image, 0, 0);
   }
 
   /**
-   * Emulates an LCD's slow pixel response: each frame the panel keeps `ghost`
-   * of its previous state and moves the rest of the way toward the new frame,
-   * so fast motion leaves a fading trail. Returns the bitmap to display.
+   * The bitmap's pixels, copied through a canvas kept on the CPU: reading back
+   * the consumer's own canvas could force it off the GPU, and every pass may
+   * then edit the copy freely.
    */
-  #smear(source: OffscreenCanvas) {
-    const retention = this.#ghost;
-    if (retention <= 0) {
-      this.#panel = undefined;
-      return source;
+  #read(source: OffscreenCanvas) {
+    if (this.#readback === undefined) {
+      this.#readback = new OffscreenCanvas(
+        source.width,
+        source.height,
+      ).getContext("2d", { willReadFrequently: true });
+      if (this.#readback !== null) {
+        this.#readback.globalCompositeOperation = "copy";
+      }
     }
-
-    let panel = this.#panel;
-    if (panel === undefined) {
-      panel = new OffscreenCanvas(source.width, source.height);
-      this.#panel = panel;
-      // Seed the panel with this frame so it starts opaque; otherwise a high
-      // retention would fade in from transparent over many frames.
-      panel.getContext("2d")?.drawImage(source, 0, 0);
-      return panel;
-    }
-
-    const context = panel.getContext("2d");
-    if (context === null) return source;
-
-    // `source-over` with `1 - retention` opacity: the new frame fills that
-    // fraction of the panel and the previous one supplies the rest.
-    context.globalAlpha = 1 - retention;
-    context.drawImage(source, 0, 0);
-    context.globalAlpha = 1;
-    return panel;
+    const readback = this.#readback;
+    if (readback === null) return undefined;
+    readback.drawImage(source, 0, 0);
+    return readback.getImageData(0, 0, source.width, source.height);
   }
 }
 
