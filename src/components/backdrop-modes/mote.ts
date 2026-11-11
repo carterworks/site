@@ -16,6 +16,7 @@ const CURLED_EXHALE = "...##...";
 const HEART = [".#.#.", "#####", ".###.", "..#."];
 const ZED = ["###", ".#.", "###"];
 const TUFTS = [3, 4, 11, 19, 20, 27, 34, 35, 43, 51, 52, 59, 66, 67, 75];
+const TUFT_PERIOD = 80;
 
 const SPRITE_HALF_WIDTH = 4;
 /** Keeps the sprite's whole body, not only its centre, inside the visible span. */
@@ -295,9 +296,11 @@ export const mote: Mode = {
 
       render(field) {
         for (let x = 0; x < columns; x += 1) plot(field, x, ground, 0.5);
-        for (let k = 0; k < TUFTS.length; k += 1) {
-          plot(field, TUFTS[k], ground - 1, 0.35);
-          if (k % 3 === 0) plot(field, TUFTS[k], ground - 2, 0.35);
+        for (let x0 = 0; x0 < columns; x0 += TUFT_PERIOD) {
+          for (let k = 0; k < TUFTS.length; k += 1) {
+            plot(field, x0 + TUFTS[k], ground - 1, 0.35);
+            if (k % 3 === 0) plot(field, x0 + TUFTS[k], ground - 2, 0.35);
+          }
         }
         for (const crumb of crumbs) {
           plot(
