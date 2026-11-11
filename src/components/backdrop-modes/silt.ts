@@ -86,24 +86,26 @@ export const silt: Mode = {
       grains[from] = 0;
     };
 
+    const slip = (x: number, row: number, next: number, nx: number) => {
+      if (
+        nx < left ||
+        nx > right ||
+        grains[next + nx] !== 0 ||
+        grains[row + nx] !== 0
+      ) {
+        return false;
+      }
+      slide(row + x, next + nx);
+      return true;
+    };
+
     const fall = (x: number, row: number, next: number) => {
       if (grains[next + x] === 0) {
         slide(row + x, next + x);
         return true;
       }
       const side = random() < 0.5 ? -1 : 1;
-      for (const nx of [x + side, x - side]) {
-        if (
-          nx >= left &&
-          nx <= right &&
-          grains[next + nx] === 0 &&
-          grains[row + nx] === 0
-        ) {
-          slide(row + x, next + nx);
-          return true;
-        }
-      }
-      return false;
+      return slip(x, row, next, x + side) || slip(x, row, next, x - side);
     };
 
     const sieve = (floor: number, allowed: number) => {
@@ -171,16 +173,19 @@ export const silt: Mode = {
         ) {
           pristine = false;
         }
-        const bounds = [
-          Math.max(0, Math.ceil(visible.left)),
-          Math.min(columns - 1, Math.floor(visible.right) - 1),
-          Math.max(0, Math.ceil(visible.top)),
-          Math.min(rows - 1, Math.floor(visible.bottom) - 1),
-        ];
-        const moved = [left, right, top, bottom].some(
-          (v, k) => v !== bounds[k],
-        );
-        [left, right, top, bottom] = bounds;
+        const nextLeft = Math.max(0, Math.ceil(visible.left));
+        const nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1);
+        const nextTop = Math.max(0, Math.ceil(visible.top));
+        const nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
+        const moved =
+          left !== nextLeft ||
+          right !== nextRight ||
+          top !== nextTop ||
+          bottom !== nextBottom;
+        left = nextLeft;
+        right = nextRight;
+        top = nextTop;
+        bottom = nextBottom;
         if (right <= left || bottom <= top) return;
         if (pristine) {
           if (moved || !seeded) seedDune();
@@ -203,7 +208,7 @@ export const silt: Mode = {
               y: Math.floor(pourAt?.y ?? press.y),
             },
             { x: Math.floor(here.x), y: Math.floor(here.y) },
-            (x, y) => put(x, y),
+            put,
           );
           pourAt = { x: here.x, y: here.y };
           pour(here.x, here.y);
