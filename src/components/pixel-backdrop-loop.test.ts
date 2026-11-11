@@ -81,3 +81,17 @@ test("configure restarts a stopped loop", async () => {
 
   expect(vi.getTimerCount()).toBeGreaterThan(0);
 });
+
+test("a drifting backdrop idles at about eight frames a second", async () => {
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+  const present = vi.spyOn(
+    document.querySelector<StubCanvas>("emulated-canvas")!,
+    "present",
+  );
+
+  await vi.advanceTimersByTimeAsync(1000);
+
+  expect(present.mock.calls.length).toBeLessThanOrEqual(8);
+});

@@ -1,5 +1,5 @@
 /** The noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
-export const IDLE_FRAME_INTERVAL = 1000 / 12;
+export const IDLE_FRAME_INTERVAL = 1000 / 8;
 
 /** Mirrors `MAX_GHOST` in emulated-canvas.ts, which keeps the panel from freezing. */
 const MAX_GHOST_PERCENT = 98;
