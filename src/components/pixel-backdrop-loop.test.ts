@@ -105,6 +105,7 @@ test("a drifting backdrop idles at about eight frames a second", async () => {
 
   await vi.advanceTimersByTimeAsync(1000);
 
+  expect(present.mock.calls.length).toBeGreaterThanOrEqual(6);
   expect(present.mock.calls.length).toBeLessThanOrEqual(8);
 });
 

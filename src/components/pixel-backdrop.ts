@@ -443,7 +443,7 @@ class PixelBackdrop extends HTMLElement {
     this.#draw(now);
     this.#canvas?.present();
 
-    if (this.#quietFrames < settleFrames(this.#options.ghost)) {
+    if (busy || this.#quietFrames < settleFrames(this.#options.ghost)) {
       this.#frame = requestAnimationFrame(this.#tick);
     } else if (this.#isDrifting()) {
       this.#idleTimer = window.setTimeout(this.#resume, IDLE_FRAME_INTERVAL);
