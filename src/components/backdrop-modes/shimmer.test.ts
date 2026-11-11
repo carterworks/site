@@ -31,7 +31,7 @@ function setup() {
   return { mode, input, field, frame, at };
 }
 
-test("a move draws the hover segment from the previous cell once, then nothing", () => {
+test("a move draws a two-cell-thick hover segment once, then nothing", () => {
   const { input, field, frame, at } = setup();
   input.pointer = { x: 2.5, y: 2.5 };
   frame(0);
@@ -39,7 +39,8 @@ test("a move draws the hover segment from the previous cell once, then nothing",
 
   expect(frame(16)).toBe("active");
   expect([2, 3, 4, 5].map((x) => at(x, 2))).toEqual([1, 1, 1, 1]);
-  expect(field.reduce((sum, value) => sum + value)).toBe(4);
+  expect([2, 3, 4, 5].map((x) => at(x, 3))).toEqual([1, 1, 1, 1]);
+  expect(field.reduce((sum, value) => sum + value)).toBe(10);
 
   expect(frame(32)).toBe("still");
   expect(field.every((value) => value === 0)).toBe(true);

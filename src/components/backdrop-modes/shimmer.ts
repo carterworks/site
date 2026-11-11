@@ -30,6 +30,16 @@ export const shimmer: Mode = {
       y: clamp(Math.floor(y), 0, rows - 1),
     });
 
+    // Two cells thick keeps the segment as heavy on screen as one cell was at 80.
+    let target: Float32Array = new Float32Array(0);
+    const stamp = (x: number, y: number) => {
+      const right = Math.min(x + 1, columns - 1);
+      const bottom = Math.min(y + 1, rows - 1);
+      for (let row = y; row <= bottom; row += 1)
+        for (let column = x; column <= right; column += 1)
+          target[row * columns + column] = 1;
+    };
+
     return {
       step({ pointer, press }, time) {
         now = time;
@@ -60,10 +70,9 @@ export const shimmer: Mode = {
       },
 
       render(field) {
+        target = field;
         if (moved && hovered !== undefined) {
-          line(from, hovered, (x, y) => {
-            field[y * columns + x] = 1;
-          });
+          line(from, hovered, stamp);
           moved = false;
         }
 
