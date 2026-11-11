@@ -33,45 +33,42 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test.each([0, 5])("an 80×80 frame with gap %i uses one bitmap draw", (gap) => {
-  const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, {
-    width: "80",
-    height: "80",
-    gap: String(gap),
-    ghost: "0",
-  });
-  document.body.replaceChildren(canvas);
-  canvas.dataset.scale = "8";
-
-  expect(display.drawImage).toHaveBeenCalledTimes(1);
-  expect(display.imageSmoothingEnabled).toBe(false);
-  // One frame clear plus one strip per internal row/column, never per cell.
-  expect(display.clearRect).toHaveBeenCalledTimes(gap === 0 ? 1 : 159);
-  if (gap > 0) {
-    expect(display.clearRect).toHaveBeenCalledWith(8, 0, 5, 1035);
-    expect(display.clearRect).toHaveBeenCalledWith(0, 8, 1035, 5);
-  }
-});
-
-test("identity geometry copies the bitmap without adding gaps", () => {
-  const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, {
-    width: "2",
-    height: "2",
-    gap: "0",
-    ghost: "0",
-  });
-  document.body.replaceChildren(canvas);
-  canvas.dataset.scale = "1";
-  expect(display.drawImage).toHaveBeenCalledTimes(1);
-  expect(display.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0);
-});
-
 type TestCanvas = HTMLElement & {
   getContext(id: "2d"): unknown;
   present(): void;
 };
+
+test.each([
+  [1, 0],
+  [8, 5],
+])(
+  "at scale %i and gap %i the display stays bitmap-sized and takes one copy",
+  (scale, gap) => {
+    const displays: HTMLCanvasElement[] = [];
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(
+      function (this: HTMLCanvasElement) {
+        displays.push(this);
+        return display as unknown as CanvasRenderingContext2D;
+      },
+    );
+    const canvas = document.createElement("emulated-canvas") as TestCanvas;
+    Object.assign(canvas.dataset, {
+      width: "80",
+      height: "80",
+      scale: String(scale),
+      gap: String(gap),
+      manual: "",
+    });
+    document.body.replaceChildren(canvas);
+
+    canvas.present();
+
+    expect(displays[0]).toMatchObject({ width: 80, height: 80 });
+    expect(display.drawImage).toHaveBeenCalledTimes(1);
+    expect(display.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0);
+    expect(display.clearRect).not.toHaveBeenCalled();
+  },
+);
 
 test("a data-manual canvas only paints when told to present", () => {
   const canvas = document.createElement("emulated-canvas") as TestCanvas;
