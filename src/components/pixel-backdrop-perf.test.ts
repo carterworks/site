@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
 import { MODES } from "./backdrop-modes";
-import type { Pace } from "./backdrop-modes/mode";
+import { GRID_SIZE, type Pace } from "./backdrop-modes/mode";
 import { EmulatedCanvas } from "./emulated-canvas";
 import type { PixelBackdropOptions } from "./pixel-backdrop";
 import "./pixel-backdrop";
@@ -66,7 +66,10 @@ vi.mock("./backdrop-modes", async (importOriginal) => {
   };
 });
 
-const SIZE = 80;
+const SIZE = GRID_SIZE;
+
+/** The noise is sampled every fourth cell along each axis, edges included. */
+const NOISE_BUDGET = (Math.ceil((SIZE - 1) / 4) + 1) ** 2;
 
 /** Calls made since the last present, by the canvas they went to. */
 type Ledger = {
@@ -293,7 +296,7 @@ afterEach(() => {
 });
 
 describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
-  test("each frame paints the bitmap once, copies it to the display once, and samples the noise at most once per cell", async () => {
+  test("each frame paints the bitmap once, copies it to the display once, and samples the noise at most once per four-by-four block", async () => {
     const backdrop = mount(id);
     await play();
     await vi.advanceTimersByTimeAsync(SETTLE_MS + FADE_MS);
@@ -305,7 +308,7 @@ describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
         frame.displayCopies !== 1 ||
         frame.readbackDraws > 1 ||
         frame.readbackReads > 1 ||
-        frame.hostNoise > SIZE * SIZE,
+        frame.hostNoise > NOISE_BUDGET,
     );
     expect(unbounded).toEqual([]);
     expect(frames.some((frame) => frame.hostNoise > 0)).toBe(
@@ -335,7 +338,7 @@ describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
         frame.displayCopies !== 1 ||
         frame.readbackDraws > 1 ||
         frame.readbackReads > 1 ||
-        frame.hostNoise > SIZE * SIZE,
+        frame.hostNoise > NOISE_BUDGET,
     );
     expect(unbounded).toEqual([]);
     expect(allocations.count()).toBe(0);

@@ -4,10 +4,10 @@ import { mulberry32 } from "../backdrop-noise";
 import { MAX_GHOST } from "../emulated-canvas-limits";
 import { readDefaults } from "../pixel-backdrop";
 import { MODES } from ".";
-import type { BackdropInput, Mode, Pace } from "./mode";
+import { GRID_SIZE, type BackdropInput, type Mode, type Pace } from "./mode";
 
-const COLUMNS = 80;
-const ROWS = 80;
+const COLUMNS = GRID_SIZE;
+const ROWS = GRID_SIZE;
 
 /** Noise samples, `random()` draws and costly `Math` calls since the last reset. */
 const work = vi.hoisted(() => ({ count: 0 }));
@@ -39,12 +39,17 @@ const SETTLE_MS = 30_000;
 
 /**
  * Per step + render, in noise samples, `random()` draws and costly `Math`
- * calls: room for about two per cell, the cost of the host's own noise twice.
+ * calls: room for about two per cell.
  */
 const WORK_BUDGET = 2 * COLUMNS * ROWS;
 
 /** A 16:9 viewport over the square grid, which overhangs it top and bottom. */
-const VISIBLE = { left: 0, top: 17.5, right: 80, bottom: 62.5 };
+const VISIBLE = {
+  left: 0,
+  top: (ROWS * 7) / 32,
+  right: COLUMNS,
+  bottom: (ROWS * 25) / 32,
+};
 const STEP = 1000 / 60;
 /** Fixed only so a failure reproduces; every assertion holds for any seed. */
 const SEED = 1;
