@@ -7,7 +7,11 @@ import type { BackdropInput, CellRect, Mode } from "./mode";
  */
 const PROTOTYPE_CELL_PX = 8;
 const REFERENCE_WIDTH_PX = 1440;
-const PROTOTYPE_BLOBS = 6;
+/**
+ * Fewer than the tile's 6 per area: every blob's slow tail adds to every cell,
+ * so on the whole viewport the same density merges into one mass.
+ */
+const PROTOTYPE_BLOBS = 4.5;
 const PROTOTYPE_AREA = 48 * 48;
 /** The lamp is left on this long after the last input, then cools. */
 const COOL_MS = 12_000;
