@@ -77,7 +77,8 @@ export const mote: Mode = {
       drowsy: 0,
       startle: 0,
       lastDir: 0,
-      rubs: [] as number[],
+      rubs: [-Infinity, -Infinity, -Infinity, -Infinity],
+      rubSlot: 0,
     };
     const crumbs: Crumb[] = [];
     const floaters: Floater[] = [];
@@ -108,9 +109,56 @@ export const mote: Mode = {
       critter.startle = 40;
       critter.drowsy = 0;
     };
+    const rubbedEnough = () => {
+      for (const at of critter.rubs) {
+        if (now - at >= RUB_WINDOW_MS) return false;
+      }
+      return true;
+    };
     const nap = () => {
       critter.asleep = true;
       critter.breath = 0;
+    };
+
+    const plot = (field: Float32Array, x: number, y: number, value: number) => {
+      const cx = Math.round(x);
+      const cy = Math.round(y);
+      if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
+      const i = cy * columns + cx;
+      if (field[i] < value) field[i] = value;
+    };
+    const set = (field: Float32Array, x: number, y: number, value: number) => {
+      const cx = Math.round(x);
+      const cy = Math.round(y);
+      if (cx >= 0 && cy >= 0 && cx < columns && cy < rows) {
+        field[cy * columns + cx] = value;
+      }
+    };
+    /** One row can be swapped for another so animation frames need no copy. */
+    const sprite = (
+      field: Float32Array,
+      glyph: string[],
+      x: number,
+      y: number,
+      value: number,
+      swapRow = -1,
+      swapWith = "",
+    ) => {
+      for (let r = 0; r < glyph.length; r += 1) {
+        const row = r === swapRow && swapWith ? swapWith : glyph[r];
+        for (let k = 0; k < row.length; k += 1) {
+          if (row[k] === "#") plot(field, x + k, y + r, value);
+        }
+      }
+    };
+    const eye = (
+      field: Float32Array,
+      x: number,
+      y: number,
+      closed: boolean,
+    ) => {
+      set(field, x, y, closed ? 0.45 : 0);
+      if (critter.startle > 0) set(field, x, y - 1, 0);
     };
 
     return {
@@ -148,15 +196,15 @@ export const mote: Mode = {
         if (!critter.asleep && pointer !== undefined && over(pointer)) {
           const dir = Math.sign(pointer.x - (seenPointerX ?? pointer.x));
           if (dir !== 0 && dir !== critter.lastDir) {
-            critter.rubs.push(now);
+            critter.rubs[critter.rubSlot] = now;
+            critter.rubSlot = (critter.rubSlot + 1) % RUBS_TO_DELIGHT;
             critter.lastDir = dir;
           }
         }
         seenPointerX = pointer?.x;
-        critter.rubs = critter.rubs.filter((at) => now - at < RUB_WINDOW_MS);
-        if (critter.rubs.length >= RUBS_TO_DELIGHT) {
+        if (rubbedEnough()) {
           critter.happy = 120;
-          critter.rubs = [];
+          critter.rubs.fill(-Infinity);
         }
         if (critter.happy > 0) {
           critter.happy -= 1;
@@ -187,11 +235,17 @@ export const mote: Mode = {
             }
           }
         } else {
-          const crumb = crumbs
-            .filter((c) => c.y >= ground - 1 && c.patience > 0)
-            .sort(
-              (a, b) => Math.abs(a.x - critter.x) - Math.abs(b.x - critter.x),
-            )[0];
+          let crumb: Crumb | undefined;
+          for (const c of crumbs) {
+            if (
+              c.y >= ground - 1 &&
+              c.patience > 0 &&
+              (!crumb ||
+                Math.abs(c.x - critter.x) < Math.abs(crumb.x - critter.x))
+            ) {
+              crumb = c;
+            }
+          }
           const target =
             crumb?.x ?? (pointer && clamp(pointer.x, bounds.min, bounds.max));
           if (
@@ -240,34 +294,14 @@ export const mote: Mode = {
       },
 
       render(field) {
-        const plot = (x: number, y: number, value: number) => {
-          const cx = Math.round(x);
-          const cy = Math.round(y);
-          if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
-          const i = cy * columns + cx;
-          if (field[i] < value) field[i] = value;
-        };
-        const set = (x: number, y: number, value: number) => {
-          const cx = Math.round(x);
-          const cy = Math.round(y);
-          if (cx >= 0 && cy >= 0 && cx < columns && cy < rows) {
-            field[cy * columns + cx] = value;
-          }
-        };
-        const sprite = (glyph: string[], x: number, y: number, value: number) =>
-          glyph.forEach((row, r) =>
-            [...row].forEach((cell, k) => {
-              if (cell === "#") plot(x + k, y + r, value);
-            }),
-          );
-
-        for (let x = 0; x < columns; x += 1) plot(x, ground, 0.5);
-        TUFTS.forEach((x, k) => {
-          plot(x, ground - 1, 0.35);
-          if (k % 3 === 0) plot(x, ground - 2, 0.35);
-        });
+        for (let x = 0; x < columns; x += 1) plot(field, x, ground, 0.5);
+        for (let k = 0; k < TUFTS.length; k += 1) {
+          plot(field, TUFTS[k], ground - 1, 0.35);
+          if (k % 3 === 0) plot(field, TUFTS[k], ground - 2, 0.35);
+        }
         for (const crumb of crumbs) {
           plot(
+            field,
             crumb.x,
             crumb.y,
             crumb.patience > 0 ? 0.85 : (0.85 * crumb.fade) / CRUMB_FADE,
@@ -277,31 +311,41 @@ export const mote: Mode = {
         const left = Math.round(critter.x) - SPRITE_HALF_WIDTH;
         const y0 = top();
         if (critter.asleep) {
-          const glyph = [...CURLED];
-          if (Math.floor(critter.breath / 70) % 2) glyph[0] = CURLED_EXHALE;
-          sprite(glyph, left, y0, 1);
-          set(left + 2, y0 + 2, 0.45);
-          set(left + 5, y0 + 2, 0.45);
+          const exhaling = Math.floor(critter.breath / 70) % 2 === 1;
+          sprite(
+            field,
+            CURLED,
+            left,
+            y0,
+            1,
+            0,
+            exhaling ? CURLED_EXHALE : undefined,
+          );
+          set(field, left + 2, y0 + 2, 0.45);
+          set(field, left + 5, y0 + 2, 0.45);
         } else {
-          const glyph = [...STAND];
-          if (critter.walk && Math.floor(critter.walk / 7) % 2) {
-            glyph[6] = STRIDE_FEET;
-          }
-          sprite(glyph, left, y0, 1);
+          const striding =
+            critter.walk > 0 && Math.floor(critter.walk / 7) % 2 === 1;
+          sprite(
+            field,
+            STAND,
+            left,
+            y0,
+            1,
+            6,
+            striding ? STRIDE_FEET : undefined,
+          );
           const lookUp =
             pointer !== undefined &&
             pointer.y < y0 - 4 &&
             Math.abs(pointer.x - critter.x) < 10;
           const eyeRow = y0 + (lookUp ? 2 : 3);
           const closed = critter.happy > 0 || now % BLINK_PERIOD_MS < BLINK_MS;
-          for (const column of [2, 5]) {
-            const eyeX = left + column + critter.face;
-            set(eyeX, eyeRow, closed ? 0.45 : 0);
-            if (critter.startle > 0) set(eyeX, eyeRow - 1, 0);
-          }
+          eye(field, left + 2 + critter.face, eyeRow, closed);
+          eye(field, left + 5 + critter.face, eyeRow, closed);
         }
         for (const bit of floaters) {
-          sprite(bit.glyph, bit.x, bit.y, 0.65 * (bit.life / 150));
+          sprite(field, bit.glyph, bit.x, bit.y, 0.65 * (bit.life / 150));
         }
       },
 
