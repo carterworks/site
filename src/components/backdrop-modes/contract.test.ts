@@ -181,8 +181,8 @@ function countAllocations() {
   const large = (length: unknown) =>
     typeof length === "number" && length > LARGE_ARRAY;
 
-  // Copies made by methods skip the global constructors, so watch their size.
-  type Copier = (this: unknown, ...args: unknown[]) => { length: number };
+  // Array literals and spreads are invisible, but the copying methods are not: any call, however small, is a per-step allocation.
+  type Copier = (this: unknown, ...args: unknown[]) => unknown;
   const typedArray = Object.getPrototypeOf(Uint8Array.prototype);
   type Owned = [Record<string, Copier>, string];
   const copiers: Owned[] = [
@@ -197,7 +197,7 @@ function countAllocations() {
     const original = originals[index];
     owner[name] = function (...args) {
       const result = original.apply(this, args);
-      if (large(result.length)) count += 1;
+      count += 1;
       return result;
     };
   });
@@ -317,7 +317,7 @@ describe.each(MODES.map((mode) => [mode.id, mode] as const))(
       },
     );
 
-    test("allocates no buffers or large arrays per frame once warmed up", () => {
+    test("allocates no buffers, large arrays or array copies per frame once warmed up", () => {
       const session = start(mode);
       for (let i = 0; i < SESSION_STEPS; i += 1) session.frame(i);
 
