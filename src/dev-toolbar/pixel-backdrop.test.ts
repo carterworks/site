@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   type PixelBackdropOptions,
   readDefaults,
@@ -9,6 +9,7 @@ import {
   STORAGE_KEY,
   loadSaved,
   persistChanges,
+  default as app,
 } from "./pixel-backdrop";
 
 const range = (key: string) =>
@@ -95,5 +96,55 @@ test("persists a knob the live backdrop has tweaked", () => {
   persistChanges(backdrop.options);
 
   expect(stored()).toEqual({ ghost: defaults.ghost + 15 });
+  backdrop.remove();
+});
+
+class StubToggle extends HTMLElement {
+  input = document.createElement("input");
+}
+class StubSelect extends HTMLElement {
+  element = document.createElement("select");
+}
+customElements.define("astro-dev-toolbar-toggle", StubToggle);
+customElements.define("astro-dev-toolbar-select", StubSelect);
+
+function mountBackdrop() {
+  const backdrop = document.createElement("pixel-backdrop");
+  backdrop.append(document.createElement("emulated-canvas"));
+  document.body.append(backdrop);
+  return backdrop;
+}
+
+const init = (canvas: HTMLElement) =>
+  app.init?.(canvas as never, { onToggled: vi.fn() } as never, {} as never);
+
+test("init restores saved options onto the backdrop", () => {
+  const backdrop = mountBackdrop();
+  const defaults = readDefaults();
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ ghost: defaults.ghost + 15 }),
+  );
+
+  init(document.createElement("div"));
+
+  expect(backdrop.options.ghost).toBe(defaults.ghost + 15);
+  backdrop.remove();
+});
+
+test("Reset restores the defaults and clears storage", () => {
+  const backdrop = mountBackdrop();
+  const defaults = readDefaults();
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ ghost: defaults.ghost + 15 }),
+  );
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  canvas.querySelector<HTMLElement>("astro-dev-toolbar-button")!.click();
+
+  expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  expect(backdrop.options.ghost).toBe(defaults.ghost);
   backdrop.remove();
 });
