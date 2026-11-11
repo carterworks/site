@@ -206,3 +206,20 @@ test("a thin stream trickles in after a pause in input, then stops", () => {
   expect(sim.cells()).toBe(0);
   expect(sim.pace()).toBe("still");
 });
+
+test.each([
+  ["vertical", { left: 0, top: 17.5, right: 80, bottom: 47.5 }],
+  ["horizontal", { left: 0, top: 17.5, right: 50, bottom: 62.5 }],
+])(
+  "a full tray still drains to still after a %s shrink of the visible rect",
+  (_, shrunk) => {
+    const sim = setup();
+    sim.fillTray();
+
+    sim.input.visible = shrunk;
+    sim.run(Math.ceil(30_000 / STEP));
+
+    expect(sim.cells()).toBe(0);
+    expect(sim.pace()).toBe("still");
+  },
+);

@@ -105,6 +105,23 @@ export const silt: Mode = {
       }
     };
 
+    // Grains outside the visible rect never move or drain, so they would hold
+    // the loop in "active" forever; they are off-screen anyway.
+    const dropOutside = () => {
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < columns; x += 1) {
+          const i = y * columns + x;
+          if (
+            grains[i] !== 0 &&
+            (x < left || x > right || y < top || y > bottom)
+          ) {
+            grains[i] = 0;
+            count -= 1;
+          }
+        }
+      }
+    };
+
     const tap = (press: { at: number; x: number; y: number }) => {
       if (
         press.at - lastTap.at < DOUBLE_TAP_MS &&
@@ -119,11 +136,18 @@ export const silt: Mode = {
     };
     return {
       step({ press, pointer, lastInputAt, visible }, now) {
-        left = Math.max(0, Math.ceil(visible.left));
-        right = Math.min(columns - 1, Math.floor(visible.right) - 1);
-        top = Math.max(0, Math.ceil(visible.top));
-        bottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
+        const bounds = [
+          Math.max(0, Math.ceil(visible.left)),
+          Math.min(columns - 1, Math.floor(visible.right) - 1),
+          Math.max(0, Math.ceil(visible.top)),
+          Math.min(rows - 1, Math.floor(visible.bottom) - 1),
+        ];
+        const moved = [left, right, top, bottom].some(
+          (v, k) => v !== bounds[k],
+        );
+        [left, right, top, bottom] = bounds;
         if (right <= left || bottom <= top) return;
+        if (moved) dropOutside();
 
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
