@@ -188,9 +188,47 @@ test("a tray tipped out turns right way up again", () => {
   expect(sim.rowCells(BOTTOM_ROW)).toBeGreaterThan(0);
 });
 
-test("an untouched tab is still, and a fresh one never pours by itself", () => {
+test("an untouched tab shows a settled dune on the tray floor and stays still", () => {
   const sim = setup();
+  sim.run(1);
+
+  expect(sim.rowCells(BOTTOM_ROW)).toBeGreaterThan(0);
+  expect(sim.rowCells(TOP_ROW)).toBe(0);
+  expect(sim.pace()).toBe("still");
+});
+
+test("the starting dune sits inside the visible rect and survives a minute untouched", () => {
+  const sim = setup();
+  sim.run(1);
+  const before = sim.cells();
+  const floor = sim.rowCells(BOTTOM_ROW);
+
   sim.run(60 * 60);
+
+  expect(sim.cells()).toBe(before);
+  expect(sim.rowCells(BOTTOM_ROW)).toBe(floor);
+  expect(sim.pace()).toBe("still");
+});
+
+test("the starting dune is re-seeded in the new rect when the visible rect changes untouched", () => {
+  const sim = setup();
+  sim.run(1);
+
+  sim.input.visible = { left: 0, top: 17.5, right: 80, bottom: 47.5 };
+  sim.run(1);
+
+  expect(sim.rowCells(47 - 1)).toBeGreaterThan(0);
+  expect(sim.rowCells(BOTTOM_ROW)).toBe(0);
+});
+
+test("the first interaction ends the dune's protection and everything drains", () => {
+  const sim = setup();
+  sim.run(1);
+  expect(sim.cells()).toBeGreaterThan(0);
+
+  sim.press(40, 30);
+  sim.release();
+  sim.run(Math.ceil(30_000 / STEP));
 
   expect(sim.cells()).toBe(0);
   expect(sim.pace()).toBe("still");

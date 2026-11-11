@@ -7,6 +7,14 @@ const POUR_SPREAD = 4;
 const DOUBLE_TAP_MS = 380;
 const DOUBLE_TAP_CELLS = 10;
 
+/**
+ * The starting dune is a half-cosine bump. Its height is a fifth of its width
+ * so the slope stays under one cell per cell: any steeper and grains would
+ * slip, and the "settled" scene would animate.
+ */
+const DUNE_WIDTH_SHARE = 0.3;
+const DUNE_HEIGHT_SHARE = 0.2;
+
 /** Quiet time before the stream starts, and how long after input it may run. */
 const TRICKLE_AFTER_MS = 3000;
 const TRICKLE_UNTIL_MS = 10_000;
@@ -25,6 +33,10 @@ const TIPPED_DRAIN = 12;
  * bottom edge and slip down dunes; the sieve floor always drains, so an
  * untouched tab empties and the loop can stop. A double-tap tips the tray out:
  * gravity reverses and the new floor is wide open until the sand is gone.
+ *
+ * Until the first input a small settled dune rests on the floor as a hint that
+ * the tray is live. It is frozen and costs nothing; the first input hands it
+ * to the normal sim, so it drains like any poured sand.
  */
 export const silt: Mode = {
   id: "silt",
@@ -42,6 +54,8 @@ export const silt: Mode = {
     let pourAt: Point | undefined;
     let pouring = false;
     let quietSince = Infinity;
+    let pristine = true;
+    let seeded = false;
     let left = 0;
     let right = columns - 1;
     let top = 0;
@@ -122,6 +136,20 @@ export const silt: Mode = {
       }
     };
 
+    const seedDune = () => {
+      grains.fill(0);
+      count = 0;
+      const width = Math.round((right - left + 1) * DUNE_WIDTH_SHARE);
+      const height = width * DUNE_HEIGHT_SHARE;
+      const start = Math.round((left + right - width) / 2);
+      for (let k = 0; k < width; k += 1) {
+        const rise = Math.round(
+          (height * (1 - Math.cos((2 * Math.PI * (k + 0.5)) / width))) / 2,
+        );
+        for (let h = 0; h < rise; h += 1) put(start + k, bottom - h);
+      }
+    };
+
     const tap = (press: { at: number; x: number; y: number }) => {
       if (
         press.at - lastTap.at < DOUBLE_TAP_MS &&
@@ -136,6 +164,13 @@ export const silt: Mode = {
     };
     return {
       step({ press, pointer, lastInputAt, visible }, now) {
+        if (
+          lastInputAt !== -Infinity ||
+          press !== undefined ||
+          pointer !== undefined
+        ) {
+          pristine = false;
+        }
         const bounds = [
           Math.max(0, Math.ceil(visible.left)),
           Math.min(columns - 1, Math.floor(visible.right) - 1),
@@ -147,6 +182,11 @@ export const silt: Mode = {
         );
         [left, right, top, bottom] = bounds;
         if (right <= left || bottom <= top) return;
+        if (pristine) {
+          if (moved || !seeded) seedDune();
+          seeded = true;
+          return;
+        }
         if (moved) dropOutside();
 
         if (press !== undefined && press !== seenPress) {
@@ -217,6 +257,7 @@ export const silt: Mode = {
       },
 
       pace() {
+        if (pristine) return "still";
         if (count > 0 || pouring) return "active";
         return quietSince < TRICKLE_UNTIL_MS ? "idle" : "still";
       },
