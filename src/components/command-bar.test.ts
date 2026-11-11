@@ -35,6 +35,7 @@ const markup = `
 
 function setupCommandBar() {
   document.documentElement.style.colorScheme = "";
+  localStorage.clear();
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
@@ -255,4 +256,16 @@ describe("command bar dynamic behavior", () => {
     expect(active.hidden).toBe(false);
     expect(active.textContent).toBe("Home");
   });
+});
+
+test("persists the manual scheme and applies it to the incoming document on swap", () => {
+  setupCommandBar();
+  document.querySelector<HTMLElement>("[data-appearance]")?.click();
+  const newDocument = document.implementation.createHTMLDocument();
+
+  document.dispatchEvent(
+    Object.assign(new Event("astro:before-swap"), { newDocument }),
+  );
+
+  expect(newDocument.documentElement.style.colorScheme).toBe("dark");
 });
