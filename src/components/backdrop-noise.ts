@@ -88,3 +88,64 @@ export function makeNoise2D(seed: number): (x: number, y: number) => number {
     return 70 * (n0 + n1 + n2);
   };
 }
+
+/**
+ * A noise layer over a `columns` × `rows` field that samples `noise` only every
+ * `step` cells along each axis and fills between bilinearly. Smooth noise
+ * barely bends over a few cells, so this costs about 1/step² of sampling every
+ * cell for a near-identical layer. Each call raises every cell to `amount`
+ * times the noise mapped to 0–1, where that is brighter; cell (x, y) samples
+ * the noise at `(x * frequency + offsetX, y * frequency + offsetY)`.
+ */
+export function makeCoarseNoise(
+  noise: (x: number, y: number) => number,
+  columns: number,
+  rows: number,
+) {
+  let lattice = new Float32Array(0);
+  let line = new Float32Array(0);
+  return (
+    field: Float32Array,
+    step: number,
+    frequency: number,
+    offsetX: number,
+    offsetY: number,
+    amount: number,
+  ) => {
+    const width = Math.ceil((columns - 1) / step) + 1;
+    const height = Math.ceil((rows - 1) / step) + 1;
+    if (lattice.length < width * height) {
+      lattice = new Float32Array(width * height);
+      line = new Float32Array(width);
+    }
+    const half = amount * 0.5;
+    const spacing = step * frequency;
+    for (let ly = 0, k = 0; ly < height; ly += 1) {
+      const y = ly * spacing + offsetY;
+      for (let lx = 0; lx < width; lx += 1, k += 1) {
+        lattice[k] = half + half * noise(lx * spacing + offsetX, y);
+      }
+    }
+
+    // The last row and column land on a sample exactly, so they reuse it
+    // rather than read past the lattice.
+    for (let y = 0, i = 0; y < rows; y += 1) {
+      const ly = Math.floor(y / step);
+      const fy = y / step - ly;
+      const above = ly * width;
+      const below = ly + 1 < height ? above + width : above;
+      for (let lx = 0; lx < width; lx += 1) {
+        const top = lattice[above + lx];
+        line[lx] = top + (lattice[below + lx] - top) * fy;
+      }
+      for (let lx = 0, x = 0; x < columns; lx += 1) {
+        const left = line[lx];
+        const slope = ((lx + 1 < width ? line[lx + 1] : left) - left) / step;
+        const end = Math.min(columns, x + step);
+        for (let value = left; x < end; x += 1, i += 1, value += slope) {
+          if (value > field[i]) field[i] = value;
+        }
+      }
+    }
+  };
+}

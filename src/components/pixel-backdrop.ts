@@ -7,7 +7,7 @@ import type {
   ModeInstance,
 } from "./backdrop-modes/mode";
 import { isToyPress } from "./backdrop-press";
-import { makeNoise2D, mulberry32 } from "./backdrop-noise";
+import { makeCoarseNoise, makeNoise2D, mulberry32 } from "./backdrop-noise";
 import { clamp } from "./emulated-canvas-limits";
 
 /**
@@ -43,7 +43,7 @@ export type PixelBackdropOptions = {
   rippleSpeed: number;
   /** Opacity of the drifting background noise field, 0–100. */
   noise: number;
-  /** Feature size of the noise field, in cells. Larger is softer. */
+  /** Feature size of the noise field, in cells of an 80-cell grid; it scales with the real one. Larger is softer. */
   noiseScale: number;
   /** Drift speed of the noise field, 0–100. */
   noiseSpeed: number;
@@ -107,7 +107,7 @@ const STEP = 1000 / 60;
 /** Time a mode may catch up after a stall, so a long pause doesn't replay in a burst. */
 const MAX_CATCH_UP = 250;
 
-/** At the default speed the noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
+/** At the default speed the noise drifts about a pixel per 60 Hz frame on a desktop screen, so a slow redraw is imperceptible. */
 const IDLE_FRAME_INTERVAL = 1000 / 8;
 
 /**
@@ -184,6 +184,18 @@ const NOISE_SEED = 0x9e3779b9;
  */
 const NOISE_OFFSET_X = 12.9898;
 const NOISE_OFFSET_Y = 78.233;
+
+/**
+ * The background noise is sampled at most this many cells apart and filled in
+ * between. At the default feature size that is a quarter of the samples per
+ * axis, keeping a 160-cell grid's noise cheaper than sampling 80 cells whole,
+ * and within 0.02 RMS (0.075 at worst) of sampling every cell, on the 0-1
+ * layer before its intensity scales it.
+ */
+const MAX_NOISE_STEP = 4;
+
+/** Fewer samples than this per feature visibly flatten its peaks. */
+const NOISE_SAMPLES_PER_FEATURE = 7.5;
 
 type Rgb = [number, number, number];
 
@@ -287,6 +299,7 @@ export class PixelBackdrop extends HTMLElement {
     visible: { left: 0, top: 0, right: 0, bottom: 0 },
   };
   #noise = makeNoise2D(NOISE_SEED);
+  #noiseLayer?: ReturnType<typeof makeCoarseNoise>;
   #field = new Float32Array(0);
   #image?: ImageData;
   #shades?: { key: string; table: Uint8ClampedArray };
@@ -320,6 +333,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#columns = canvas.width;
     this.#rows = canvas.height;
     this.#field = new Float32Array(this.#columns * this.#rows);
+    this.#noiseLayer = makeCoarseNoise(this.#noise, this.#columns, this.#rows);
     this.#fieldOutgoing = new Float32Array(this.#field.length);
     this.#threshold = new Float32Array(this.#field.length);
     this.#thresholdBuilt = false;
@@ -666,16 +680,22 @@ export class PixelBackdrop extends HTMLElement {
     this.#mode?.render(field);
     if (this.#outgoing !== undefined) this.#mix(this.#outgoing, field);
     if (this.#options.noise > 0) {
-      const amount = this.#options.noise / 100;
-      const frequency = 1 / Math.max(1, this.#options.noiseScale);
+      const feature =
+        (Math.max(1, this.#options.noiseScale) * columns) / TUNED_GRID;
+      const step = clamp(
+        Math.floor(feature / NOISE_SAMPLES_PER_FEATURE),
+        1,
+        MAX_NOISE_STEP,
+      );
       const drift = now * this.#options.noiseSpeed * 0.00005;
-      for (let y = 0, i = 0; y < rows; y += 1) {
-        const ny = y * frequency + drift * 0.5 + NOISE_OFFSET_Y;
-        for (let x = 0; x < columns; x += 1, i += 1) {
-          const value = this.#noise(x * frequency + drift + NOISE_OFFSET_X, ny);
-          field[i] = Math.max(field[i], amount * (value * 0.5 + 0.5));
-        }
-      }
+      this.#noiseLayer?.(
+        field,
+        step,
+        1 / feature,
+        drift + NOISE_OFFSET_X,
+        drift * 0.5 + NOISE_OFFSET_Y,
+        this.#options.noise / 100,
+      );
     }
 
     shade(field, this.#shades.table, image.data);
