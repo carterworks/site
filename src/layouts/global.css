@@ -74,8 +74,9 @@
   --color-text: light-dark(var(--color-black), var(--color-white));
   --color-bg: light-dark(var(--color-white), var(--color-black));
 
-  /* Pixel backdrop defaults. `<pixel-backdrop>` reads these once at startup;
-     the dev-toolbar app can override any of them at runtime. */
+  /* Pixel backdrop defaults, the single source of truth: `<pixel-backdrop>`
+     reads them at startup and on reset, and the dev-toolbar app can override
+     any of them at runtime. */
   --backdrop-enabled: true;
   --backdrop-auto-fit: true;
   --backdrop-scale: 20;

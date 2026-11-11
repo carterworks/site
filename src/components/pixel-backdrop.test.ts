@@ -19,3 +19,22 @@ test.each([
 test("a cell's centre maps to its pixel's centre", () => {
   expect(gridCoordinate(40 * 19 + 7, box, 80, 5)).toBeCloseTo(40.5);
 });
+
+test("reset restores the stylesheet defaults after the panel knobs were tweaked", () => {
+  const style = document.createElement("style");
+  style.textContent =
+    ":root { --backdrop-panel-opacity: 40%; --backdrop-panel-blur: 5px; }";
+  document.head.append(style);
+  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
+    options: { panelBlur: number; panelOpacity: number };
+    configure(options: object): void;
+    reset(): void;
+  };
+  backdrop.append(document.createElement("emulated-canvas"));
+  document.body.append(backdrop);
+
+  backdrop.configure({ panelBlur: 9, panelOpacity: 70 });
+  backdrop.reset();
+
+  expect(backdrop.options).toMatchObject({ panelBlur: 5, panelOpacity: 40 });
+});

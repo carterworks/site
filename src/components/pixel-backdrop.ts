@@ -52,97 +52,50 @@ export type PixelBackdropOptions = {
   darkInk: string;
 };
 
-export const PIXEL_BACKDROP_DEFAULTS: PixelBackdropOptions = {
-  enabled: true,
-  autoFit: true,
-  scale: 20,
-  gap: 5,
-  shape: "square",
-  ghost: 70,
-  trail: 1000,
-  rippleSize: 25,
-  rippleSpeed: 900,
-  panelOpacity: 40,
-  panelBlur: 5,
-  noise: 25,
-  noiseScale: 15,
-  noiseSpeed: 5,
-  lightBase: "#ffffff",
-  lightInk: "#c7c7c7",
-  darkBase: "#141414",
-  darkInk: "#9e9e9e",
+const number = Number.parseFloat;
+const flag = (value: string) => value === "true";
+// The CSS minifier rewrites durations to their shortest form (`900ms` ->
+// `.9s`), so the unit must be honoured, not stripped.
+const duration = (value: string) =>
+  Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
+const text = <T extends string>(value: string) => value as T;
+
+const PARSERS: {
+  [K in keyof PixelBackdropOptions]: (value: string) => PixelBackdropOptions[K];
+} = {
+  enabled: flag,
+  autoFit: flag,
+  scale: number,
+  gap: number,
+  shape: text,
+  ghost: number,
+  trail: duration,
+  rippleSize: number,
+  rippleSpeed: duration,
+  panelOpacity: number,
+  panelBlur: number,
+  noise: number,
+  noiseScale: number,
+  noiseSpeed: number,
+  lightBase: text,
+  lightInk: text,
+  darkBase: text,
+  darkInk: text,
 };
 
 /**
- * The defaults live as `--backdrop-*` custom properties on `:root` (see
- * `global.css`); this reads them once, falling back to the literals above for
- * anything missing (e.g. before styles apply).
+ * The defaults live only as `--backdrop-*` custom properties on `:root` (see
+ * `global.css`), which also lets the page paint correctly before this script
+ * runs.
  */
 export function readDefaults(): PixelBackdropOptions {
   const styles = getComputedStyle(document.documentElement);
-  const text = (name: string) => styles.getPropertyValue(name).trim();
-  const number = (name: string, fallback: number) => {
-    const value = Number.parseFloat(text(name));
-    return Number.isFinite(value) ? value : fallback;
-  };
-  // The CSS minifier rewrites durations to their shortest form (`900ms` ->
-  // `.9s`), so the unit must be honoured, not stripped.
-  const duration = (name: string, fallback: number) => {
-    const value = text(name);
-    const ms = Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
-    return Number.isFinite(ms) ? ms : fallback;
-  };
-  const flag = (name: string, fallback: boolean) => {
-    const value = text(name);
-    return value === "" ? fallback : value === "true";
-  };
-  const colour = (name: string, fallback: string) => text(name) || fallback;
-  const shape = text("--backdrop-shape");
-
-  return {
-    enabled: flag("--backdrop-enabled", PIXEL_BACKDROP_DEFAULTS.enabled),
-    autoFit: flag("--backdrop-auto-fit", PIXEL_BACKDROP_DEFAULTS.autoFit),
-    scale: number("--backdrop-scale", PIXEL_BACKDROP_DEFAULTS.scale),
-    gap: number("--backdrop-gap", PIXEL_BACKDROP_DEFAULTS.gap),
-    shape:
-      shape === "square" || shape === "circle"
-        ? shape
-        : PIXEL_BACKDROP_DEFAULTS.shape,
-    ghost: number("--backdrop-ghost", PIXEL_BACKDROP_DEFAULTS.ghost),
-    trail: duration("--backdrop-trail", PIXEL_BACKDROP_DEFAULTS.trail),
-    rippleSize: number(
-      "--backdrop-ripple-size",
-      PIXEL_BACKDROP_DEFAULTS.rippleSize,
-    ),
-    rippleSpeed: duration(
-      "--backdrop-ripple-speed",
-      PIXEL_BACKDROP_DEFAULTS.rippleSpeed,
-    ),
-    panelOpacity: number(
-      "--backdrop-panel-opacity",
-      PIXEL_BACKDROP_DEFAULTS.panelOpacity,
-    ),
-    panelBlur: number(
-      "--backdrop-panel-blur",
-      PIXEL_BACKDROP_DEFAULTS.panelBlur,
-    ),
-    noise: number("--backdrop-noise", PIXEL_BACKDROP_DEFAULTS.noise),
-    noiseScale: number(
-      "--backdrop-noise-scale",
-      PIXEL_BACKDROP_DEFAULTS.noiseScale,
-    ),
-    noiseSpeed: number(
-      "--backdrop-noise-speed",
-      PIXEL_BACKDROP_DEFAULTS.noiseSpeed,
-    ),
-    lightBase: colour(
-      "--backdrop-light-base",
-      PIXEL_BACKDROP_DEFAULTS.lightBase,
-    ),
-    lightInk: colour("--backdrop-light-ink", PIXEL_BACKDROP_DEFAULTS.lightInk),
-    darkBase: colour("--backdrop-dark-base", PIXEL_BACKDROP_DEFAULTS.darkBase),
-    darkInk: colour("--backdrop-dark-ink", PIXEL_BACKDROP_DEFAULTS.darkInk),
-  };
+  return Object.fromEntries(
+    Object.entries(PARSERS).map(([key, parse]) => {
+      const name = `--backdrop-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+      return [key, parse(styles.getPropertyValue(name).trim())];
+    }),
+  ) as PixelBackdropOptions;
 }
 
 const STORAGE_KEY = "pixel-backdrop";
@@ -322,7 +275,7 @@ function colourRgb(value: string): [number, number, number] {
 }
 
 class PixelBackdrop extends HTMLElement {
-  #options: PixelBackdropOptions = { ...PIXEL_BACKDROP_DEFAULTS };
+  #options!: PixelBackdropOptions;
   #canvas?: EmulatedCanvasElement;
   #context?: CanvasRenderingContext2D;
   #frame?: number;
@@ -391,7 +344,12 @@ class PixelBackdrop extends HTMLElement {
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
-    this.#options = { ...readDefaults() };
+    // #apply shadows the panel defaults with inline styles; drop them or the
+    // read below returns the tweaked values.
+    const root = document.documentElement.style;
+    root.removeProperty("--backdrop-panel-opacity");
+    root.removeProperty("--backdrop-panel-blur");
+    this.#options = readDefaults();
     this.#apply();
     this.#start();
     this.#save();
