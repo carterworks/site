@@ -523,3 +523,74 @@ test("a touch tap is a press already released, so a toy sees one burst", async (
 
   expect((await latestInput()).press).toMatchObject({ held: false });
 });
+
+const NO_SELECT = "data-backdrop-holding";
+const holding = () => document.documentElement.hasAttribute(NO_SELECT);
+const backdropElement = () => document.querySelector("pixel-backdrop")!;
+
+test("a hold mode suppresses text selection from an accepted press", () => {
+  mount().setMode("silt");
+
+  press(document.body);
+
+  expect(holding()).toBe(true);
+});
+
+test.each([
+  ["pointerup", () => window.dispatchEvent(new PointerEvent("pointerup"))],
+  [
+    "pointercancel",
+    () => window.dispatchEvent(new PointerEvent("pointercancel")),
+  ],
+  ["window blur", () => window.dispatchEvent(new Event("blur"))],
+  ["a mode switch", () => backdropElement().setMode("solid")],
+  ["disconnect", () => backdropElement().remove()],
+  ["disable", () => backdropElement().configure({ enabled: false })],
+])("selection is restored on %s", (_, end) => {
+  mount().setMode("silt");
+  press(document.body);
+
+  end();
+
+  expect(holding()).toBe(false);
+});
+
+test("a hold mode's press clears a selection already begun", () => {
+  mount().setMode("silt");
+  const paragraph = document.createElement("p");
+  paragraph.textContent = "words";
+  document.body.append(paragraph);
+  getSelection()!.selectAllChildren(paragraph);
+
+  press(document.body);
+
+  expect(getSelection()!.isCollapsed).toBe(true);
+});
+
+test("a selection appearing does not end a hold mode's hold", async () => {
+  mount().setMode("silt");
+  press(document.body);
+  const paragraph = document.createElement("p");
+  paragraph.textContent = "words";
+  document.body.append(paragraph);
+  getSelection()!.selectAllChildren(paragraph);
+  document.dispatchEvent(new Event("selectionchange"));
+
+  expect((await latestInput()).press?.held).toBe(true);
+});
+
+test("a non-hold mode never suppresses selection", () => {
+  mount();
+  press(document.body);
+  expect(holding()).toBe(false);
+});
+
+test("a press on a link never suppresses selection", () => {
+  mount().setMode("silt");
+  const link = document.createElement("a");
+  document.body.append(link);
+
+  press(link);
+
+  expect(holding()).toBe(false);
+});

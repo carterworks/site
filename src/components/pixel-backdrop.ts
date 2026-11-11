@@ -98,6 +98,9 @@ export function readDefaults(): PixelBackdropOptions {
   ) as PixelBackdropOptions;
 }
 
+/** Set on `<html>` for the length of a hold; the stylesheet turns it into `user-select: none`. */
+const HOLDING = "data-backdrop-holding";
+
 const STEP = 1000 / 60;
 
 /** Time a mode may catch up after a stall, so a long pause doesn't replay in a burst. */
@@ -325,6 +328,7 @@ export class PixelBackdrop extends HTMLElement {
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#wake);
     this.#schemeObserver.disconnect();
+    this.#endHold();
   }
 
   /** Merge a partial set of knobs, and repaint. */
@@ -335,7 +339,10 @@ export class PixelBackdrop extends HTMLElement {
     if (this.#options.enabled) {
       this.#start();
       this.#wake();
-    } else this.#stop();
+    } else {
+      this.#stop();
+      this.#endHold();
+    }
   }
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
@@ -352,6 +359,7 @@ export class PixelBackdrop extends HTMLElement {
     if (mode === undefined) return;
     this.#chosen = mode;
     if (this.#canvas === undefined) return;
+    this.#endHold();
     this.#mode = this.#createMode();
     this.#wake();
   }
@@ -613,6 +621,7 @@ export class PixelBackdrop extends HTMLElement {
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#input.press = { ...point, at: this.#time, held: true };
+    if (this.#chosen.holds) this.#suppressSelection();
     this.#touched();
   };
 
@@ -622,10 +631,22 @@ export class PixelBackdrop extends HTMLElement {
    */
   #endHold = () => {
     if (this.#input.press !== undefined) this.#input.press.held = false;
+    document.documentElement.removeAttribute(HOLDING);
   };
+
+  /**
+   * Without `preventDefault`, which would break touch scrolling: the layer
+   * ignores pointer events, so a drag from the margin starts a native text
+   * selection that would otherwise end the hold.
+   */
+  #suppressSelection() {
+    document.documentElement.setAttribute(HOLDING, "");
+    getSelection()?.removeAllRanges();
+  }
 
   /** A drag that turned into a text selection is no longer a press. */
   #onSelectionChange = () => {
+    if (this.#chosen.holds) return;
     if (getSelection()?.isCollapsed === false) this.#endHold();
   };
 

@@ -51,6 +51,11 @@ const size = 80;
     translate: round(-50%, 1px) round(-50%, 1px);
   }
 
+  :global(:root[data-backdrop-holding]) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     pixel-backdrop {
       display: none;
