@@ -11,7 +11,7 @@ import EmulatedCanvas from "./EmulatedCanvas.astro";
 const size = 80;
 ---
 
-<pixel-backdrop aria-hidden="true">
+<pixel-backdrop aria-hidden="true" transition:persist>
   <EmulatedCanvas width={size} height={size} />
 </pixel-backdrop>
 
