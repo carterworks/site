@@ -1,4 +1,5 @@
 import { defineToolbarApp } from "astro/toolbar";
+import { MODES } from "../components/backdrop-modes";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   readDefaults,
@@ -152,7 +153,8 @@ type Control =
       label: string;
       choices: Record<string, string>;
     }
-  | { kind: "color"; key: ColorKey; label: string };
+  | { kind: "color"; key: ColorKey; label: string }
+  | { kind: "mode"; label: string };
 
 const range = (
   key: KeyOf<number>,
@@ -163,7 +165,12 @@ const range = (
   suffix?: string,
 ): Control => ({ kind: "range", key, label, min, max, step, suffix });
 
+const modeChoices = Object.fromEntries(
+  MODES.map((mode) => [mode.id, mode.label]),
+);
+
 export const CONTROLS: Control[] = [
+  { kind: "mode", label: "Mode" },
   { kind: "toggle", key: "enabled", label: "Enabled" },
   { kind: "toggle", key: "autoFit", label: "Fit viewport", disables: "scale" },
   range("scale", "Scale", 1, 64, 1),
@@ -202,7 +209,6 @@ function addControl(
   }
 
   const { row, label, control: cell, output } = makeRow(control.label);
-  const id = `pixel-backdrop-${control.key}`;
   panel.appendChild(row);
 
   if (control.kind === "range") {
@@ -211,8 +217,8 @@ function addControl(
     input.min = String(control.min);
     input.max = String(control.max);
     input.step = String(control.step);
-    input.id = id;
-    label.htmlFor = id;
+    input.id = `pixel-backdrop-${control.key}`;
+    label.htmlFor = input.id;
     cell.appendChild(input);
 
     const show = (value: number) => {
@@ -231,8 +237,8 @@ function addControl(
   } else if (control.kind === "color") {
     const input = document.createElement("input");
     input.type = "color";
-    input.id = id;
-    label.htmlFor = id;
+    input.id = `pixel-backdrop-${control.key}`;
+    label.htmlFor = input.id;
     cell.appendChild(input);
 
     refreshers.push(() => {
@@ -269,31 +275,46 @@ function addControl(
       update({ [control.key]: toggle.input.checked });
       syncDisabled();
     });
+  } else if (control.kind === "mode") {
+    output.remove();
+    // Not persisted: the dev picker is for tuning, not a user preference.
+    const select = addSelect(cell, control.label, modeChoices);
+    select.addEventListener("change", () => {
+      backdrop()?.setMode(select.value);
+    });
   } else {
     output.remove();
-    const select = document.createElement("astro-dev-toolbar-select");
-    select.selectStyle = "gray";
-    select.setAttribute("aria-label", control.label);
-    for (const [value, text] of Object.entries(control.choices)) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = text;
-      // Append to the native select directly: the component moves slotted
-      // options into it on a later `slotchange`, so a synchronous `.value` set
-      // would be lost.
-      select.element.appendChild(option);
-    }
-    cell.appendChild(select);
-
+    const select = addSelect(cell, control.label, control.choices);
     refreshers.push(() => {
-      select.element.value = current()[control.key];
+      select.value = current()[control.key];
     });
-    select.element.addEventListener("change", () => {
+    select.addEventListener("change", () => {
       update({
-        [control.key]: select.element.value as PixelBackdropOptions["shape"],
+        [control.key]: select.value as PixelBackdropOptions["shape"],
       });
     });
   }
+}
+
+function addSelect(
+  cell: HTMLElement,
+  label: string,
+  choices: Record<string, string>,
+) {
+  const select = document.createElement("astro-dev-toolbar-select");
+  select.selectStyle = "gray";
+  select.setAttribute("aria-label", label);
+  for (const [value, text] of Object.entries(choices)) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = text;
+    // Append to the native select directly: the component moves slotted
+    // options into it on a later `slotchange`, so a synchronous `.value` set
+    // would be lost.
+    select.element.appendChild(option);
+  }
+  cell.appendChild(select);
+  return select.element;
 }
 
 /** (Re)build the pane in the app's shadow root, replacing any earlier mount. */

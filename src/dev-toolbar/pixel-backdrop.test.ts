@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readDefaults } from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
+import { MODES } from "../components/backdrop-modes";
+import { MODE_KEY } from "../components/backdrop-mode-setting";
 import {
   CONTROLS,
   STORAGE_KEY,
@@ -134,5 +136,35 @@ test("Reset restores the defaults and clears storage", () => {
 
   expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   expect(backdrop.options.ghost).toBe(defaults.ghost);
+  backdrop.remove();
+});
+
+test("mode select lists every backdrop mode by label, in registry order", () => {
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const select = canvas.querySelector<StubSelect>(
+    'astro-dev-toolbar-select[aria-label="Mode"]',
+  )!;
+  expect(
+    [...select.element.options].map((option) => option.textContent),
+  ).toEqual(MODES.map((mode) => mode.label));
+});
+
+test("choosing a mode calls setMode without saving a user preference", () => {
+  const backdrop = mountBackdrop();
+  const setMode = vi.fn();
+  Object.assign(backdrop, { setMode });
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const select = canvas.querySelector<StubSelect>(
+    'astro-dev-toolbar-select[aria-label="Mode"]',
+  )!;
+  select.element.value = MODES[2].id;
+  select.element.dispatchEvent(new Event("change"));
+
+  expect(setMode).toHaveBeenCalledWith(MODES[2].id);
+  expect(localStorage.getItem(MODE_KEY)).toBeNull();
   backdrop.remove();
 });
