@@ -14,12 +14,12 @@ const DOUBLE_TAP_CELLS = 10;
 const TRICKLE_JITTER = 1.5;
 
 /**
- * The starting dune is a half-cosine bump. Its height is a fifth of its width
- * so the slope stays under one cell per cell: any steeper and grains would
+ * The starting dune is a half-cosine bump. Its height is a seventh of its width
+ * so the slope stays under half a cell per cell: any steeper and grains would
  * slip, and the "settled" scene would animate.
  */
-const DUNE_WIDTH_SHARE = 0.3;
-const DUNE_HEIGHT_SHARE = 0.2;
+const DUNE_WIDTH_SHARE = 0.4;
+const DUNE_HEIGHT_SHARE = 0.14;
 
 /** Quiet time before the stream starts, and how long after input it may run. */
 const TRICKLE_AFTER_MS = 3000;
