@@ -93,13 +93,14 @@ export function readDefaults(): PixelBackdropOptions {
 
 const MAX_RIPPLES = 24;
 
-/** The noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
+/** At the default speed the noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
 const IDLE_FRAME_INTERVAL = 1000 / 8;
 
 /**
- * How long after input a drifting frame may stay at full rate for a fade. It
- * never quite settles, since every redraw leaves the ghost a little behind the
- * noise, so "still changing" alone would hold full rate indefinitely.
+ * How long after input a drifting frame may stay at full rate for a fade. A
+ * fast drift can leave the ghost more than one level behind the noise on every
+ * redraw, so it never reports settled, and "still changing" alone would hold
+ * full rate indefinitely.
  */
 const DRIFTING_FADE_WINDOW = 1000;
 
