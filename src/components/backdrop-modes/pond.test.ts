@@ -1,10 +1,16 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
-import type { BackdropInput } from "./mode";
+import { GRID_SIZE, type BackdropInput } from "./mode";
 import { pond } from "./pond";
 
-const size = 80;
-const visible = { left: 10, top: 20, right: 70, bottom: 60 };
+const size = GRID_SIZE;
+const middle = size / 2;
+const visible = {
+  left: size / 8,
+  top: size / 4,
+  right: (size * 7) / 8,
+  bottom: (size * 3) / 4,
+};
 const STEP = 1000 / 60;
 
 function setup() {
@@ -41,7 +47,7 @@ function setup() {
 
 test("a press raises the surface and keeps the loop active", () => {
   const { press, frame, energy } = setup();
-  press(40, 40);
+  press(middle, middle);
 
   expect(frame()).toBe("active");
   expect(energy()).toBeGreaterThan(0);
@@ -49,7 +55,7 @@ test("a press raises the surface and keeps the loop active", () => {
 
 test("a press with no further input damps back to a flat surface", () => {
   const { press, frames, frame, field, energy } = setup();
-  press(40, 40);
+  press(middle, middle);
   frames(60 * 20);
 
   expect(frame()).not.toBe("active");
@@ -59,7 +65,7 @@ test("a press with no further input damps back to a flat surface", () => {
 
 test("the same press is dropped only once", () => {
   const { press, frames, energy } = setup();
-  press(40, 40);
+  press(middle, middle);
   frames(60 * 20);
   frames(1);
 
@@ -69,12 +75,12 @@ test("the same press is dropped only once", () => {
 test("dragging with a press held leaves a wake that hovering does not", () => {
   const wake = (held: boolean) => {
     const { input, press, frames, energy } = setup();
-    input.pointer = { x: 20, y: 40 };
-    if (held) press(20, 40);
+    input.pointer = { x: size / 4, y: middle };
+    if (held) press(size / 4, middle);
     frames(1);
     input.press = held ? { ...input.press!, at: 0, held: true } : undefined;
-    for (let x = 21; x <= 50; x += 1) {
-      input.pointer = { x, y: 40 };
+    for (let x = size / 4 + 1; x <= size * 0.625; x += 1) {
+      input.pointer = { x, y: middle };
       frames(1);
     }
     return energy();
@@ -117,7 +123,7 @@ test("rain stops after a while so an untouched pond lets the loop sleep", () => 
 
 test("a pond that is about to rain idles between drops instead of stopping", () => {
   const { frames, frame, press } = setup();
-  press(40, 40);
+  press(middle, middle);
   frames(60 * 8, false);
 
   expect(["idle", "active"]).toContain(frame());
