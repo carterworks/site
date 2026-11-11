@@ -118,6 +118,10 @@ async function presentsOver(ms: number) {
 }
 
 beforeEach(() => {
+  Object.defineProperty(document, "caretPositionFromPoint", {
+    value: () => null,
+    configurable: true,
+  });
   vi.useFakeTimers({
     toFake: [
       "requestAnimationFrame",

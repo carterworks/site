@@ -6,14 +6,14 @@
 const PAGE_CONTENT =
   "a, button, input, textarea, select, label, summary, [contenteditable], [tabindex], command-bar, dialog";
 
-export type NodeAtPoint = (x: number, y: number) => Node | null;
+/** `undefined` means the browser cannot say what is under the point. */
+export type NodeAtPoint = (x: number, y: number) => Node | null | undefined;
 export type RectsOfText = (text: Text) => Iterable<DOMRect>;
 
-/** `caretRangeFromPoint` is what Safari and older Chrome offer instead. */
 const caretNode: NodeAtPoint = (x, y) =>
-  document.caretPositionFromPoint?.(x, y)?.offsetNode ??
-  document.caretRangeFromPoint?.(x, y)?.startContainer ??
-  null;
+  "caretPositionFromPoint" in document
+    ? (document.caretPositionFromPoint(x, y)?.offsetNode ?? null)
+    : undefined;
 
 const rectsOfText: RectsOfText = (text) => {
   const range = document.createRange();
@@ -32,6 +32,7 @@ function isOverText(
   rectsOf: RectsOfText,
 ) {
   const node = nodeAt(x, y);
+  if (node === undefined) return true;
   if (!(node instanceof Text)) return false;
   for (const rect of rectsOf(node)) {
     if (

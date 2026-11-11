@@ -86,3 +86,9 @@ test("a caret that lands on no text leaves the press accepted", () => {
 
   expect(isToyPress(event, () => document.body, line)).toBe(true);
 });
+
+test("a browser that cannot say what is under the point rejects the press", () => {
+  const event = press(document.body, { clientX: 50, clientY: 20 });
+
+  expect(isToyPress(event, () => undefined, line)).toBe(false);
+});
