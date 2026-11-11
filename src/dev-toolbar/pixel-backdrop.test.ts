@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import {
-  type PixelBackdropOptions,
-  readDefaults,
-} from "../components/pixel-backdrop";
+import { readDefaults } from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   CONTROLS,

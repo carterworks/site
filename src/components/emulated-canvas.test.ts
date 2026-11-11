@@ -33,14 +33,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-type TestCanvas = HTMLElement & {
-  width: number;
-  height: number;
-  getContext(id: "2d"): unknown;
-  present(): void;
-  reset(): void;
-};
-
 test.each([
   [1, 0],
   [8, 5],
@@ -54,7 +46,7 @@ test.each([
         return display as unknown as CanvasRenderingContext2D;
       },
     );
-    const canvas = document.createElement("emulated-canvas") as TestCanvas;
+    const canvas = document.createElement("emulated-canvas");
     Object.assign(canvas.dataset, {
       width: "80",
       height: "80",
@@ -80,7 +72,7 @@ test.each([
 ])(
   "the bitmap size of %j is %i x %i, even before connecting",
   (data, width, height) => {
-    const canvas = document.createElement("emulated-canvas") as TestCanvas;
+    const canvas = document.createElement("emulated-canvas");
     Object.assign(canvas.dataset, data);
     expect([canvas.width, canvas.height]).toEqual([width, height]);
 
@@ -90,7 +82,7 @@ test.each([
 );
 
 test("a data-manual canvas only paints when told to present", () => {
-  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  const canvas = document.createElement("emulated-canvas");
   Object.assign(canvas.dataset, { width: "2", height: "2", manual: "" });
   document.body.replaceChildren(canvas);
   const request = vi.spyOn(globalThis, "requestAnimationFrame");
@@ -121,7 +113,7 @@ test("after a reset the next present shows the new frame opaque, not blended", (
       }
     },
   );
-  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  const canvas = document.createElement("emulated-canvas");
   Object.assign(canvas.dataset, { ghost: "70", manual: "" });
   document.body.replaceChildren(canvas);
   canvas.present();
@@ -136,7 +128,7 @@ test("after a reset the next present shows the new frame opaque, not blended", (
 });
 
 test("without data-manual, getContext starts mirroring on its own", () => {
-  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  const canvas = document.createElement("emulated-canvas");
   document.body.replaceChildren(canvas);
   const request = vi.spyOn(globalThis, "requestAnimationFrame");
 
@@ -187,7 +179,7 @@ function displayStyleFor(data: Record<string, string>) {
     shadow = attachShadow.call(this, { ...init, mode: "open" });
     return shadow;
   });
-  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  const canvas = document.createElement("emulated-canvas");
   Object.assign(canvas.dataset, data);
   document.body.replaceChildren(canvas);
   return shadow?.querySelector("style")?.textContent ?? "";
