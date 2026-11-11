@@ -22,8 +22,8 @@ const size = 80;
 <style>
   /* The large viewport, like the cell size, so mobile toolbars sliding in and
      out can't move the grid. */
-  /* Explicit width: scrollbar-gutter: stable on :root narrows the fixed
-     containing block, which would leave a strip at the right edge. */
+  /* Explicit width: scrollbar-gutter: stable shrinks the fixed containing
+     block, so 100vw centres the grid on the full viewport instead. */
   pixel-backdrop {
     block-size: 100lvh;
     display: block;
