@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { gridCoordinate } from "./pixel-backdrop";
+import { gridCoordinate, shade, shadeTable } from "./pixel-backdrop";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -51,4 +51,22 @@ test("a reconnected backdrop keeps its tweaks", () => {
   document.body.append(backdrop);
 
   expect(backdrop.options.ghost).toBe(20);
+});
+
+test("the shade table steps evenly from base to ink", () => {
+  const table = shadeTable([0, 100, 200], [255, 0, 200]);
+  expect([...table.slice(0, 3)]).toEqual([0, 100, 200]);
+  expect([...table.slice(128 * 3, 128 * 3 + 3)]).toEqual([128, 50, 200]);
+  expect([...table.slice(255 * 3)]).toEqual([255, 0, 200]);
+});
+
+test("shading maps each field cell through the table to an opaque pixel, clamping out-of-range intensities", () => {
+  const table = shadeTable([0, 0, 0], [255, 255, 255]);
+  const pixels = new Uint8ClampedArray(4 * 4);
+
+  shade(Float32Array.of(0, 0.5, 1, 7), table, pixels);
+
+  expect([...pixels]).toEqual([
+    0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  ]);
 });

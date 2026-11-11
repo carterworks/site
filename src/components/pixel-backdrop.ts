@@ -136,42 +136,65 @@ const NOISE_SEED = 0x9e3779b9;
 const NOISE_OFFSET_X = 12.9898;
 const NOISE_OFFSET_Y = 78.233;
 
-const rgbCache = new Map<string, [number, number, number]>();
+type Rgb = [number, number, number];
+
 let rgbContext: CanvasRenderingContext2D | null | undefined;
 
-/** Resolve any CSS colour to `[r, g, b]`, caching per string. */
-function colourRgb(value: string): [number, number, number] {
-  const cached = rgbCache.get(value);
-  if (cached !== undefined) return cached;
-
-  let rgb: [number, number, number];
+/** Resolve any CSS colour to `[r, g, b]`. */
+function colourRgb(value: string): Rgb {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
   if (hex !== null) {
     const digits =
       hex[1].length === 3
         ? hex[1].replace(/./g, (digit) => digit + digit)
         : hex[1];
-    rgb = [
+    return [
       Number.parseInt(digits.slice(0, 2), 16),
       Number.parseInt(digits.slice(2, 4), 16),
       Number.parseInt(digits.slice(4, 6), 16),
     ];
-  } else {
-    if (rgbContext === undefined) {
-      rgbContext = document
-        .createElement("canvas")
-        .getContext("2d", { willReadFrequently: true });
-    }
-    if (rgbContext === null) return [0, 0, 0];
-    rgbContext.clearRect(0, 0, 1, 1);
-    rgbContext.fillStyle = value;
-    rgbContext.fillRect(0, 0, 1, 1);
-    const [r, g, b] = rgbContext.getImageData(0, 0, 1, 1).data;
-    rgb = [r, g, b];
   }
+  if (rgbContext === undefined) {
+    rgbContext = document
+      .createElement("canvas")
+      .getContext("2d", { willReadFrequently: true });
+  }
+  if (rgbContext === null) return [0, 0, 0];
+  rgbContext.clearRect(0, 0, 1, 1);
+  rgbContext.fillStyle = value;
+  rgbContext.fillRect(0, 0, 1, 1);
+  const [r, g, b] = rgbContext.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
+}
 
-  rgbCache.set(value, rgb);
-  return rgb;
+/**
+ * The 256 colours from `base` to `ink`, three bytes each, so shading a frame is
+ * a lookup per cell rather than a blend.
+ */
+export function shadeTable(base: Rgb, ink: Rgb) {
+  const table = new Uint8ClampedArray(256 * 3);
+  for (let level = 0; level < 256; level += 1) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      table[level * 3 + channel] =
+        base[channel] + ((ink[channel] - base[channel]) * level) / 255;
+    }
+  }
+  return table;
+}
+
+/** Field intensities (0–1) -> opaque RGBA pixels, through a `shadeTable`. */
+export function shade(
+  field: Float32Array,
+  table: Uint8ClampedArray,
+  pixels: Uint8ClampedArray,
+) {
+  for (let i = 0, offset = 0; i < field.length; i += 1, offset += 4) {
+    const entry = Math.round(clamp(field[i], 0, 1) * 255) * 3;
+    pixels[offset] = table[entry];
+    pixels[offset + 1] = table[entry + 1];
+    pixels[offset + 2] = table[entry + 2];
+    pixels[offset + 3] = 255;
+  }
 }
 
 export class PixelBackdrop extends HTMLElement {
@@ -187,7 +210,9 @@ export class PixelBackdrop extends HTMLElement {
   #rows = 0;
   #ripples: { x: number; y: number; born: number }[] = [];
   #noise = makeNoise2D(NOISE_SEED);
-  #noiseImage?: ImageData;
+  #field = new Float32Array(0);
+  #image?: ImageData;
+  #shades?: { key: string; table: Uint8ClampedArray };
   #rect?: DOMRect;
   #pointer = {
     x: -1,
@@ -212,6 +237,7 @@ export class PixelBackdrop extends HTMLElement {
     canvas.dataset.manual = "";
     this.#columns = canvas.width;
     this.#rows = canvas.height;
+    this.#field = new Float32Array(this.#columns * this.#rows);
     this.#options ??= readDefaults();
     this.#apply();
 
@@ -353,12 +379,7 @@ export class PixelBackdrop extends HTMLElement {
     const base = dark ? this.#options.darkBase : this.#options.lightBase;
     const ink = dark ? this.#options.darkInk : this.#options.lightInk;
 
-    if (this.#options.noise > 0) {
-      this.#paintNoise(context, now, base, ink);
-    } else {
-      context.fillStyle = base;
-      context.fillRect(0, 0, this.#columns, this.#rows);
-    }
+    this.#paint(context, now, base, ink);
 
     const pointer = this.#pointer;
     if (pointer.moved) {
@@ -403,11 +424,12 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /**
-   * Fills the bitmap with the base colour lifted toward the ink by a drifting
-   * simplex field, so the "off" pixels shimmer. Built as one `ImageData` and
-   * blitted in a single call — far cheaper than a `fillRect` per cell.
+   * Fills the bitmap from the intensity field, with the base lifted toward the
+   * ink by a drifting simplex field so the "off" pixels shimmer. Built as one
+   * `ImageData` and blitted in a single call — far cheaper than a `fillRect`
+   * per cell.
    */
-  #paintNoise(
+  #paint(
     context: OffscreenCanvasRenderingContext2D,
     now: number,
     base: string,
@@ -415,37 +437,39 @@ export class PixelBackdrop extends HTMLElement {
   ) {
     const columns = this.#columns;
     const rows = this.#rows;
-    let image = this.#noiseImage;
+    const field = this.#field;
+    let image = this.#image;
     if (
       image === undefined ||
       image.width !== columns ||
       image.height !== rows
     ) {
       image = context.createImageData(columns, rows);
-      this.#noiseImage = image;
+      this.#image = image;
+    }
+    const key = `${base} ${ink}`;
+    if (this.#shades?.key !== key) {
+      this.#shades = {
+        key,
+        table: shadeTable(colourRgb(base), colourRgb(ink)),
+      };
     }
 
-    const data = image.data;
-    const [baseR, baseG, baseB] = colourRgb(base);
-    const [inkR, inkG, inkB] = colourRgb(ink);
-    const amount = this.#options.noise / 100;
-    const frequency = 1 / Math.max(1, this.#options.noiseScale);
-    const drift = now * this.#options.noiseSpeed * 0.00005;
-
-    let offset = 0;
-    for (let y = 0; y < rows; y += 1) {
-      const ny = y * frequency + drift * 0.5 + NOISE_OFFSET_Y;
-      for (let x = 0; x < columns; x += 1) {
-        const value = this.#noise(x * frequency + drift + NOISE_OFFSET_X, ny);
-        const mix = amount * (value * 0.5 + 0.5);
-        data[offset] = baseR + (inkR - baseR) * mix;
-        data[offset + 1] = baseG + (inkG - baseG) * mix;
-        data[offset + 2] = baseB + (inkB - baseB) * mix;
-        data[offset + 3] = 255;
-        offset += 4;
+    field.fill(0);
+    if (this.#options.noise > 0) {
+      const amount = this.#options.noise / 100;
+      const frequency = 1 / Math.max(1, this.#options.noiseScale);
+      const drift = now * this.#options.noiseSpeed * 0.00005;
+      for (let y = 0, i = 0; y < rows; y += 1) {
+        const ny = y * frequency + drift * 0.5 + NOISE_OFFSET_Y;
+        for (let x = 0; x < columns; x += 1, i += 1) {
+          const value = this.#noise(x * frequency + drift + NOISE_OFFSET_X, ny);
+          field[i] = Math.max(field[i], amount * (value * 0.5 + 0.5));
+        }
       }
     }
 
+    shade(field, this.#shades.table, image.data);
     context.putImageData(image, 0, 0);
   }
 
