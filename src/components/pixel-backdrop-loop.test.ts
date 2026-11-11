@@ -94,7 +94,7 @@ beforeEach(() => {
   style.textContent = `:root {
     --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
     --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
---backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
+    --backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
     --backdrop-noise: 0;
     --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
     --backdrop-light-base: #fff; --backdrop-light-ink: #000;

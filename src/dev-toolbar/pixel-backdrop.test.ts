@@ -20,7 +20,7 @@ beforeEach(() => {
   style.textContent = `:root {
     --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
     --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
---backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
+    --backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
     --backdrop-noise: 0;
     --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
     --backdrop-light-base: #fff; --backdrop-light-ink: #000;
@@ -58,7 +58,6 @@ test.each(["{not json", "null", "[1]", '"str"'])(
 test("ghost slider stops at the emulated canvas's retention cap", () => {
   expect(range("ghost")).toMatchObject({ max: Math.round(MAX_GHOST * 100) });
 });
-
 
 const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
 
