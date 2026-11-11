@@ -1,7 +1,15 @@
 import { line } from "./line";
 import type { CellRect, Mode, Point } from "./mode";
 
-/** Steps between generations; a held press stretches them so a shape can be finished. */
+/**
+ * The gallery tile this mode was tuned in draws cells about 6 px wide; the
+ * site draws `columns` of them across about 1440 px. Every size and speed
+ * below is in gallery cells and is scaled by this to the site's cell, so the
+ * colony keeps the tile's size and pace in pixels. It is 1 at 240 columns.
+ */
+const GALLERY_CELL_PX = 6;
+const REFERENCE_WIDTH_PX = 1440;
+/** Steps between gallery generations; a held press stretches them so a shape can be finished. */
 const STEPS_PER_GENERATION = 6;
 const STEPS_PER_HELD_GENERATION = 36;
 /** Per-step trail decay of a cell that died. */
@@ -19,6 +27,8 @@ const FADING_COLONY = 25;
 const STALLED_GENERATIONS = 40;
 const RIM_WIDTH = 1.2;
 const DISH_MARGIN = 2.5;
+const SPORE_RADIUS = 3;
+const SPORE_INSET = 6;
 
 /** Whether an offset from the dish centre is inside the ellipse of these radii. */
 function inside(dx: number, dy: number, radiusX: number, radiusY: number) {
@@ -39,6 +49,16 @@ export const culture: Mode = {
   holds: true,
   create({ columns, rows, random }) {
     const size = columns * rows;
+    const scale = (GALLERY_CELL_PX * columns) / REFERENCE_WIDTH_PX;
+    /** Cells smaller than the gallery's would make a sub-cell rim with gaps. */
+    const rimWidth = Math.max(1, RIM_WIDTH * scale);
+    const dishMargin = DISH_MARGIN * scale;
+    const sporeRadius = Math.round(SPORE_RADIUS * scale);
+    const sporeInset = SPORE_INSET * scale;
+    const stepsPerGeneration = Math.round(STEPS_PER_GENERATION / scale);
+    const stepsPerHeldGeneration = Math.round(
+      STEPS_PER_HELD_GENERATION / scale,
+    );
     const dish = new Uint8Array(size);
     const rim = new Uint8Array(size);
     let cells = new Uint8Array(size);
@@ -96,10 +116,10 @@ export const culture: Mode = {
       fitted = key;
       centreX = (left + right) / 2 - 0.5;
       centreY = (top + bottom) / 2 - 0.5;
-      radiusX = (right - left) / 2 - DISH_MARGIN;
-      radiusY = (bottom - top) / 2 - DISH_MARGIN;
-      const rimX = radiusX + RIM_WIDTH;
-      const rimY = radiusY + RIM_WIDTH;
+      radiusX = (right - left) / 2 - dishMargin;
+      radiusY = (bottom - top) / 2 - dishMargin;
+      const rimX = radiusX + rimWidth;
+      const rimY = radiusY + rimWidth;
       const rimIndexes: number[] = [];
       for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < columns; x += 1) {
@@ -118,10 +138,12 @@ export const culture: Mode = {
     const spore = (now: number) => {
       const angle = random() * Math.PI * 2;
       const reach = Math.sqrt(random());
-      const x = centreX + Math.cos(angle) * reach * Math.max(0, radiusX - 6);
-      const y = centreY + Math.sin(angle) * reach * Math.max(0, radiusY - 6);
-      for (let dy = -3; dy <= 3; dy += 1) {
-        for (let dx = -3; dx <= 3; dx += 1) {
+      const x =
+        centreX + Math.cos(angle) * reach * Math.max(0, radiusX - sporeInset);
+      const y =
+        centreY + Math.sin(angle) * reach * Math.max(0, radiusY - sporeInset);
+      for (let dy = -sporeRadius; dy <= sporeRadius; dy += 1) {
+        for (let dx = -sporeRadius; dx <= sporeRadius; dx += 1) {
           if (random() < 0.45) seed(x + dx, y + dy);
         }
       }
@@ -174,7 +196,8 @@ export const culture: Mode = {
 
     const scatter = (x: number, y: number) => {
       seed(x, y);
-      if (random() < 0.5) seed(x + random() * 2 - 1, y + random() * 2 - 1);
+      if (random() < 0.5)
+        seed(x + (random() * 2 - 1) * scale, y + (random() * 2 - 1) * scale);
     };
 
     return {
@@ -202,8 +225,7 @@ export const culture: Mode = {
         if (awake) {
           clock += 1;
           if (
-            clock >=
-            (press?.held ? STEPS_PER_HELD_GENERATION : STEPS_PER_GENERATION)
+            clock >= (press?.held ? stepsPerHeldGeneration : stepsPerGeneration)
           ) {
             clock = 0;
             generation();

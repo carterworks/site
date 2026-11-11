@@ -7,6 +7,8 @@ const columns = GRID_SIZE;
 const rows = GRID_SIZE;
 const STEP = 1000 / 60;
 const NO_JITTER = () => 0.99;
+/** Steps between generations on the site's grid: the gallery's 6, stretched for smaller cells. */
+const GENERATION = 9;
 
 function setup(random: () => number = NO_JITTER) {
   const mode = culture.create({
@@ -52,24 +54,24 @@ test("a drawn blinker flips between a row and a column", () => {
   input.press!.held = false;
   expect([39, 40, 41].map((x) => alive(x, 40))).toEqual([true, true, true]);
 
-  frames(6);
+  frames(GENERATION);
   expect([39, 41].map((x) => alive(x, 40))).toEqual([false, false]);
   expect([39, 40, 41].map((y) => alive(40, y))).toEqual([true, true, true]);
 
-  frames(6);
+  frames(GENERATION);
   expect([39, 40, 41].map((x) => alive(x, 40))).toEqual([true, true, true]);
 });
 
 test("generations crawl while a press is held", () => {
   const held = setup();
   held.drawAcross(40, 39, 41);
-  held.frames(6);
+  held.frames(GENERATION);
   expect(held.alive(39, 40)).toBe(true);
 
   const released = setup();
   released.drawAcross(40, 39, 41);
   released.input.press!.held = false;
-  released.frames(6);
+  released.frames(GENERATION);
   expect(released.alive(39, 40)).toBe(false);
 });
 
