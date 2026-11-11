@@ -36,6 +36,13 @@ const socialTitle = metadata.ogTitle ?? title;
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f1f1f1" />
+    <script is:inline>
+      // Runs before first paint; the module in lib/color-scheme.ts can't.
+      try {
+        document.documentElement.style.colorScheme =
+          localStorage.getItem("color-scheme") ?? "";
+      } catch {}
+    </script>
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />
