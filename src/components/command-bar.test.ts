@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import "./command-bar";
 
 const markup = `
@@ -23,9 +23,9 @@ const markup = `
       </div>
       <div id="command-settings-menu" data-panel="settings" hidden>
         <section data-group>
-          <button type="button" aria-pressed="false" data-command data-appearance data-search="toggle appearance theme light dark">
-            Dark mode <span data-scheme></span>
-          </button>
+          <button type="button" aria-pressed="false" data-command data-scheme-choice="system" data-search="system appearance theme">System</button>
+          <button type="button" aria-pressed="false" data-command data-scheme-choice="light" data-search="light appearance theme">Light</button>
+          <button type="button" aria-pressed="false" data-command data-scheme-choice="dark" data-search="dark appearance theme">Dark</button>
         </section>
         <output class="empty" hidden>No matching commands</output>
       </div>
@@ -56,6 +56,16 @@ function setupCommandBar() {
   };
 }
 
+function choice(name: "system" | "light" | "dark") {
+  return getElement<HTMLButtonElement>(`[data-scheme-choice="${name}"]`);
+}
+
+function osPrefers(scheme: "light" | "dark") {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("dark") === (scheme === "dark"),
+  }));
+}
+
 function getElement<T extends Element>(selector: string) {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Missing test element: ${selector}`);
@@ -74,6 +84,7 @@ function pressKey(target: Element, key: string, init?: KeyboardEventInit) {
 }
 
 beforeEach(setupCommandBar);
+afterEach(() => vi.unstubAllGlobals());
 
 describe("command bar", () => {
   test("opens with links from the current page and omits sitemap duplicates", () => {
@@ -109,7 +120,7 @@ describe("command bar", () => {
     ).toBe(false);
   });
 
-  test("opens settings and toggles dark mode", () => {
+  test("opens settings and chooses a scheme", () => {
     getElement<HTMLInputElement>(".command-trigger").click();
     getElement<HTMLButtonElement>("[data-settings]").click();
 
@@ -117,11 +128,12 @@ describe("command bar", () => {
     expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
       false,
     );
-    const appearance = getElement<HTMLButtonElement>("[data-appearance]");
-    appearance.click();
+    const dark = choice("dark");
+    dark.click();
 
     expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(appearance.getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("color-scheme")).toBe("dark");
+    expect(dark.getAttribute("aria-pressed")).toBe("true");
     expect(
       getElement<HTMLDialogElement>("dialog").matches(":popover-open"),
     ).toBe(false);
@@ -200,12 +212,22 @@ describe("command bar dialog", () => {
     pressKey(input, "Enter", { shiftKey: true });
 
     expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(
-      getElement<HTMLButtonElement>("[data-appearance]").getAttribute(
-        "aria-pressed",
-      ),
-    ).toBe("true");
+    expect(choice("dark").getAttribute("aria-pressed")).toBe("true");
     expect(dialog.matches(":popover-open")).toBe(true);
+  });
+
+  test("Shift+Enter presses twice to return to system", () => {
+    osPrefers("dark");
+    getElement<HTMLInputElement>(".command-trigger").click();
+    getElement<HTMLButtonElement>("[data-settings]").click();
+    const input = getElement<HTMLInputElement>("input");
+
+    pressKey(input, "Enter", { shiftKey: true });
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+
+    pressKey(input, "Enter", { shiftKey: true });
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+    expect(choice("system").getAttribute("aria-pressed")).toBe("true");
   });
 });
 
@@ -257,9 +279,35 @@ describe("command bar dynamic behavior", () => {
     expect(active.textContent).toBe("Home");
   });
 
+  test("choosing system clears the stored override and labels the OS result", () => {
+    osPrefers("dark");
+    choice("light").click();
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+
+    getElement<HTMLInputElement>(".command-trigger").click();
+    expect(choice("light").getAttribute("aria-pressed")).toBe("true");
+    expect(choice("system").textContent).toBe("System (dark)");
+
+    choice("system").click();
+
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+    expect(document.documentElement.style.colorScheme).toBe("");
+  });
+
+  test("an OS scheme change leaves the stored override alone", () => {
+    osPrefers("dark");
+    choice("light").click();
+
+    osPrefers("light");
+    getElement<HTMLInputElement>(".command-trigger").click();
+
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+    expect(choice("system").textContent).toBe("System (light)");
+  });
+
   test("persists the manual scheme and applies it to the incoming document on swap", () => {
     setupCommandBar();
-    document.querySelector<HTMLElement>("[data-appearance]")?.click();
+    choice("dark").click();
     const newDocument = document.implementation.createHTMLDocument();
 
     document.dispatchEvent(
