@@ -59,6 +59,11 @@ export const pinbed: Mode = {
   create({ columns, rows, random }) {
     const depth = new Float32Array(columns * rows);
     const pushedAt = new Float32Array(columns * rows).fill(-Infinity);
+    // Only pins that are down are relaxed and drawn; scanning all of them each
+    // step costs 25,600 reads at 160 cells for a handful of dents.
+    const down = new Int32Array(columns * rows);
+    const isDown = new Uint8Array(columns * rows);
+    let downCount = 0;
     const spring = Float32Array.from(
       { length: columns * rows },
       () => 0.003 + random() * 0.011,
@@ -93,6 +98,10 @@ export const pinbed: Mode = {
           const i = yy * columns + xx;
           const target = strength * Math.sqrt(1 - r * r);
           if (depth[i] < target) depth[i] += (target - depth[i]) * ease;
+          if (isDown[i] === 0 && depth[i] > 0) {
+            isDown[i] = 1;
+            down[downCount++] = i;
+          }
           pushedAt[i] = now;
         }
       }
@@ -113,6 +122,8 @@ export const pinbed: Mode = {
 
     const imprintHand = (visible: CellRect) => {
       depth.fill(0);
+      isDown.fill(0);
+      downCount = 0;
       const x = visible.left + 1.3 * PALM_RADIUS;
       const y = visible.bottom - 1.3 * PALM_RADIUS;
       push(x, y, PALM_RADIUS, PRINT_DEPTH, 1);
@@ -191,24 +202,28 @@ export const pinbed: Mode = {
           }
         }
 
-        dented = false;
-        for (let i = 0; i < depth.length; i += 1) {
-          if (depth[i] <= 0) continue;
+        let kept = 0;
+        for (let k = 0; k < downCount; k += 1) {
+          const i = down[k];
           if (now - pushedAt[i] > HOLD_MS) {
             depth[i] = Math.max(0, depth[i] - spring[i]);
           }
-          if (depth[i] > 0) dented = true;
+          if (depth[i] > 0) down[kept++] = i;
+          else isDown[i] = 0;
         }
+        downCount = kept;
+        dented = downCount > 0;
       },
 
       render(field) {
-        for (let y = 0, i = 0; y < rows; y += 1) {
-          for (let x = 0; x < columns; x += 1, i += 1) {
-            if (depth[i] <= 0) continue;
-            const rise = x > 0 && y > 0 ? depth[i] - depth[i - columns - 1] : 0;
-            const level = depth[i] * 0.7 + (rise > LIT_RISE ? 0.3 : 0);
-            field[i] = Math.round(clamp(level, 0, 1) * 5) / 5;
-          }
+        for (let k = 0; k < downCount; k += 1) {
+          const i = down[k];
+          const rise =
+            i % columns > 0 && i >= columns
+              ? depth[i] - depth[i - columns - 1]
+              : 0;
+          const level = depth[i] * 0.7 + (rise > LIT_RISE ? 0.3 : 0);
+          field[i] = Math.round(clamp(level, 0, 1) * 5) / 5;
         }
       },
 
