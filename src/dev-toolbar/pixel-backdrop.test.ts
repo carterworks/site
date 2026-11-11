@@ -1,13 +1,34 @@
-import { beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test } from "vitest";
+import { readDefaults } from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/pixel-backdrop-pacing";
-import { CONTROLS, STORAGE_KEY, loadSaved } from "./pixel-backdrop";
+import {
+  CONTROLS,
+  STORAGE_KEY,
+  loadSaved,
+  persistChanges,
+} from "./pixel-backdrop";
 
 const range = (key: string) =>
   CONTROLS.find((control) => control.kind === "range" && control.key === key);
 
 const options = { gap: 2, shape: "square", enabled: true };
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  const style = document.createElement("style");
+  style.textContent = `:root {
+    --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
+    --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
+    --backdrop-trail: 100ms; --backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
+    --backdrop-panel-opacity: 50; --backdrop-panel-blur: 5; --backdrop-noise: 0;
+    --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
+    --backdrop-light-base: #fff; --backdrop-light-ink: #000;
+    --backdrop-dark-base: #000; --backdrop-dark-ink: #fff;
+  }`;
+  document.head.append(style);
+});
+
+afterEach(() => document.head.replaceChildren());
 
 test("keeps stored keys whose type matches the current options", () => {
   localStorage.setItem(
@@ -41,4 +62,19 @@ test("trail slider reaches past the 1000ms default", () => {
   expect(range("trail")).toMatchObject({
     max: expect.toSatisfy((n: number) => n > 1000),
   });
+});
+
+const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+
+test("persists only the keys that differ from the defaults", () => {
+  const defaults = readDefaults();
+  persistChanges({ ...defaults, gap: defaults.gap + 1 });
+  expect(stored()).toEqual({ gap: defaults.gap + 1 });
+});
+
+test("drops a key set back to its default", () => {
+  const defaults = readDefaults();
+  persistChanges({ ...defaults, gap: defaults.gap + 1 });
+  persistChanges(defaults);
+  expect(stored()).toEqual({});
 });

@@ -71,16 +71,30 @@ let pending: Partial<PixelBackdropOptions> = {};
 let updateQueued = false;
 let saveTimeout: number | undefined;
 
+/**
+ * Store only what differs from the defaults, so later changes to the CSS
+ * defaults still reach keys the user never touched.
+ */
+export function persistChanges(options: PixelBackdropOptions) {
+  const defaults = readDefaults();
+  const changes = Object.fromEntries(
+    Object.entries(options).filter(
+      ([key, value]) => value !== defaults[key as keyof PixelBackdropOptions],
+    ),
+  );
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(changes));
+  } catch {
+    // Storage may be unavailable (private mode); tweaks just won't persist.
+  }
+}
+
 /** Sliders fire on every pointer move; coalesce the synchronous writes. */
 const save = () => {
   window.clearTimeout(saveTimeout);
   saveTimeout = window.setTimeout(() => {
-    try {
-      const options = backdrop()?.options;
-      if (options) localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
-    } catch {
-      // Storage may be unavailable (private mode); tweaks just won't persist.
-    }
+    const options = backdrop()?.options;
+    if (options) persistChanges(options);
   }, 250);
 };
 
