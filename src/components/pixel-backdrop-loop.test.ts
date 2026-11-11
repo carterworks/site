@@ -422,13 +422,13 @@ test("the mode is told which cells the viewport shows of the overhanging grid", 
   });
 });
 
-test("setMode switches to another mode at once, and ignores an unknown id", async () => {
+test("setMode switches to another mode, and ignores an unknown id", async () => {
   const backdrop = mount();
   await vi.advanceTimersByTimeAsync(100);
   expect(shownAt(40, 40)).toBe(255);
 
   backdrop.setMode("solid");
-  await vi.advanceTimersByTimeAsync(20);
+  await vi.advanceTimersByTimeAsync(1000);
   expect(shownAt(40, 40)).toBe(0);
 
   backdrop.setMode("missing");

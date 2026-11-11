@@ -117,6 +117,12 @@ const IDLE_FRAME_INTERVAL = 1000 / 8;
  */
 const DRIFTING_FADE_WINDOW = 1000;
 
+/** How long a mode change dissolves, in milliseconds. */
+const DISSOLVE_MS = 800;
+
+/** Feature size of the dissolve's blobs, in cells. */
+const DISSOLVE_SCALE = 10;
+
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
 
@@ -248,6 +254,15 @@ export class PixelBackdrop extends HTMLElement {
   #rows = 0;
   #chosen = MODES[0];
   #mode?: ModeInstance;
+  /** The mode being dissolved away; it keeps stepping until the dissolve ends. */
+  #outgoing?: ModeInstance;
+  /** `now` of the dissolve's first frame; the dissolve runs on the frame clock. */
+  #dissolveStart?: number;
+  #dissolveProgress = 0;
+  /** Per cell, the dissolve progress (0-1) at which it flips to the new mode. */
+  #threshold = new Float32Array(0);
+  #thresholdBuilt = false;
+  #fieldOutgoing = new Float32Array(0);
   /** The mode clock, advanced in whole steps. */
   #time = 0;
   #lastTick?: number;
@@ -290,6 +305,9 @@ export class PixelBackdrop extends HTMLElement {
     this.#columns = canvas.width;
     this.#rows = canvas.height;
     this.#field = new Float32Array(this.#columns * this.#rows);
+    this.#fieldOutgoing = new Float32Array(this.#field.length);
+    this.#threshold = new Float32Array(this.#field.length);
+    this.#thresholdBuilt = false;
     this.#input.visible = {
       left: 0,
       top: 0,
@@ -362,19 +380,65 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /**
-   * Switch to a registered mode at once, starting it fresh. An unknown id is
-   * ignored.
+   * Dissolve into a registered mode, starting it fresh; an unknown id is
+   * ignored, and so is the mode already chosen. A request before the canvas
+   * exists is remembered and applied when the host attaches. With no running
+   * loop (reduced motion, disabled) the switch is instant.
+   *
+   * A request mid-dissolve makes the mode now showing through the new outgoing
+   * one and drops the old one. Snapshotting the displayed mix would freeze a
+   * live toy, and a third instance would break the two-mode budget; the cost
+   * is that cells not yet flipped jump to the mode they were about to leave
+   * for, which the canvas's ghost pass smooths.
    */
   setMode(id: string) {
     const mode = MODES.find((candidate) => candidate.id === id);
-    if (mode === undefined) return;
+    if (mode === undefined || mode === this.#chosen) return;
     this.#chosen = mode;
-    if (this.#canvas === undefined) return;
+    const outgoing = this.#mode;
+    if (outgoing === undefined) return;
     this.#endHold();
     // A press from before the new mode existed is not its to see.
     this.#input.press = undefined;
     this.#mode = this.#createMode();
+    this.#dissolveStart = undefined;
+    if (this.#context === undefined) {
+      this.#outgoing = undefined;
+      return;
+    }
+    this.#outgoing = outgoing;
+    this.#buildThreshold();
     this.#wake();
+  }
+
+  /**
+   * Simplex noise stretched to span 0-1, so the dissolve starts and finishes
+   * on time however the noise happens to fall. Built once, on the first
+   * dissolve, so no frame pays for it.
+   */
+  #buildThreshold() {
+    if (this.#thresholdBuilt) return;
+    this.#thresholdBuilt = true;
+    const noise = makeNoise2D(NOISE_SEED);
+    const threshold = this.#threshold;
+    const frequency = 1 / DISSOLVE_SCALE;
+    let low = Infinity;
+    let high = -Infinity;
+    for (let y = 0, i = 0; y < this.#rows; y += 1) {
+      for (let x = 0; x < this.#columns; x += 1, i += 1) {
+        const value = noise(
+          x * frequency + NOISE_OFFSET_X,
+          y * frequency + NOISE_OFFSET_Y,
+        );
+        threshold[i] = value;
+        low = Math.min(low, value);
+        high = Math.max(high, value);
+      }
+    }
+    const span = Math.max(high - low, Number.EPSILON);
+    for (let i = 0; i < threshold.length; i += 1) {
+      threshold[i] = (threshold[i] - low) / span;
+    }
   }
 
   #createMode() {
@@ -402,6 +466,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#idleTimer = undefined;
     this.#lastTick = undefined;
     this.#context = undefined;
+    this.#outgoing = undefined;
   }
 
   /** Mirror every knob onto the component. */
@@ -437,11 +502,13 @@ export class PixelBackdrop extends HTMLElement {
     this.#frame = undefined;
     this.#measure();
     this.#advance(now);
+    const dissolving = this.#dissolve(now);
     // Asked before render, which may consume what made the mode busy: the
     // frame after it must still be drawn, to clear it.
-    const pace = this.#inputPending
-      ? "active"
-      : (this.#mode?.pace() ?? "still");
+    const pace =
+      dissolving || this.#inputPending
+        ? "active"
+        : (this.#mode?.pace() ?? "still");
     if (pace === "active") this.#busyAt = now;
 
     this.#draw(now);
@@ -480,7 +547,33 @@ export class PixelBackdrop extends HTMLElement {
       this.#accumulated -= STEP;
       this.#time += STEP;
       mode.step(this.#input, this.#time);
+      this.#outgoing?.step(this.#input, this.#time);
       this.#inputPending = false;
+    }
+  }
+
+  /** Advances the dissolve, and drops the outgoing mode once it is done. */
+  #dissolve(now: number) {
+    if (this.#outgoing === undefined) return false;
+    this.#dissolveStart ??= now;
+    const progress = (now - this.#dissolveStart) / DISSOLVE_MS;
+    if (progress >= 1) {
+      this.#outgoing = undefined;
+      return false;
+    }
+    this.#dissolveProgress = progress;
+    return true;
+  }
+
+  /** Keeps the outgoing mode's value in every cell the dissolve has not reached. */
+  #mix(outgoing: ModeInstance, field: Float32Array) {
+    const previous = this.#fieldOutgoing;
+    previous.fill(0);
+    outgoing.render(previous);
+    const threshold = this.#threshold;
+    const progress = this.#dissolveProgress;
+    for (let i = 0; i < field.length; i += 1) {
+      if (threshold[i] >= progress) field[i] = previous[i];
     }
   }
 
@@ -548,6 +641,7 @@ export class PixelBackdrop extends HTMLElement {
 
     field.fill(0);
     this.#mode?.render(field);
+    if (this.#outgoing !== undefined) this.#mix(this.#outgoing, field);
     if (this.#options.noise > 0) {
       const amount = this.#options.noise / 100;
       const frequency = 1 / Math.max(1, this.#options.noiseScale);
