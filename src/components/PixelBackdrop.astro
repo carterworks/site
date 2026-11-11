@@ -22,10 +22,13 @@ const size = 80;
 <style>
   /* The large viewport, like the cell size, so mobile toolbars sliding in and
      out can't move the grid. */
+  /* Explicit width: scrollbar-gutter: stable on :root narrows the fixed
+     containing block, which would leave a strip at the right edge. */
   pixel-backdrop {
     block-size: 100lvh;
     display: block;
-    inset: 0 0 auto;
+    inline-size: 100vw;
+    inset: 0 auto auto 0;
     overflow: hidden;
     pointer-events: none;
     position: fixed;
