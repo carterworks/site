@@ -28,10 +28,10 @@ The antidote is doing the opposite: having opinions, avoiding hedging, and being
 
 ---
 
-> In a world of scarcity, we treasure *tools*.  
-> In a world of abundance, we treasure *taste*.
+> In a world of scarcity, we treasure _tools_.  
+> In a world of abundance, we treasure _taste_.
 
-[Anu Atluru, *Taste is Eating Silicon Valley*](https://www.workingtheorys.com/p/taste-is-eating-silicon-valley)
+[Anu Atluru, _Taste is Eating Silicon Valley_](https://www.workingtheorys.com/p/taste-is-eating-silicon-valley)
 
 "The importance of taste" is a current topic in Silicon Valley. "The age of SaaS is over; now is the day of personal software through vibecoding," they say. I don't know if that is right, and I certainly have no control over the answer. But one way to think about what happened to software is to think about what happened to clothing. Machines came to textile manufacturing and then clothing went from being a long and laborious process to a quick one. Before, only the wealthy could afford more than a few outfits. Now, the world is flooded by cheap and shoddy clothing. For example, [one article counted 369,264 separate products available for sale](https://www.per-spex.com/articles/2023/9/12/shein) through Chinese clothing retailer Shein on a random day in October 2021. They also report that the parent company, Zoetop, produces 1.2 million articles of clothing _a day_.
 
