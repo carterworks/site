@@ -313,6 +313,16 @@ test("present reports a ghost fade as changing until it lands on the frame", () 
   expect(canvas.present()).toBe(false);
 });
 
+test("present reports settled once the ghost is turned off mid-fade", () => {
+  const canvas = fadingFromWhite("90");
+  clock += 1000 / 60;
+  expect(canvas.present()).toBe(true);
+
+  canvas.dataset.ghost = "0";
+  clock += 1000 / 60;
+  expect(canvas.present()).toBe(false);
+});
+
 test("a one-level step settles at once, so a slowly drifting frame lets its owner idle", () => {
   const canvas = mountCanvas({ ghost: "100" });
   draw(canvas, 100);
