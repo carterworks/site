@@ -148,6 +148,31 @@ test("a static frame holds full rate for a fade after input, however long, until
   expect(vi.getTimerCount()).toBe(0);
 });
 
+test("with no ghost, a hover cell is drawn once after a move and not on the frames after", async () => {
+  mount();
+  await vi.advanceTimersByTimeAsync(100);
+  const hoverCells = () =>
+    context.fillRect.mock.calls.filter(([, , w, h]) => w === 1 && h === 1);
+
+  movePointer();
+  await vi.advanceTimersByTimeAsync(20);
+  expect(hoverCells().length).toBeGreaterThan(0);
+
+  context.fillRect.mockClear();
+  await vi.advanceTimersByTimeAsync(50);
+  expect(hoverCells()).toHaveLength(0);
+});
+
+test("once the pointer stops, a static frame goes back to stopped", async () => {
+  mount();
+  await vi.advanceTimersByTimeAsync(100);
+
+  movePointer();
+  await vi.advanceTimersByTimeAsync(50);
+
+  expect(vi.getTimerCount()).toBe(0);
+});
+
 test("a drifting frame the canvas never reports settled stays at the idle rate", async () => {
   shadersChanging = true;
   const backdrop = mount();

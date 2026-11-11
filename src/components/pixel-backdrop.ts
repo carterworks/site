@@ -286,7 +286,7 @@ export class PixelBackdrop extends HTMLElement {
     y: -1,
     fromX: -1,
     fromY: -1,
-    moved: 0,
+    moved: false,
     active: false,
   };
 
@@ -400,7 +400,7 @@ export class PixelBackdrop extends HTMLElement {
 
   #tick = (now: number) => {
     this.#frame = undefined;
-    const busy = this.#isTrailing(now) || this.#ripples.length > 0;
+    const busy = this.#pointer.moved || this.#ripples.length > 0;
     if (busy) this.#busyAt = now;
 
     this.#draw(now);
@@ -431,12 +431,6 @@ export class PixelBackdrop extends HTMLElement {
     this.#frame = requestAnimationFrame(this.#tick);
   };
 
-  #isTrailing(now: number) {
-    return (
-      this.#pointer.active && now - this.#pointer.moved < this.#options.trail
-    );
-  }
-
   #draw(now: number) {
     const context = this.#context;
     if (context === undefined) return;
@@ -459,7 +453,7 @@ export class PixelBackdrop extends HTMLElement {
     }
 
     const pointer = this.#pointer;
-    if (this.#isTrailing(now)) {
+    if (pointer.moved) {
       context.strokeStyle = ink;
       context.fillStyle = ink;
       context.lineWidth = 1;
@@ -470,6 +464,7 @@ export class PixelBackdrop extends HTMLElement {
         context.stroke();
       }
       context.fillRect(pointer.x, pointer.y, 1, 1);
+      pointer.moved = false;
     }
 
     for (let i = this.#ripples.length - 1; i >= 0; i -= 1) {
@@ -585,7 +580,7 @@ export class PixelBackdrop extends HTMLElement {
     }
     pointer.x = cell.x;
     pointer.y = cell.y;
-    pointer.moved = performance.now();
+    pointer.moved = true;
     pointer.active = true;
     this.#wake();
   };
@@ -597,6 +592,7 @@ export class PixelBackdrop extends HTMLElement {
 
   #onPointerLeave = () => {
     this.#pointer.active = false;
+    this.#pointer.moved = false;
   };
 
   #onPointerDown = (event: PointerEvent) => {
