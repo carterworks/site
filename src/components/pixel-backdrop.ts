@@ -341,10 +341,7 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
-    this.#options = readDefaults();
-    this.#apply();
-    this.#start();
-    this.#wake();
+    this.configure(readDefaults());
   }
 
   #start() {
