@@ -94,7 +94,9 @@ test("a manual colour scheme change repaints a stopped static frame", async () =
 
 test("a colour scheme flip reseeds the canvas once, and a steady scheme does not", async () => {
   const backdrop = mount();
-  const { reset } = backdrop.querySelector("emulated-canvas") as StubCanvas;
+  const { reset } = backdrop.querySelector(
+    "emulated-canvas",
+  ) as unknown as StubCanvas;
   await vi.advanceTimersByTimeAsync(200);
   expect(reset).not.toHaveBeenCalled();
 

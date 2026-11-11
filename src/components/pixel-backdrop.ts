@@ -1,3 +1,4 @@
+import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
 import {
   clamp,
@@ -103,15 +104,6 @@ export function readDefaults(): PixelBackdropOptions {
 }
 
 const MAX_RIPPLES = 24;
-
-/** The bits of `<emulated-canvas>` this element needs. */
-type EmulatedCanvasElement = HTMLElement & {
-  width: number;
-  height: number;
-  getContext(id: "2d"): OffscreenCanvasRenderingContext2D | null;
-  present(): void;
-  reset(): void;
-};
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
@@ -275,9 +267,9 @@ function colourRgb(value: string): [number, number, number] {
   return rgb;
 }
 
-class PixelBackdrop extends HTMLElement {
+export class PixelBackdrop extends HTMLElement {
   #options!: PixelBackdropOptions;
-  #canvas?: EmulatedCanvasElement;
+  #canvas?: EmulatedCanvas;
   #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
   #idleTimer?: number;
@@ -305,7 +297,7 @@ class PixelBackdrop extends HTMLElement {
   }
 
   connectedCallback() {
-    const canvas = this.querySelector<EmulatedCanvasElement>("emulated-canvas");
+    const canvas = this.querySelector("emulated-canvas");
     if (canvas === null) return;
     this.#canvas = canvas;
     canvas.dataset.manual = "";
@@ -651,4 +643,10 @@ class PixelBackdrop extends HTMLElement {
 
 if (!customElements.get("pixel-backdrop")) {
   customElements.define("pixel-backdrop", PixelBackdrop);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "pixel-backdrop": PixelBackdrop;
+  }
 }

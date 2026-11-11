@@ -17,16 +17,9 @@ import {
  * this one does the same and also rebuilds after a swap.
  */
 
-type BackdropElement = HTMLElement & {
-  options: PixelBackdropOptions;
-  configure(partial: Partial<PixelBackdropOptions>): void;
-  reset(): void;
-};
-
 type Refresher = () => void;
 
-const backdrop = () =>
-  document.querySelector<BackdropElement>("pixel-backdrop");
+const backdrop = () => document.querySelector("pixel-backdrop");
 
 const current = (): PixelBackdropOptions =>
   backdrop()?.options ?? readDefaults();

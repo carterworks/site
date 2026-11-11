@@ -134,7 +134,7 @@ export type EmulatedCanvasProps = {
  * The consumer's context is returned untouched — no proxying or replaying — so
  * mirroring is just a copy of the finished pixels each frame.
  */
-class EmulatedCanvas extends HTMLElement {
+export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_WIDTH = 64;
   static DEFAULT_HEIGHT = 64;
   static DEFAULT_SCALE = 1;
@@ -171,6 +171,11 @@ class EmulatedCanvas extends HTMLElement {
     this.#stopMirroring();
   }
 
+  getContext(contextId: "2d"): OffscreenCanvasRenderingContext2D | null;
+  getContext(
+    contextId: OffscreenRenderingContextId,
+    options?: unknown,
+  ): object | null;
   getContext(contextId: OffscreenRenderingContextId, options?: unknown) {
     const innerCanvas = this.#innerCanvas;
     if (innerCanvas === undefined) return null;
@@ -325,4 +330,10 @@ class EmulatedCanvas extends HTMLElement {
 
 if (!customElements.get("emulated-canvas")) {
   customElements.define("emulated-canvas", EmulatedCanvas);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "emulated-canvas": EmulatedCanvas;
+  }
 }
