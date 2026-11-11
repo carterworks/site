@@ -2,10 +2,16 @@ import { line } from "./line";
 import type { Mode, Point } from "./mode";
 
 const SHADES = [0, 0.55, 0.78, 1];
+/**
+ * Tunables below were set on an 80-cell grid; they scale by `columns / TUNED_COLUMNS`
+ * so pours, taps and the trickle keep their on-screen size on a denser grid.
+ */
+const TUNED_COLUMNS = 80;
 const POUR_GRAINS = 4;
 const POUR_SPREAD = 4;
 const DOUBLE_TAP_MS = 380;
 const DOUBLE_TAP_CELLS = 10;
+const TRICKLE_JITTER = 1.5;
 
 /**
  * The starting dune is a half-cosine bump. Its height is a fifth of its width
@@ -18,7 +24,7 @@ const DUNE_HEIGHT_SHARE = 0.2;
 /** Quiet time before the stream starts, and how long after input it may run. */
 const TRICKLE_AFTER_MS = 3000;
 const TRICKLE_UNTIL_MS = 10_000;
-const TRICKLE_EVERY_STEPS = 3;
+const TRICKLE_EVERY_STEPS = 2;
 
 /**
  * Grains the sieve lets through per step: a steady trickle plus a share of the
@@ -44,6 +50,16 @@ export const silt: Mode = {
   look: { ghost: 55, noise: 12 },
   holds: true,
   create({ columns, rows, random }) {
+    const scale = columns / TUNED_COLUMNS;
+    const pourGrains = Math.round(POUR_GRAINS * scale);
+    const pourSpread = POUR_SPREAD * scale;
+    const tapCells = DOUBLE_TAP_CELLS * scale;
+    // A grain falls one cell per sweep, so sweeping once per cell-size ratio
+    // keeps its speed in px/s.
+    const sweepsPerStep = Math.max(1, Math.round(scale));
+    const drainBase = DRAIN_BASE * scale;
+    // The tray holds scale² as many grains, so a tip-out needs scale² the rate.
+    const tippedDrain = Math.round(TIPPED_DRAIN * scale * scale);
     const grains = new Uint8Array(columns * rows);
     let count = 0;
     let gravity = 1;
@@ -61,6 +77,12 @@ export const silt: Mode = {
     let right = columns - 1;
     let top = 0;
     let bottom = rows - 1;
+    // Rows that may hold grains, so a sweep and a render skip the empty rest.
+    // Both only ever hold a superset of the grains, never fewer.
+    let minRow = rows;
+    let maxRow = -1;
+    // Set once a sweep moves nothing; anything that can move a grain clears it.
+    let settled = false;
 
     const put = (x: number, y: number) => {
       const cx = Math.floor(x);
@@ -70,14 +92,17 @@ export const silt: Mode = {
       if (grains[i] === 0) {
         grains[i] = 1 + Math.floor(random() * 3);
         count += 1;
+        settled = false;
+        minRow = Math.min(minRow, cy);
+        maxRow = Math.max(maxRow, cy);
       }
     };
 
     const pour = (x: number, y: number) => {
-      for (let k = 0; k < POUR_GRAINS; k += 1) {
+      for (let k = 0; k < pourGrains; k += 1) {
         put(
-          x + (random() - 0.5) * POUR_SPREAD,
-          y + (random() - 0.5) * POUR_SPREAD,
+          x + (random() - 0.5) * pourSpread,
+          y + (random() - 0.5) * pourSpread,
         );
       }
     };
@@ -118,6 +143,7 @@ export const silt: Mode = {
           grains[i] = 0;
           count -= 1;
           allowed -= 1;
+          settled = false;
         }
       }
     };
@@ -142,6 +168,8 @@ export const silt: Mode = {
     const seedDune = () => {
       grains.fill(0);
       count = 0;
+      minRow = rows;
+      maxRow = -1;
       const width = Math.round((right - left + 1) * DUNE_WIDTH_SHARE);
       const height = width * DUNE_HEIGHT_SHARE;
       const start = Math.round((left + right - width) / 2);
@@ -156,9 +184,12 @@ export const silt: Mode = {
     const tap = (press: { at: number; x: number; y: number }) => {
       if (
         press.at - lastTap.at < DOUBLE_TAP_MS &&
-        Math.hypot(press.x - lastTap.x, press.y - lastTap.y) < DOUBLE_TAP_CELLS
+        Math.hypot(press.x - lastTap.x, press.y - lastTap.y) < tapCells
       ) {
         gravity = -gravity;
+        settled = false;
+        minRow = top;
+        maxRow = bottom;
         tipped = gravity < 0;
         lastTap = { at: -Infinity, x: 0, y: 0 };
       } else {
@@ -183,6 +214,7 @@ export const silt: Mode = {
           right !== nextRight ||
           top !== nextTop ||
           bottom !== nextBottom;
+        if (moved) settled = false;
         left = nextLeft;
         right = nextRight;
         top = nextTop;
@@ -227,31 +259,54 @@ export const silt: Mode = {
         ) {
           const wander = Math.sin(now / 5200) * (right - left) * 0.34;
           put(
-            (left + right) / 2 + wander + (random() - 0.5) * 1.5,
+            (left + right) / 2 +
+              wander +
+              (random() - 0.5) * TRICKLE_JITTER * scale,
             gravity > 0 ? top : bottom,
           );
         }
 
         const floorRow = gravity > 0 ? bottom : top;
-        const farRow = gravity > 0 ? top : bottom;
-        for (let y = floorRow - gravity; y !== farRow - gravity; y -= gravity) {
-          const row = y * columns;
-          const next = (y + gravity) * columns;
-          const forward = (y + sweep) & 1;
-          for (let k = 0; k < right - left + 1; k += 1) {
-            const x = forward ? left + k : right - k;
-            if (grains[row + x] !== 0) fall(x, row, next);
+        let farthest = floorRow;
+        let swept = false;
+        for (let s = 0; !settled && s < sweepsPerStep; s += 1) {
+          const farRow =
+            gravity > 0
+              ? Math.min(bottom, Math.max(top, minRow))
+              : Math.max(top, Math.min(bottom, maxRow));
+          farthest = floorRow;
+          swept = true;
+          let shifted = false;
+          for (
+            let y = floorRow - gravity;
+            y !== farRow - gravity;
+            y -= gravity
+          ) {
+            const row = y * columns;
+            const next = (y + gravity) * columns;
+            const forward = (y + sweep + s) & 1;
+            for (let k = 0; k < right - left + 1; k += 1) {
+              const x = forward ? left + k : right - k;
+              if (grains[row + x] === 0) continue;
+              farthest = y;
+              if (fall(x, row, next)) shifted = true;
+            }
           }
+          settled = !shifted;
+        }
+        if (swept) {
+          minRow = Math.min(farthest, floorRow);
+          maxRow = Math.max(farthest, floorRow);
         }
 
         if (tipped) {
-          sieve(floorRow * columns, TIPPED_DRAIN);
+          sieve(floorRow * columns, tippedDrain);
           if (count === 0) {
             gravity = 1;
             tipped = false;
           }
         } else if (!pouring) {
-          owed += DRAIN_BASE + count * DRAIN_PER_GRAIN;
+          owed += drainBase + count * DRAIN_PER_GRAIN;
           const whole = Math.floor(owed);
           owed -= whole;
           sieve(floorRow * columns, whole);
@@ -259,7 +314,10 @@ export const silt: Mode = {
       },
 
       render(field) {
-        for (let i = 0; i < field.length; i += 1) field[i] = SHADES[grains[i]];
+        const end = Math.min(field.length, (maxRow + 1) * columns);
+        for (let i = Math.max(0, minRow) * columns; i < end; i += 1) {
+          field[i] = SHADES[grains[i]];
+        }
       },
 
       pace() {
