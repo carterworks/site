@@ -434,9 +434,9 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   /**
-   * The bitmap's pixels, copied through a canvas kept on the CPU: reading back
-   * the consumer's own canvas could force it off the GPU, and every pass may
-   * then edit the copy freely.
+   * The bitmap's pixels, copied through a 2D canvas kept on the CPU: the
+   * consumer's context may not be 2D, so it has no `getImageData` to read, and
+   * reading back a GPU-backed one could force it off the GPU.
    */
   #read(source: OffscreenCanvas) {
     if (this.#readback === undefined) {
