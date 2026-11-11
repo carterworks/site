@@ -240,6 +240,7 @@ export class PixelBackdrop extends HTMLElement {
   #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
   #rows = 0;
+  #chosen = MODES[0];
   #mode?: ModeInstance;
   /** The mode clock, advanced in whole steps. */
   #time = 0;
@@ -282,12 +283,7 @@ export class PixelBackdrop extends HTMLElement {
       bottom: this.#rows,
     };
     this.#options ??= readDefaults();
-    this.#mode ??= MODES[0].create({
-      columns: this.#columns,
-      rows: this.#rows,
-      random: mulberry32(Math.random() * 2 ** 32),
-      options: this.#options,
-    });
+    this.#mode ??= this.#createMode();
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {
@@ -340,6 +336,28 @@ export class PixelBackdrop extends HTMLElement {
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
     this.configure(readDefaults());
+  }
+
+  /**
+   * Switch to a registered mode at once, starting it fresh. An unknown id is
+   * ignored.
+   */
+  setMode(id: string) {
+    const mode = MODES.find((candidate) => candidate.id === id);
+    if (mode === undefined) return;
+    this.#chosen = mode;
+    if (this.#canvas === undefined) return;
+    this.#mode = this.#createMode();
+    this.#wake();
+  }
+
+  #createMode() {
+    return this.#chosen.create({
+      columns: this.#columns,
+      rows: this.#rows,
+      random: mulberry32(Math.random() * 2 ** 32),
+      options: this.#options,
+    });
   }
 
   #start() {

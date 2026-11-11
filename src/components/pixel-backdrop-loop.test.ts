@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { BackdropInput, ModeSetup, Pace } from "./backdrop-modes/mode";
+import type { BackdropInput, Mode, Pace } from "./backdrop-modes/mode";
 import "./pixel-backdrop";
 
 const motion = vi.hoisted(() => {
@@ -37,22 +37,30 @@ const probe = vi.hoisted(() => ({
 
 vi.mock("./backdrop-modes", async (importOriginal) => {
   const { MODES } = await importOriginal<typeof import("./backdrop-modes")>();
-  return {
-    MODES: MODES.map((mode) => ({
-      ...mode,
-      create(setup: ModeSetup) {
-        const instance = mode.create(setup);
-        return {
-          ...instance,
-          step(input: BackdropInput, now: number) {
-            probe.input = input;
-            instance.step(input, now);
-          },
-          pace: () => probe.pace ?? instance.pace(),
-        };
-      },
-    })),
+  const solid: Mode = {
+    id: "solid",
+    label: "Solid",
+    create: () => ({
+      step() {},
+      render: (field) => field.fill(1),
+      pace: () => "still",
+    }),
   };
+  const watched = MODES.map((mode): Mode => ({
+    ...mode,
+    create(setup) {
+      const instance = mode.create(setup);
+      return {
+        ...instance,
+        step(input, now) {
+          probe.input = input;
+          instance.step(input, now);
+        },
+        pace: () => probe.pace ?? instance.pace(),
+      };
+    },
+  }));
+  return { MODES: [...watched, solid] };
 });
 
 const context = {
@@ -410,4 +418,18 @@ test("the mode is told which cells the viewport shows of the overhanging grid", 
     right: cells(window.innerWidth + 128 + 1),
     bottom: cells(window.innerHeight + 256 + 1),
   });
+});
+
+test("setMode switches to another mode at once, and ignores an unknown id", async () => {
+  const backdrop = mount();
+  await vi.advanceTimersByTimeAsync(100);
+  expect(shownAt(40, 40)).toBe(255);
+
+  backdrop.setMode("solid");
+  await vi.advanceTimersByTimeAsync(20);
+  expect(shownAt(40, 40)).toBe(0);
+
+  backdrop.setMode("missing");
+  await vi.advanceTimersByTimeAsync(20);
+  expect(shownAt(40, 40)).toBe(0);
 });
