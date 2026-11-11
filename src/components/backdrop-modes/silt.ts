@@ -125,13 +125,38 @@ export const silt: Mode = {
       return true;
     };
 
+    // Steps sideways, level, to the edge of a step whose far side is free, so
+    // the grain tumbles down next sweep; a heap then rests at about half the
+    // slope that diagonal slips alone leave.
+    const creep = (x: number, row: number, next: number, side: number) => {
+      const nx = x + side;
+      const far = nx + side;
+      if (
+        far < left ||
+        far > right ||
+        grains[next + nx] === 0 ||
+        grains[row + nx] !== 0 ||
+        grains[row + far] !== 0 ||
+        grains[next + far] !== 0
+      ) {
+        return false;
+      }
+      slide(row + x, row + nx);
+      return true;
+    };
+
     const fall = (x: number, row: number, next: number) => {
       if (grains[next + x] === 0) {
         slide(row + x, next + x);
         return true;
       }
       const side = random() < 0.5 ? -1 : 1;
-      return slip(x, row, next, x + side) || slip(x, row, next, x - side);
+      return (
+        slip(x, row, next, x + side) ||
+        slip(x, row, next, x - side) ||
+        creep(x, row, next, side) ||
+        creep(x, row, next, -side)
+      );
     };
 
     const sieve = (floor: number, allowed: number) => {
