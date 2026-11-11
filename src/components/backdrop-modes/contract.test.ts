@@ -73,8 +73,17 @@ function feed(input: BackdropInput, i: number, now: number) {
   if (i < 120 || i === 135) input.lastInputAt = now;
 }
 
+/** Same as `feed`, but the pointer stops over empty space and never leaves. */
+function feedResting(input: BackdropInput, i: number, now: number) {
+  feed(input, i, now);
+  if (i >= INPUT_STEPS) input.pointer = across(0.5);
+}
+
 /** One mode instance driven like the host drives it. */
-function start(mode: Mode) {
+function start(
+  mode: Mode,
+  { startAt = 0, lastInputAt = -Infinity, script = feed } = {},
+) {
   const random = mulberry32(SEED);
   const instance = mode.create({
     columns: COLUMNS,
@@ -86,14 +95,14 @@ function start(mode: Mode) {
     options: readDefaults(),
   });
   const field = new Float32Array(COLUMNS * ROWS);
-  const input: BackdropInput = { lastInputAt: -Infinity, visible: VISIBLE };
-  let now = 0;
+  const input: BackdropInput = { lastInputAt, visible: VISIBLE };
+  let now = startAt;
   return {
     field,
     /** Steps and renders the script's `i`th step, returning the pace between. */
     frame(i: number) {
       now += STEP;
-      feed(input, i, now);
+      script(input, i, now);
       instance.step(input, now);
       const pace = instance.pace();
       field.fill(0);
@@ -275,6 +284,38 @@ describe.each(MODES.map((mode) => [mode.id, mode] as const))(
       }
       expect(restless).toEqual([]);
     });
+
+    test("rests within the settle bound with the pointer resting over empty space", () => {
+      const session = start(mode, { script: feedResting });
+      const resting = new Set<Pace>(["still", RESTING_PACE[id] ?? "still"]);
+      const settledFrom = INPUT_STEPS + Math.ceil(SETTLE_MS / STEP);
+      const restless: Pace[] = [];
+      for (let i = 0; i < SESSION_STEPS; i += 1) {
+        const pace = session.frame(i);
+        if (i >= settledFrom && !resting.has(pace)) restless.push(pace);
+      }
+      expect(restless).toEqual([]);
+    });
+
+    test.each([0, 30_000])(
+      "created a minute in with the last input at %i ms, it stays in range and settles with no input",
+      (lastInputAt) => {
+        const session = start(mode, {
+          startAt: 60_000,
+          lastInputAt,
+          script: () => {},
+        });
+        const resting = new Set<Pace>(["still", RESTING_PACE[id] ?? "still"]);
+        const settledFrom = Math.ceil(SETTLE_MS / STEP);
+        const restless: Pace[] = [];
+        for (let i = 0; i < SESSION_STEPS; i += 1) {
+          const pace = session.frame(i);
+          expect(inRange(session.field)).toBe(true);
+          if (i >= settledFrom && !resting.has(pace)) restless.push(pace);
+        }
+        expect(restless).toEqual([]);
+      },
+    );
 
     test("allocates no buffers or large arrays per frame once warmed up", () => {
       const session = start(mode);

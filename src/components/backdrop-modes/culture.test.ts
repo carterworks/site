@@ -127,3 +127,24 @@ test("the dish follows the visible rect", () => {
   expect(rim).toBeGreaterThan(0);
   expect(field[5 * columns + 40]).toBe(0);
 });
+
+test("a dish created a minute into the clock with stale input is not frozen empty", () => {
+  const mode = culture.create({
+    columns,
+    rows,
+    random: mulberry32(1),
+    options: {} as never,
+  });
+  const input: BackdropInput = {
+    lastInputAt: 0,
+    visible: { left: 0, top: 0, right: columns, bottom: rows },
+  };
+  const field = new Float32Array(columns * rows);
+  let now = 60_000;
+  for (let i = 0; i < 600; i += 1) {
+    now += STEP;
+    mode.step(input, now);
+  }
+  mode.render(field);
+  expect(field.some((value) => value === 1)).toBe(true);
+});
