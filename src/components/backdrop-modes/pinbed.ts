@@ -1,8 +1,12 @@
 import { clamp } from "../emulated-canvas-limits";
-import type { CellRect, Mode } from "./mode";
+import { GRID_SIZE, type CellRect, type Mode } from "./mode";
 
-/** The prototype was tuned on a 48-cell grid; radii and speeds scale to 80. */
-const SCALE = 80 / 48;
+/**
+ * The prototype tile was tuned at 48 cells across about 360 px; on a 1440 px
+ * viewport the site's cells are GRID_SIZE across it. Radii and speeds in cells
+ * scale by the ratio of those cell pitches so they cover the same pixels.
+ */
+const SCALE = 360 / 48 / (1440 / GRID_SIZE);
 const HOVER_RADIUS = 3.4 * SCALE;
 const PRESS_RADIUS = 5.5 * SCALE;
 const PEBBLE_RADIUS = 3 * SCALE;
@@ -16,6 +20,12 @@ const GRAB = 0.3;
 const HOLD_MS = 700;
 const PEBBLE_DELAY_MS = 4000;
 const PEBBLE_JITTER_MS = 4000;
+/**
+ * Cells per step. Matching the tile in pixels would take over 20 s to cross a
+ * 1440 px viewport, past the 30 s the contract allows the mode to settle in.
+ */
+const PEBBLE_SPEED = 0.2;
+const PEBBLE_SPEED_JITTER = 0.08;
 /** The dent's far wall is lit above this rise over its up-left neighbour. */
 const LIT_RISE = 0.04 / SCALE;
 
@@ -92,7 +102,7 @@ export const pinbed: Mode = {
       const fromLeft = random() < 0.5;
       const margin = 4 * SCALE;
       const height = visible.bottom - visible.top;
-      const speed = (0.12 + random() * 0.06) * SCALE;
+      const speed = PEBBLE_SPEED + random() * PEBBLE_SPEED_JITTER;
       pebble = {
         x: fromLeft ? visible.left - margin : visible.right + margin,
         y: visible.top + height * (0.15 + random() * 0.7),
