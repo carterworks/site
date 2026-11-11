@@ -350,18 +350,11 @@ export class PixelBackdrop extends HTMLElement {
   #start() {
     if (this.#context !== undefined) return;
     if (reducedMotion.matches || !this.#options.enabled) return;
-    const canvas = this.#canvas;
-    if (canvas === undefined) return;
-    // The component may not be defined yet; wait, then take its context.
-    customElements.whenDefined("emulated-canvas").then(() => {
-      if (!this.isConnected || this.#frame !== undefined) return;
-      if (reducedMotion.matches || !this.#options.enabled) return;
-      const context = canvas.getContext("2d");
-      if (context === null) return;
-      this.#context = context;
-      this.#quietFrames = 0;
-      this.#frame = requestAnimationFrame(this.#tick);
-    });
+    const context = this.#canvas?.getContext("2d");
+    if (context === null || context === undefined) return;
+    this.#context = context;
+    this.#quietFrames = 0;
+    this.#frame = requestAnimationFrame(this.#tick);
   }
 
   #stop() {
