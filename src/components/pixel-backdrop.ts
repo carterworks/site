@@ -1,3 +1,5 @@
+import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
+
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
  * feeds it pointer input: moving the mouse drags a smeared trail, clicking
@@ -150,6 +152,7 @@ const DEV = import.meta.env.DEV;
 /** The bits of `<emulated-canvas>` this element needs. */
 type EmulatedCanvasElement = HTMLElement & {
   getContext(id: "2d"): CanvasRenderingContext2D | null;
+  present(): void;
 };
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -308,6 +311,8 @@ class PixelBackdrop extends HTMLElement {
   #canvas?: EmulatedCanvasElement;
   #context?: CanvasRenderingContext2D;
   #frame?: number;
+  #idleTimer?: number;
+  #quietFrames = 0;
   #columns = 0;
   #rows = 0;
   #ripples: { x: number; y: number; born: number }[] = [];
@@ -332,6 +337,7 @@ class PixelBackdrop extends HTMLElement {
     const canvas = this.querySelector<EmulatedCanvasElement>("emulated-canvas");
     if (canvas === null) return;
     this.#canvas = canvas;
+    canvas.dataset.manual = "";
     this.#columns = Number(canvas.dataset.width) || 64;
     this.#rows = Number(canvas.dataset.height) || 64;
     this.#options = { ...readDefaults(), ...this.#load() };
@@ -363,8 +369,10 @@ class PixelBackdrop extends HTMLElement {
   configure(partial: Partial<PixelBackdropOptions>) {
     this.#options = { ...this.#options, ...partial };
     this.#apply();
-    if (this.#options.enabled) this.#start();
-    else this.#stop();
+    if (this.#options.enabled) {
+      this.#start();
+      this.#wake();
+    } else this.#stop();
     this.#save();
   }
 
@@ -377,25 +385,27 @@ class PixelBackdrop extends HTMLElement {
   }
 
   #start() {
-    if (this.#frame !== undefined) return;
+    if (this.#context !== undefined) return;
     if (reducedMotion.matches || !this.#options.enabled) return;
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    // The component may not be defined yet; wait, then take its context. The
-    // first `getContext` is what starts the component mirroring each frame.
+    // The component may not be defined yet; wait, then take its context.
     customElements.whenDefined("emulated-canvas").then(() => {
       if (!this.isConnected || this.#frame !== undefined) return;
       if (reducedMotion.matches || !this.#options.enabled) return;
       const context = canvas.getContext("2d");
       if (context === null) return;
       this.#context = context;
+      this.#quietFrames = 0;
       this.#frame = requestAnimationFrame(this.#tick);
     });
   }
 
   #stop() {
-    if (this.#frame !== undefined) cancelAnimationFrame(this.#frame);
+    cancelAnimationFrame(this.#frame ?? 0);
+    clearTimeout(this.#idleTimer);
     this.#frame = undefined;
+    this.#idleTimer = undefined;
     this.#context = undefined;
   }
 
@@ -438,9 +448,38 @@ class PixelBackdrop extends HTMLElement {
   }
 
   #tick = (now: number) => {
+    this.#frame = undefined;
+    const busy = this.#isTrailing(now) || this.#ripples.length > 0;
+    this.#quietFrames = busy ? 0 : this.#quietFrames + 1;
+
     this.#draw(now);
+    this.#canvas?.present();
+
+    if (this.#quietFrames < settleFrames(this.#options.ghost)) {
+      this.#frame = requestAnimationFrame(this.#tick);
+    } else {
+      this.#idleTimer = window.setTimeout(this.#resume, IDLE_FRAME_INTERVAL);
+    }
+  };
+
+  /** Input ends the idle wait early, so it never waits on the slow redraw. */
+  #wake = () => {
+    this.#quietFrames = 0;
+    this.#resume();
+  };
+
+  #resume = () => {
+    if (this.#context === undefined || this.#frame !== undefined) return;
+    clearTimeout(this.#idleTimer);
+    this.#idleTimer = undefined;
     this.#frame = requestAnimationFrame(this.#tick);
   };
+
+  #isTrailing(now: number) {
+    return (
+      this.#pointer.active && now - this.#pointer.moved < this.#options.trail
+    );
+  }
 
   #draw(now: number) {
     const context = this.#context;
@@ -458,7 +497,7 @@ class PixelBackdrop extends HTMLElement {
     }
 
     const pointer = this.#pointer;
-    if (pointer.active && now - pointer.moved < this.#options.trail) {
+    if (this.#isTrailing(now)) {
       context.strokeStyle = ink;
       context.fillStyle = ink;
       context.lineWidth = 1;
@@ -579,6 +618,7 @@ class PixelBackdrop extends HTMLElement {
     pointer.y = cell.y;
     pointer.moved = performance.now();
     pointer.active = true;
+    this.#wake();
   };
 
   #onPointerLeave = () => {
@@ -596,6 +636,7 @@ class PixelBackdrop extends HTMLElement {
 
     this.#ripples.push({ x, y, born: performance.now() });
     if (this.#ripples.length > MAX_RIPPLES) this.#ripples.shift();
+    this.#wake();
   };
 
   #onResize = () => {
