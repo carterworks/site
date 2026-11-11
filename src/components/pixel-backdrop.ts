@@ -353,6 +353,7 @@ class PixelBackdrop extends HTMLElement {
     this.#options = readDefaults();
     this.#apply();
     this.#start();
+    this.#wake();
   }
 
   #start() {
@@ -431,10 +432,15 @@ class PixelBackdrop extends HTMLElement {
 
     if (this.#quietFrames < settleFrames(this.#options.ghost)) {
       this.#frame = requestAnimationFrame(this.#tick);
-    } else {
+    } else if (this.#isDrifting()) {
       this.#idleTimer = window.setTimeout(this.#resume, IDLE_FRAME_INTERVAL);
     }
   };
+
+  /** A static frame has nothing left to redraw until input or `configure`. */
+  #isDrifting() {
+    return this.#options.noise > 0 && this.#options.noiseSpeed > 0;
+  }
 
   /** Input ends the idle wait early, so it never waits on the slow redraw. */
   #wake = () => {
