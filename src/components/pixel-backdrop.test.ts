@@ -1,5 +1,12 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { gridCoordinate } from "./pixel-backdrop";
+
+afterEach(() => {
+  document.body.replaceChildren();
+  document.head.replaceChildren();
+  document.documentElement.removeAttribute("style");
+  document.body.removeAttribute("style");
+});
 
 // 80 cells of 14px with 5px gaps: cells start every 19px, and the box ends at
 // the last cell.
@@ -68,7 +75,5 @@ test("the grid reads the same whole-number size the canvas bitmap uses", () => {
   document.body.append(backdrop);
   backdrop.configure({ autoFit: true });
 
-  expect(canvas.style.getPropertyValue("--emulated-canvas-scale")).toContain(
-    "/ 80,",
-  );
+  expect(canvas.width).toBe(80);
 });
