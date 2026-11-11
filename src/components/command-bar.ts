@@ -1,19 +1,31 @@
-import {
-  nextScheme,
-  osScheme,
-  saveScheme,
-  type Scheme,
-} from "../lib/color-scheme";
+import { createBackdropMode } from "./backdrop-mode-setting";
+import { createThemeSetting } from "./theme-setting";
+
+// Module-level so a ClientRouter swap, which recreates the element, keeps
+// which reset entries are on offer; only a full reload forgets them.
+export const settings = {
+  theme: createThemeSetting(),
+  backdrop: createBackdropMode(),
+};
+
+const reducedMotion = "(prefers-reduced-motion: reduce)";
+const colorScheme = "(prefers-color-scheme: dark)";
 
 class CommandBarElement extends HTMLElement {
+  cleanup?: () => void;
+
+  disconnectedCallback() {
+    this.cleanup?.();
+  }
+
   connectedCallback() {
     if (this.dataset.ready) return;
     const dialog = this.querySelector<HTMLDialogElement>("dialog");
     const trigger = this.querySelector<HTMLInputElement>(".command-trigger");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-    const choices = [
-      ...this.querySelectorAll<HTMLButtonElement>("[data-scheme-choice]"),
+    const rows = [
+      ...this.querySelectorAll<HTMLButtonElement>("[data-cycle-setting]"),
     ];
     const rootPanel = this.querySelector<HTMLElement>('[data-panel="root"]');
     const settingsPanel = this.querySelector<HTMLElement>(
@@ -24,7 +36,7 @@ class CommandBarElement extends HTMLElement {
       !trigger ||
       !back ||
       !pageLinks ||
-      !choices.length ||
+      !rows.length ||
       !rootPanel ||
       !settingsPanel
     ) {
@@ -140,38 +152,35 @@ class CommandBarElement extends HTMLElement {
       });
     };
 
-    // An empty inline colorScheme means no override, i.e. system.
-    const override = () => document.documentElement.style.colorScheme;
-
-    const updateSchemeChoices = () => {
-      choices.forEach((choice) => {
-        const name = choice.dataset.schemeChoice;
-        choice.setAttribute(
-          "aria-pressed",
-          String(name === (override() || "system")),
+    const renderRows = () => {
+      rows.forEach((row) => {
+        const name = row.dataset.cycleSetting as keyof typeof settings;
+        const value = row.querySelector(".command-detail");
+        if (!value) return;
+        const label = settings[name].label();
+        const paused = name === "backdrop" && matchMedia(reducedMotion).matches;
+        value.textContent = paused ? `${label} (paused)` : label;
+        row.setAttribute(
+          "aria-label",
+          `${row.dataset.title}: ${label}${paused ? " (paused for reduced motion)" : ""}. Activate to change.`,
         );
-        if (name === "system") choice.textContent = `System (${osScheme()})`;
       });
     };
 
-    const chooseScheme = (name: string | undefined) => {
-      saveScheme(
-        document.documentElement,
-        name === "system" ? null : (name as Scheme),
-      );
-      updateSchemeChoices();
+    const cycleSetting = (name: keyof typeof settings) => {
+      settings[name].cycle();
+      renderRows();
     };
 
-    const toggleAppearance = () =>
-      chooseScheme(
-        nextScheme((override() as Scheme) || osScheme(), osScheme()) ??
-          "system",
-      );
+    // The label alone follows the OS; storage is never touched by it.
+    const osScheme = matchMedia(colorScheme);
+    osScheme.addEventListener?.("change", renderRows);
+    this.cleanup = () => osScheme.removeEventListener?.("change", renderRows);
 
     const prepare = () => {
       if (dialog.matches(":popover-open")) return;
       rebuildPageLinks();
-      updateSchemeChoices();
+      renderRows();
       dialog.showPopover();
       showPanel("root");
     };
@@ -213,7 +222,7 @@ class CommandBarElement extends HTMLElement {
       if (event.key === "Enter") {
         event.preventDefault();
         if (event.shiftKey && activePanel === "settings") {
-          toggleAppearance();
+          cycleSetting("theme");
           return;
         }
         visibleCommands()
@@ -234,7 +243,7 @@ class CommandBarElement extends HTMLElement {
         activePanel === "settings"
       ) {
         event.preventDefault();
-        toggleAppearance();
+        cycleSetting("theme");
       }
     });
     dialog.addEventListener("toggle", (event) => {
@@ -252,11 +261,8 @@ class CommandBarElement extends HTMLElement {
       if (!(event.target instanceof Element)) return;
       const target = event.target;
       if (target.closest("[data-settings]")) showPanel("settings");
-      const choice = target.closest<HTMLElement>("[data-scheme-choice]");
-      if (choice) {
-        chooseScheme(choice.dataset.schemeChoice);
-        dialog.hidePopover();
-      }
+      const row = target.closest<HTMLElement>("[data-cycle-setting]");
+      if (row) cycleSetting(row.dataset.cycleSetting as keyof typeof settings);
     });
   }
 }

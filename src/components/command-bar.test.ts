@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import "./command-bar";
+import { createBackdropMode } from "./backdrop-mode-setting";
+import { MODES } from "./backdrop-modes";
+import { settings } from "./command-bar";
+import { createThemeSetting } from "./theme-setting";
 
 const markup = `
   <a href="/blog/post/">Article on this page</a>
@@ -23,9 +26,8 @@ const markup = `
       </div>
       <div id="command-settings-menu" data-panel="settings" hidden>
         <section data-group>
-          <button type="button" aria-pressed="false" data-command data-scheme-choice="system" data-search="system appearance theme">System</button>
-          <button type="button" aria-pressed="false" data-command data-scheme-choice="light" data-search="light appearance theme">Light</button>
-          <button type="button" aria-pressed="false" data-command data-scheme-choice="dark" data-search="dark appearance theme">Dark</button>
+          <button type="button" data-command data-cycle-setting="theme" data-title="Theme" data-search="theme dark light system"><span>Theme</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="backdrop" data-title="Backdrop" data-search="backdrop shimmer"><span>Backdrop</span><span class="command-detail"></span></button>
         </section>
         <output class="empty" hidden>No matching commands</output>
       </div>
@@ -33,12 +35,25 @@ const markup = `
   </command-bar>
 `;
 
+let osScheme: "light" | "dark" = "light";
+let reducedMotion = false;
+let osListeners: (() => void)[] = [];
+const setMode = vi.fn();
+
 function setupCommandBar() {
   document.documentElement.style.colorScheme = "";
   localStorage.clear();
+  setMode.mockClear();
+  Object.assign(settings, {
+    theme: createThemeSetting(),
+    backdrop: createBackdropMode(() => 0, new EventTarget()),
+  });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
+  const backdrop = document.createElement("pixel-backdrop");
+  Object.assign(backdrop, { setMode });
+  document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
   if (!dialog || typeof dialog.showPopover === "function") return;
@@ -56,14 +71,21 @@ function setupCommandBar() {
   };
 }
 
-function choice(name: "system" | "light" | "dark") {
-  return getElement<HTMLButtonElement>(`[data-scheme-choice="${name}"]`);
+function row(name: "theme" | "backdrop") {
+  return getElement<HTMLButtonElement>(`[data-cycle-setting="${name}"]`);
 }
 
+const value = (name: "theme" | "backdrop") =>
+  row(name).querySelector(".command-detail")?.textContent;
+
 function osPrefers(scheme: "light" | "dark") {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: query.includes("dark") === (scheme === "dark"),
-  }));
+  osScheme = scheme;
+  osListeners.forEach((listener) => listener());
+}
+
+function openSettings() {
+  getElement<HTMLInputElement>(".command-trigger").click();
+  getElement<HTMLButtonElement>("[data-settings]").click();
 }
 
 function getElement<T extends Element>(selector: string) {
@@ -83,7 +105,22 @@ function pressKey(target: Element, key: string, init?: KeyboardEventInit) {
   );
 }
 
-beforeEach(setupCommandBar);
+beforeEach(() => {
+  osScheme = "light";
+  reducedMotion = false;
+  osListeners = [];
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    get matches() {
+      return query.includes("reduced-motion")
+        ? reducedMotion
+        : query.includes("dark") === (osScheme === "dark");
+    },
+    addEventListener: (_: string, listener: () => void) =>
+      osListeners.push(listener),
+    removeEventListener: () => {},
+  }));
+  setupCommandBar();
+});
 afterEach(() => vi.unstubAllGlobals());
 
 describe("command bar", () => {
@@ -120,23 +157,73 @@ describe("command bar", () => {
     ).toBe(false);
   });
 
-  test("opens settings and chooses a scheme", () => {
-    getElement<HTMLInputElement>(".command-trigger").click();
-    getElement<HTMLButtonElement>("[data-settings]").click();
+  test("opens settings showing the current theme and backdrop", () => {
+    openSettings();
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
-    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
-      false,
+    expect(value("theme")).toBe("Light");
+    expect(value("backdrop")).toBe(MODES[0].label);
+    expect(row("theme").getAttribute("aria-label")).toBe(
+      "Theme: Light. Activate to change.",
     );
-    const dark = choice("dark");
-    dark.click();
+  });
 
-    expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(localStorage.getItem("color-scheme")).toBe("dark");
-    expect(dark.getAttribute("aria-pressed")).toBe("true");
+  test("activating the theme row applies the opposite and keeps the dialog open", () => {
+    osPrefers("dark");
+    openSettings();
+
+    row("theme").click();
+
+    expect(document.documentElement.style.colorScheme).toBe("light");
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+    expect(value("theme")).toBe("Light");
     expect(
       getElement<HTMLDialogElement>("dialog").matches(":popover-open"),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  test("the theme row offers System after a choice and clears storage on it", () => {
+    osPrefers("dark");
+    openSettings();
+
+    row("theme").click();
+    row("theme").click();
+    row("theme").click();
+
+    expect(value("theme")).toBe("System");
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+    expect(document.documentElement.style.colorScheme).toBe("");
+  });
+
+  test("an OS change updates the label but not storage", () => {
+    osPrefers("dark");
+    openSettings();
+    expect(value("theme")).toBe("Dark");
+
+    osPrefers("light");
+
+    expect(value("theme")).toBe("Light");
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+  });
+
+  test("activating the backdrop row stores and applies the next mode", () => {
+    openSettings();
+
+    row("backdrop").click();
+
+    expect(localStorage.getItem("backdrop-mode")).toBe(MODES[1].id);
+    expect(setMode).toHaveBeenLastCalledWith(MODES[1].id);
+    expect(value("backdrop")).toBe(MODES[1].label);
+  });
+
+  test("the backdrop row notes that reduced motion pauses it", () => {
+    reducedMotion = true;
+    openSettings();
+
+    expect(value("backdrop")).toBe(`${MODES[0].label} (paused)`);
+    expect(row("backdrop").getAttribute("aria-label")).toContain(
+      "paused for reduced motion",
+    );
   });
 });
 
@@ -203,31 +290,21 @@ describe("command bar dialog", () => {
     expect(dialog.matches(":popover-open")).toBe(false);
   });
 
-  test("Shift+Enter toggles appearance without closing the dialog", () => {
-    getElement<HTMLInputElement>(".command-trigger").click();
-    getElement<HTMLButtonElement>("[data-settings]").click();
+  test("Shift+Enter advances the theme without closing the dialog", () => {
+    osPrefers("dark");
+    openSettings();
     const dialog = getElement<HTMLDialogElement>("dialog");
     const input = getElement<HTMLInputElement>("input");
 
     pressKey(input, "Enter", { shiftKey: true });
-
-    expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(choice("dark").getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+    expect(value("theme")).toBe("Light");
     expect(dialog.matches(":popover-open")).toBe(true);
-  });
-
-  test("Shift+Enter presses twice to return to system", () => {
-    osPrefers("dark");
-    getElement<HTMLInputElement>(".command-trigger").click();
-    getElement<HTMLButtonElement>("[data-settings]").click();
-    const input = getElement<HTMLInputElement>("input");
 
     pressKey(input, "Enter", { shiftKey: true });
-    expect(localStorage.getItem("color-scheme")).toBe("light");
-
     pressKey(input, "Enter", { shiftKey: true });
     expect(localStorage.getItem("color-scheme")).toBeNull();
-    expect(choice("system").getAttribute("aria-pressed")).toBe("true");
+    expect(value("theme")).toBe("System");
   });
 });
 
@@ -279,35 +356,9 @@ describe("command bar dynamic behavior", () => {
     expect(active.textContent).toBe("Home");
   });
 
-  test("choosing system clears the stored override and labels the OS result", () => {
-    osPrefers("dark");
-    choice("light").click();
-    expect(localStorage.getItem("color-scheme")).toBe("light");
-
-    getElement<HTMLInputElement>(".command-trigger").click();
-    expect(choice("light").getAttribute("aria-pressed")).toBe("true");
-    expect(choice("system").textContent).toBe("System (dark)");
-
-    choice("system").click();
-
-    expect(localStorage.getItem("color-scheme")).toBeNull();
-    expect(document.documentElement.style.colorScheme).toBe("");
-  });
-
-  test("an OS scheme change leaves the stored override alone", () => {
-    osPrefers("dark");
-    choice("light").click();
-
-    osPrefers("light");
-    getElement<HTMLInputElement>(".command-trigger").click();
-
-    expect(localStorage.getItem("color-scheme")).toBe("light");
-    expect(choice("system").textContent).toBe("System (light)");
-  });
-
   test("persists the manual scheme and applies it to the incoming document on swap", () => {
-    setupCommandBar();
-    choice("dark").click();
+    openSettings();
+    row("theme").click();
     const newDocument = document.implementation.createHTMLDocument();
 
     document.dispatchEvent(
