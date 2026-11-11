@@ -109,6 +109,7 @@ function bitmapSize(attribute: string | undefined): number {
 type EmulatedCanvasElement = HTMLElement & {
   getContext(id: "2d"): OffscreenCanvasRenderingContext2D | null;
   present(): void;
+  reset(): void;
 };
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -284,6 +285,7 @@ class PixelBackdrop extends HTMLElement {
   #frame?: number;
   #idleTimer?: number;
   #quietFrames = 0;
+  #wasDark?: boolean;
   #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
   #rows = 0;
@@ -476,6 +478,12 @@ class PixelBackdrop extends HTMLElement {
     if (context === undefined) return;
 
     const dark = prefersDark();
+    // The ghost pass would otherwise cross-fade the old scheme through grey
+    // while the page colour changes instantly.
+    if (this.#wasDark !== undefined && this.#wasDark !== dark) {
+      this.#canvas?.reset();
+    }
+    this.#wasDark = dark;
     const base = dark ? this.#options.darkBase : this.#options.lightBase;
     const ink = dark ? this.#options.darkInk : this.#options.lightInk;
 

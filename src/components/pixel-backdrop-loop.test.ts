@@ -20,6 +20,7 @@ class StubCanvas extends HTMLElement {
     return context;
   }
   present() {}
+  reset = vi.fn();
   getBoundingClientRect() {
     return new DOMRect(0, 0, 640, 640);
   }
@@ -84,6 +85,18 @@ test("a manual colour scheme change repaints a stopped static frame", async () =
   await Promise.resolve();
 
   expect(vi.getTimerCount()).toBeGreaterThan(0);
+  document.documentElement.style.colorScheme = "";
+});
+
+test("a colour scheme flip reseeds the canvas once, and a steady scheme does not", async () => {
+  const backdrop = mount();
+  const { reset } = backdrop.querySelector("emulated-canvas") as StubCanvas;
+  await vi.advanceTimersByTimeAsync(200);
+  expect(reset).not.toHaveBeenCalled();
+
+  document.documentElement.style.colorScheme = "dark";
+  await vi.advanceTimersByTimeAsync(200);
+  expect(reset).toHaveBeenCalledTimes(1);
   document.documentElement.style.colorScheme = "";
 });
 
