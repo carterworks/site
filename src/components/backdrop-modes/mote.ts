@@ -16,19 +16,13 @@ const CURLED_EXHALE = "...##...";
 const HEART = [".#.#.", "#####", ".###.", "..#."];
 const ZED = ["###", ".#.", "###"];
 const TUFTS = [3, 4, 11, 19, 20, 27, 34, 35, 43, 51, 52, 59, 66, 67, 75];
-
-/**
- * The cells across the grid the critter's motion and sprite were tuned on. A
- * finer grid draws every sprite pixel as a block, so the critter keeps its
- * on-screen size, pace and charm instead of shrinking to a speck.
- */
-const DESIGN_COLUMNS = 80;
+const TUFT_PERIOD = 80;
 
 const SPRITE_HALF_WIDTH = 4;
 /** Keeps the sprite's whole body, not only its centre, inside the visible span. */
 const EDGE_MARGIN = SPRITE_HALF_WIDTH + 1;
 /** Rows between the ground line and the bottom of the viewport. */
-const GROUND_INSET = 3;
+const GROUND_INSET = 7;
 
 const MAX_CRUMBS = 6;
 const EAT_DISTANCE = 1.5;
@@ -73,12 +67,6 @@ export const mote: Mode = {
   label: "Mote",
   look: { ghost: 55, noise: 10 },
   create({ columns, rows }) {
-    const scale = Math.max(1, Math.round(columns / DESIGN_COLUMNS));
-    // All logic runs in sprite pixels; only input and painting cross into cells.
-    const pixels = Math.floor(columns / scale);
-    const aim: Point = { x: 0, y: 0 };
-    const tapAt: Point = { x: 0, y: 0 };
-    const view: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
     const critter = {
       x: 0,
       hop: 0,
@@ -134,30 +122,19 @@ export const mote: Mode = {
       critter.breath = 0;
     };
 
-    const paint = (
-      field: Float32Array,
-      x: number,
-      y: number,
-      value: number,
-      overwrite: boolean,
-    ) => {
-      const cx = Math.round(x) * scale;
-      const cy = Math.round(y) * scale;
-      if (cx < 0 || cy < 0 || cx + scale > columns || cy + scale > rows) return;
-      for (let row = cy; row < cy + scale; row += 1) {
-        for (
-          let i = row * columns + cx;
-          i < row * columns + cx + scale;
-          i += 1
-        ) {
-          if (overwrite || field[i] < value) field[i] = value;
-        }
-      }
+    const plot = (field: Float32Array, x: number, y: number, value: number) => {
+      const cx = Math.round(x);
+      const cy = Math.round(y);
+      if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
+      const i = cy * columns + cx;
+      if (field[i] < value) field[i] = value;
     };
-    const plot = (field: Float32Array, x: number, y: number, value: number) =>
-      paint(field, x, y, value, false);
-    const set = (field: Float32Array, x: number, y: number, value: number) =>
-      paint(field, x, y, value, true);
+    const set = (field: Float32Array, x: number, y: number, value: number) => {
+      const cx = Math.round(x);
+      const cy = Math.round(y);
+      if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
+      field[cy * columns + cx] = value;
+    };
     /** One row can be swapped for another so animation frames need no copy. */
     const sprite = (
       field: Float32Array,
@@ -188,18 +165,9 @@ export const mote: Mode = {
     return {
       step({ pointer: hover, press, lastInputAt, visible }, time) {
         now = time;
-        if (hover) {
-          aim.x = hover.x / scale;
-          aim.y = hover.y / scale;
-          pointer = aim;
-        } else {
-          pointer = undefined;
-        }
-        view.left = visible.left / scale;
-        view.right = visible.right / scale;
-        view.bottom = visible.bottom / scale;
-        ground = Math.floor(view.bottom) - GROUND_INSET;
-        const bounds = reach(view);
+        pointer = hover;
+        ground = Math.floor(visible.bottom) - GROUND_INSET;
+        const bounds = reach(visible);
         if (!placed) {
           critter.x = bounds.min + 0.62 * (bounds.max - bounds.min);
           placed = true;
@@ -207,9 +175,7 @@ export const mote: Mode = {
 
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
-          tapAt.x = press.x / scale;
-          tapAt.y = press.y / scale;
-          if (over(tapAt)) {
+          if (over(press)) {
             if (critter.asleep) wake();
             else {
               startHop(-0.7);
@@ -218,8 +184,8 @@ export const mote: Mode = {
             }
           } else if (crumbs.length < MAX_CRUMBS) {
             crumbs.push({
-              x: clamp(tapAt.x, bounds.min, bounds.max),
-              y: Math.min(tapAt.y, ground - 1),
+              x: clamp(press.x, bounds.min, bounds.max),
+              y: Math.min(press.y, ground - 1),
               vy: 0,
               patience: CRUMB_PATIENCE,
               fade: CRUMB_FADE,
@@ -329,10 +295,12 @@ export const mote: Mode = {
       },
 
       render(field) {
-        for (let x = 0; x < pixels; x += 1) plot(field, x, ground, 0.5);
-        for (let k = 0; k < TUFTS.length; k += 1) {
-          plot(field, TUFTS[k], ground - 1, 0.35);
-          if (k % 3 === 0) plot(field, TUFTS[k], ground - 2, 0.35);
+        for (let x = 0; x < columns; x += 1) plot(field, x, ground, 0.5);
+        for (let x0 = 0; x0 < columns; x0 += TUFT_PERIOD) {
+          for (let k = 0; k < TUFTS.length; k += 1) {
+            plot(field, x0 + TUFTS[k], ground - 1, 0.35);
+            if (k % 3 === 0) plot(field, x0 + TUFTS[k], ground - 2, 0.35);
+          }
         }
         for (const crumb of crumbs) {
           plot(
