@@ -119,3 +119,47 @@ test("a pebble rolls only after input, then everything goes still", () => {
   expect(rolled).toBe(true);
   expect(mode.pace()).toBe("still");
 });
+
+test("an untouched bed shows a faint handprint in the lower-left margin and stays still", () => {
+  const { mode, field, run } = setup();
+  run(1);
+
+  const printed = field.filter((v) => v > 0).length;
+  expect(printed).toBeGreaterThan(100);
+  expect(field[55 * size + 12]).toBeGreaterThan(0);
+  expect(field[30 * size + 70]).toBe(0);
+  expect(Math.max(...field)).toBeLessThan(0.7);
+  expect(mode.pace()).toBe("still");
+});
+
+test("the handprint stays put for a minute without input", () => {
+  const { mode, field, run } = setup();
+  run(1);
+  const before = Float32Array.from(field);
+
+  run(60 * 60);
+
+  expect(field).toEqual(before);
+  expect(mode.pace()).toBe("still");
+});
+
+test("the first input lets the handprint spring back", () => {
+  const { mode, field, input, run } = setup();
+  run(1);
+  input.lastInputAt = 0;
+  run(200);
+
+  expect(field[55 * size + 12]).toBe(0);
+  expect(mode.pace()).toBe("idle");
+});
+
+test("an untouched handprint follows the visible rect when it changes", () => {
+  const { field, input, run } = setup();
+  run(1);
+
+  input.visible = { left: 0, top: 17.5, right: 80, bottom: 47.5 };
+  run(1);
+
+  expect(field[55 * size + 12]).toBe(0);
+  expect(field[40 * size + 12]).toBeGreaterThan(0);
+});

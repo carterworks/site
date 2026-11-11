@@ -1,5 +1,5 @@
 import { clamp } from "../emulated-canvas-limits";
-import type { Mode } from "./mode";
+import type { CellRect, Mode } from "./mode";
 
 /** The prototype was tuned on a 48-cell grid; radii and speeds scale to 80. */
 const SCALE = 80 / 48;
@@ -19,9 +19,23 @@ const PEBBLE_JITTER_MS = 4000;
 /** The dent's far wall is lit above this rise over its up-left neighbour. */
 const LIT_RISE = 0.04 / SCALE;
 
+const PALM_RADIUS = 7 * SCALE;
+const FINGER_RADIUS = 2.2 * SCALE;
+const FINGERS = [
+  [-6, -8],
+  [-2, -10],
+  [2, -10],
+  [6, -8],
+];
+const PRINT_DEPTH = 0.35;
+
 /**
  * A bed of pins. Pointer movement and presses push pins down; each springs
  * back at its own rate once left alone. A press held longer goes deeper.
+ *
+ * Until the first input, a faint handprint rests in the lower-left of the
+ * visible area as a hint that the bed is live. It is frozen, so the mode stays
+ * still; the first input lets it spring back like any other dent.
  *
  * The host cannot wake a still mode, so the ambient pebble is tied to input:
  * one rolls across the visible area a few seconds after the last input, then
@@ -45,6 +59,8 @@ export const pinbed: Mode = {
     let seenPointer: { x: number; y: number } | undefined;
     let holding = false;
     let dented = false;
+    let pristine = true;
+    let printedIn: CellRect | undefined;
     let now = 0;
 
     const push = (
@@ -71,12 +87,7 @@ export const pinbed: Mode = {
       }
     };
 
-    const launchPebble = (visible: {
-      left: number;
-      top: number;
-      right: number;
-      bottom: number;
-    }) => {
+    const launchPebble = (visible: CellRect) => {
       const fromLeft = random() < 0.5;
       const margin = 4 * SCALE;
       const height = visible.bottom - visible.top;
@@ -89,9 +100,40 @@ export const pinbed: Mode = {
       };
     };
 
+    const imprintHand = (visible: CellRect) => {
+      depth.fill(0);
+      const x = visible.left + 1.3 * PALM_RADIUS;
+      const y = visible.bottom - 1.3 * PALM_RADIUS;
+      push(x, y, PALM_RADIUS, PRINT_DEPTH, 1);
+      for (const [dx, dy] of FINGERS) {
+        push(x + dx * SCALE, y + dy * SCALE, FINGER_RADIUS, PRINT_DEPTH, 1);
+      }
+      printedIn = { ...visible };
+    };
+
+    const sameRect = (a: CellRect, b: CellRect) =>
+      a.left === b.left &&
+      a.top === b.top &&
+      a.right === b.right &&
+      a.bottom === b.bottom;
+
     return {
       step({ pointer, press, lastInputAt, visible }, time) {
         now = time;
+
+        if (
+          lastInputAt !== -Infinity ||
+          press !== undefined ||
+          pointer !== undefined
+        ) {
+          pristine = false;
+        }
+        if (pristine) {
+          if (printedIn === undefined || !sameRect(printedIn, visible)) {
+            imprintHand(visible);
+          }
+          return;
+        }
 
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
@@ -160,6 +202,7 @@ export const pinbed: Mode = {
       },
 
       pace() {
+        if (pristine) return "still";
         if (holding || dented || pebble !== undefined) return "active";
         return pebbleAt === undefined ? "still" : "idle";
       },
