@@ -1,8 +1,18 @@
 import type { BackdropInput, CellRect, Mode } from "./mode";
 
-/** The gallery prototype ran on a 48-cell grid; sizes and speeds scale from it. */
-const PROTOTYPE_COLUMNS = 48;
-const BLOB_COUNT = 6;
+/**
+ * The gallery tile is 48 cells across at about 8 px a cell with 6 blobs. On the
+ * site a cell is the viewport width over `columns`, so sizes and speeds, which
+ * the prototype tuned in cells, scale by the ratio of cell sizes at this width.
+ */
+const PROTOTYPE_CELL_PX = 8;
+const REFERENCE_WIDTH_PX = 1440;
+/**
+ * Fewer than the tile's 6 per area: every blob's slow tail adds to every cell,
+ * so on the whole viewport the same density merges into one mass.
+ */
+const PROTOTYPE_BLOBS = 4.5;
+const PROTOTYPE_AREA = 48 * 48;
 /** The lamp is left on this long after the last input, then cools. */
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
@@ -16,6 +26,13 @@ type Blob = {
   r: number;
   heat: number;
 };
+
+/** Where a blob's influence is capped; the part above it is summed per cell. */
+const TAIL = 0.02;
+/** Cells between samples of the capped remainder. */
+const FAR_STRIDE = 4;
+
+export type BlobScratch = { near: Float64Array; far: Float64Array };
 
 type Press = NonNullable<BackdropInput["press"]>;
 type Grab = { blob: Blob; dx: number; dy: number; press: Press };
@@ -31,10 +48,14 @@ export const wax: Mode = {
   label: "Lamp Wax",
   look: { ghost: 75, noise: 8 },
   holds: true,
-  create({ columns, random }) {
-    const scale = columns / PROTOTYPE_COLUMNS;
+  create({ columns, rows, random }) {
+    const scale = (columns * PROTOTYPE_CELL_PX) / REFERENCE_WIDTH_PX;
     const reach = 18 * scale;
     const blobs: Blob[] = [];
+    const scratch: BlobScratch = {
+      near: new Float64Array(columns * rows),
+      far: new Float64Array(columns * rows),
+    };
     let visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
     let grab: Grab | undefined;
     let seenPress: Press | undefined;
@@ -44,8 +65,14 @@ export const wax: Mode = {
     const spawn = () => {
       const width = visible.right - visible.left;
       const height = visible.bottom - visible.top;
-      for (let k = 0; k < BLOB_COUNT; k += 1) {
-        const share = k / (BLOB_COUNT - 1);
+      const count = Math.max(
+        2,
+        Math.round(
+          (PROTOTYPE_BLOBS * width * height) / scale ** 2 / PROTOTYPE_AREA,
+        ),
+      );
+      for (let k = 0; k < count; k += 1) {
+        const share = k / (count - 1);
         blobs.push({
           x: visible.left + width * (0.1 + 0.8 * random()),
           y: visible.top + height * (0.125 + 0.75 * share),
@@ -165,28 +192,81 @@ export const wax: Mode = {
         }
       },
 
-      // Plain arithmetic over the visible cells only: the grid overhangs the
-      // viewport on one axis, and this stays clear of the work budget's Math calls.
+      // Per-cell work stays plain arithmetic, clear of the work budget's Math calls.
       render(field) {
-        const left = Math.max(0, Math.floor(visible.left));
-        const right = Math.min(columns, Math.ceil(visible.right));
-        const top = Math.max(0, Math.floor(visible.top));
-        const bottom = Math.ceil(visible.bottom);
-        for (let y = top; y < bottom; y += 1) {
-          for (let x = left; x < right; x += 1) {
-            let sum = 0;
-            for (const blob of blobs) {
-              const dx = x + 0.5 - blob.x;
-              const dy = y + 0.5 - blob.y;
-              sum += (blob.r * blob.r) / (dx * dx + dy * dy + 0.5);
-            }
-            field[y * columns + x] =
-              sum >= 1 ? 1 : sum > 0.72 ? 0.55 : sum > 0.5 ? 0.22 : 0;
-          }
-        }
+        renderBlobs(blobs, visible, columns, scratch, field);
       },
 
       pace: () => (settled ? "still" : "active"),
     };
   },
 };
+
+/**
+ * Bands the summed influence of the blobs over the visible cells. A blob's
+ * `r² / (d² + 0.5)` falls off slowly, so it is split at `TAIL`: the part above
+ * it is added exactly within the box where it exists, and the capped remainder,
+ * which is smooth, is sampled on a coarse lattice and interpolated. The cost
+ * follows the blobs' size, not their count times the whole grid.
+ */
+export function renderBlobs(
+  blobs: readonly Pick<Blob, "x" | "y" | "r">[],
+  visible: CellRect,
+  columns: number,
+  { near, far }: BlobScratch,
+  field: Float32Array,
+) {
+  const left = Math.max(0, Math.floor(visible.left));
+  const right = Math.min(columns, Math.ceil(visible.right));
+  const top = Math.max(0, Math.floor(visible.top));
+  const bottom = Math.ceil(visible.bottom);
+  const lw = Math.ceil((right - left) / FAR_STRIDE) + 2;
+  const lh = Math.ceil((bottom - top) / FAR_STRIDE) + 2;
+  for (let y = top; y < bottom; y += 1) {
+    near.fill(0, y * columns + left, y * columns + right);
+  }
+  far.fill(0, 0, lw * lh);
+
+  for (const blob of blobs) {
+    const strength = blob.r * blob.r;
+    const radius = blob.r * Math.sqrt(1 / TAIL);
+    const x0 = Math.max(left, Math.floor(blob.x - radius));
+    const x1 = Math.min(right, Math.ceil(blob.x + radius));
+    const y0 = Math.max(top, Math.floor(blob.y - radius));
+    const y1 = Math.min(bottom, Math.ceil(blob.y + radius));
+    for (let y = y0; y < y1; y += 1) {
+      const dy = y + 0.5 - blob.y;
+      for (let x = x0; x < x1; x += 1) {
+        const dx = x + 0.5 - blob.x;
+        const reach = strength / (dx * dx + dy * dy + 0.5);
+        if (reach > TAIL) near[y * columns + x] += reach - TAIL;
+      }
+    }
+    for (let j = 0; j < lh; j += 1) {
+      const dy = top + j * FAR_STRIDE + 0.5 - blob.y;
+      for (let i = 0; i < lw; i += 1) {
+        const dx = left + i * FAR_STRIDE + 0.5 - blob.x;
+        const reach = strength / (dx * dx + dy * dy + 0.5);
+        far[j * lw + i] += reach > TAIL ? TAIL : reach;
+      }
+    }
+  }
+
+  for (let y = top; y < bottom; y += 1) {
+    const v = (y - top) / FAR_STRIDE;
+    const j = v | 0;
+    const fy = v - j;
+    for (let x = left; x < right; x += 1) {
+      const u = (x - left) / FAR_STRIDE;
+      const i = u | 0;
+      const fx = u - i;
+      const at = j * lw + i;
+      const sum =
+        near[y * columns + x] +
+        (far[at] * (1 - fx) + far[at + 1] * fx) * (1 - fy) +
+        (far[at + lw] * (1 - fx) + far[at + lw + 1] * fx) * fy;
+      field[y * columns + x] =
+        sum >= 1 ? 1 : sum > 0.72 ? 0.55 : sum > 0.5 ? 0.22 : 0;
+    }
+  }
+}

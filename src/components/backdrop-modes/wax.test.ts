@@ -1,11 +1,19 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
-import type { BackdropInput, Point } from "./mode";
-import { wax } from "./wax";
+import { GRID_SIZE, type BackdropInput, type Point } from "./mode";
+import { renderBlobs, wax } from "./wax";
 
-const columns = 80;
-const rows = 80;
-const visible = { left: 0, top: 17.5, right: 80, bottom: 62.5 };
+const columns = GRID_SIZE;
+const rows = GRID_SIZE;
+/** About one gallery tile of glass, so the lamp is as sparse as the prototype's. */
+const span = 54;
+const edge = (columns - span) / 2;
+const visible = {
+  left: edge,
+  top: edge,
+  right: edge + span,
+  bottom: edge + span,
+};
 const STEP = 1000 / 60;
 
 function setup() {
@@ -82,6 +90,7 @@ function centroidY(field: Float32Array, from: number, to: number) {
   return sum / mass;
 }
 
+const centre = { x: columns / 2, y: columns / 2 };
 const middle = (visible.top + visible.bottom) / 2;
 
 test("hot wax at the bottom rises while cool wax at the top sinks", () => {
@@ -102,8 +111,8 @@ const lit = (field: Float32Array, { x, y }: Point) =>
 function sweep(held: boolean) {
   const { input, field, run } = setup();
   run(1);
-  const start = blobNear(field, { x: 40, y: 40 });
-  const direction = start.x < 40 ? 1 : -1;
+  const start = blobNear(field, centre);
+  const direction = start.x < centre.x ? 1 : -1;
   if (held) input.press = { ...start, at: 0, held: true };
   for (let step = 1; step <= 60; step += 1) {
     input.pointer = { x: start.x + direction * 0.25 * step, y: start.y };
@@ -125,13 +134,13 @@ test("letting go mid-drag flings the blob on with its momentum", () => {
     const { input, field, run, direction } = sweep(true);
     if (pause) run(30);
     const ahead = {
-      x: input.pointer!.x + direction * 10,
+      x: input.pointer!.x + direction * 6,
       y: input.pointer!.y,
     };
     input.press!.held = false;
     input.pointer = undefined;
     let reached = false;
-    for (let step = 0; step < 40; step += 1) {
+    for (let step = 0; step < 60; step += 1) {
       run(1);
       reached ||= lit(field, ahead);
     }
@@ -145,8 +154,8 @@ test("letting go mid-drag flings the blob on with its momentum", () => {
 test("a tap on empty glass pushes the nearby wax away", () => {
   const { input, field, run } = setup();
   run(1);
-  const before = blobNear(field, { x: 40, y: 40 });
-  const tap = { x: before.x + (before.x < 40 ? -17 : 17), y: before.y };
+  const before = blobNear(field, centre);
+  const tap = { x: before.x + (before.x < centre.x ? -12 : 12), y: before.y };
   input.press = { ...tap, at: 0, held: false };
   run(30);
 
@@ -173,4 +182,42 @@ test("an untouched lamp cools to a stop and a touch warms it again", () => {
 
   input.lastInputAt = jump(1);
   expect(frame()).toBe("active");
+});
+
+test("the bounded render matches summing every blob over every cell but for cells on a band edge", () => {
+  const random = mulberry32(11);
+  const blobs = Array.from({ length: 40 }, () => ({
+    x: visible.left + random() * span,
+    y: visible.top + random() * span,
+    r: 2.5 + random() * 2.5,
+  }));
+  const bands = (sum: number) =>
+    sum >= 1 ? 1 : sum > 0.72 ? 0.55 : sum > 0.5 ? 0.22 : 0;
+  const full = new Float32Array(columns * rows);
+  for (let y = Math.floor(visible.top); y < visible.bottom; y += 1) {
+    for (let x = Math.floor(visible.left); x < visible.right; x += 1) {
+      let sum = 0;
+      for (const { x: bx, y: by, r } of blobs) {
+        const dx = x + 0.5 - bx;
+        const dy = y + 0.5 - by;
+        sum += (r * r) / (dx * dx + dy * dy + 0.5);
+      }
+      full[y * columns + x] = bands(sum);
+    }
+  }
+
+  const bounded = new Float32Array(columns * rows);
+  renderBlobs(
+    blobs,
+    visible,
+    columns,
+    {
+      near: new Float64Array(columns * rows),
+      far: new Float64Array(columns * rows),
+    },
+    bounded,
+  );
+
+  const differing = bounded.filter((value, i) => value !== full[i]).length;
+  expect(differing).toBeLessThan(span * span * 0.005);
 });
