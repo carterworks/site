@@ -132,6 +132,11 @@ export const culture: Mode = {
       y: Math.floor(y),
     });
 
+    const scatter = (x: number, y: number) => {
+      seed(x, y);
+      if (random() < 0.5) seed(x + random() * 2 - 1, y + random() * 2 - 1);
+    };
+
     return {
       step({ pointer, press, visible, lastInputAt }, now) {
         fit(visible);
@@ -149,11 +154,7 @@ export const culture: Mode = {
           seed(x, y + 1);
         }
         if (press?.held && cell !== undefined) {
-          line(last ?? cell, cell, (x, y) => {
-            seed(x, y);
-            if (random() < 0.5)
-              seed(x + random() * 2 - 1, y + random() * 2 - 1);
-          });
+          line(last ?? cell, cell, scatter);
         }
         last = cell;
         hover = press?.held ? undefined : cell;

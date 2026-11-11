@@ -27,7 +27,8 @@ export const pond: Mode = {
     let height = new Float32Array(size * size);
     let previous = new Float32Array(size * size);
     let seenPress: object | undefined;
-    let seenPointer: Point | undefined;
+    const seen: Point = { x: 0, y: 0 };
+    let hasSeen = false;
     let nextRain = 0;
     let flat = true;
     let raining = false;
@@ -70,16 +71,19 @@ export const pond: Mode = {
           seenPress = press;
           poke(press.x, press.y, 3.2, -6);
         }
-        const from = seenPointer;
         if (
           pointer !== undefined &&
-          from !== undefined &&
-          (pointer.x !== from.x || pointer.y !== from.y)
+          hasSeen &&
+          (pointer.x !== seen.x || pointer.y !== seen.y)
         ) {
           const held = press?.held === true;
-          stroke(from, pointer, held ? 2 : 1.25, held ? -0.7 : -0.25);
+          stroke(seen, pointer, held ? 2 : 1.25, held ? -0.7 : -0.25);
         }
-        seenPointer = pointer && { x: pointer.x, y: pointer.y };
+        hasSeen = pointer !== undefined;
+        if (pointer !== undefined) {
+          seen.x = pointer.x;
+          seen.y = pointer.y;
+        }
 
         // A pond nobody has touched yet rains from its first step.
         arrivedAt ??= now;
