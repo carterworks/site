@@ -95,3 +95,23 @@ test("a drifting backdrop idles at about eight frames a second", async () => {
 
   expect(present.mock.calls.length).toBeLessThanOrEqual(8);
 });
+
+test("the canvas rect is measured once per resize, not per pointermove", () => {
+  mount();
+  const measure = vi.spyOn(
+    document.querySelector<StubCanvas>("emulated-canvas")!,
+    "getBoundingClientRect",
+  );
+  const move = () =>
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 100, clientY: 100 }),
+    );
+
+  move();
+  move();
+  expect(measure).toHaveBeenCalledTimes(1);
+
+  window.dispatchEvent(new Event("resize"));
+  move();
+  expect(measure).toHaveBeenCalledTimes(2);
+});

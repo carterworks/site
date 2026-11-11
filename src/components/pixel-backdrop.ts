@@ -289,6 +289,7 @@ class PixelBackdrop extends HTMLElement {
   #ripples: { x: number; y: number; born: number }[] = [];
   #noise = makeNoise2D(NOISE_SEED);
   #noiseImage?: ImageData;
+  #rect?: DOMRect;
   #pointer = {
     x: -1,
     y: -1,
@@ -319,6 +320,7 @@ class PixelBackdrop extends HTMLElement {
     window.addEventListener("pointerdown", this.#onPointerDown, {
       passive: true,
     });
+    window.addEventListener("resize", this.#onResize);
     document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
 
@@ -329,6 +331,7 @@ class PixelBackdrop extends HTMLElement {
     this.#stop();
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
+    window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
   }
@@ -396,6 +399,7 @@ class PixelBackdrop extends HTMLElement {
       shape,
     } = this.#options;
 
+    this.#rect = undefined;
     canvas.dataset.gap = String(gap);
     canvas.dataset.shape = shape;
     canvas.dataset.ghost = String(ghost);
@@ -568,8 +572,11 @@ class PixelBackdrop extends HTMLElement {
   #logical(clientX: number, clientY: number) {
     const canvas = this.#canvas;
     if (canvas === undefined) return undefined;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return undefined;
+    const rect = (this.#rect ??= canvas.getBoundingClientRect());
+    if (rect.width === 0 || rect.height === 0) {
+      this.#rect = undefined;
+      return undefined;
+    }
     const gap = this.#options.gap;
     return {
       x: gridCoordinate(clientX - rect.left, rect.width, this.#columns, gap),
@@ -603,6 +610,11 @@ class PixelBackdrop extends HTMLElement {
     pointer.moved = performance.now();
     pointer.active = true;
     this.#wake();
+  };
+
+  /** The host is fixed, so only a resize moves its box. */
+  #onResize = () => {
+    this.#rect = undefined;
   };
 
   #onPointerLeave = () => {
