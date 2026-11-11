@@ -91,8 +91,8 @@ export type ShaderFrame = {
   height: number;
   /** Time since the previous present, in milliseconds. */
   elapsedMs: number;
-  /** Share of the previous frame the panel keeps per 60 Hz frame, 0–`MAX_GHOST`. */
-  ghost: number;
+  /** The element's `dataset`, where each pass reads its own `data-*` knobs. */
+  data: DOMStringMap;
 };
 
 /**
@@ -109,12 +109,31 @@ export type ShaderPass = {
 
 /**
  * Builds a pass for one element, so any state it keeps between frames belongs
- * to that element. Write one and add it to `SHADERS`; that is the whole
- * contract.
+ * to that element. A pass reads its own knobs from `frame.data`, so a new
+ * effect never touches the element: write one, add it to `SHADERS` and
+ * document its `data-*` attribute. For example, a two-colour palette:
+ *
+ * ```ts
+ * const palette: Shader = () => ({
+ *   active: ({ data }) => data.palette !== undefined,
+ *   apply(pixels, { data }) {
+ *     const [dark, light] = data.palette!.split(",").map(Number);
+ *     for (let i = 0; i < pixels.length; i += 4)
+ *       pixels.fill(pixels[i] < 128 ? dark : light, i, i + 3);
+ *     return false;
+ *   },
+ * });
+ * ```
  */
 export type Shader = () => ShaderPass;
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
+
+/** `data-ghost` as the share of the previous frame kept per 60 Hz frame. */
+function retention({ ghost }: DOMStringMap) {
+  const percent = Number.parseInt(ghost ?? "");
+  return Number.isFinite(percent) ? clamp(percent / 100, 0, MAX_GHOST) : 0;
+}
 
 /**
  * A channel within one 8-bit level of its target snaps to it. The step is
@@ -135,14 +154,15 @@ const SETTLED_LEVELS = 1;
 const ghost: Shader = () => {
   let panel: Float32Array | undefined;
   return {
-    active({ ghost }) {
-      if (ghost > 0) return true;
+    active({ data }) {
+      if (retention(data) > 0) return true;
       // Turning the ghost back on then starts from the current frame, not a
       // stale one.
       panel = undefined;
       return false;
     },
-    apply(pixels, { elapsedMs, ghost }) {
+    apply(pixels, { elapsedMs, data }) {
+      const ghost = retention(data);
       if (panel?.length !== pixels.length) {
         // Seed the panel with this frame so it starts opaque; otherwise a high
         // retention would fade in from transparent.
@@ -236,20 +256,19 @@ export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_SCALE = 1;
   static DEFAULT_GAP = 0;
   static DEFAULT_SHAPE: PixelShape = "square";
-  static DEFAULT_GHOST = 0;
-  static observedAttributes = [
-    "data-scale",
-    "data-gap",
-    "data-shape",
-    "data-ghost",
-  ];
+  static observedAttributes = ["data-scale", "data-gap", "data-shape"];
 
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
   #readback?: OffscreenCanvasRenderingContext2D | null;
   #passes = SHADERS.map((shader) => shader());
-  #frame: ShaderFrame = { width: 0, height: 0, elapsedMs: 0, ghost: 0 };
+  #frame: ShaderFrame = {
+    width: 0,
+    height: 0,
+    elapsedMs: 0,
+    data: this.dataset,
+  };
   #presentedAt?: number;
   #style?: HTMLStyleElement;
   #mirrorFrame?: number;
@@ -350,15 +369,10 @@ export class EmulatedCanvas extends HTMLElement {
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
     });
-    this.#frame.ghost = clamp(
-      this.#integer("ghost", EmulatedCanvas.DEFAULT_GHOST, 0) / 100,
-      0,
-      MAX_GHOST,
-    );
   }
 
   #integer(
-    name: "width" | "height" | "scale" | "gap" | "ghost",
+    name: "width" | "height" | "scale" | "gap",
     fallback: number,
     min: number,
   ) {
