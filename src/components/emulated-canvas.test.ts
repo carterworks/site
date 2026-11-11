@@ -92,3 +92,28 @@ test("without data-manual, getContext starts mirroring on its own", () => {
   canvas.getContext("2d");
   expect(request).toHaveBeenCalledTimes(1);
 });
+
+test.each([
+  ["scale", "x", "var(--emulated-canvas-scale, 1px)"],
+  ["scale", "0", "var(--emulated-canvas-scale, 1px)"],
+  ["gap", "", "calc(var(--scale) + 0px)"],
+  ["gap", "-4", "calc(var(--scale) + 0px)"],
+])(
+  "a data-%s of %j falls back to its default in the display style",
+  (name, value, expected) => {
+    let shadow: ShadowRoot | undefined;
+    const attachShadow = Element.prototype.attachShadow;
+    vi.spyOn(Element.prototype, "attachShadow").mockImplementation(function (
+      this: Element,
+      init: ShadowRootInit,
+    ) {
+      shadow = attachShadow.call(this, { ...init, mode: "open" });
+      return shadow;
+    });
+    const canvas = document.createElement("emulated-canvas") as TestCanvas;
+    canvas.dataset[name] = value;
+    document.body.replaceChildren(canvas);
+
+    expect(shadow?.querySelector("style")?.textContent).toContain(expected);
+  },
+);

@@ -175,8 +175,8 @@ class EmulatedCanvas extends HTMLElement {
   #initialize() {
     if (this.#innerCanvas !== undefined) return;
 
-    const width = this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH);
-    const height = this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT);
+    const width = this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH, 1);
+    const height = this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT, 1);
     this.#innerCanvas = new OffscreenCanvas(width, height);
 
     const outerCanvas = document.createElement("canvas");
@@ -199,15 +199,15 @@ class EmulatedCanvas extends HTMLElement {
     style.textContent = displayStyle({
       columns: innerCanvas.width,
       rows: innerCanvas.height,
-      scale: this.#integer("scale", EmulatedCanvas.DEFAULT_SCALE),
-      gap: this.#integer("gap", EmulatedCanvas.DEFAULT_GAP),
+      scale: this.#integer("scale", EmulatedCanvas.DEFAULT_SCALE, 1),
+      gap: this.#integer("gap", EmulatedCanvas.DEFAULT_GAP, 0),
       shape:
         this.dataset.shape === "circle"
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
     });
     this.#ghost = clamp(
-      this.#integer("ghost", EmulatedCanvas.DEFAULT_GHOST) / 100,
+      this.#integer("ghost", EmulatedCanvas.DEFAULT_GHOST, 0) / 100,
       0,
       MAX_GHOST,
     );
@@ -216,9 +216,10 @@ class EmulatedCanvas extends HTMLElement {
   #integer(
     name: "width" | "height" | "scale" | "gap" | "ghost",
     fallback: number,
+    min: number,
   ) {
-    const value = this.dataset[name];
-    return value !== undefined ? Number.parseInt(value) : fallback;
+    const parsed = Number.parseInt(this.dataset[name] ?? "");
+    return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
   }
 
   #startMirroring() {
