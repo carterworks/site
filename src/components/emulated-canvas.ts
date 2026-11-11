@@ -297,9 +297,13 @@ export class EmulatedCanvas extends HTMLElement {
     );
   }
 
-  /** Paints the current bitmap now; the owner of a `data-manual` canvas calls this. */
+  /**
+   * Paints the current bitmap now; the owner of a `data-manual` canvas calls
+   * this. Returns whether the shaders are still changing the display, so an
+   * owner whose bitmap is static knows when it can stop presenting.
+   */
   present() {
-    this.#blit();
+    return this.#blit();
   }
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
@@ -377,13 +381,13 @@ export class EmulatedCanvas extends HTMLElement {
 
   #blit() {
     const outerCanvas = this.#outerCanvas;
-    if (outerCanvas === undefined) return;
+    if (outerCanvas === undefined) return false;
     const innerCanvas = this.#bitmap();
 
     let context = this.#outerContext;
     if (context === undefined) {
       const created = outerCanvas.getContext("2d");
-      if (created === null) return;
+      if (created === null) return false;
       // `copy` replaces the display outright, so no clear is needed first.
       created.globalCompositeOperation = "copy";
       context = this.#outerContext = created;
@@ -397,15 +401,17 @@ export class EmulatedCanvas extends HTMLElement {
     this.#presentedAt = now;
 
     let image: ImageData | undefined;
+    let changing = false;
     for (const pass of this.#passes) {
       if (!pass.active(frame)) continue;
       image ??= this.#read(innerCanvas);
       if (image === undefined) break;
-      pass.apply(image.data, frame);
+      changing = pass.apply(image.data, frame) || changing;
     }
 
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
+    return changing;
   }
 
   /**

@@ -290,3 +290,25 @@ test("the context is available before the element is connected", () => {
 
   expect(canvas.getContext("2d")).not.toBeNull();
 });
+
+test("present reports a plain copy as settled", () => {
+  const canvas = mountCanvas({});
+  draw(canvas, 255);
+
+  expect(canvas.present()).toBe(false);
+});
+
+test("present reports a ghost fade as changing until it lands on the frame", () => {
+  const canvas = mountCanvas({ ghost: "70" });
+  draw(canvas, 255);
+  expect(canvas.present()).toBe(false);
+
+  draw(canvas, 0);
+  clock += 1000 / 60;
+  expect(canvas.present()).toBe(true);
+
+  presentFor(canvas, 1000, 60);
+  expect(shown()[0]).toBe(0);
+  clock += 1000 / 60;
+  expect(canvas.present()).toBe(false);
+});
