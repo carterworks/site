@@ -70,9 +70,14 @@ export const pond: Mode = {
           seenPress = press;
           poke(press.x, press.y, 3.2, -6);
         }
-        if (pointer !== undefined && seenPointer !== undefined) {
+        const from = seenPointer;
+        if (
+          pointer !== undefined &&
+          from !== undefined &&
+          (pointer.x !== from.x || pointer.y !== from.y)
+        ) {
           const held = press?.held === true;
-          stroke(seenPointer, pointer, held ? 2 : 1.25, held ? -0.7 : -0.25);
+          stroke(from, pointer, held ? 2 : 1.25, held ? -0.7 : -0.25);
         }
         seenPointer = pointer && { x: pointer.x, y: pointer.y };
 
