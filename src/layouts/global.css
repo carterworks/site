@@ -94,7 +94,8 @@
   --backdrop-dark-base: #141414;
   --backdrop-dark-ink: #6e6e7a;
 
-  scrollbar-gutter: stable;
+  scrollbar-color: light-dark(var(--backdrop-light-ink), var(--backdrop-dark-ink))
+    transparent;
 }
 body {
   --top-gutter-size: clamp(var(--size-md), 40svh, var(--size-3xl));
