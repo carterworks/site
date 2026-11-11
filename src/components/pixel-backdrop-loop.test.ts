@@ -72,6 +72,18 @@ test("a static frame stops scheduling once settled, and input restarts it", asyn
   expect(vi.getTimerCount()).toBeGreaterThan(0);
 });
 
+test("a manual colour scheme change repaints a stopped static frame", async () => {
+  mount();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(vi.getTimerCount()).toBe(0);
+
+  document.documentElement.style.colorScheme = "dark";
+  await Promise.resolve();
+
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+  document.documentElement.style.colorScheme = "";
+});
+
 test("configure restarts a stopped loop", async () => {
   const backdrop = mount();
   await vi.advanceTimersByTimeAsync(1000);

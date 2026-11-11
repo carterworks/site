@@ -284,6 +284,7 @@ class PixelBackdrop extends HTMLElement {
   #frame?: number;
   #idleTimer?: number;
   #quietFrames = 0;
+  #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
   #rows = 0;
   #ripples: { x: number; y: number; born: number }[] = [];
@@ -323,6 +324,12 @@ class PixelBackdrop extends HTMLElement {
     window.addEventListener("resize", this.#onResize);
     document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
+    darkScheme.addEventListener("change", this.#wake);
+    // The theme toggle emits no event, and ClientRouter navigations reset
+    // <html>'s inline style, so the style attribute is the one reliable signal.
+    this.#schemeObserver.observe(document.documentElement, {
+      attributeFilter: ["style"],
+    });
 
     this.#start();
   }
@@ -334,6 +341,8 @@ class PixelBackdrop extends HTMLElement {
     window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
+    darkScheme.removeEventListener("change", this.#wake);
+    this.#schemeObserver.disconnect();
   }
 
   /** Merge a partial set of knobs, and repaint. */
