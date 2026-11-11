@@ -9,8 +9,7 @@ import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
  * The element owns its render knobs so the dev-toolbar app can tweak them
  * live. Every knob is mirrored onto the inner `<emulated-canvas>`'s `data-*`
  * attributes — the component's public API — and the two panel knobs become
- * CSS custom properties on the root. In dev the current options persist to
- * localStorage, so a tweak survives reloads.
+ * CSS custom properties on the root.
  */
 
 export type PixelBackdropOptions = {
@@ -98,9 +97,7 @@ export function readDefaults(): PixelBackdropOptions {
   ) as PixelBackdropOptions;
 }
 
-const STORAGE_KEY = "pixel-backdrop";
 const MAX_RIPPLES = 24;
-const DEV = import.meta.env.DEV;
 
 /** The bits of `<emulated-canvas>` this element needs. */
 type EmulatedCanvasElement = HTMLElement & {
@@ -284,7 +281,6 @@ class PixelBackdrop extends HTMLElement {
   #columns = 0;
   #rows = 0;
   #ripples: { x: number; y: number; born: number }[] = [];
-  #saveTimeout?: number;
   #noise = makeNoise2D(NOISE_SEED);
   #noiseImage?: ImageData;
   #pointer = {
@@ -308,7 +304,7 @@ class PixelBackdrop extends HTMLElement {
     canvas.dataset.manual = "";
     this.#columns = Number(canvas.dataset.width) || 64;
     this.#rows = Number(canvas.dataset.height) || 64;
-    this.#options = { ...readDefaults(), ...this.#load() };
+    this.#options = readDefaults();
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {
@@ -331,7 +327,7 @@ class PixelBackdrop extends HTMLElement {
     reducedMotion.removeEventListener("change", this.#onMotionChange);
   }
 
-  /** Merge a partial set of knobs, repaint, and (in dev) persist. */
+  /** Merge a partial set of knobs, and repaint. */
   configure(partial: Partial<PixelBackdropOptions>) {
     this.#options = { ...this.#options, ...partial };
     this.#apply();
@@ -339,7 +335,6 @@ class PixelBackdrop extends HTMLElement {
       this.#start();
       this.#wake();
     } else this.#stop();
-    this.#save();
   }
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
@@ -352,7 +347,6 @@ class PixelBackdrop extends HTMLElement {
     this.#options = readDefaults();
     this.#apply();
     this.#start();
-    this.#save();
   }
 
   #start() {
@@ -618,32 +612,6 @@ class PixelBackdrop extends HTMLElement {
     if (reducedMotion.matches) this.#stop();
     else this.#start();
   };
-
-  #save() {
-    if (!DEV) return;
-    // Sliders fire on every pointer move, and a synchronous storage write on
-    // each one stalls the drag; coalesce the writes instead.
-    window.clearTimeout(this.#saveTimeout);
-    this.#saveTimeout = window.setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.#options));
-      } catch {
-        // Storage may be unavailable (private mode); tweaks just won't persist.
-      }
-    }, 250);
-  }
-
-  #load(): Partial<PixelBackdropOptions> {
-    if (!DEV) return {};
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw === null
-        ? {}
-        : (JSON.parse(raw) as Partial<PixelBackdropOptions>);
-    } catch {
-      return {};
-    }
-  }
 }
 
 if (!customElements.get("pixel-backdrop")) {
