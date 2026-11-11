@@ -40,8 +40,10 @@ const size = 80;
   }
 
   /* Centre the oversized grid so its middle always covers the viewport. The
-     offsets are rounded because a half-pixel shift would blur the cell mask. */
+     offsets are rounded because a half-pixel shift would blur the gap overlay.
+     The gaps are painted in the body colour that shows behind this layer. */
   pixel-backdrop :global(emulated-canvas) {
+    --emulated-canvas-gap-color: var(--color-bg);
     inline-size: max-content;
     left: round(50%, 1px);
     position: absolute;

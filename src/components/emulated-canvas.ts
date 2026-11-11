@@ -30,44 +30,61 @@ type Geometry = {
  * Cells are enlarged and cut out in CSS, so the display's backing store stays
  * the bitmap's size and a frame costs one tiny copy instead of a full-screen
  * repaint. Each logical pixel is stretched over a whole stride (cell + gap) and
- * a static mask carves the cell out of it.
+ * a static overlay paints the gaps (and a circle's corners) over it in
+ * `--emulated-canvas-gap-color`. A mask would cut the same shapes, but the
+ * compositor re-applies a mask to content that changes every frame, while the
+ * overlay never changes, so it is rasterised once and reused.
  *
  * The canvas is shifted back by half a gap so each pixel's edges fall inside
  * the gaps around its cell: at a fractional devicePixelRatio the browser rounds
- * the canvas's pixel edges and the mask's edges differently, and an edge on the
- * cell boundary would show a sliver of the neighbouring cell. The margins also
- * take the leftover half gaps out of layout, so the box ends at the last cell.
+ * the canvas's pixel edges and the overlay's edges differently, and an edge on
+ * the cell boundary would show a sliver of the neighbouring cell. The margins
+ * also take the leftover half gaps out of layout, so the box ends at the last
+ * cell, and the host clips the half gaps that overhang it.
  *
  * The canvas is inline rather than block so those negative margins can't
  * collapse through a block-level host and change its height.
  */
 function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
   const lead = Math.floor(gap / 2);
+  const overhang = `${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px`;
   const cell = "var(--scale)";
   const stride = "var(--stride)";
+  const ink = "var(--emulated-canvas-gap-color, Canvas)";
   const stripes = (direction: string) =>
-    `repeating-linear-gradient(${direction}, transparent 0 ${lead}px, #000 0 calc(${lead}px + ${cell}), transparent 0 ${stride})`;
+    `repeating-linear-gradient(${direction}, ${ink} 0 ${lead}px, transparent 0 calc(${lead}px + ${cell}), ${ink} 0 ${stride})`;
   const centre = `calc(${lead}px + ${cell} / 2)`;
   // The circle's edge fades over one CSS pixel, as a hard stop would alias.
-  const circle = `radial-gradient(circle calc(${cell} / 2) at ${centre} ${centre}, #000 calc(100% - 0.5px), transparent calc(100% + 0.5px)) 0 0 / ${stride} ${stride}`;
-  const mask =
+  const circle = `radial-gradient(circle calc(${cell} / 2) at ${centre} ${centre}, transparent calc(100% - 0.5px), ${ink} calc(100% + 0.5px)) 0 0 / ${stride} ${stride}`;
+  const overlay =
     shape === "circle"
-      ? `mask: ${circle};`
+      ? circle
       : gap > 0
-        ? `mask: ${stripes("to right")}, ${stripes("to bottom")}; mask-composite: intersect;`
-        : "";
+        ? `${stripes("to right")}, ${stripes("to bottom")}`
+        : "none";
 
   return `
-    :host { display: inline-block; line-height: 0; }
-    canvas {
+    :host {
       --scale: var(--emulated-canvas-scale, ${scale}px);
       --stride: calc(var(--scale) + ${gap}px);
+      display: inline-block;
+      line-height: 0;
+      overflow: clip;
+      position: relative;
+    }
+    canvas {
       image-rendering: pixelated;
       inline-size: calc(${columns} * var(--stride));
       block-size: calc(${rows} * var(--stride));
-      margin: ${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px;
+      margin: ${overhang};
       vertical-align: top;
-      ${mask}
+    }
+    :host::after {
+      background: ${overlay};
+      content: "";
+      inset: ${overhang};
+      pointer-events: none;
+      position: absolute;
     }
   `;
 }
@@ -105,6 +122,10 @@ export type EmulatedCanvasProps = {
  * canvas is a straight 1:1 mirror. A page can instead size cells from CSS by
  * setting `--emulated-canvas-scale` to a length on the element, which then
  * follows viewport changes without any script.
+ *
+ * Gaps and a circle's corners are painted over the cells rather than cut out,
+ * in `--emulated-canvas-gap-color` (default `Canvas`, the page's default
+ * background); set it to whatever shows behind the element.
  *
  * `data-ghost` (0–100, default 0) emulates an LCD's slow pixel response: it is
  * the percentage of the previous frame the panel keeps each frame, so moving

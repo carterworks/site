@@ -101,19 +101,43 @@ test.each([
 ])(
   "a data-%s of %j falls back to its default in the display style",
   (name, value, expected) => {
-    let shadow: ShadowRoot | undefined;
-    const attachShadow = Element.prototype.attachShadow;
-    vi.spyOn(Element.prototype, "attachShadow").mockImplementation(function (
-      this: Element,
-      init: ShadowRootInit,
-    ) {
-      shadow = attachShadow.call(this, { ...init, mode: "open" });
-      return shadow;
-    });
-    const canvas = document.createElement("emulated-canvas") as TestCanvas;
-    canvas.dataset[name] = value;
-    document.body.replaceChildren(canvas);
-
-    expect(shadow?.querySelector("style")?.textContent).toContain(expected);
+    expect(displayStyleFor({ [name]: value })).toContain(expected);
   },
 );
+
+test.each([
+  ["square", "5"],
+  ["circle", "0"],
+  ["circle", "5"],
+])(
+  "a %s cell with gap %s is cut by painting over the canvas, never by masking it",
+  (shape, gap) => {
+    const style = displayStyleFor({ shape, gap });
+
+    expect(style).not.toContain("mask");
+    expect(style).toContain("var(--emulated-canvas-gap-color, Canvas)");
+  },
+);
+
+test("an ungapped square grid paints nothing over the canvas", () => {
+  expect(displayStyleFor({ shape: "square", gap: "0" })).not.toContain(
+    "--emulated-canvas-gap-color",
+  );
+});
+
+/** The display style a canvas with these data attributes renders with. */
+function displayStyleFor(data: Record<string, string>) {
+  let shadow: ShadowRoot | undefined;
+  const attachShadow = Element.prototype.attachShadow;
+  vi.spyOn(Element.prototype, "attachShadow").mockImplementation(function (
+    this: Element,
+    init: ShadowRootInit,
+  ) {
+    shadow = attachShadow.call(this, { ...init, mode: "open" });
+    return shadow;
+  });
+  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  Object.assign(canvas.dataset, data);
+  document.body.replaceChildren(canvas);
+  return shadow?.querySelector("style")?.textContent ?? "";
+}
