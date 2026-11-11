@@ -1,10 +1,10 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
 import { culture } from "./culture";
-import type { BackdropInput } from "./mode";
+import { GRID_SIZE, type BackdropInput } from "./mode";
 
-const columns = 80;
-const rows = 80;
+const columns = GRID_SIZE;
+const rows = GRID_SIZE;
 const STEP = 1000 / 60;
 const NO_JITTER = () => 0.99;
 
@@ -75,13 +75,13 @@ test("generations crawl while a press is held", () => {
 
 test("drawing seeds only cells inside the dish", () => {
   const { alive, drawAcross, population } = setup();
-  drawAcross(1, 0, 79);
+  drawAcross(1, 0, columns - 1);
   expect(population()).toBe(0);
 
-  drawAcross(40, 0, 79);
+  drawAcross(40, 0, columns - 1);
   expect(alive(40, 40)).toBe(true);
   expect(alive(0, 40)).toBe(false);
-  expect(alive(79, 40)).toBe(false);
+  expect(alive(columns - 1, 40)).toBe(false);
 });
 
 test("a tap seeds a small cluster", () => {
@@ -121,7 +121,7 @@ test("an untouched tab freezes and stops asking for frames", () => {
 
 test("the dish follows the visible rect", () => {
   const { input, frames, field } = setup();
-  input.visible = { left: 0, top: 17.5, right: 80, bottom: 62.5 };
+  input.visible = { left: 0, top: 17.5, right: columns, bottom: rows - 17.5 };
   frames(2);
   const rim = [...field].filter((value) => value === Math.fround(0.4)).length;
   expect(rim).toBeGreaterThan(0);
@@ -147,4 +147,58 @@ test("a dish created a minute into the clock with stale input is not frozen empt
   }
   mode.render(field);
   expect(field.some((value) => value === 1)).toBe(true);
+});
+
+const GOLDEN = -154098782;
+
+/**
+ * Recorded from the full-grid passes on a grid size where the tunables equal
+ * their original 80-cell values, so bounding the work must not change a frame.
+ */
+test("a scripted session renders exactly as the full-grid passes did", () => {
+  const size = 240;
+  const mode = culture.create({
+    columns: size,
+    rows: size,
+    random: mulberry32(7),
+    options: {} as never,
+  });
+  const input: BackdropInput = {
+    lastInputAt: 0,
+    visible: { left: 0, top: 0, right: size, bottom: size },
+  };
+  const field = new Float32Array(size * size);
+  let now = 0;
+  let hash = 0;
+  const run = (count: number) => {
+    for (let i = 0; i < count; i += 1) {
+      now += STEP;
+      mode.step(input, now);
+      field.fill(0);
+      mode.render(field);
+      for (let j = 0; j < field.length; j += 7) {
+        hash = (Math.imul(hash, 31) + Math.round(field[j] * 1000) + j) | 0;
+      }
+    }
+  };
+  const draw = (x: number, y: number, held: boolean) => {
+    input.pointer = { x, y };
+    input.press = { x, y, at: now, held };
+    input.lastInputAt = now;
+  };
+  run(120);
+  draw(100.5, 120.5, true);
+  run(1);
+  for (let i = 0; i < 40; i += 1) {
+    draw(100.5 + i * 1.5, 120.5 + Math.sin(i / 4) * 12, true);
+    run(2);
+  }
+  input.press!.held = false;
+  run(900);
+  input.visible = { left: 0, top: 40, right: size, bottom: 200 };
+  run(600);
+  draw(50.5, 60.5, false);
+  run(1500);
+  run(Math.ceil(30_000 / STEP));
+  expect(hash).toBe(GOLDEN);
 });
