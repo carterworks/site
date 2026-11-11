@@ -7,7 +7,8 @@ import {
 /**
  * A small tweakpane for the site's `<pixel-backdrop>`. Each control reads the
  * live options off the element and writes a partial back through `configure`,
- * so changes show up on the page immediately. In dev the element persists them.
+ * so changes show up on the page immediately. The app also persists them to
+ * localStorage and restores them once, when the toolbar first starts.
  *
  * The pane is rebuilt rather than built once: the dev toolbar resets every app
  * canvas when it reconnects (which happens on each view transition), and it
@@ -44,8 +45,52 @@ const backdrop = () =>
 const current = (): PixelBackdropOptions =>
   backdrop()?.options ?? readDefaults();
 
+export const STORAGE_KEY = "pixel-backdrop";
+
+/**
+ * Only keys the element still has, with the type it expects: storage outlives
+ * schema changes, and a stale key must not leak into the options.
+ */
+export function loadSaved(options: object): Partial<PixelBackdropOptions> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
+    if (typeof saved !== "object" || saved === null) return {};
+    const known = options as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(saved).filter(
+        ([key, value]) => key in known && typeof value === typeof known[key],
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
 let pending: Partial<PixelBackdropOptions> = {};
 let updateQueued = false;
+let saveTimeout: number | undefined;
+
+/** Sliders fire on every pointer move; coalesce the synchronous writes. */
+const save = () => {
+  window.clearTimeout(saveTimeout);
+  saveTimeout = window.setTimeout(() => {
+    try {
+      const options = backdrop()?.options;
+      if (options) localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+    } catch {
+      // Storage may be unavailable (private mode); tweaks just won't persist.
+    }
+  }, 250);
+};
+
+const clearSaved = () => {
+  window.clearTimeout(saveTimeout);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage may be unavailable; there is nothing to clear.
+  }
+};
 
 /**
  * Sliders fire many `input` events per drag; merge them and apply once a frame
@@ -60,6 +105,7 @@ const update = (partial: Partial<PixelBackdropOptions>) => {
     const next = pending;
     pending = {};
     backdrop()?.configure(next);
+    save();
   });
 };
 
@@ -383,6 +429,7 @@ function renderPane(canvas: ShadowRoot) {
   reset.textContent = "Reset";
   reset.addEventListener("click", () => {
     backdrop()?.reset();
+    clearSaved();
     for (const refresh of refreshers) refresh();
   });
   actions.appendChild(reset);
@@ -391,6 +438,11 @@ function renderPane(canvas: ShadowRoot) {
 
 export default defineToolbarApp({
   init(canvas, app) {
+    // Restore here, not in renderPane: the persisted backdrop keeps its options
+    // across view transitions, so re-applying storage after a swap would
+    // clobber live tweaks.
+    const element = backdrop();
+    if (element) element.configure(loadSaved(element.options));
     renderPane(canvas);
 
     // The toolbar re-appends itself on every view transition, which resets each
