@@ -96,6 +96,13 @@ const MAX_RIPPLES = 24;
 /** The noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
 const IDLE_FRAME_INTERVAL = 1000 / 8;
 
+/**
+ * How long after input a drifting frame may stay at full rate for a fade. It
+ * never quite settles, since every redraw leaves the ghost a little behind the
+ * noise, so "still changing" alone would hold full rate indefinitely.
+ */
+const DRIFTING_FADE_WINDOW = 1000;
+
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
 
@@ -264,6 +271,7 @@ export class PixelBackdrop extends HTMLElement {
   #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
   #idleTimer?: number;
+  #busyAt = -Infinity;
   #wasDark?: boolean;
   #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
@@ -392,15 +400,19 @@ export class PixelBackdrop extends HTMLElement {
   #tick = (now: number) => {
     this.#frame = undefined;
     const busy = this.#isTrailing(now) || this.#ripples.length > 0;
+    if (busy) this.#busyAt = now;
 
     this.#draw(now);
-    // A ghost fade still in flight would stretch out in wall-clock time if it
-    // dropped to the idle rate, and freeze half-faded if the loop stopped.
-    const fading = this.#canvas?.present() ?? false;
+    // A fade in flight keeps full rate: at the idle rate it would visibly step,
+    // and a static frame that stopped would freeze it half-faded.
+    const changing = this.#canvas?.present() ?? false;
+    const drifting = this.#isDrifting();
+    const fading =
+      changing && (!drifting || now - this.#busyAt < DRIFTING_FADE_WINDOW);
 
     if (busy || fading) {
       this.#frame = requestAnimationFrame(this.#tick);
-    } else if (this.#isDrifting()) {
+    } else if (drifting) {
       this.#idleTimer = window.setTimeout(this.#wake, IDLE_FRAME_INTERVAL);
     }
   };

@@ -35,6 +35,8 @@ const context = {
   }),
   putImageData: vi.fn(),
   beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
   arc: vi.fn(),
   stroke: vi.fn(),
 };
@@ -63,6 +65,19 @@ function mount() {
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
   return backdrop;
+}
+
+function movePointer() {
+  window.dispatchEvent(
+    new PointerEvent("pointermove", { clientX: 100, clientY: 100 }),
+  );
+}
+
+async function presentsOver(ms: number) {
+  const present = vi.spyOn(StubCanvas.prototype, "present");
+  present.mockClear();
+  await vi.advanceTimersByTimeAsync(ms);
+  return present.mock.calls.length;
 }
 
 beforeEach(() => {
@@ -119,16 +134,42 @@ test("a static frame keeps presenting while the canvas is still changing, then s
   expect(vi.getTimerCount()).toBe(0);
 });
 
-test("a drifting frame stays at full rate while the canvas is still changing", async () => {
+test("a static frame holds full rate for a fade after input, however long, until it settles", async () => {
+  mount();
+  await vi.advanceTimersByTimeAsync(1000);
+  shadersChanging = true;
+  movePointer();
+  await vi.advanceTimersByTimeAsync(3000);
+
+  expect(await presentsOver(1000)).toBeGreaterThan(50);
+
+  shadersChanging = false;
+  await vi.advanceTimersByTimeAsync(100);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("a drifting frame the canvas never reports settled stays at the idle rate", async () => {
   shadersChanging = true;
   const backdrop = mount();
   backdrop.configure({ noise: 50, noiseSpeed: 50 });
   await vi.advanceTimersByTimeAsync(500);
-  const present = vi.spyOn(StubCanvas.prototype, "present");
 
-  await vi.advanceTimersByTimeAsync(1000);
+  expect(await presentsOver(1000)).toBeLessThanOrEqual(8);
+});
 
-  expect(present.mock.calls.length).toBeGreaterThan(50);
+test("a drifting frame the canvas never reports settled fades at full rate after input, then returns to idle", async () => {
+  shadersChanging = true;
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+
+  movePointer();
+  expect(await presentsOver(400)).toBeGreaterThan(20);
+
+  await vi.advanceTimersByTimeAsync(2000);
+  for (let second = 0; second < 3; second += 1) {
+    expect(await presentsOver(1000)).toBeLessThanOrEqual(8);
+  }
 });
 
 test("a manual colour scheme change repaints a stopped static frame", async () => {
