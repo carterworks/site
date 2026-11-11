@@ -26,8 +26,6 @@ export type PixelBackdropOptions = {
   shape: "square" | "circle";
   /** Share of each previous frame the panel keeps, 0–100. */
   ghost: number;
-  /** How long, in milliseconds, a hovered cell keeps feeding the trail. */
-  trail: number;
   /** Maximum ripple radius, in logical pixels. */
   rippleSize: number;
   /** Ripple lifetime, in milliseconds. */
@@ -65,7 +63,6 @@ const PARSERS: {
   gap: number,
   shape: text,
   ghost: number,
-  trail: duration,
   rippleSize: number,
   rippleSpeed: duration,
   noise: number,
