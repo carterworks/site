@@ -36,6 +36,7 @@ afterEach(() => {
 type TestCanvas = HTMLElement & {
   getContext(id: "2d"): unknown;
   present(): void;
+  reset(): void;
 };
 
 test.each([
@@ -82,6 +83,38 @@ test("a data-manual canvas only paints when told to present", () => {
   display.drawImage.mockClear();
   canvas.present();
   expect(display.drawImage).toHaveBeenCalledTimes(1);
+});
+
+test("after a reset the next present shows the new frame opaque, not blended", () => {
+  const panelDraws: number[] = [];
+  vi.stubGlobal(
+    "OffscreenCanvas",
+    class {
+      constructor(
+        public width: number,
+        public height: number,
+      ) {}
+      getContext() {
+        const context = {
+          globalAlpha: 1,
+          drawImage: () => panelDraws.push(context.globalAlpha),
+        };
+        return context;
+      }
+    },
+  );
+  const canvas = document.createElement("emulated-canvas") as TestCanvas;
+  Object.assign(canvas.dataset, { ghost: "70", manual: "" });
+  document.body.replaceChildren(canvas);
+  canvas.present();
+  canvas.present();
+  expect(panelDraws.at(-1)).toBeCloseTo(0.3);
+
+  panelDraws.length = 0;
+  canvas.reset();
+  canvas.present();
+
+  expect(panelDraws).toEqual([1]);
 });
 
 test("without data-manual, getContext starts mirroring on its own", () => {

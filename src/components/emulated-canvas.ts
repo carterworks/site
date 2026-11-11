@@ -192,6 +192,11 @@ class EmulatedCanvas extends HTMLElement {
     this.#blit();
   }
 
+  /** Drops the ghost trail so the next present shows the bitmap opaque. */
+  reset() {
+    this.#panel = undefined;
+  }
+
   #initialize() {
     if (this.#innerCanvas !== undefined) return;
 
