@@ -58,7 +58,8 @@ export const silt: Mode = {
     // keeps its speed in px/s.
     const sweepsPerStep = Math.max(1, Math.round(scale));
     const drainBase = DRAIN_BASE * scale;
-    const tippedDrain = Math.round(TIPPED_DRAIN * scale);
+    // The tray holds scale² as many grains, so a tip-out needs scale² the rate.
+    const tippedDrain = Math.round(TIPPED_DRAIN * scale * scale);
     const grains = new Uint8Array(columns * rows);
     let count = 0;
     let gravity = 1;
