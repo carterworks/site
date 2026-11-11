@@ -1,10 +1,11 @@
 /**
  * What the page owns: a toy press must never land on something the visitor can
  * read, select, follow or operate. `command-bar` and `dialog` cover the
- * navigation popover, which sits in the top layer.
+ * navigation popover, which sits in the top layer. `main` and `header` are the
+ * solid panels over the backdrop, so their whitespace is content, not open space.
  */
 const PAGE_CONTENT =
-  "a, button, input, textarea, select, label, summary, [contenteditable], [tabindex], command-bar, dialog";
+  "a, button, input, textarea, select, label, summary, [contenteditable], [tabindex], command-bar, dialog, main, header";
 
 /** `undefined` means the browser cannot say what is under the point. */
 export type NodeAtPoint = (x: number, y: number) => Node | null | undefined;

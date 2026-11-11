@@ -33,6 +33,8 @@ test.each([
   "[tabindex]",
   "command-bar",
   "dialog",
+  "main",
+  "header",
 ])("a press inside %s is rejected", (selector) => {
   const name = /^[a-z-]+$/.test(selector) ? selector : "div";
   const outer = document.createElement(name);
