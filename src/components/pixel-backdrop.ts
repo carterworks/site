@@ -10,12 +10,11 @@ import {
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
  * feeds it pointer input: moving the mouse drags a smeared trail, clicking
  * drops an expanding ripple. The layer is fixed and non-interactive, so the
- * page above it supplies its own translucency and blur to frost the result.
+ * page above it paints its own solid panels over the result.
  *
  * The element owns its render knobs so the dev-toolbar app can tweak them
  * live. Every knob is mirrored onto the inner `<emulated-canvas>`'s `data-*`
- * attributes — the component's public API — and the two panel knobs become
- * CSS custom properties on the root.
+ * attributes — the component's public API.
  */
 
 export type PixelBackdropOptions = {
@@ -37,10 +36,6 @@ export type PixelBackdropOptions = {
   rippleSize: number;
   /** Ripple lifetime, in milliseconds. */
   rippleSpeed: number;
-  /** Opacity of the frosted content panel, 0–100. */
-  panelOpacity: number;
-  /** Gaussian blur of the frosted content panel, in pixels. */
-  panelBlur: number;
   /** Opacity of the drifting background noise field, 0–100. */
   noise: number;
   /** Feature size of the noise field, in cells. Larger is softer. */
@@ -77,8 +72,6 @@ const PARSERS: {
   trail: duration,
   rippleSize: number,
   rippleSpeed: duration,
-  panelOpacity: number,
-  panelBlur: number,
   noise: number,
   noiseScale: number,
   noiseSpeed: number,
@@ -379,20 +372,11 @@ export class PixelBackdrop extends HTMLElement {
     this.#context = undefined;
   }
 
-  /** Mirror every knob onto the component, and the panel knobs onto the body. */
+  /** Mirror every knob onto the component. */
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const {
-      autoFit,
-      enabled,
-      gap,
-      ghost,
-      panelBlur,
-      panelOpacity,
-      scale,
-      shape,
-    } = this.#options;
+    const { autoFit, enabled, gap, ghost, scale, shape } = this.#options;
 
     this.#rect = undefined;
     canvas.dataset.gap = String(gap);
@@ -402,12 +386,6 @@ export class PixelBackdrop extends HTMLElement {
     if (autoFit)
       canvas.style.setProperty("--emulated-canvas-scale", this.#fit());
     else canvas.style.removeProperty("--emulated-canvas-scale");
-
-    // On <body>, not <html>: readDefaults reads <html>'s computed style, which
-    // would otherwise return these live values as the "defaults".
-    const body = document.body.style;
-    body.setProperty("--backdrop-panel-opacity", `${panelOpacity}%`);
-    body.setProperty("--backdrop-panel-blur", `${panelBlur}px`);
 
     this.toggleAttribute("data-disabled", !enabled);
   }

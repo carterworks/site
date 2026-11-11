@@ -27,42 +27,37 @@ test("a cell's centre maps to its pixel's centre", () => {
   expect(gridCoordinate(40 * 19 + 7, box, 80, 5)).toBeCloseTo(40.5);
 });
 
-test("reset restores the stylesheet defaults after the panel knobs were tweaked", () => {
+test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   const style = document.createElement("style");
-  style.textContent =
-    ":root { --backdrop-panel-opacity: 40%; --backdrop-panel-blur: 5px; }";
+  style.textContent = ":root { --backdrop-ghost: 40%; }";
   document.head.append(style);
   const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
-    options: { panelBlur: number; panelOpacity: number };
+    options: { ghost: number };
     configure(options: object): void;
     reset(): void;
   };
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
 
-  backdrop.configure({ panelBlur: 9, panelOpacity: 70 });
+  backdrop.configure({ ghost: 70 });
   backdrop.reset();
 
-  expect(backdrop.options).toMatchObject({ panelBlur: 5, panelOpacity: 40 });
+  expect(backdrop.options).toMatchObject({ ghost: 40 });
 });
 
-test("a reconnected backdrop keeps its tweaks and restores the body panel properties", () => {
+test("a reconnected backdrop keeps its tweaks", () => {
   const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
-    options: { ghost: number; panelBlur: number };
+    options: { ghost: number };
     configure(options: object): void;
   };
   backdrop.append(document.createElement("emulated-canvas"));
   document.body.append(backdrop);
-  backdrop.configure({ ghost: 20, panelBlur: 9 });
+  backdrop.configure({ ghost: 20 });
 
-  document.body.removeAttribute("style");
   backdrop.remove();
   document.body.append(backdrop);
 
   expect(backdrop.options.ghost).toBe(20);
-  expect(
-    document.body.style.getPropertyValue("--backdrop-panel-blur"),
-  ).toBe("9px");
 });
 
 test("the grid reads the same whole-number size the canvas bitmap uses", () => {

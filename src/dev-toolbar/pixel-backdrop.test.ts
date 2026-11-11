@@ -23,7 +23,7 @@ beforeEach(() => {
     --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
     --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
     --backdrop-trail: 100ms; --backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
-    --backdrop-panel-opacity: 50; --backdrop-panel-blur: 5; --backdrop-noise: 0;
+    --backdrop-noise: 0;
     --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
     --backdrop-light-base: #fff; --backdrop-light-ink: #000;
     --backdrop-dark-base: #000; --backdrop-dark-ink: #fff;
@@ -82,7 +82,7 @@ test("drops a key set back to its default", () => {
   expect(stored()).toEqual({});
 });
 
-test("persists a panel knob the live backdrop has tweaked", () => {
+test("persists a knob the live backdrop has tweaked", () => {
   const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
     options: PixelBackdropOptions;
     configure(options: object): void;
@@ -91,9 +91,9 @@ test("persists a panel knob the live backdrop has tweaked", () => {
   document.body.append(backdrop);
   const defaults = readDefaults();
 
-  backdrop.configure({ panelBlur: defaults.panelBlur + 15 });
+  backdrop.configure({ ghost: defaults.ghost + 15 });
   persistChanges(backdrop.options);
 
-  expect(stored()).toEqual({ panelBlur: defaults.panelBlur + 15 });
+  expect(stored()).toEqual({ ghost: defaults.ghost + 15 });
   backdrop.remove();
 });

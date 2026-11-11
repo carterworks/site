@@ -178,8 +178,6 @@ export const CONTROLS: Control[] = [
   range("trail", "Trail", 0, 3000, 10, "ms"),
   range("rippleSize", "Ripple size", 1, 60, 1),
   range("rippleSpeed", "Ripple speed", 100, 2000, 50, "ms"),
-  range("panelOpacity", "Panel opacity", 0, 100, 1, "%"),
-  range("panelBlur", "Panel blur", 0, 40, 1, "px"),
   { kind: "heading", label: "Background noise" },
   range("noise", "Intensity", 0, 100, 1, "%"),
   range("noiseScale", "Feature size", 1, 40, 1),
