@@ -151,6 +151,18 @@ test("the rim is one solid ring of edge-connected cells", () => {
   expect(seen.size).toBe(rim.size);
 });
 
+test("a held drag lays a stroke bolder than one cell", () => {
+  const { drawAcross, field } = setup(mulberry32(3));
+  drawAcross(80, 50, 110);
+  let lit = 0;
+  for (let x = 55; x < 105; x += 1) {
+    for (let y = 70; y < 90; y += 1) {
+      if (field[y * columns + x] === 1) lit += 1;
+    }
+  }
+  expect(lit / 50).toBeGreaterThanOrEqual(1.4);
+});
+
 test("a dish created a minute into the clock with stale input is not frozen empty", () => {
   const mode = culture.create({
     columns,
@@ -172,7 +184,7 @@ test("a dish created a minute into the clock with stale input is not frozen empt
   expect(field.some((value) => value === 1)).toBe(true);
 });
 
-const GOLDEN = -1882335294;
+const GOLDEN = -32487818;
 
 /**
  * Recorded from the full-grid passes on a grid size where the tunables equal
