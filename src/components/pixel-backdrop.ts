@@ -1,3 +1,4 @@
+import "./emulated-canvas";
 import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
 
 /**
@@ -99,14 +100,10 @@ export function readDefaults(): PixelBackdropOptions {
 
 const MAX_RIPPLES = 24;
 
-/** Mirrors `<emulated-canvas>`'s own parse so the grid matches its bitmap. */
-function bitmapSize(attribute: string | undefined): number {
-  const parsed = Number.parseInt(attribute ?? "");
-  return parsed >= 1 ? parsed : 64;
-}
-
 /** The bits of `<emulated-canvas>` this element needs. */
 type EmulatedCanvasElement = HTMLElement & {
+  width: number;
+  height: number;
   getContext(id: "2d"): OffscreenCanvasRenderingContext2D | null;
   present(): void;
   reset(): void;
@@ -312,8 +309,8 @@ class PixelBackdrop extends HTMLElement {
     if (canvas === null) return;
     this.#canvas = canvas;
     canvas.dataset.manual = "";
-    this.#columns = bitmapSize(canvas.dataset.width);
-    this.#rows = bitmapSize(canvas.dataset.height);
+    this.#columns = canvas.width;
+    this.#rows = canvas.height;
     this.#options ??= readDefaults();
     this.#apply();
 

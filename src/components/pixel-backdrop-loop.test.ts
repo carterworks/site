@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import "./pixel-backdrop";
 
+vi.mock("./emulated-canvas", () => ({}));
+
 const context = {
   fillRect: vi.fn(),
   fillStyle: "",
@@ -16,6 +18,8 @@ const context = {
 };
 
 class StubCanvas extends HTMLElement {
+  width = 64;
+  height = 64;
   getContext() {
     return context;
   }

@@ -34,6 +34,8 @@ afterEach(() => {
 });
 
 type TestCanvas = HTMLElement & {
+  width: number;
+  height: number;
   getContext(id: "2d"): unknown;
   present(): void;
   reset(): void;
@@ -68,6 +70,22 @@ test.each([
     expect(display.drawImage).toHaveBeenCalledTimes(1);
     expect(display.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0);
     expect(display.clearRect).not.toHaveBeenCalled();
+  },
+);
+
+test.each([
+  [{}, 64, 64],
+  [{ width: "80.5", height: "12" }, 80, 12],
+  [{ width: "0", height: "nope" }, 64, 64],
+])(
+  "the bitmap size of %j is %i x %i, even before connecting",
+  (data, width, height) => {
+    const canvas = document.createElement("emulated-canvas") as TestCanvas;
+    Object.assign(canvas.dataset, data);
+    expect([canvas.width, canvas.height]).toEqual([width, height]);
+
+    document.body.append(canvas);
+    expect([canvas.width, canvas.height]).toEqual([width, height]);
   },
 );
 

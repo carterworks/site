@@ -187,6 +187,21 @@ class EmulatedCanvas extends HTMLElement {
     return getInnerContext(innerCanvas, contextId, options);
   }
 
+  /** The bitmap's real width, readable before the element is connected. */
+  get width() {
+    return (
+      this.#innerCanvas?.width ??
+      this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH, 1)
+    );
+  }
+
+  get height() {
+    return (
+      this.#innerCanvas?.height ??
+      this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT, 1)
+    );
+  }
+
   /** Paints the current bitmap now; the owner of a `data-manual` canvas calls this. */
   present() {
     this.#blit();
@@ -200,8 +215,7 @@ class EmulatedCanvas extends HTMLElement {
   #initialize() {
     if (this.#innerCanvas !== undefined) return;
 
-    const width = this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH, 1);
-    const height = this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT, 1);
+    const { width, height } = this;
     this.#innerCanvas = new OffscreenCanvas(width, height);
 
     const outerCanvas = document.createElement("canvas");
