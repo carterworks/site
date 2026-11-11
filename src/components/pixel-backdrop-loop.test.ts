@@ -594,3 +594,14 @@ test("a press on a link never suppresses selection", () => {
 
   expect(holding()).toBe(false);
 });
+
+test("a mode requested before the canvas exists applies once it arrives", async () => {
+  const backdrop = document.createElement("pixel-backdrop");
+  document.body.append(backdrop);
+  backdrop.setMode("solid");
+
+  backdrop.append(document.createElement("emulated-canvas"));
+  await vi.advanceTimersByTimeAsync(100);
+
+  expect(shownAt(40, 40)).toBe(0);
+});

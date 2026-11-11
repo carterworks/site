@@ -242,6 +242,8 @@ export class PixelBackdrop extends HTMLElement {
   #busyAt = -Infinity;
   #wasDark?: boolean;
   #schemeObserver = new MutationObserver(() => this.#wake());
+  /** Waits for the canvas when the element is connected before its child is parsed. */
+  #canvasObserver = new MutationObserver(() => this.#attach());
   #columns = 0;
   #rows = 0;
   #chosen = MODES[0];
@@ -271,8 +273,16 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   connectedCallback() {
+    this.#attach();
+  }
+
+  #attach() {
     const canvas = this.querySelector("emulated-canvas");
-    if (canvas === null) return;
+    if (canvas === null) {
+      this.#canvasObserver.observe(this, { childList: true, subtree: true });
+      return;
+    }
+    this.#canvasObserver.disconnect();
     // Parents upgrade before children, so the child may still be a bare element.
     customElements.upgrade(canvas);
     this.#canvas = canvas;
@@ -316,6 +326,7 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.#canvasObserver.disconnect();
     this.#stop();
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
