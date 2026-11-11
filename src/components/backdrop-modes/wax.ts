@@ -1,8 +1,14 @@
 import type { BackdropInput, CellRect, Mode } from "./mode";
 
-/** The gallery prototype ran on a 48-cell grid; sizes and speeds scale from it. */
-const PROTOTYPE_COLUMNS = 48;
-const BLOB_COUNT = 6;
+/**
+ * The gallery tile is 48 cells across at about 8 px a cell with 6 blobs. On the
+ * site a cell is the viewport width over `columns`, so sizes and speeds, which
+ * the prototype tuned in cells, scale by the ratio of cell sizes at this width.
+ */
+const PROTOTYPE_CELL_PX = 8;
+const REFERENCE_WIDTH_PX = 1440;
+const PROTOTYPE_BLOBS = 6;
+const PROTOTYPE_AREA = 48 * 48;
 /** The lamp is left on this long after the last input, then cools. */
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
@@ -32,7 +38,7 @@ export const wax: Mode = {
   look: { ghost: 75, noise: 8 },
   holds: true,
   create({ columns, random }) {
-    const scale = columns / PROTOTYPE_COLUMNS;
+    const scale = (columns * PROTOTYPE_CELL_PX) / REFERENCE_WIDTH_PX;
     const reach = 18 * scale;
     const blobs: Blob[] = [];
     let visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
@@ -44,8 +50,14 @@ export const wax: Mode = {
     const spawn = () => {
       const width = visible.right - visible.left;
       const height = visible.bottom - visible.top;
-      for (let k = 0; k < BLOB_COUNT; k += 1) {
-        const share = k / (BLOB_COUNT - 1);
+      const count = Math.max(
+        2,
+        Math.round(
+          (PROTOTYPE_BLOBS * width * height) / scale ** 2 / PROTOTYPE_AREA,
+        ),
+      );
+      for (let k = 0; k < count; k += 1) {
+        const share = k / (count - 1);
         blobs.push({
           x: visible.left + width * (0.1 + 0.8 * random()),
           y: visible.top + height * (0.125 + 0.75 * share),
