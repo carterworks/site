@@ -196,6 +196,14 @@ test("an untouched tab is still, and a fresh one never pours by itself", () => {
   expect(sim.pace()).toBe("still");
 });
 
+test("input with no sand left waits idle for the trickle instead of running flat out", () => {
+  const sim = setup();
+  sim.input.lastInputAt = STEP;
+  sim.run(1);
+
+  expect(sim.pace()).toBe("idle");
+});
+
 test("a thin stream trickles in after a pause in input, then stops", () => {
   const sim = setup();
   sim.input.lastInputAt = 0;

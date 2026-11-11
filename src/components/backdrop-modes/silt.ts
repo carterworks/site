@@ -216,10 +216,10 @@ export const silt: Mode = {
         for (let i = 0; i < field.length; i += 1) field[i] = SHADES[grains[i]];
       },
 
-      pace: () =>
-        count > 0 || pouring || quietSince < TRICKLE_UNTIL_MS
-          ? "active"
-          : "still",
+      pace() {
+        if (count > 0 || pouring) return "active";
+        return quietSince < TRICKLE_UNTIL_MS ? "idle" : "still";
+      },
     };
   },
 };
