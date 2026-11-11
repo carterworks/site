@@ -1,5 +1,9 @@
 import { beforeEach, expect, test } from "vitest";
-import { STORAGE_KEY, loadSaved } from "./pixel-backdrop";
+import { MAX_GHOST } from "../components/emulated-canvas";
+import { CONTROLS, STORAGE_KEY, loadSaved } from "./pixel-backdrop";
+
+const range = (key: string) =>
+  CONTROLS.find((control) => control.kind === "range" && control.key === key);
 
 const options = { gap: 2, shape: "square", enabled: true };
 
@@ -28,3 +32,13 @@ test.each(["{not json", "null", "[1]", '"str"'])(
     expect(loadSaved(options)).toEqual({});
   },
 );
+
+test("ghost slider stops at the emulated canvas's retention cap", () => {
+  expect(range("ghost")).toMatchObject({ max: Math.round(MAX_GHOST * 100) });
+});
+
+test("trail slider reaches past the 1000ms default", () => {
+  expect(range("trail")).toMatchObject({
+    max: expect.toSatisfy((n: number) => n > 1000),
+  });
+});

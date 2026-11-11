@@ -1,4 +1,5 @@
 import { defineToolbarApp } from "astro/toolbar";
+import { MAX_GHOST } from "../components/emulated-canvas";
 import {
   readDefaults,
   type PixelBackdropOptions,
@@ -123,134 +124,191 @@ function makeRow(text: string) {
   return { row, label, control, output };
 }
 
-function addRange(
+type KeyOf<T> = {
+  [K in keyof PixelBackdropOptions]: PixelBackdropOptions[K] extends T
+    ? K
+    : never;
+}[keyof PixelBackdropOptions];
+
+type ColorKey = {
+  [K in keyof PixelBackdropOptions]: string extends PixelBackdropOptions[K]
+    ? K
+    : never;
+}[keyof PixelBackdropOptions];
+
+type Control =
+  | { kind: "heading"; label: string }
+  | {
+      kind: "toggle";
+      key: KeyOf<boolean>;
+      label: string;
+      /** Number control greyed out while this toggle is on. */
+      disables?: KeyOf<number>;
+    }
+  | {
+      kind: "range";
+      key: KeyOf<number>;
+      label: string;
+      min: number;
+      max: number;
+      step: number;
+      suffix?: string;
+    }
+  | {
+      kind: "select";
+      key: Exclude<KeyOf<string>, ColorKey>;
+      label: string;
+      choices: Record<string, string>;
+    }
+  | { kind: "color"; key: ColorKey; label: string };
+
+const range = (
+  key: KeyOf<number>,
+  label: string,
+  min: number,
+  max: number,
+  step: number,
+  suffix?: string,
+): Control => ({ kind: "range", key, label, min, max, step, suffix });
+
+export const CONTROLS: Control[] = [
+  { kind: "toggle", key: "enabled", label: "Enabled" },
+  { kind: "toggle", key: "autoFit", label: "Fit viewport", disables: "scale" },
+  range("scale", "Scale", 1, 64, 1),
+  range("gap", "Gap", 0, 8, 1),
+  {
+    kind: "select",
+    key: "shape",
+    label: "Shape",
+    choices: { square: "Square", circle: "Circle" },
+  },
+  range("ghost", "Ghost", 0, Math.round(MAX_GHOST * 100), 1, "%"),
+  range("trail", "Trail", 0, 3000, 10, "ms"),
+  range("rippleSize", "Ripple size", 1, 60, 1),
+  range("rippleSpeed", "Ripple speed", 100, 2000, 50, "ms"),
+  range("panelOpacity", "Panel opacity", 0, 100, 1, "%"),
+  range("panelBlur", "Panel blur", 0, 40, 1, "px"),
+  { kind: "heading", label: "Background noise" },
+  range("noise", "Intensity", 0, 100, 1, "%"),
+  range("noiseScale", "Feature size", 1, 40, 1),
+  range("noiseSpeed", "Drift speed", 0, 100, 1),
+  { kind: "heading", label: "Pixel colours" },
+  { kind: "color", key: "lightBase", label: "Pixel (light)" },
+  { kind: "color", key: "lightInk", label: "Ink (light)" },
+  { kind: "color", key: "darkBase", label: "Pixel (dark)" },
+  { kind: "color", key: "darkInk", label: "Ink (dark)" },
+];
+
+function addControl(
   panel: HTMLElement,
   refreshers: Refresher[],
-  text: string,
-  key: keyof PixelBackdropOptions,
-  bounds: { min: number; max: number; step: number; suffix?: string },
+  control: Control,
 ) {
-  const { row, label, control, output } = makeRow(text);
-  const input = document.createElement("input");
-  input.type = "range";
-  input.min = String(bounds.min);
-  input.max = String(bounds.max);
-  input.step = String(bounds.step);
-  input.id = `pixel-backdrop-${key}`;
-  label.htmlFor = input.id;
-  control.appendChild(input);
-  panel.appendChild(row);
-
-  const render = () => {
-    const value = current()[key] as number;
-    input.value = String(value);
-    output.textContent = `${value}${bounds.suffix ?? ""}`;
-  };
-  render();
-  refreshers.push(render);
-
-  input.addEventListener("input", () => {
-    const value = Number(input.value);
-    output.textContent = `${value}${bounds.suffix ?? ""}`;
-    update({ [key]: value } as Partial<PixelBackdropOptions>);
-  });
-
-  return { row, input };
-}
-
-function addToggle(
-  panel: HTMLElement,
-  refreshers: Refresher[],
-  text: string,
-  key: keyof PixelBackdropOptions,
-  onChange?: () => void,
-) {
-  const { row, control, output } = makeRow(text);
-  output.remove();
-  const toggle = document.createElement(
-    "astro-dev-toolbar-toggle",
-  ) as ToolbarToggleElement;
-  toggle.toggleStyle = "gray";
-  control.appendChild(toggle);
-  panel.appendChild(row);
-
-  const render = () => {
-    toggle.input.checked = current()[key] as boolean;
-  };
-  render();
-  refreshers.push(render);
-
-  toggle.input.addEventListener("change", () => {
-    update({ [key]: toggle.input.checked } as Partial<PixelBackdropOptions>);
-    onChange?.();
-  });
-
-  return { row, toggle };
-}
-
-function addSelect(
-  panel: HTMLElement,
-  refreshers: Refresher[],
-  text: string,
-  key: keyof PixelBackdropOptions,
-  choices: { value: string; label: string }[],
-) {
-  const { row, control, output } = makeRow(text);
-  output.remove();
-  const select = document.createElement(
-    "astro-dev-toolbar-select",
-  ) as ToolbarSelectElement;
-  select.selectStyle = "gray";
-  select.setAttribute("aria-label", text);
-  for (const choice of choices) {
-    const option = document.createElement("option");
-    option.value = choice.value;
-    option.textContent = choice.label;
-    // Append to the native select directly: the component moves slotted
-    // options into it on a later `slotchange`, so a synchronous `.value` set
-    // would be lost.
-    select.element.appendChild(option);
+  if (control.kind === "heading") {
+    const heading = document.createElement("div");
+    heading.className = "heading";
+    heading.textContent = control.label;
+    panel.appendChild(heading);
+    return;
   }
-  control.appendChild(select);
+
+  const { row, label, control: cell, output } = makeRow(control.label);
+  const id = `pixel-backdrop-${control.key}`;
   panel.appendChild(row);
 
-  const render = () => {
-    select.element.value = current()[key] as string;
-  };
-  render();
-  refreshers.push(render);
+  if (control.kind === "range") {
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = String(control.min);
+    input.max = String(control.max);
+    input.step = String(control.step);
+    input.id = id;
+    label.htmlFor = id;
+    cell.appendChild(input);
 
-  select.element.addEventListener("change", () => {
-    update({ [key]: select.element.value } as Partial<PixelBackdropOptions>);
-  });
-}
+    const show = (value: number) => {
+      output.textContent = `${value}${control.suffix ?? ""}`;
+    };
+    refreshers.push(() => {
+      const value = current()[control.key];
+      input.value = String(value);
+      show(value);
+    });
+    input.addEventListener("input", () => {
+      const value = Number(input.value);
+      show(value);
+      update({ [control.key]: value });
+    });
+  } else if (control.kind === "color") {
+    const input = document.createElement("input");
+    input.type = "color";
+    input.id = id;
+    label.htmlFor = id;
+    cell.appendChild(input);
 
-function addColor(
-  panel: HTMLElement,
-  refreshers: Refresher[],
-  text: string,
-  key: keyof PixelBackdropOptions,
-) {
-  const { row, label, control, output } = makeRow(text);
-  const input = document.createElement("input");
-  input.type = "color";
-  input.id = `pixel-backdrop-${key}`;
-  label.htmlFor = input.id;
-  control.appendChild(input);
-  panel.appendChild(row);
+    refreshers.push(() => {
+      input.value = output.textContent = current()[control.key];
+    });
+    input.addEventListener("input", () => {
+      output.textContent = input.value;
+      update({ [control.key]: input.value });
+    });
+  } else if (control.kind === "toggle") {
+    output.remove();
+    const toggle = document.createElement(
+      "astro-dev-toolbar-toggle",
+    ) as ToolbarToggleElement;
+    toggle.toggleStyle = "gray";
+    cell.appendChild(toggle);
 
-  const render = () => {
-    const value = current()[key] as string;
-    input.value = value;
-    output.textContent = value;
-  };
-  render();
-  refreshers.push(render);
+    // Read the input, not `current()`: the write to the element is deferred a
+    // frame, so the options are still stale when `change` fires.
+    const syncDisabled = () => {
+      if (!control.disables) return;
+      const target = panel.querySelector<HTMLInputElement>(
+        `#pixel-backdrop-${control.disables}`,
+      );
+      if (!target) return;
+      target.disabled = toggle.input.checked;
+      target
+        .closest(".row")
+        ?.toggleAttribute("data-disabled", toggle.input.checked);
+    };
+    refreshers.push(() => {
+      toggle.input.checked = current()[control.key];
+      syncDisabled();
+    });
+    toggle.input.addEventListener("change", () => {
+      update({ [control.key]: toggle.input.checked });
+      syncDisabled();
+    });
+  } else {
+    output.remove();
+    const select = document.createElement(
+      "astro-dev-toolbar-select",
+    ) as ToolbarSelectElement;
+    select.selectStyle = "gray";
+    select.setAttribute("aria-label", control.label);
+    for (const [value, text] of Object.entries(control.choices)) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = text;
+      // Append to the native select directly: the component moves slotted
+      // options into it on a later `slotchange`, so a synchronous `.value` set
+      // would be lost.
+      select.element.appendChild(option);
+    }
+    cell.appendChild(select);
 
-  input.addEventListener("input", () => {
-    output.textContent = input.value;
-    update({ [key]: input.value } as Partial<PixelBackdropOptions>);
-  });
+    refreshers.push(() => {
+      select.element.value = current()[control.key];
+    });
+    select.element.addEventListener("change", () => {
+      update({
+        [control.key]: select.element.value as PixelBackdropOptions["shape"],
+      });
+    });
+  }
 }
 
 /** (Re)build the pane in the app's shadow root, replacing any earlier mount. */
@@ -324,100 +382,8 @@ function renderPane(canvas: ShadowRoot) {
   canvas.appendChild(pane);
 
   const refreshers: Refresher[] = [];
-
-  addToggle(panel, refreshers, "Enabled", "enabled");
-
-  // Scale and "Fit viewport" are ordered as a pair, but the scale row is built
-  // first so the toggle can disable it.
-  const scale = addRange(panel, refreshers, "Scale", "scale", {
-    min: 1,
-    max: 64,
-    step: 1,
-  });
-  const fit = addToggle(panel, refreshers, "Fit viewport", "autoFit");
-  panel.insertBefore(fit.row, scale.row);
-
-  const syncScale = () => {
-    const on = current().autoFit;
-    scale.row.toggleAttribute("data-disabled", on);
-    scale.input.disabled = on;
-  };
-  syncScale();
-  refreshers.push(syncScale);
-  fit.toggle.input.addEventListener("change", syncScale);
-
-  addRange(panel, refreshers, "Gap", "gap", { min: 0, max: 8, step: 1 });
-  addSelect(panel, refreshers, "Shape", "shape", [
-    { value: "square", label: "Square" },
-    { value: "circle", label: "Circle" },
-  ]);
-  addRange(panel, refreshers, "Ghost", "ghost", {
-    min: 0,
-    max: 98,
-    step: 1,
-    suffix: "%",
-  });
-  addRange(panel, refreshers, "Trail", "trail", {
-    min: 0,
-    max: 1000,
-    step: 10,
-    suffix: "ms",
-  });
-  addRange(panel, refreshers, "Ripple size", "rippleSize", {
-    min: 1,
-    max: 60,
-    step: 1,
-  });
-  addRange(panel, refreshers, "Ripple speed", "rippleSpeed", {
-    min: 100,
-    max: 2000,
-    step: 50,
-    suffix: "ms",
-  });
-  addRange(panel, refreshers, "Panel opacity", "panelOpacity", {
-    min: 0,
-    max: 100,
-    step: 1,
-    suffix: "%",
-  });
-  addRange(panel, refreshers, "Panel blur", "panelBlur", {
-    min: 0,
-    max: 40,
-    step: 1,
-    suffix: "px",
-  });
-
-  const noise = document.createElement("div");
-  noise.className = "heading";
-  noise.textContent = "Background noise";
-  panel.appendChild(noise);
-
-  addRange(panel, refreshers, "Intensity", "noise", {
-    min: 0,
-    max: 100,
-    step: 1,
-    suffix: "%",
-  });
-  addRange(panel, refreshers, "Feature size", "noiseScale", {
-    min: 1,
-    max: 40,
-    step: 1,
-  });
-  addRange(panel, refreshers, "Drift speed", "noiseSpeed", {
-    min: 0,
-    max: 100,
-    step: 1,
-  });
-
-  const colors = document.createElement("div");
-  colors.className = "heading";
-  colors.textContent = "Pixel colours";
-  panel.appendChild(colors);
-
-  addColor(panel, refreshers, "Pixel (light)", "lightBase");
-  addColor(panel, refreshers, "Ink (light)", "lightInk");
-  addColor(panel, refreshers, "Pixel (dark)", "darkBase");
-  addColor(panel, refreshers, "Ink (dark)", "darkInk");
+  for (const control of CONTROLS) addControl(panel, refreshers, control);
+  for (const refresh of refreshers) refresh();
 
   const actions = document.createElement("div");
   actions.className = "actions";
