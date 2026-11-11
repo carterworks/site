@@ -130,6 +130,39 @@ test("the dish follows the visible rect", () => {
   expect(field[5 * columns + 40]).toBe(0);
 });
 
+test("the rim is one solid ring of edge-connected cells", () => {
+  const { frames, field } = setup();
+  frames(2);
+  const rim = new Set<number>();
+  field.forEach((value, i) => {
+    if (value === Math.fround(0.4)) rim.add(i);
+  });
+  const [start] = rim;
+  const seen = new Set([start]);
+  const queue = [start];
+  for (const i of queue) {
+    for (const j of [i - 1, i + 1, i - columns, i + columns]) {
+      if (rim.has(j) && !seen.has(j)) {
+        seen.add(j);
+        queue.push(j);
+      }
+    }
+  }
+  expect(seen.size).toBe(rim.size);
+});
+
+test("a held drag lays a stroke bolder than one cell", () => {
+  const { drawAcross, field } = setup(mulberry32(3));
+  drawAcross(80, 50, 110);
+  let lit = 0;
+  for (let x = 55; x < 105; x += 1) {
+    for (let y = 70; y < 90; y += 1) {
+      if (field[y * columns + x] === 1) lit += 1;
+    }
+  }
+  expect(lit / 50).toBeGreaterThanOrEqual(1.4);
+});
+
 test("a dish created a minute into the clock with stale input is not frozen empty", () => {
   const mode = culture.create({
     columns,
@@ -151,7 +184,7 @@ test("a dish created a minute into the clock with stale input is not frozen empt
   expect(field.some((value) => value === 1)).toBe(true);
 });
 
-const GOLDEN = -154098782;
+const GOLDEN = -32487818;
 
 /**
  * Recorded from the full-grid passes on a grid size where the tunables equal

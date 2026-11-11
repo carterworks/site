@@ -26,6 +26,10 @@ const SPORE_COOLDOWN_MS = 1000;
 const FADING_COLONY = 25;
 const STALLED_GENERATIONS = 40;
 const RIM_WIDTH = 1.2;
+/** A thinner ring on a coarse grid steps diagonally and reads as dots. */
+const MIN_RIM_WIDTH = 1.6;
+/** Smaller than a cell the jitter rounds back onto the stroke and it stays one cell thin. */
+const MIN_SCATTER = 1.5;
 const DISH_MARGIN = 2.5;
 const SPORE_RADIUS = 3;
 const SPORE_INSET = 6;
@@ -50,8 +54,7 @@ export const culture: Mode = {
   create({ columns, rows, random }) {
     const size = columns * rows;
     const scale = (GALLERY_CELL_PX * columns) / REFERENCE_WIDTH_PX;
-    /** Cells smaller than the gallery's would make a sub-cell rim with gaps. */
-    const rimWidth = Math.max(1, RIM_WIDTH * scale);
+    const rimWidth = Math.max(MIN_RIM_WIDTH, RIM_WIDTH * scale);
     const dishMargin = DISH_MARGIN * scale;
     const sporeRadius = Math.round(SPORE_RADIUS * scale);
     const sporeInset = SPORE_INSET * scale;
@@ -194,10 +197,16 @@ export const culture: Mode = {
       y: Math.floor(y),
     });
 
+    const scatterReach = Math.max(MIN_SCATTER, scale);
     const scatter = (x: number, y: number) => {
       seed(x, y);
-      if (random() < 0.5)
-        seed(x + (random() * 2 - 1) * scale, y + (random() * 2 - 1) * scale);
+      if (random() >= 0.5) return;
+      for (let i = 0; i < 2; i += 1) {
+        seed(
+          x + (random() * 2 - 1) * scatterReach,
+          y + (random() * 2 - 1) * scatterReach,
+        );
+      }
     };
 
     return {
