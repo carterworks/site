@@ -112,17 +112,10 @@ const socialTitle = metadata.ogTitle ?? title;
     z-index: 1;
   }
 
-  /* Frost the content: a little page colour over a gaussian blur of the pixel
-     grid behind it. The header shares the base's width and padding so the two
-     surfaces line up. Both knobs are driven by the backdrop's dev toolbar app. */
+  /* The header shares the base's width and padding so the two surfaces line up. */
   main,
   header {
-    backdrop-filter: blur(var(--backdrop-panel-blur));
-    background: color-mix(
-      in oklab,
-      var(--color-bg) var(--backdrop-panel-opacity),
-      transparent
-    );
+    background: var(--color-bg);
     border-radius: var(--size-sm);
     /* The inline padding holds the hanging list markers; the matching negative
        margin keeps the text on its original column. The roomier value applies
@@ -152,14 +145,7 @@ const socialTitle = metadata.ogTitle ?? title;
   }
 
   header::after {
-    background: linear-gradient(
-      color-mix(
-          in oklab,
-          var(--color-bg) var(--backdrop-panel-opacity),
-          transparent
-        ),
-      transparent
-    );
+    background: linear-gradient(var(--color-bg), transparent);
     block-size: var(--size-lg);
     content: "";
     inset: 100% 0 auto;
