@@ -20,9 +20,12 @@ const size = 80;
 </script>
 
 <style>
+  /* The large viewport, like the cell size, so mobile toolbars sliding in and
+     out can't move the grid. */
   pixel-backdrop {
+    block-size: 100lvh;
     display: block;
-    inset: 0;
+    inset: 0 0 auto;
     overflow: hidden;
     pointer-events: none;
     position: fixed;
@@ -33,13 +36,14 @@ const size = 80;
     display: none;
   }
 
-  /* Centre the oversized grid so its middle always covers the viewport. */
+  /* Centre the oversized grid so its middle always covers the viewport. The
+     offsets are rounded because a half-pixel shift would blur the cell mask. */
   pixel-backdrop :global(emulated-canvas) {
     inline-size: max-content;
-    left: 50%;
+    left: round(50%, 1px);
     position: absolute;
-    top: 50%;
-    translate: -50% -50%;
+    top: round(50%, 1px);
+    translate: round(-50%, 1px) round(-50%, 1px);
   }
 
   @media (prefers-reduced-motion: reduce) {

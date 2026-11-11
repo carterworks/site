@@ -365,7 +365,6 @@ class PixelBackdrop extends HTMLElement {
       passive: true,
     });
     document.addEventListener("mouseleave", this.#onPointerLeave);
-    window.addEventListener("resize", this.#onResize, { passive: true });
     reducedMotion.addEventListener("change", this.#onMotionChange);
 
     this.#start();
@@ -376,7 +375,6 @@ class PixelBackdrop extends HTMLElement {
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
-    window.removeEventListener("resize", this.#onResize);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
   }
 
@@ -442,8 +440,10 @@ class PixelBackdrop extends HTMLElement {
     canvas.dataset.gap = String(gap);
     canvas.dataset.shape = shape;
     canvas.dataset.ghost = String(ghost);
-    if (autoFit) this.#fit();
-    else canvas.dataset.scale = String(scale);
+    canvas.dataset.scale = String(scale);
+    if (autoFit)
+      canvas.style.setProperty("--emulated-canvas-scale", this.#fit());
+    else canvas.style.removeProperty("--emulated-canvas-scale");
 
     const root = document.documentElement.style;
     root.setProperty("--backdrop-panel-opacity", `${panelOpacity}%`);
@@ -452,14 +452,15 @@ class PixelBackdrop extends HTMLElement {
     this.toggleAttribute("data-disabled", !enabled);
   }
 
-  /** Choose a cell size that makes the square grid cover the viewport. */
+  /**
+   * The cell size that makes the square grid cover the viewport, as CSS so it
+   * tracks resizes without script. It measures the large viewport: mobile
+   * toolbars sliding in and out would otherwise change the cell size, and the
+   * grid would jump while scrolling.
+   */
   #fit() {
-    const canvas = this.#canvas;
-    if (canvas === undefined) return;
-    const cover = Math.max(window.innerWidth, window.innerHeight);
-    const gap = (this.#columns - 1) * this.#options.gap;
-    const scale = Math.max(1, Math.ceil((cover - gap) / this.#columns));
-    canvas.dataset.scale = String(scale);
+    const gaps = (this.#columns - 1) * this.#options.gap;
+    return `max(1px, round(up, (max(100lvw, 100lvh) - ${gaps}px) / ${this.#columns}, 1px))`;
   }
 
   #tick = (now: number) => {
@@ -653,10 +654,6 @@ class PixelBackdrop extends HTMLElement {
     this.#ripples.push({ x, y, born: performance.now() });
     if (this.#ripples.length > MAX_RIPPLES) this.#ripples.shift();
     this.#wake();
-  };
-
-  #onResize = () => {
-    if (this.#options.autoFit) this.#fit();
   };
 
   #onMotionChange = () => {
