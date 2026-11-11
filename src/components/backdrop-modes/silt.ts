@@ -7,8 +7,8 @@ const SHADES = [0, 0.55, 0.78, 1];
  * so pours, taps and the trickle keep their on-screen size on a denser grid.
  */
 const TUNED_COLUMNS = 80;
-const POUR_GRAINS = 4;
-const POUR_SPREAD = 4;
+const POUR_GRAINS = 3;
+const POUR_SPREAD = 3;
 const DOUBLE_TAP_MS = 380;
 const DOUBLE_TAP_CELLS = 10;
 const TRICKLE_JITTER = 1.5;
