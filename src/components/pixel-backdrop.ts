@@ -371,6 +371,8 @@ export class PixelBackdrop extends HTMLElement {
     this.#chosen = mode;
     if (this.#canvas === undefined) return;
     this.#endHold();
+    // A press from before the new mode existed is not its to see.
+    this.#input.press = undefined;
     this.#mode = this.#createMode();
     this.#wake();
   }

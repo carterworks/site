@@ -605,3 +605,13 @@ test("a mode requested before the canvas exists applies once it arrives", async 
 
   expect(shownAt(40, 40)).toBe(0);
 });
+
+test("a press from before a mode switch never reaches the new mode", async () => {
+  const backdrop = mount();
+  press(document.body);
+  await latestInput();
+
+  backdrop.setMode("pond");
+
+  expect((await latestInput()).press).toBeUndefined();
+});
