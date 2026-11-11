@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { ModeSetup, Pace } from "./backdrop-modes/mode";
+import type { BackdropInput, ModeSetup, Pace } from "./backdrop-modes/mode";
 import "./pixel-backdrop";
 
 const motion = vi.hoisted(() => {
@@ -26,8 +26,14 @@ const motion = vi.hoisted(() => {
 
 vi.mock("./emulated-canvas", () => ({}));
 
-/** When set, the backdrop's mode reports this pace instead of Shimmer's own. */
-const pace = vi.hoisted(() => ({ forced: undefined as Pace | undefined }));
+/**
+ * Watches the backdrop's mode: `pace`, when set, replaces Shimmer's own, and
+ * `input` is the latest the mode was stepped with.
+ */
+const probe = vi.hoisted(() => ({
+  pace: undefined as Pace | undefined,
+  input: undefined as BackdropInput | undefined,
+}));
 
 vi.mock("./backdrop-modes", async (importOriginal) => {
   const { MODES } = await importOriginal<typeof import("./backdrop-modes")>();
@@ -36,7 +42,14 @@ vi.mock("./backdrop-modes", async (importOriginal) => {
       ...mode,
       create(setup: ModeSetup) {
         const instance = mode.create(setup);
-        return { ...instance, pace: () => pace.forced ?? instance.pace() };
+        return {
+          ...instance,
+          step(input: BackdropInput, now: number) {
+            probe.input = input;
+            instance.step(input, now);
+          },
+          pace: () => probe.pace ?? instance.pace(),
+        };
       },
     })),
   };
@@ -118,7 +131,7 @@ beforeEach(() => {
   }`;
   document.head.append(style);
   shadersChanging = false;
-  pace.forced = undefined;
+  probe.pace = undefined;
 });
 
 afterEach(() => {
@@ -357,7 +370,7 @@ test("a backdrop removed and re-appended starts its loop again", async () => {
 });
 
 test("an active mode holds full rate over a static frame", async () => {
-  pace.forced = "active";
+  probe.pace = "active";
   mount();
   await vi.advanceTimersByTimeAsync(100);
 
@@ -365,7 +378,7 @@ test("an active mode holds full rate over a static frame", async () => {
 });
 
 test("an idle mode runs at the idle rate over a static frame, even while the canvas is changing", async () => {
-  pace.forced = "idle";
+  probe.pace = "idle";
   shadersChanging = true;
   mount();
   await vi.advanceTimersByTimeAsync(1500);
@@ -376,9 +389,25 @@ test("an idle mode runs at the idle rate over a static frame, even while the can
 });
 
 test("a still mode over a static frame stops", async () => {
-  pace.forced = "still";
+  probe.pace = "still";
   mount();
   await vi.advanceTimersByTimeAsync(100);
 
   expect(vi.getTimerCount()).toBe(0);
+});
+
+test("the mode is told which cells the viewport shows of the overhanging grid", async () => {
+  vi.spyOn(StubCanvas.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(-128, -256, 1280, 1280),
+  );
+  mount();
+  await vi.advanceTimersByTimeAsync(20);
+
+  const cells = (offset: number) => (offset * 64) / 1281;
+  expect(probe.input?.visible).toEqual({
+    left: cells(128),
+    top: cells(256),
+    right: cells(window.innerWidth + 128 + 1),
+    bottom: cells(window.innerHeight + 256 + 1),
+  });
 });

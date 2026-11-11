@@ -1,7 +1,11 @@
 import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
 import { MODES } from "./backdrop-modes";
-import type { BackdropInput, ModeInstance } from "./backdrop-modes/mode";
+import type {
+  BackdropInput,
+  CellRect,
+  ModeInstance,
+} from "./backdrop-modes/mode";
 import { makeNoise2D, mulberry32 } from "./backdrop-noise";
 import { clamp } from "./emulated-canvas-limits";
 
@@ -133,6 +137,27 @@ export function gridCoordinate(
   gap: number,
 ) {
   return ((offset + gap / 2) / (extent + gap)) * count;
+}
+
+/**
+ * The span of the grid inside the viewport, in logical cells: a whole stride
+ * (cell + gap) per cell, so an axis the grid fits on spans every cell.
+ */
+export function visibleCells(
+  grid: DOMRect,
+  viewport: { width: number; height: number },
+  columns: number,
+  rows: number,
+  gap: number,
+): CellRect {
+  const cells = (offset: number, extent: number, count: number) =>
+    clamp((offset * count) / (extent + gap), 0, count);
+  return {
+    left: cells(-grid.left, grid.width, columns),
+    top: cells(-grid.top, grid.height, rows),
+    right: cells(viewport.width - grid.left + gap, grid.width, columns),
+    bottom: cells(viewport.height - grid.top + gap, grid.height, rows),
+  };
 }
 
 const NOISE_SEED = 0x9e3779b9;
@@ -366,6 +391,7 @@ export class PixelBackdrop extends HTMLElement {
 
   #tick = (now: number) => {
     this.#frame = undefined;
+    this.#measure();
     this.#advance(now);
     // Asked before render, which may consume what made the mode busy: the
     // frame after it must still be drawn, to clear it.
@@ -495,15 +521,33 @@ export class PixelBackdrop extends HTMLElement {
     context.putImageData(image, 0, 0);
   }
 
-  /** Viewport point -> position on the grid in logical cells, if it is on it. */
-  #logical(clientX: number, clientY: number) {
-    const canvas = this.#canvas;
-    if (canvas === undefined) return undefined;
-    const rect = (this.#rect ??= canvas.getBoundingClientRect());
-    if (rect.width === 0 || rect.height === 0) {
-      this.#rect = undefined;
+  /**
+   * The grid's box, measured once per resize or knob change, and the cells of
+   * it the viewport shows. `innerWidth` and `innerHeight` are the viewport as
+   * it is now, so a mobile toolbar covering the bottom rows counts as hiding
+   * them.
+   */
+  #measure() {
+    if (this.#rect !== undefined) return this.#rect;
+    const rect = this.#canvas?.getBoundingClientRect();
+    if (rect === undefined || rect.width === 0 || rect.height === 0) {
       return undefined;
     }
+    this.#rect = rect;
+    this.#input.visible = visibleCells(
+      rect,
+      { width: innerWidth, height: innerHeight },
+      this.#columns,
+      this.#rows,
+      this.#options.gap,
+    );
+    return rect;
+  }
+
+  /** Viewport point -> position on the grid in logical cells, if it is on it. */
+  #logical(clientX: number, clientY: number) {
+    const rect = this.#measure();
+    if (rect === undefined) return undefined;
     const gap = this.#options.gap;
     const x = gridCoordinate(
       clientX - rect.left,

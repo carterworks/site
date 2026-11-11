@@ -1,5 +1,10 @@
 import { afterEach, expect, test } from "vitest";
-import { gridCoordinate, shade, shadeTable } from "./pixel-backdrop";
+import {
+  gridCoordinate,
+  shade,
+  shadeTable,
+  visibleCells,
+} from "./pixel-backdrop";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -69,4 +74,16 @@ test("shading maps each field cell through the table to an opaque pixel, clampin
   expect([...pixels]).toEqual([
     0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 255, 255, 255, 255, 255,
   ]);
+});
+
+test("the visible cells are the grid's overlap with the viewport, whole on the axis it fits", () => {
+  const stride = (box + 5) / 80;
+  const grid = new DOMRect(-358, 0, box, box);
+
+  expect(visibleCells(grid, { width: 800, height: box }, 80, 80, 5)).toEqual({
+    left: 358 / stride,
+    top: 0,
+    right: (800 + 358 + 5) / stride,
+    bottom: 80,
+  });
 });
