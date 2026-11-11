@@ -6,6 +6,7 @@ import type {
   CellRect,
   ModeInstance,
 } from "./backdrop-modes/mode";
+import { isToyPress } from "./backdrop-press";
 import { makeNoise2D, mulberry32 } from "./backdrop-noise";
 import { clamp } from "./emulated-canvas-limits";
 
@@ -292,8 +293,10 @@ export class PixelBackdrop extends HTMLElement {
     window.addEventListener("pointerdown", this.#onPointerDown, {
       passive: true,
     });
-    window.addEventListener("pointerup", this.#onPointerUp, { passive: true });
-    window.addEventListener("pointercancel", this.#onPointerUp, {
+    window.addEventListener("pointerup", this.#endHold, { passive: true });
+    window.addEventListener("pointercancel", this.#endHold, { passive: true });
+    window.addEventListener("blur", this.#endHold, { passive: true });
+    document.addEventListener("selectionchange", this.#onSelectionChange, {
       passive: true,
     });
     window.addEventListener("resize", this.#onResize);
@@ -313,8 +316,10 @@ export class PixelBackdrop extends HTMLElement {
     this.#stop();
     window.removeEventListener("pointermove", this.#onPointerMove);
     window.removeEventListener("pointerdown", this.#onPointerDown);
-    window.removeEventListener("pointerup", this.#onPointerUp);
-    window.removeEventListener("pointercancel", this.#onPointerUp);
+    window.removeEventListener("pointerup", this.#endHold);
+    window.removeEventListener("pointercancel", this.#endHold);
+    window.removeEventListener("blur", this.#endHold);
+    document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
@@ -604,14 +609,24 @@ export class PixelBackdrop extends HTMLElement {
 
   /** A new object per press, so a mode tells presses apart by identity. */
   #onPointerDown = (event: PointerEvent) => {
+    if (!isToyPress(event)) return;
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#input.press = { ...point, at: this.#time, held: true };
     this.#touched();
   };
 
-  #onPointerUp = () => {
+  /**
+   * Also run on `pointercancel`, which is how a touch scroll starts, and on
+   * blur, where the release would never arrive.
+   */
+  #endHold = () => {
     if (this.#input.press !== undefined) this.#input.press.held = false;
+  };
+
+  /** A drag that turned into a text selection is no longer a press. */
+  #onSelectionChange = () => {
+    if (getSelection()?.isCollapsed === false) this.#endHold();
   };
 
   #onMotionChange = () => {

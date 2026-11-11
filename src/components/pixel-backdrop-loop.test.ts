@@ -143,6 +143,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  Reflect.deleteProperty(document, "caretPositionFromPoint");
+  getSelection()?.removeAllRanges();
   document.body.replaceChildren();
   document.head.replaceChildren();
   vi.useRealTimers();
@@ -432,4 +434,92 @@ test("setMode switches to another mode at once, and ignores an unknown id", asyn
   backdrop.setMode("missing");
   await vi.advanceTimersByTimeAsync(20);
   expect(shownAt(40, 40)).toBe(0);
+});
+
+const press = (target: EventTarget, init: PointerEventInit = {}) =>
+  target.dispatchEvent(
+    new PointerEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
+      isPrimary: true,
+      pointerType: "mouse",
+      clientX: 100,
+      clientY: 100,
+      ...init,
+    }),
+  );
+
+async function latestInput() {
+  await vi.advanceTimersByTimeAsync(50);
+  return probe.input!;
+}
+
+test("a press in empty space reaches the mode as held", async () => {
+  mount();
+  press(document.body);
+
+  expect((await latestInput()).press).toMatchObject({ held: true });
+});
+
+test("a press on a link or on text never reaches the mode", async () => {
+  mount();
+  const link = document.createElement("a");
+  document.body.append(link);
+  press(link);
+  expect((await latestInput()).press).toBeUndefined();
+
+  const text = document.createTextNode("words");
+  Object.defineProperty(document, "caretPositionFromPoint", {
+    value: () => ({ offsetNode: text, offset: 0 }),
+    configurable: true,
+  });
+  vi.spyOn(Range.prototype, "getClientRects").mockReturnValue([
+    new DOMRect(0, 0, 200, 200),
+  ] as unknown as DOMRectList);
+  press(document.body);
+  expect((await latestInput()).press).toBeUndefined();
+});
+
+test.each([
+  ["pointerup", () => window.dispatchEvent(new PointerEvent("pointerup"))],
+  [
+    "pointercancel",
+    () => window.dispatchEvent(new PointerEvent("pointercancel")),
+  ],
+  ["window blur", () => window.dispatchEvent(new Event("blur"))],
+  [
+    "a selection appearing",
+    () => {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = "words";
+      document.body.append(paragraph);
+      getSelection()!.selectAllChildren(paragraph);
+      document.dispatchEvent(new Event("selectionchange"));
+    },
+  ],
+])("the hold ends on %s", async (_, end) => {
+  mount();
+  press(document.body);
+  expect((await latestInput()).press?.held).toBe(true);
+
+  end();
+
+  expect((await latestInput()).press?.held).toBe(false);
+});
+
+test("a collapsed selection does not end the hold", async () => {
+  mount();
+  press(document.body);
+
+  document.dispatchEvent(new Event("selectionchange"));
+
+  expect((await latestInput()).press?.held).toBe(true);
+});
+
+test("a touch tap is a press already released, so a toy sees one burst", async () => {
+  mount();
+  press(document.body, { pointerType: "touch" });
+  window.dispatchEvent(new PointerEvent("pointerup", { pointerType: "touch" }));
+
+  expect((await latestInput()).press).toMatchObject({ held: false });
 });
