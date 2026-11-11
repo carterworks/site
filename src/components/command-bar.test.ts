@@ -294,16 +294,27 @@ describe("command bar dialog", () => {
     openSettings();
     const dialog = getElement<HTMLDialogElement>("dialog");
     const show = vi.spyOn(dialog, "showPopover");
-    const closing = new Event("beforetoggle");
-    Object.defineProperty(closing, "newState", { value: "closed" });
 
-    dialog.dispatchEvent(closing);
     dialog.removeAttribute("data-popover-open");
     getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
-      new FocusEvent("focus"),
+      new FocusEvent("focus", { relatedTarget: row("theme") }),
     );
 
     expect(show).not.toHaveBeenCalled();
+  });
+
+  test("a click whose pointerup light-dismisses the popover its mousedown focus opened reopens it", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    const closing = new Event("beforetoggle");
+    Object.defineProperty(closing, "newState", { value: "closed" });
+
+    trigger.dispatchEvent(new FocusEvent("focus"));
+    dialog.dispatchEvent(closing);
+    dialog.removeAttribute("data-popover-open");
+    trigger.click();
+
+    expect(dialog.matches(":popover-open")).toBe(true);
   });
 
   test("Shift+Enter advances the theme without closing the dialog", () => {

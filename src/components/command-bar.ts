@@ -177,15 +177,8 @@ class CommandBarElement extends HTMLElement {
     osScheme.addEventListener?.("change", renderRows);
     this.cleanup = () => osScheme.removeEventListener?.("change", renderRows);
 
-    // Dismissing the popover restores focus to the trigger before the popover
-    // reports closed, so that focus event would call showPopover mid-hide.
-    let closing = false;
-    dialog.addEventListener("beforetoggle", (event) => {
-      closing = event.newState === "closed";
-    });
-
     const prepare = () => {
-      if (closing || dialog.matches(":popover-open")) return;
+      if (dialog.matches(":popover-open")) return;
       rebuildPageLinks();
       renderRows();
       dialog.showPopover();
@@ -208,7 +201,13 @@ class CommandBarElement extends HTMLElement {
       visible[next].scrollIntoView({ block: "nearest" });
     };
 
-    trigger.addEventListener("focus", prepare);
+    // Focus arriving from inside the dialog is dismissal restoring it to the
+    // trigger mid-hide, where showPopover would throw. Click stays unguarded:
+    // its pointerup light-dismisses the popover that mousedown's focus just
+    // opened, and only the click reopens it.
+    trigger.addEventListener("focus", (event) => {
+      if (!dialog.contains(event.relatedTarget as Node | null)) prepare();
+    });
     trigger.addEventListener("click", prepare);
     back.addEventListener("click", () => showPanel("root"));
     trigger.addEventListener("input", filter);
@@ -254,9 +253,7 @@ class CommandBarElement extends HTMLElement {
       }
     });
     dialog.addEventListener("toggle", (event) => {
-      if (event.newState !== "closed") return;
-      closing = false;
-      trigger.blur();
+      if (event.newState === "closed") trigger.blur();
     });
     this.addEventListener("pointermove", (event) => {
       const command = commandFrom(event.target);
