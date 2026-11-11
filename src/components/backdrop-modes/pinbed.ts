@@ -44,6 +44,7 @@ const PRINT_DEPTH = 0.35;
 export const pinbed: Mode = {
   id: "pinbed",
   label: "Pinbed",
+  look: { ghost: 40, noise: 8 },
   holds: true,
   create({ columns, rows, random }) {
     const depth = new Float32Array(columns * rows);

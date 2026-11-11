@@ -196,3 +196,48 @@ test("mode select follows the backdrop's mode after a navigation", () => {
   expect(modeSelect(canvas).element.value).toBe(MODES[2].id);
   backdrop.remove();
 });
+
+const slider = (canvas: HTMLElement, key: string) =>
+  canvas.querySelector<HTMLInputElement>(`#pixel-backdrop-${key}`)!;
+
+test("the ghost and noise sliders open on the shown mode's look", () => {
+  const backdrop = mountBackdrop();
+  backdrop.setMode("silt");
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  expect(slider(canvas, "ghost").value).toBe("55");
+  expect(slider(canvas, "noise").value).toBe("12");
+  backdrop.remove();
+});
+
+test("choosing a mode moves the ghost and noise sliders to its look", () => {
+  const backdrop = mountBackdrop();
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const select = modeSelect(canvas);
+  select.element.value = "culture";
+  select.element.dispatchEvent(new Event("change"));
+
+  expect(slider(canvas, "ghost").value).toBe("70");
+  expect(slider(canvas, "noise").value).toBe("0");
+  backdrop.remove();
+});
+
+test("a slider tweak overrides the look, and is what persists", async () => {
+  const backdrop = mountBackdrop();
+  backdrop.setMode("silt");
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const ghost = slider(canvas, "ghost");
+  ghost.value = "30";
+  ghost.dispatchEvent(new Event("input"));
+  await new Promise(requestAnimationFrame);
+
+  expect(backdrop.look.ghost).toBe(30);
+  persistChanges(backdrop.options);
+  expect(stored()).toEqual({ ghost: 30 });
+  backdrop.remove();
+});

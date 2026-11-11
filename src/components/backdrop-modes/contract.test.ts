@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import { mulberry32 } from "../backdrop-noise";
+import { MAX_GHOST } from "../emulated-canvas-limits";
 import { readDefaults } from "../pixel-backdrop";
 import { MODES } from ".";
 import type { BackdropInput, Mode, Pace } from "./mode";
@@ -263,6 +264,14 @@ test("the allocation count catches a mode that copies a buffer every frame", () 
 describe.each(MODES.map((mode) => [mode.id, mode] as const))(
   "%s",
   (id, mode) => {
+    test("has a look, if any, within 0–100 and under the canvas's ghost cap", () => {
+      const { ghost = 0, noise = 0 } = mode.look ?? {};
+      expect(ghost).toBeGreaterThanOrEqual(0);
+      expect(ghost).toBeLessThanOrEqual(MAX_GHOST * 100);
+      expect(noise).toBeGreaterThanOrEqual(0);
+      expect(noise).toBeLessThanOrEqual(100);
+    });
+
     test("keeps every field value finite and within 0–1", () => {
       const session = start(mode);
       const badSteps: number[] = [];

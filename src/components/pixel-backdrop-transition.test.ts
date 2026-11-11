@@ -41,9 +41,10 @@ const log = vi.hoisted(() => ({
 }));
 
 vi.mock("./backdrop-modes", () => {
-  const fill = (id: string, value: number): Mode => ({
+  const fill = (id: string, value: number, look?: Mode["look"]): Mode => ({
     id,
     label: id,
+    look,
     create() {
       log.created.push(id);
       return {
@@ -56,7 +57,15 @@ vi.mock("./backdrop-modes", () => {
       };
     },
   });
-  return { MODES: [fill("blank", 0), fill("solid", 1), fill("half", 0.5)] };
+  return {
+    MODES: [
+      fill("blank", 0),
+      fill("solid", 1),
+      fill("half", 0.5),
+      fill("misty", 0, { ghost: 20, noise: 40 }),
+      fill("clear", 0, { ghost: 80, noise: 0 }),
+    ],
+  };
 });
 
 const context = {
@@ -259,5 +268,66 @@ describe("mode", () => {
 
     backdrop.setMode("half");
     expect(backdrop.mode).toBe("half");
+  });
+});
+
+/** The base lifted by noise of `intensity` percent, at the mocked field's mid-level. */
+const lifted = (intensity: number) => BASE - (intensity / 100) * 0.5 * 255;
+
+const ghostOf = (backdrop: HTMLElement) =>
+  Number(backdrop.querySelector("emulated-canvas")!.getAttribute("data-ghost"));
+
+describe("a mode's look", () => {
+  test("sets the canvas ghost and the noise intensity", async () => {
+    const backdrop = mount();
+    backdrop.setMode("misty");
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(ghostOf(backdrop)).toBe(20);
+    expect(shownAt(30)).toBeCloseTo(lifted(40), -1);
+    expect(backdrop.look).toEqual({ ghost: 20, noise: 40 });
+  });
+
+  test("falls back to the global knobs for a mode without one", async () => {
+    const backdrop = mount();
+    backdrop.configure({ ghost: 30, noise: 0 });
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(ghostOf(backdrop)).toBe(30);
+    expect(shownAt(30)).toBe(BASE);
+  });
+
+  test("blends from the old mode's to the new one's across a dissolve", async () => {
+    const backdrop = mount();
+    backdrop.setMode("misty");
+    await vi.advanceTimersByTimeAsync(100);
+
+    backdrop.setMode("clear");
+    await vi.advanceTimersByTimeAsync(400);
+    expect(Math.abs(ghostOf(backdrop) - 50)).toBeLessThan(4);
+    expect(Math.abs(shownAt(30) - lifted(20))).toBeLessThan(4);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(ghostOf(backdrop)).toBe(80);
+    expect(shownAt(30)).toBe(BASE);
+  });
+
+  test("gives way to a knob tweaked off its default, in every mode, until reset", async () => {
+    const backdrop = mount();
+    backdrop.setMode("misty");
+    backdrop.configure({ ghost: 33, noise: 10 });
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(ghostOf(backdrop)).toBe(33);
+    expect(shownAt(30)).toBeCloseTo(lifted(10), -1);
+
+    backdrop.setMode("clear");
+    await vi.advanceTimersByTimeAsync(900);
+    expect(backdrop.look).toEqual({ ghost: 33, noise: 10 });
+
+    backdrop.reset();
+    await vi.advanceTimersByTimeAsync(20);
+    expect(backdrop.look).toEqual({ ghost: 80, noise: 0 });
+    expect(ghostOf(backdrop)).toBe(80);
   });
 });

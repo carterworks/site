@@ -28,6 +28,8 @@ export type BackdropInput = {
   visible: CellRect;
 };
 
+export type Look = Pick<PixelBackdropOptions, "ghost" | "noise">;
+
 /** Full frame rate, the ~8 fps idle timer, or no frames at all. */
 export type Pace = "active" | "idle" | "still";
 
@@ -65,5 +67,11 @@ export type Mode = {
    * and cut the hold short.
    */
   holds?: boolean;
+  /**
+   * The canvas ghost and the background noise's intensity that suit the mode,
+   * both 0–100, as tuned in the prototype gallery. Without one the mode shows
+   * the host's `ghost` and `noise`.
+   */
+  look?: Look;
   create(setup: ModeSetup): ModeInstance;
 };

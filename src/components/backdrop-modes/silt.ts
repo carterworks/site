@@ -41,6 +41,7 @@ const TIPPED_DRAIN = 12;
 export const silt: Mode = {
   id: "silt",
   label: "Silt",
+  look: { ghost: 55, noise: 12 },
   holds: true,
   create({ columns, rows, random }) {
     const grains = new Uint8Array(columns * rows);

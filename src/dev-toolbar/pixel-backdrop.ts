@@ -22,8 +22,17 @@ type Refresher = () => void;
 
 const backdrop = () => document.querySelector("pixel-backdrop");
 
-const current = (): PixelBackdropOptions =>
-  backdrop()?.options ?? readDefaults();
+/**
+ * The knobs as the backdrop shows them, so the ghost and noise sliders read
+ * the shown mode's look. Saving reads the raw options instead, so only a
+ * tweak persists, not a look.
+ */
+const current = (): PixelBackdropOptions => {
+  const element = backdrop();
+  return element === null
+    ? readDefaults()
+    : { ...element.options, ...element.look };
+};
 
 export const STORAGE_KEY = "pixel-backdrop";
 
@@ -285,6 +294,7 @@ function addControl(
     });
     select.addEventListener("change", () => {
       backdrop()?.setMode(select.value);
+      for (const refresh of refreshers) refresh();
     });
   } else {
     output.remove();

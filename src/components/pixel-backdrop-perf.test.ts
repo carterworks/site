@@ -294,7 +294,7 @@ afterEach(() => {
 
 describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
   test("each frame paints the bitmap once, copies it to the display once, and samples the noise at most once per cell", async () => {
-    mount(id);
+    const backdrop = mount(id);
     await play();
     await vi.advanceTimersByTimeAsync(SETTLE_MS + FADE_MS);
 
@@ -308,7 +308,9 @@ describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
         frame.hostNoise > SIZE * SIZE,
     );
     expect(unbounded).toEqual([]);
-    expect(frames.some((frame) => frame.hostNoise > 0)).toBe(true);
+    expect(frames.some((frame) => frame.hostNoise > 0)).toBe(
+      backdrop.look.noise > 0,
+    );
   });
 
   test("a mode change keeps every frame within bounds and allocates no buffers once the first change has warmed up", async () => {

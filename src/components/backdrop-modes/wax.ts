@@ -29,6 +29,7 @@ type Grab = { blob: Blob; dx: number; dy: number; press: Press };
 export const wax: Mode = {
   id: "wax",
   label: "Lamp Wax",
+  look: { ghost: 75, noise: 8 },
   holds: true,
   create({ columns, random }) {
     const scale = columns / PROTOTYPE_COLUMNS;

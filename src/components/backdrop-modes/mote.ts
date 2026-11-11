@@ -64,6 +64,7 @@ type Floater = { glyph: string[]; x: number; y: number; life: number };
 export const mote: Mode = {
   id: "mote",
   label: "Mote",
+  look: { ghost: 55, noise: 10 },
   create({ columns, rows }) {
     const critter = {
       x: 0,

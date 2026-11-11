@@ -4,6 +4,8 @@ import { MODES } from "./backdrop-modes";
 import type {
   BackdropInput,
   CellRect,
+  Look,
+  Mode,
   ModeInstance,
 } from "./backdrop-modes/mode";
 import { isToyPress } from "./backdrop-press";
@@ -21,7 +23,8 @@ import { clamp } from "./emulated-canvas-limits";
  * The element owns its render knobs so the dev-toolbar app can tweak them
  * live. The ones the canvas draws with (gap, shape, ghost, scale) are mirrored
  * onto the inner `<emulated-canvas>`'s `data-*` attributes — its public API;
- * the rest are read by the element and the modes directly.
+ * the rest are read by the element and the modes directly. A mode's `look`
+ * stands in for `ghost` and `noise` unless they are tweaked; see `look`.
  */
 
 export type PixelBackdropOptions = {
@@ -260,6 +263,8 @@ export function shade(
 
 export class PixelBackdrop extends HTMLElement {
   #options!: PixelBackdropOptions;
+  /** The stylesheet defaults as last read: a knob off its default is a tweak. */
+  #defaults?: PixelBackdropOptions;
   #canvas?: EmulatedCanvas;
   #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
@@ -275,6 +280,7 @@ export class PixelBackdrop extends HTMLElement {
   #mode?: ModeInstance;
   /** The mode being dissolved away; it keeps stepping until the dissolve ends. */
   #outgoing?: ModeInstance;
+  #outgoingMode?: Mode;
   /** `now` of the dissolve's first frame; the dissolve runs on the frame clock. */
   #dissolveStart?: number;
   #dissolveProgress = 0;
@@ -310,6 +316,19 @@ export class PixelBackdrop extends HTMLElement {
     return this.#chosen.id;
   }
 
+  /**
+   * The ghost and noise the chosen mode shows once any dissolve ends: its
+   * look's, except that a knob tweaked off its stylesheet default wins in
+   * every mode. A mode's look is tuned to it, so it beats the site-wide
+   * default, while a tweak is someone deliberately trying a value.
+   */
+  get look(): Look {
+    return {
+      ghost: this.#lookOf(this.#chosen, "ghost"),
+      noise: this.#lookOf(this.#chosen, "noise"),
+    };
+  }
+
   /** A copy of the current knobs, for the dev toolbar to read. */
   get options(): PixelBackdropOptions {
     return { ...this.#options };
@@ -343,7 +362,7 @@ export class PixelBackdrop extends HTMLElement {
       right: this.#columns,
       bottom: this.#rows,
     };
-    this.#options ??= readDefaults();
+    this.#options ??= this.#loadDefaults();
     this.#mode ??= this.#createMode();
     this.#apply();
 
@@ -394,7 +413,10 @@ export class PixelBackdrop extends HTMLElement {
   /** Merge a partial set of knobs, and repaint. */
   configure(partial: Partial<PixelBackdropOptions>) {
     // In place, as the mode holds this object to read its knobs live.
-    this.#options = Object.assign(this.#options ?? readDefaults(), partial);
+    this.#options = Object.assign(
+      this.#options ?? this.#loadDefaults(),
+      partial,
+    );
     this.#apply();
     if (this.#options.enabled) {
       this.#start();
@@ -407,7 +429,30 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
-    this.configure(readDefaults());
+    this.configure(this.#loadDefaults());
+  }
+
+  #loadDefaults() {
+    this.#defaults = readDefaults();
+    return { ...this.#defaults };
+  }
+
+  #lookOf(mode: Mode, key: keyof Look) {
+    const value = this.#options[key];
+    const look = mode.look;
+    return look === undefined || value !== this.#defaults?.[key]
+      ? value
+      : look[key];
+  }
+
+  /** Mid-dissolve, the look slides from the outgoing mode's to the chosen one's. */
+  #look(key: keyof Look) {
+    const incoming = this.#lookOf(this.#chosen, key);
+    if (this.#outgoing === undefined || this.#outgoingMode === undefined) {
+      return incoming;
+    }
+    const outgoing = this.#lookOf(this.#outgoingMode, key);
+    return outgoing + (incoming - outgoing) * this.#dissolveProgress;
   }
 
   /**
@@ -426,6 +471,7 @@ export class PixelBackdrop extends HTMLElement {
   setMode(id: string) {
     const mode = MODES.find((candidate) => candidate.id === id);
     if (mode === undefined || mode === this.#chosen) return;
+    const previous = this.#chosen;
     this.#chosen = mode;
     const outgoing = this.#mode;
     if (outgoing === undefined) return;
@@ -439,6 +485,7 @@ export class PixelBackdrop extends HTMLElement {
       return;
     }
     this.#outgoing = outgoing;
+    this.#outgoingMode = previous;
     this.#buildThreshold();
     this.#wake();
   }
@@ -505,18 +552,24 @@ export class PixelBackdrop extends HTMLElement {
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const { autoFit, enabled, gap, ghost, scale, shape } = this.#options;
+    const { autoFit, enabled, gap, scale, shape } = this.#options;
 
     this.#rect = undefined;
     canvas.dataset.gap = String(gap);
     canvas.dataset.shape = shape;
-    canvas.dataset.ghost = String(ghost);
+    this.#applyGhost(canvas);
     canvas.dataset.scale = String(scale);
     if (autoFit)
       canvas.style.setProperty("--emulated-canvas-scale", this.#fit());
     else canvas.style.removeProperty("--emulated-canvas-scale");
 
     this.toggleAttribute("data-disabled", !enabled);
+  }
+
+  /** Written only on a change, as a dissolve recomputes it every frame. */
+  #applyGhost(canvas: EmulatedCanvas) {
+    const ghost = String(Math.round(this.#look("ghost")));
+    if (canvas.dataset.ghost !== ghost) canvas.dataset.ghost = ghost;
   }
 
   /**
@@ -616,7 +669,7 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Static noise has nothing left to redraw until input or `configure`. */
   #noiseDrifts() {
-    return this.#options.noise > 0 && this.#options.noiseSpeed > 0;
+    return this.#look("noise") > 0 && this.#options.noiseSpeed > 0;
   }
 
   /** Input ends the idle wait early, so it never waits on the slow redraw. */
@@ -638,6 +691,7 @@ export class PixelBackdrop extends HTMLElement {
       this.#canvas?.reset();
     }
     this.#wasDark = dark;
+    if (this.#canvas !== undefined) this.#applyGhost(this.#canvas);
     const base = dark ? this.#options.darkBase : this.#options.lightBase;
     const ink = dark ? this.#options.darkInk : this.#options.lightInk;
 
@@ -679,7 +733,8 @@ export class PixelBackdrop extends HTMLElement {
     field.fill(0);
     this.#mode?.render(field);
     if (this.#outgoing !== undefined) this.#mix(this.#outgoing, field);
-    if (this.#options.noise > 0) {
+    const noise = this.#look("noise");
+    if (noise > 0) {
       const feature =
         (Math.max(1, this.#options.noiseScale) * columns) / TUNED_GRID;
       const step = clamp(
@@ -694,7 +749,7 @@ export class PixelBackdrop extends HTMLElement {
         1 / feature,
         drift + NOISE_OFFSET_X,
         drift * 0.5 + NOISE_OFFSET_Y,
-        this.#options.noise / 100,
+        noise / 100,
       );
     }
 

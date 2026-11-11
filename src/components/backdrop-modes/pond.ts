@@ -22,6 +22,7 @@ const SHADES = 6;
 export const pond: Mode = {
   id: "pond",
   label: "Still Pond",
+  look: { ghost: 50, noise: 10 },
   holds: true,
   create({ columns: size, random }) {
     let height = new Float32Array(size * size);
