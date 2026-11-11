@@ -1,18 +1,30 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
-import type { BackdropInput, CellRect } from "./mode";
+import { type BackdropInput, type CellRect, GRID_SIZE } from "./mode";
 import { mote } from "./mote";
 
-const columns = 80;
-const rows = 80;
+/** The grid the sprite is drawn for; finer grids draw each sprite pixel as a block. */
+const DESIGN_SIZE = 80;
 const STEP = 1000 / 60;
-const VISIBLE: CellRect = { left: 0, top: 17.5, right: 80, bottom: 62.5 };
-/** `floor(visible.bottom)` minus the three-cell inset the mode keeps. */
-const GROUND = 59;
-const SLEEPING_TOP = GROUND - 4;
-const STANDING_TOP = GROUND - 7;
+/** Lit cells of the standing sprite once its two eyes are cut out. */
+const STAND_PIXELS = 38;
 
-function setup(visible = VISIBLE) {
+const scale = GRID_SIZE / DESIGN_SIZE;
+const VISIBLE: CellRect = {
+  left: 0,
+  top: 17.5 * scale,
+  right: GRID_SIZE,
+  bottom: 62.5 * scale,
+};
+/** `floor(visible.bottom)` minus the three-cell inset, in sprite pixels. */
+const GROUND = 59 * scale;
+const SLEEPING_TOP = GROUND - 4 * scale;
+const STANDING_TOP = GROUND - 7 * scale;
+
+function setup(visible = VISIBLE, size = GRID_SIZE) {
+  const columns = size;
+  const rows = size;
+  const blockArea = (size / DESIGN_SIZE) ** 2;
   const instance = mote.create({
     columns,
     rows,
@@ -51,11 +63,12 @@ function setup(visible = VISIBLE) {
     const xs = body().map(({ x }) => x + 0.5);
     return xs.reduce((sum, x) => sum + x) / xs.length;
   };
-  const crumbs = () => cells((value) => Math.abs(value - 0.85) < 1e-3).length;
+  const crumbs = () =>
+    cells((value) => Math.abs(value - 0.85) < 1e-3).length / blockArea;
   const hearts = () =>
     cells((value, y) => value <= 0.65 && y < bodyTop() - 1).length;
   const wake = () => {
-    tap(bodyX(), GROUND - 2);
+    tap(bodyX(), GROUND - 2 * scale);
     run(150);
   };
   return {
@@ -66,6 +79,7 @@ function setup(visible = VISIBLE) {
     now: () => now,
     bodyTop,
     bodyX,
+    bodyCells: () => body().length,
     crumbs,
     hearts,
   };
@@ -77,10 +91,24 @@ test("it starts curled up asleep on the visible bottom edge", () => {
   expect(toy.bodyTop()).toBe(SLEEPING_TOP);
 });
 
+test("each sprite pixel is drawn as a block as wide as the grid is fine", () => {
+  const coarse = setup(
+    { left: 0, top: 17.5, right: DESIGN_SIZE, bottom: 62.5 },
+    DESIGN_SIZE,
+  );
+  const fine = setup();
+  coarse.run(1);
+  fine.run(1);
+  coarse.wake();
+  fine.wake();
+  expect(coarse.bodyCells()).toBe(STAND_PIXELS);
+  expect(fine.bodyCells()).toBe(STAND_PIXELS * scale ** 2);
+});
+
 test("a tap on the sleeping critter wakes it", () => {
   const toy = setup();
   toy.run(1);
-  toy.tap(toy.bodyX(), GROUND - 2);
+  toy.tap(toy.bodyX(), GROUND - 2 * scale);
   toy.run(150);
   expect(toy.bodyTop()).toBe(STANDING_TOP);
 });
@@ -88,7 +116,7 @@ test("a tap on the sleeping critter wakes it", () => {
 test("a tap in empty space wakes it as well as tossing a crumb", () => {
   const toy = setup();
   toy.run(1);
-  toy.tap(10, 30);
+  toy.tap(10 * scale, 30 * scale);
   toy.run(10);
   expect(toy.crumbs()).toBe(1);
   toy.run(200);
@@ -99,10 +127,10 @@ test("it walks toward the pointer", () => {
   const toy = setup();
   toy.run(1);
   toy.wake();
-  toy.input.pointer = { x: 15, y: 40 };
+  toy.input.pointer = { x: 15 * scale, y: 40 * scale };
   toy.input.lastInputAt = toy.now();
   toy.run(400);
-  expect(Math.abs(toy.bodyX() - 15)).toBeLessThan(2);
+  expect(Math.abs(toy.bodyX() - 15 * scale)).toBeLessThan(2 * scale);
 });
 
 test("rubbing back and forth over it makes it happy", () => {
@@ -113,7 +141,10 @@ test("rubbing back and forth over it makes it happy", () => {
 
   const x = toy.bodyX();
   for (let i = 0; i < 6; i += 1) {
-    toy.input.pointer = { x: x + (i % 2 ? 2 : -2), y: GROUND - 3 };
+    toy.input.pointer = {
+      x: x + (i % 2 ? 2 : -2) * scale,
+      y: GROUND - 3 * scale,
+    };
     toy.run(8);
   }
   toy.run(40);
@@ -123,7 +154,7 @@ test("rubbing back and forth over it makes it happy", () => {
 test("a crumb in reach is walked to and eaten", () => {
   const toy = setup();
   toy.run(1);
-  toy.tap(20, 30);
+  toy.tap(20 * scale, 30 * scale);
   toy.run(30);
   expect(toy.crumbs()).toBe(1);
   toy.run(60 * 8);
@@ -138,7 +169,7 @@ test.each([
   (_edge, x) => {
     const toy = setup();
     toy.run(1);
-    toy.tap(x, 30);
+    toy.tap(x, 30 * scale);
     toy.run(60 * 12);
     expect(toy.crumbs()).toBe(0);
 
@@ -167,11 +198,16 @@ test("it follows the visible bottom edge when the visible rect changes", () => {
   const toy = setup();
   toy.run(1);
   toy.wake();
-  toy.input.visible = { left: 20, top: 0, right: 60, bottom: 50 };
+  toy.input.visible = {
+    left: 20 * scale,
+    top: 0,
+    right: 60 * scale,
+    bottom: 50 * scale,
+  };
   toy.run(5);
-  expect(toy.bodyTop()).toBe(47 - 7);
-  expect(toy.bodyX()).toBeGreaterThanOrEqual(20);
-  expect(toy.bodyX()).toBeLessThanOrEqual(60);
+  expect(toy.bodyTop()).toBe((47 - 7) * scale);
+  expect(toy.bodyX()).toBeGreaterThanOrEqual(20 * scale);
+  expect(toy.bodyX()).toBeLessThanOrEqual(60 * scale);
 });
 
 function highestWhile(toy: ReturnType<typeof setup>, steps: number) {
@@ -186,7 +222,7 @@ function highestWhile(toy: ReturnType<typeof setup>, steps: number) {
 test("rapid treats and taps never stack hops into flight", () => {
   const solo = setup();
   solo.run(1);
-  solo.tap(solo.bodyX(), GROUND - 2);
+  solo.tap(solo.bodyX(), GROUND - 2 * scale);
   const singleHop = highestWhile(solo, 150);
   expect(singleHop).toBeLessThan(STANDING_TOP);
 
@@ -196,7 +232,7 @@ test("rapid treats and taps never stack hops into flight", () => {
   let highest = Infinity;
   for (let i = 0; i < 40; i += 1) {
     const x = toy.bodyX();
-    toy.tap(i % 2 ? x : x + 3, i % 3 ? GROUND - 3 : 30);
+    toy.tap(i % 2 ? x : x + 3 * scale, i % 3 ? GROUND - 3 * scale : 30 * scale);
     highest = Math.min(highest, highestWhile(toy, 4));
   }
   expect(highest).toBeGreaterThanOrEqual(singleHop);
