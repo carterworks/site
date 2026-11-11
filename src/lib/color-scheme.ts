@@ -1,15 +1,8 @@
-const KEY = "color-scheme";
+const SCHEME_KEY = "color-scheme";
 
-export function restoreScheme(root: HTMLElement) {
-  try {
-    root.style.colorScheme = localStorage.getItem(KEY) ?? "";
-  } catch {}
-}
-
-export function saveScheme(root: HTMLElement, scheme: string) {
+export function saveScheme(root: HTMLElement, scheme: "light" | "dark") {
   root.style.colorScheme = scheme;
   try {
-    if (scheme) localStorage.setItem(KEY, scheme);
-    else localStorage.removeItem(KEY);
+    localStorage.setItem(SCHEME_KEY, scheme);
   } catch {}
 }

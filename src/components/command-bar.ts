@@ -1,4 +1,4 @@
-import { restoreScheme, saveScheme } from "../lib/color-scheme";
+import { saveScheme } from "../lib/color-scheme";
 
 class CommandBarElement extends HTMLElement {
   connectedCallback() {
@@ -255,8 +255,8 @@ if (!customElements.get("command-bar")) {
 
 // ClientRouter resets <html>'s attributes (inline style included) on every
 // swap; setting it on the incoming document avoids a frame of the OS scheme.
-document.addEventListener("astro:before-swap", (event) =>
-  restoreScheme(
-    (event as Event & { newDocument: Document }).newDocument.documentElement,
-  ),
-);
+document.addEventListener("astro:before-swap", (event) => {
+  const { newDocument } = event as Event & { newDocument: Document };
+  newDocument.documentElement.style.colorScheme =
+    document.documentElement.style.colorScheme;
+});
