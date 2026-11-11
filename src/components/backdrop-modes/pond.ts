@@ -37,6 +37,13 @@ export const pond: Mode = {
     const scale = size / REFERENCE_CELLS;
     const damping = DAMPING_PER_FRAME ** (1 / scale);
     let owedSteps = 0;
+    // Everything outside this box is exactly zero in both buffers, so the wave
+    // and the render skip it. It only grows (by a cell per wave step) until the
+    // surface goes flat, which keeps results identical to sweeping the grid.
+    let minX = size;
+    let maxX = -1;
+    let minY = size;
+    let maxY = -1;
     let height = new Float32Array(size * size);
     let previous = new Float32Array(size * size);
     let seenPress: object | undefined;
@@ -49,6 +56,10 @@ export const pond: Mode = {
 
     const poke = (x: number, y: number, radius: number, amount: number) => {
       const reach = Math.ceil(radius);
+      minX = Math.max(1, Math.min(minX, Math.round(x) - reach));
+      maxX = Math.min(size - 2, Math.max(maxX, Math.round(x) + reach));
+      minY = Math.max(1, Math.min(minY, Math.round(y) - reach));
+      maxY = Math.min(size - 2, Math.max(maxY, Math.round(y) + reach));
       for (let dy = -reach; dy <= reach; dy += 1) {
         for (let dx = -reach; dx <= reach; dx += 1) {
           const cx = Math.round(x) + dx;
@@ -79,9 +90,13 @@ export const pond: Mode = {
     };
 
     const wave = () => {
+      minX = Math.max(1, minX - 1);
+      maxX = Math.min(size - 2, maxX + 1);
+      minY = Math.max(1, minY - 1);
+      maxY = Math.min(size - 2, maxY + 1);
       let peak = 0;
-      for (let y = 1; y < size - 1; y += 1) {
-        for (let x = 1, i = y * size + 1; x < size - 1; x += 1, i += 1) {
+      for (let y = minY; y <= maxY; y += 1) {
+        for (let x = minX, i = y * size + minX; x <= maxX; x += 1, i += 1) {
           const value =
             ((height[i - 1] +
               height[i + 1] +
@@ -150,13 +165,21 @@ export const pond: Mode = {
         if (flat) {
           height.fill(0);
           previous.fill(0);
+          minX = minY = size;
+          maxX = maxY = -1;
         }
       },
 
       render(field) {
         if (flat) return;
-        for (let y = 1; y < size - 1; y += 1) {
-          for (let x = 1, i = y * size + 1; x < size - 1; x += 1, i += 1) {
+        const left = Math.max(1, minX - 1);
+        const right = Math.min(size - 2, maxX + 1);
+        for (
+          let y = Math.max(1, minY - 1);
+          y <= Math.min(size - 2, maxY + 1);
+          y += 1
+        ) {
+          for (let x = left, i = y * size + left; x <= right; x += 1, i += 1) {
             const slope = height[i - 1 - size] - height[i + 1 + size];
             const level = clamp(slope * 0.9 + Math.abs(height[i]) * 0.25, 0, 1);
             field[i] = Math.round(level * SHADES) / SHADES;
