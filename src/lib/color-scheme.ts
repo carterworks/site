@@ -1,4 +1,4 @@
-const SCHEME_KEY = "color-scheme";
+export const SCHEME_KEY = "color-scheme";
 
 export function saveScheme(root: HTMLElement, scheme: "light" | "dark") {
   root.style.colorScheme = scheme;
