@@ -74,6 +74,7 @@ function setup() {
     press,
     release,
     cells,
+    cellAt: (x: number, y: number) => field[y * COLUMNS + x] > 0,
     rowCells,
     meanRow,
     fillTray,
@@ -313,4 +314,27 @@ test("a heap at rest costs no sweep, and still drains once released", () => {
   heap.release();
   heap.run(Math.ceil(30_000 / STEP));
   expect(heap.cells()).toBe(0);
+});
+
+test("a scripted pour builds a wide heap with gentle flanks, not a spike", () => {
+  const sim = setup();
+  sim.press(MID, POUR_Y);
+  sim.run(240);
+  sim.release();
+  sim.run(40);
+
+  const heights = Array.from(
+    { length: COLUMNS },
+    (_, x) =>
+      Array.from({ length: ROWS }, (_, y) => sim.cellAt(x, y)).filter(Boolean)
+        .length,
+  );
+  const steps = heights
+    .slice(1)
+    .map((h, x) => Math.abs(h - heights[x]))
+    .filter((_, x) => heights[x] + heights[x + 1] > 0);
+
+  expect(heights.filter((h) => h > 0).length).toBeGreaterThan(COLUMNS * 0.45);
+  expect(Math.max(...steps)).toBeLessThanOrEqual(8);
+  expect(steps.reduce((a, b) => a + b, 0) / steps.length).toBeLessThan(1.2);
 });

@@ -7,19 +7,19 @@ const SHADES = [0, 0.55, 0.78, 1];
  * so pours, taps and the trickle keep their on-screen size on a denser grid.
  */
 const TUNED_COLUMNS = 80;
-const POUR_GRAINS = 4;
-const POUR_SPREAD = 4;
+const POUR_GRAINS = 3;
+const POUR_SPREAD = 3;
 const DOUBLE_TAP_MS = 380;
 const DOUBLE_TAP_CELLS = 10;
 const TRICKLE_JITTER = 1.5;
 
 /**
- * The starting dune is a half-cosine bump. Its height is a fifth of its width
- * so the slope stays under one cell per cell: any steeper and grains would
+ * The starting dune is a half-cosine bump. Its height is a seventh of its width
+ * so the slope stays under half a cell per cell: any steeper and grains would
  * slip, and the "settled" scene would animate.
  */
-const DUNE_WIDTH_SHARE = 0.3;
-const DUNE_HEIGHT_SHARE = 0.2;
+const DUNE_WIDTH_SHARE = 0.4;
+const DUNE_HEIGHT_SHARE = 0.14;
 
 /** Quiet time before the stream starts, and how long after input it may run. */
 const TRICKLE_AFTER_MS = 3000;
@@ -125,13 +125,38 @@ export const silt: Mode = {
       return true;
     };
 
+    // Steps sideways, level, to the edge of a step whose far side is free, so
+    // the grain tumbles down next sweep; a heap then rests at about half the
+    // slope that diagonal slips alone leave.
+    const creep = (x: number, row: number, next: number, side: number) => {
+      const nx = x + side;
+      const far = nx + side;
+      if (
+        far < left ||
+        far > right ||
+        grains[next + nx] === 0 ||
+        grains[row + nx] !== 0 ||
+        grains[row + far] !== 0 ||
+        grains[next + far] !== 0
+      ) {
+        return false;
+      }
+      slide(row + x, row + nx);
+      return true;
+    };
+
     const fall = (x: number, row: number, next: number) => {
       if (grains[next + x] === 0) {
         slide(row + x, next + x);
         return true;
       }
       const side = random() < 0.5 ? -1 : 1;
-      return slip(x, row, next, x + side) || slip(x, row, next, x - side);
+      return (
+        slip(x, row, next, x + side) ||
+        slip(x, row, next, x - side) ||
+        creep(x, row, next, side) ||
+        creep(x, row, next, -side)
+      );
     };
 
     const sieve = (floor: number, allowed: number) => {
