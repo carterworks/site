@@ -10,6 +10,9 @@ const context = {
     data: new Uint8ClampedArray(width * height * 4),
   }),
   putImageData: vi.fn(),
+  beginPath: vi.fn(),
+  arc: vi.fn(),
+  stroke: vi.fn(),
 };
 
 class StubCanvas extends HTMLElement {
@@ -107,6 +110,24 @@ test("a drifting backdrop idles at about eight frames a second", async () => {
 
   expect(present.mock.calls.length).toBeGreaterThanOrEqual(6);
   expect(present.mock.calls.length).toBeLessThanOrEqual(8);
+});
+
+test("with no ghost, a ripple keeps the loop running until it finishes", async () => {
+  mount();
+  await vi.advanceTimersByTimeAsync(1000);
+  const present = vi.spyOn(
+    document.querySelector<StubCanvas>("emulated-canvas")!,
+    "present",
+  );
+
+  window.dispatchEvent(
+    new PointerEvent("pointerdown", { clientX: 100, clientY: 100 }),
+  );
+  await vi.advanceTimersByTimeAsync(80);
+  expect(present.mock.calls.length).toBeGreaterThan(2);
+
+  await vi.advanceTimersByTimeAsync(200);
+  expect(vi.getTimerCount()).toBe(0);
 });
 
 test("the canvas rect is measured once per resize, not per pointermove", () => {
