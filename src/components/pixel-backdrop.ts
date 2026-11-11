@@ -304,7 +304,7 @@ class PixelBackdrop extends HTMLElement {
     canvas.dataset.manual = "";
     this.#columns = Number(canvas.dataset.width) || 64;
     this.#rows = Number(canvas.dataset.height) || 64;
-    this.#options = readDefaults();
+    this.#options ??= readDefaults();
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {

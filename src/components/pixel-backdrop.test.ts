@@ -38,3 +38,22 @@ test("reset restores the stylesheet defaults after the panel knobs were tweaked"
 
   expect(backdrop.options).toMatchObject({ panelBlur: 5, panelOpacity: 40 });
 });
+
+test("a reconnected backdrop keeps its tweaks and restores the root panel properties", () => {
+  const backdrop = document.createElement("pixel-backdrop") as HTMLElement & {
+    options: { ghost: number; panelBlur: number };
+    configure(options: object): void;
+  };
+  backdrop.append(document.createElement("emulated-canvas"));
+  document.body.append(backdrop);
+  backdrop.configure({ ghost: 20, panelBlur: 9 });
+
+  document.documentElement.removeAttribute("style");
+  backdrop.remove();
+  document.body.append(backdrop);
+
+  expect(backdrop.options.ghost).toBe(20);
+  expect(
+    document.documentElement.style.getPropertyValue("--backdrop-panel-blur"),
+  ).toBe("9px");
+});
