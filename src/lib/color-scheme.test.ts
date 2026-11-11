@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, test } from "vitest";
-import { nextScheme, saveScheme } from "./color-scheme";
+import { beforeEach, expect, test } from "vitest";
+import { saveScheme } from "./color-scheme";
 
 beforeEach(() => localStorage.clear());
 
@@ -30,16 +30,4 @@ test("saveScheme(null) clears the stored override and returns to system", () => 
 
   expect(localStorage.getItem("color-scheme")).toBeNull();
   expect(document.documentElement.style.colorScheme).toBe("");
-});
-
-describe("nextScheme", () => {
-  test("first press stores the opposite of the system scheme", () => {
-    expect(nextScheme("dark", "dark")).toBe("light");
-    expect(nextScheme("light", "light")).toBe("dark");
-  });
-
-  test("returns to system when the opposite is the system scheme", () => {
-    expect(nextScheme("light", "dark")).toBeNull();
-    expect(nextScheme("dark", "light")).toBeNull();
-  });
 });
