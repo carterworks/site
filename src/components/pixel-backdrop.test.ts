@@ -1,4 +1,6 @@
 import { afterEach, expect, test } from "vitest";
+import { installBackdropDefaults } from "../test/backdrop-defaults";
+import { GRID_SIZE } from "./backdrop-modes/mode";
 import {
   gridCoordinate,
   shade,
@@ -86,4 +88,21 @@ test("the visible cells are the grid's overlap with the viewport, whole on the a
     right: (800 + 358 + 5) / stride,
     bottom: 80,
   });
+});
+
+test("auto-fit tiles the viewport's larger side with whole strides of the grid, the gap taken out of each", () => {
+  installBackdropDefaults();
+  const backdrop = document.createElement("pixel-backdrop");
+  const canvas = document.createElement("emulated-canvas");
+  Object.assign(canvas.dataset, {
+    width: String(GRID_SIZE),
+    height: String(GRID_SIZE),
+  });
+  backdrop.append(canvas);
+  document.body.append(backdrop);
+  backdrop.configure({ autoFit: true, gap: 2 });
+
+  expect(canvas.style.getPropertyValue("--emulated-canvas-scale")).toBe(
+    `max(1px, round(up, max(100lvw, 100lvh) / ${GRID_SIZE}, 1px) - 2px)`,
+  );
 });

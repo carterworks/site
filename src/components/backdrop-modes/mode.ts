@@ -1,5 +1,8 @@
 import type { PixelBackdropOptions } from "../pixel-backdrop";
 
+/** Cells along each side of the square grid every mode runs on. */
+export const GRID_SIZE = 160;
+
 export type Point = { x: number; y: number };
 
 /** A span of the grid in logical cells; `right` and `bottom` are exclusive. */

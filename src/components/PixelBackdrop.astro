@@ -1,4 +1,5 @@
 ---
+import { GRID_SIZE } from "./backdrop-modes/mode";
 import EmulatedCanvas from "./EmulatedCanvas.astro";
 
 /**
@@ -8,11 +9,10 @@ import EmulatedCanvas from "./EmulatedCanvas.astro";
  * The square bitmap is sized to cover the viewport, so its pixel grid can
  * never run out at the edges.
  */
-const size = 80;
 ---
 
 <pixel-backdrop aria-hidden="true" transition:persist>
-  <EmulatedCanvas width={size} height={size} />
+  <EmulatedCanvas width={GRID_SIZE} height={GRID_SIZE} />
 </pixel-backdrop>
 
 <script>

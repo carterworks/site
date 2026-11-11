@@ -121,7 +121,13 @@ const DRIFTING_FADE_WINDOW = 1000;
 /** How long a mode change dissolves, in milliseconds. */
 const DISSOLVE_MS = 800;
 
-/** Feature size of the dissolve's blobs, in cells. */
+/**
+ * The grid the host's feature sizes are given for. They scale with the real
+ * grid, so a finer grid keeps them the same size on screen.
+ */
+const TUNED_GRID = 80;
+
+/** Feature size of the dissolve's blobs, in cells of the tuned grid. */
 const DISSOLVE_SCALE = 10;
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -433,7 +439,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#thresholdBuilt = true;
     const noise = makeNoise2D(NOISE_SEED);
     const threshold = this.#threshold;
-    const frequency = 1 / DISSOLVE_SCALE;
+    const frequency = TUNED_GRID / (DISSOLVE_SCALE * this.#columns);
     let low = Infinity;
     let high = -Infinity;
     for (let y = 0, i = 0; y < this.#rows; y += 1) {
@@ -504,10 +510,14 @@ export class PixelBackdrop extends HTMLElement {
    * tracks resizes without script. It measures the large viewport: mobile
    * toolbars sliding in and out would otherwise change the cell size, and the
    * grid would jump while scrolling.
+   *
+   * Whole strides tile the viewport, so the box can fall one gap short of it:
+   * the edge cells' outer half gaps then land outside the box, where the page
+   * shows through in the same colour the gaps are painted. Fitting cells
+   * instead would make a 1440 px screen round a 9 px stride up to 10.
    */
   #fit() {
-    const gaps = (this.#columns - 1) * this.#options.gap;
-    return `max(1px, round(up, (max(100lvw, 100lvh) - ${gaps}px) / ${this.#columns}, 1px))`;
+    return `max(1px, round(up, max(100lvw, 100lvh) / ${this.#columns}, 1px) - ${this.#options.gap}px)`;
   }
 
   #tick = (now: number) => {

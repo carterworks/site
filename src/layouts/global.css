@@ -79,8 +79,8 @@
      any of them at runtime. */
   --backdrop-enabled: true;
   --backdrop-auto-fit: true;
-  --backdrop-scale: 20;
-  --backdrop-gap: 5;
+  --backdrop-scale: 7;
+  --backdrop-gap: 2;
   --backdrop-shape: square;
   --backdrop-ghost: 70%;
   --backdrop-ripple-size: 25;
