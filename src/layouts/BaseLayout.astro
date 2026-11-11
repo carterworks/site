@@ -4,6 +4,7 @@ import { ClientRouter } from "astro:transitions";
 import CommandBar from "../components/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/PixelBackdrop.astro";
+import { SCHEME_KEY } from "../lib/color-scheme";
 import { getPageMetadata, type PageMetadata } from "../lib/pages";
 interface Props {
   class?: string;
@@ -36,6 +37,14 @@ const socialTitle = metadata.ogTitle ?? title;
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f1f1f1" />
+    <script is:inline define:vars={{ key: SCHEME_KEY }}>
+      // Runs before first paint, which a bundled module can't; the key is
+      // injected so it can't drift from the one saveScheme writes.
+      try {
+        document.documentElement.style.colorScheme =
+          localStorage.getItem(key) ?? "";
+      } catch {}
+    </script>
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />

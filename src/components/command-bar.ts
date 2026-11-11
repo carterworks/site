@@ -1,3 +1,10 @@
+import {
+  nextScheme,
+  osScheme,
+  saveScheme,
+  type Scheme,
+} from "../lib/color-scheme";
+
 class CommandBarElement extends HTMLElement {
   connectedCallback() {
     if (this.dataset.ready) return;
@@ -5,9 +12,9 @@ class CommandBarElement extends HTMLElement {
     const trigger = this.querySelector<HTMLInputElement>(".command-trigger");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-    const appearance =
-      this.querySelector<HTMLButtonElement>("[data-appearance]");
-    const scheme = this.querySelector<HTMLElement>("[data-scheme]");
+    const choices = [
+      ...this.querySelectorAll<HTMLButtonElement>("[data-scheme-choice]"),
+    ];
     const rootPanel = this.querySelector<HTMLElement>('[data-panel="root"]');
     const settingsPanel = this.querySelector<HTMLElement>(
       '[data-panel="settings"]',
@@ -17,8 +24,7 @@ class CommandBarElement extends HTMLElement {
       !trigger ||
       !back ||
       !pageLinks ||
-      !appearance ||
-      !scheme ||
+      !choices.length ||
       !rootPanel ||
       !settingsPanel
     ) {
@@ -99,10 +105,7 @@ class CommandBarElement extends HTMLElement {
       });
       back.hidden = name === "root";
       trigger.value = "";
-      trigger.setAttribute(
-        "aria-controls",
-        panels[name].id,
-      );
+      trigger.setAttribute("aria-controls", panels[name].id);
       filter();
       trigger.focus();
     };
@@ -137,26 +140,38 @@ class CommandBarElement extends HTMLElement {
       });
     };
 
-    const currentScheme = () =>
-      document.documentElement.style.colorScheme ||
-      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    // An empty inline colorScheme means no override, i.e. system.
+    const override = () => document.documentElement.style.colorScheme;
 
-    const updateSchemeLabel = () => {
-      const dark = currentScheme() === "dark";
-      scheme.textContent = dark ? "On" : "Off";
-      appearance.setAttribute("aria-pressed", String(dark));
+    const updateSchemeChoices = () => {
+      choices.forEach((choice) => {
+        const name = choice.dataset.schemeChoice;
+        choice.setAttribute(
+          "aria-pressed",
+          String(name === (override() || "system")),
+        );
+        if (name === "system") choice.textContent = `System (${osScheme()})`;
+      });
     };
 
-    const toggleAppearance = () => {
-      document.documentElement.style.colorScheme =
-        currentScheme() === "dark" ? "light" : "dark";
-      updateSchemeLabel();
+    const chooseScheme = (name: string | undefined) => {
+      saveScheme(
+        document.documentElement,
+        name === "system" ? null : (name as Scheme),
+      );
+      updateSchemeChoices();
     };
+
+    const toggleAppearance = () =>
+      chooseScheme(
+        nextScheme((override() as Scheme) || osScheme(), osScheme()) ??
+          "system",
+      );
 
     const prepare = () => {
       if (dialog.matches(":popover-open")) return;
       rebuildPageLinks();
-      updateSchemeLabel();
+      updateSchemeChoices();
       dialog.showPopover();
       showPanel("root");
     };
@@ -237,8 +252,9 @@ class CommandBarElement extends HTMLElement {
       if (!(event.target instanceof Element)) return;
       const target = event.target;
       if (target.closest("[data-settings]")) showPanel("settings");
-      if (target.closest("[data-appearance]")) {
-        toggleAppearance();
+      const choice = target.closest<HTMLElement>("[data-scheme-choice]");
+      if (choice) {
+        chooseScheme(choice.dataset.schemeChoice);
         dialog.hidePopover();
       }
     });
@@ -248,3 +264,11 @@ class CommandBarElement extends HTMLElement {
 if (!customElements.get("command-bar")) {
   customElements.define("command-bar", CommandBarElement);
 }
+
+// ClientRouter resets <html>'s attributes (inline style included) on every
+// swap; setting it on the incoming document avoids a frame of the OS scheme.
+document.addEventListener("astro:before-swap", (event) => {
+  const { newDocument } = event as Event & { newDocument: Document };
+  newDocument.documentElement.style.colorScheme =
+    document.documentElement.style.colorScheme;
+});
