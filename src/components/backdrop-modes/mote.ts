@@ -98,9 +98,13 @@ export const mote: Mode = {
     const float = (glyph: string[], x: number, y: number) =>
       floaters.push({ glyph, x, y, life: 150 });
     const heart = () => float(HEART, critter.x - 2, top() - 6);
+    // Impulses added mid-air stack, so a hop only starts from the ground.
+    const startHop = (vy: number) => {
+      if (critter.hop === 0 && critter.vy === 0) critter.vy = vy;
+    };
     const wake = () => {
       critter.asleep = false;
-      critter.vy = -0.8;
+      startHop(-0.8);
       critter.startle = 40;
       critter.drowsy = 0;
     };
@@ -125,7 +129,7 @@ export const mote: Mode = {
           if (over(press)) {
             if (critter.asleep) wake();
             else {
-              if (critter.hop === 0) critter.vy = -0.7;
+              startHop(-0.7);
               critter.happy = Math.max(critter.happy, 40);
               heart();
             }
@@ -168,7 +172,7 @@ export const mote: Mode = {
             crumb.y = Math.min(crumb.y + crumb.vy, ground - 1);
           } else if (crumb.patience > 0 && !critter.asleep) {
             crumb.patience -= 1;
-            if (crumb.patience === 0 && critter.vy === 0) critter.vy = -0.3;
+            if (crumb.patience === 0) startHop(-0.3);
           } else if (crumb.patience === 0 && (crumb.fade -= 1) <= 0) {
             crumbs.splice(i, 1);
           }
@@ -208,7 +212,7 @@ export const mote: Mode = {
           if (crumb && Math.abs(crumb.x - critter.x) < EAT_DISTANCE) {
             crumbs.splice(crumbs.indexOf(crumb), 1);
             critter.happy = Math.max(critter.happy, 60);
-            critter.vy = -0.6;
+            startHop(-0.6);
             heart();
           }
           const settled = crumbs.length === 0 && critter.happy <= 0;

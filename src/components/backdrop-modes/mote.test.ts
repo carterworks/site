@@ -173,3 +173,34 @@ test("it follows the visible bottom edge when the visible rect changes", () => {
   expect(toy.bodyX()).toBeGreaterThanOrEqual(20);
   expect(toy.bodyX()).toBeLessThanOrEqual(60);
 });
+
+function highestWhile(toy: ReturnType<typeof setup>, steps: number) {
+  let highest = Infinity;
+  for (let i = 0; i < steps; i += 1) {
+    toy.run(1);
+    highest = Math.min(highest, toy.bodyTop());
+  }
+  return highest;
+}
+
+test("rapid treats and taps never stack hops into flight", () => {
+  const solo = setup();
+  solo.run(1);
+  solo.tap(solo.bodyX(), GROUND - 2);
+  const singleHop = highestWhile(solo, 150);
+  expect(singleHop).toBeLessThan(STANDING_TOP);
+
+  const toy = setup();
+  toy.run(1);
+  toy.wake();
+  let highest = Infinity;
+  for (let i = 0; i < 40; i += 1) {
+    const x = toy.bodyX();
+    toy.tap(i % 2 ? x : x + 3, i % 3 ? GROUND - 3 : 30);
+    highest = Math.min(highest, highestWhile(toy, 4));
+  }
+  expect(highest).toBeGreaterThanOrEqual(singleHop);
+
+  toy.run(60 * 4);
+  expect(toy.bodyTop()).toBeGreaterThanOrEqual(STANDING_TOP);
+});
