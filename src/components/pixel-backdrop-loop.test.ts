@@ -1,6 +1,28 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import "./pixel-backdrop";
 
+const motion = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  const query = {
+    matches: false,
+    addEventListener: (_: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) =>
+      listeners.delete(listener),
+  };
+  vi.stubGlobal("matchMedia", (media: string) =>
+    media.includes("reduced-motion")
+      ? query
+      : { matches: false, addEventListener() {}, removeEventListener() {} },
+  );
+  return {
+    set(reduced: boolean) {
+      query.matches = reduced;
+      for (const listener of listeners) listener();
+    },
+  };
+});
+
 vi.mock("./emulated-canvas", () => ({}));
 
 const context = {
@@ -167,4 +189,49 @@ test("the canvas rect is measured once per resize, not per pointermove", () => {
   window.dispatchEvent(new Event("resize"));
   move();
   expect(measure).toHaveBeenCalledTimes(2);
+});
+
+test("reduced motion stops all loop work, and turning it off resumes", async () => {
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+  motion.set(true);
+  expect(vi.getTimerCount()).toBe(0);
+  window.dispatchEvent(
+    new PointerEvent("pointermove", { clientX: 100, clientY: 100 }),
+  );
+  expect(vi.getTimerCount()).toBe(0);
+
+  motion.set(false);
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
+
+test("disabling clears pending work and marks the layer disabled, and enabling resumes", async () => {
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+  backdrop.configure({ enabled: false });
+  expect(vi.getTimerCount()).toBe(0);
+  expect(backdrop.hasAttribute("data-disabled")).toBe(true);
+
+  backdrop.configure({ enabled: true });
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+  expect(backdrop.hasAttribute("data-disabled")).toBe(false);
+});
+
+test("a backdrop removed and re-appended starts its loop again", async () => {
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+  backdrop.remove();
+  expect(vi.getTimerCount()).toBe(0);
+
+  document.body.append(backdrop);
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
 });
