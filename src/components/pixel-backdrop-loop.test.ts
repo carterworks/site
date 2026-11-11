@@ -39,13 +39,18 @@ const context = {
   stroke: vi.fn(),
 };
 
+/** What the stub's `present()` reports, like a ghost fade still in progress. */
+let shadersChanging = false;
+
 class StubCanvas extends HTMLElement {
   width = 64;
   height = 64;
   getContext() {
     return context;
   }
-  present() {}
+  present() {
+    return shadersChanging;
+  }
   reset = vi.fn();
   getBoundingClientRect() {
     return new DOMRect(0, 0, 640, 640);
@@ -81,12 +86,14 @@ beforeEach(() => {
     --backdrop-dark-base: #000; --backdrop-dark-ink: #fff;
   }`;
   document.head.append(style);
+  shadersChanging = false;
 });
 
 afterEach(() => {
   document.body.replaceChildren();
   document.head.replaceChildren();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 test("a static frame stops scheduling once settled, and input restarts it", async () => {
@@ -98,6 +105,30 @@ test("a static frame stops scheduling once settled, and input restarts it", asyn
     new PointerEvent("pointermove", { clientX: 100, clientY: 100 }),
   );
   expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
+
+test("a static frame keeps presenting while the canvas is still changing, then stops", async () => {
+  shadersChanging = true;
+  const present = vi.spyOn(StubCanvas.prototype, "present");
+  mount();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(present.mock.calls.length).toBeGreaterThan(50);
+
+  shadersChanging = false;
+  await vi.advanceTimersByTimeAsync(100);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("a drifting frame stays at full rate while the canvas is still changing", async () => {
+  shadersChanging = true;
+  const backdrop = mount();
+  backdrop.configure({ noise: 50, noiseSpeed: 50 });
+  await vi.advanceTimersByTimeAsync(500);
+  const present = vi.spyOn(StubCanvas.prototype, "present");
+
+  await vi.advanceTimersByTimeAsync(1000);
+
+  expect(present.mock.calls.length).toBeGreaterThan(50);
 });
 
 test("a manual colour scheme change repaints a stopped static frame", async () => {

@@ -1,7 +1,6 @@
 import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
 import { clamp } from "./emulated-canvas-limits";
-import { IDLE_FRAME_INTERVAL, settleFrames } from "./pixel-backdrop-pacing";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
@@ -93,6 +92,9 @@ export function readDefaults(): PixelBackdropOptions {
 }
 
 const MAX_RIPPLES = 24;
+
+/** The noise drifts ~0.06 cells per frame, so a slow redraw is imperceptible. */
+const IDLE_FRAME_INTERVAL = 1000 / 8;
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
@@ -262,7 +264,6 @@ export class PixelBackdrop extends HTMLElement {
   #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
   #idleTimer?: number;
-  #quietFrames = 0;
   #wasDark?: boolean;
   #schemeObserver = new MutationObserver(() => this.#wake());
   #columns = 0;
@@ -348,7 +349,6 @@ export class PixelBackdrop extends HTMLElement {
     const context = this.#canvas?.getContext("2d");
     if (context === null || context === undefined) return;
     this.#context = context;
-    this.#quietFrames = 0;
     this.#frame = requestAnimationFrame(this.#tick);
   }
 
@@ -392,15 +392,16 @@ export class PixelBackdrop extends HTMLElement {
   #tick = (now: number) => {
     this.#frame = undefined;
     const busy = this.#isTrailing(now) || this.#ripples.length > 0;
-    this.#quietFrames = busy ? 0 : this.#quietFrames + 1;
 
     this.#draw(now);
-    this.#canvas?.present();
+    // A ghost fade still in flight would stretch out in wall-clock time if it
+    // dropped to the idle rate, and freeze half-faded if the loop stopped.
+    const fading = this.#canvas?.present() ?? false;
 
-    if (busy || this.#quietFrames < settleFrames(this.#options.ghost)) {
+    if (busy || fading) {
       this.#frame = requestAnimationFrame(this.#tick);
     } else if (this.#isDrifting()) {
-      this.#idleTimer = window.setTimeout(this.#resume, IDLE_FRAME_INTERVAL);
+      this.#idleTimer = window.setTimeout(this.#wake, IDLE_FRAME_INTERVAL);
     }
   };
 
@@ -411,11 +412,6 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Input ends the idle wait early, so it never waits on the slow redraw. */
   #wake = () => {
-    this.#quietFrames = 0;
-    this.#resume();
-  };
-
-  #resume = () => {
     if (this.#context === undefined || this.#frame !== undefined) return;
     clearTimeout(this.#idleTimer);
     this.#idleTimer = undefined;
