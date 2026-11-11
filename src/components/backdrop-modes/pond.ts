@@ -1,7 +1,9 @@
 import { clamp } from "../emulated-canvas-limits";
 import type { Mode, Point } from "./mode";
 
-const DAMPING = 0.985;
+/** The gallery tile this was tuned on; every length and speed scales from it. */
+const REFERENCE_CELLS = 64;
+const DAMPING_PER_FRAME = 0.985;
 /** Below this the render rounds to nothing, so the surface counts as flat. */
 const FLAT = 0.04;
 const RAIN_AFTER_MS = 2500;
@@ -10,6 +12,10 @@ const RAIN_UNTIL_MS = 20_000;
 const RAIN_GAP_MS = 3000;
 const RAIN_SPREAD_MS = 3000;
 const RAIN_MARGIN = 4;
+const STONE = { radius: 2.6, amount: -6 };
+const RAIN = { radius: 1.3, amount: -1.5 };
+const HOVER = { radius: 1, amount: -0.25 };
+const DRAG = { radius: 1.6, amount: -0.7 };
 const SHADES = 6;
 
 /**
@@ -25,6 +31,12 @@ export const pond: Mode = {
   look: { ghost: 50, noise: 10 },
   holds: true,
   create({ columns: size, random }) {
+    // A bigger grid has more cells across the same screen: sizes grow with it,
+    // and the wave takes extra sub-steps per frame so it crosses the screen in
+    // the same time.
+    const scale = size / REFERENCE_CELLS;
+    const damping = DAMPING_PER_FRAME ** (1 / scale);
+    let owedSteps = 0;
     let height = new Float32Array(size * size);
     let previous = new Float32Array(size * size);
     let seenPress: object | undefined;
@@ -66,11 +78,33 @@ export const pond: Mode = {
       }
     };
 
+    const wave = () => {
+      let peak = 0;
+      for (let y = 1; y < size - 1; y += 1) {
+        for (let x = 1, i = y * size + 1; x < size - 1; x += 1, i += 1) {
+          const value =
+            ((height[i - 1] +
+              height[i + 1] +
+              height[i - size] +
+              height[i + size]) *
+              0.5 -
+              previous[i]) *
+            damping;
+          previous[i] = value;
+          peak = Math.max(peak, Math.abs(value));
+        }
+      }
+      const swap = height;
+      height = previous;
+      previous = swap;
+      return peak;
+    };
+
     return {
       step({ pointer, press, lastInputAt, visible }, now) {
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
-          poke(press.x, press.y, 3.2, -6);
+          poke(press.x, press.y, STONE.radius * scale, STONE.amount);
         }
         if (
           pointer !== undefined &&
@@ -78,7 +112,8 @@ export const pond: Mode = {
           (pointer.x !== seen.x || pointer.y !== seen.y)
         ) {
           const held = press?.held === true;
-          stroke(seen, pointer, held ? 2 : 1.25, held ? -0.7 : -0.25);
+          const { radius, amount } = held ? DRAG : HOVER;
+          stroke(seen, pointer, radius * scale, amount);
         }
         hasSeen = pointer !== undefined;
         if (pointer !== undefined) {
@@ -91,37 +126,25 @@ export const pond: Mode = {
         const quiet = now - Math.max(lastInputAt, arrivedAt);
         raining = quiet > RAIN_AFTER_MS && quiet < RAIN_UNTIL_MS;
         if (raining && now > nextRain) {
+          const margin = RAIN_MARGIN * scale;
           poke(
             visible.left +
-              RAIN_MARGIN +
-              random() * (visible.right - visible.left - 2 * RAIN_MARGIN),
+              margin +
+              random() * (visible.right - visible.left - 2 * margin),
             visible.top +
-              RAIN_MARGIN +
-              random() * (visible.bottom - visible.top - 2 * RAIN_MARGIN),
-            1.6,
-            -3,
+              margin +
+              random() * (visible.bottom - visible.top - 2 * margin),
+            RAIN.radius * scale,
+            RAIN.amount,
           );
           nextRain = now + RAIN_GAP_MS + random() * RAIN_SPREAD_MS;
         }
 
+        owedSteps += scale;
+        const steps = Math.floor(owedSteps);
+        owedSteps -= steps;
         let peak = 0;
-        for (let y = 1; y < size - 1; y += 1) {
-          for (let x = 1, i = y * size + 1; x < size - 1; x += 1, i += 1) {
-            const value =
-              ((height[i - 1] +
-                height[i + 1] +
-                height[i - size] +
-                height[i + size]) *
-                0.5 -
-                previous[i]) *
-              DAMPING;
-            previous[i] = value;
-            peak = Math.max(peak, Math.abs(value));
-          }
-        }
-        const swap = height;
-        height = previous;
-        previous = swap;
+        for (let n = 0; n < steps; n += 1) peak = wave();
 
         flat = peak < FLAT;
         if (flat) {
