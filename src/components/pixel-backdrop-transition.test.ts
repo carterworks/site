@@ -138,11 +138,21 @@ afterEach(() => {
 
 describe("a mode change", () => {
   test("flips low-threshold cells to the new mode first, leaving the rest on the old", async () => {
-    mount().setMode("solid");
+    const backdrop = mount();
+    await vi.advanceTimersByTimeAsync(100);
+    backdrop.setMode("solid");
     await vi.advanceTimersByTimeAsync(400);
 
     expect(shownAt(4)).toBe(INK);
     expect(shownAt(60)).toBe(BASE);
+  });
+
+  test("a mode requested before the first frame shows at once, with no dissolve", async () => {
+    mount().setMode("solid");
+    await vi.advanceTimersByTimeAsync(20);
+
+    for (const x of [0, 30, 63]) expect(shownAt(x)).toBe(INK);
+    expect(log.renders.blank).toBeUndefined();
   });
 
   test("ends with only the new mode, releasing the old", async () => {
@@ -157,7 +167,9 @@ describe("a mode change", () => {
   });
 
   test("steps both modes while it runs", async () => {
-    mount().setMode("solid");
+    const backdrop = mount();
+    await vi.advanceTimersByTimeAsync(100);
+    backdrop.setMode("solid");
     await vi.advanceTimersByTimeAsync(400);
 
     expect(log.steps.blank).toBeGreaterThan(10);

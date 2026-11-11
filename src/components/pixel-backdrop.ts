@@ -262,6 +262,8 @@ export class PixelBackdrop extends HTMLElement {
   /** Per cell, the dissolve progress (0-1) at which it flips to the new mode. */
   #threshold = new Float32Array(0);
   #thresholdBuilt = false;
+  /** Whether a frame has shown the current mode; before that a switch has nothing to dissolve from. */
+  #painted = false;
   #fieldOutgoing = new Float32Array(0);
   /** The mode clock, advanced in whole steps. */
   #time = 0;
@@ -387,8 +389,9 @@ export class PixelBackdrop extends HTMLElement {
   /**
    * Dissolve into a registered mode, starting it fresh; an unknown id is
    * ignored, and so is the mode already chosen. A request before the canvas
-   * exists is remembered and applied when the host attaches. With no running
-   * loop (reduced motion, disabled) the switch is instant.
+   * exists is remembered and applied when the host attaches. Before the first
+   * frame, or with no running loop (reduced motion, disabled), the switch is
+   * instant: nothing has been shown to dissolve from.
    *
    * A request mid-dissolve makes the mode now showing through the new outgoing
    * one and drops the old one. Snapshotting the displayed mix would freeze a
@@ -407,7 +410,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#input.press = undefined;
     this.#mode = this.#createMode();
     this.#dissolveStart = undefined;
-    if (this.#context === undefined) {
+    if (this.#context === undefined || !this.#painted) {
       this.#outgoing = undefined;
       return;
     }
@@ -517,6 +520,7 @@ export class PixelBackdrop extends HTMLElement {
     if (pace === "active") this.#busyAt = now;
 
     this.#draw(now);
+    this.#painted = true;
     // A fade in flight keeps full rate: at the idle rate it would visibly step,
     // and a static frame that stopped would freeze it half-faded.
     const changing = this.#canvas?.present() ?? false;
