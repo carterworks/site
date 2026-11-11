@@ -58,6 +58,7 @@ export const culture: Mode = {
     let hover: Point | undefined;
     let fading = false;
     let awake = true;
+    let arrivedAt: number | undefined;
 
     const seed = (x: number, y: number) => {
       x = Math.round(x);
@@ -134,7 +135,9 @@ export const culture: Mode = {
     return {
       step({ pointer, press, visible, lastInputAt }, now) {
         fit(visible);
-        awake = now - Math.max(lastInputAt, 0) < AWAKE_MS;
+        arrivedAt ??= now;
+        const lastActive = Math.max(lastInputAt, arrivedAt);
+        awake = now - lastActive < AWAKE_MS;
 
         const cell = pointer && cellOf(pointer);
         if (press !== undefined && press !== seenPress) {
@@ -163,7 +166,7 @@ export const culture: Mode = {
           ) {
             clock = 0;
             generation();
-            const quiet = now - Math.max(lastInputAt, 0) > SPORE_AFTER_IDLE_MS;
+            const quiet = now - lastActive > SPORE_AFTER_IDLE_MS;
             if (
               quiet &&
               now - sporedAt > SPORE_COOLDOWN_MS &&
