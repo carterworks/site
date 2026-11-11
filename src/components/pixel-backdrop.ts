@@ -83,8 +83,7 @@ const PARSERS: {
 
 /**
  * The defaults live only as `--backdrop-*` custom properties on `:root` (see
- * `global.css`), which also lets the page paint correctly before this script
- * runs.
+ * `global.css`), so there is a single source of truth for them.
  */
 export function readDefaults(): PixelBackdropOptions {
   const styles = getComputedStyle(document.documentElement);
