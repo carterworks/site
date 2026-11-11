@@ -99,8 +99,10 @@ export type ShaderFrame = {
  * One element's instance of a shader. `apply` edits the logical bitmap's RGBA
  * bytes in place and returns true while its output is still changing, so the
  * owner knows to keep presenting. A pass whose knobs leave it off reports so
- * through `active`, which is checked first: when no pass is active the bitmap
- * skips the pixel read-back and goes to the display in one copy.
+ * through `active`, a pure query checked first: when no pass is active the
+ * bitmap skips the pixel read-back and goes to the display in one copy. A pass
+ * that goes inactive and active again is rebuilt, so it starts from the
+ * current frame, not a stale one.
  */
 export type ShaderPass = {
   active(frame: ShaderFrame): boolean;
@@ -154,13 +156,7 @@ const SETTLED_LEVELS = 1;
 const ghost: Shader = () => {
   let panel: Float32Array | undefined;
   return {
-    active({ data }) {
-      if (retention(data) > 0) return true;
-      // Turning the ghost back on then starts from the current frame, not a
-      // stale one.
-      panel = undefined;
-      return false;
-    },
+    active: ({ data }) => retention(data) > 0,
     apply(pixels, { elapsedMs, data }) {
       const ghost = retention(data);
       if (panel?.length !== pixels.length) {
@@ -263,6 +259,7 @@ export class EmulatedCanvas extends HTMLElement {
   #outerContext?: CanvasRenderingContext2D;
   #readback?: OffscreenCanvasRenderingContext2D | null;
   #passes = SHADERS.map((shader) => shader());
+  #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
     width: 0,
     height: 0,
@@ -330,6 +327,7 @@ export class EmulatedCanvas extends HTMLElement {
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
   reset() {
     this.#passes = SHADERS.map((shader) => shader());
+    this.#wasActive.clear();
   }
 
   /** Created on demand: a consumer may ask for the context before connection. */
@@ -418,8 +416,13 @@ export class EmulatedCanvas extends HTMLElement {
 
     let image: ImageData | undefined;
     let changing = false;
-    for (const pass of this.#passes) {
-      if (!pass.active(frame)) continue;
+    for (const [index, pass] of this.#passes.entries()) {
+      if (!pass.active(frame)) {
+        if (this.#wasActive.delete(pass))
+          this.#passes[index] = SHADERS[index]();
+        continue;
+      }
+      this.#wasActive.add(pass);
       image ??= this.#read(innerCanvas);
       if (image === undefined) break;
       changing = pass.apply(image.data, frame) || changing;
