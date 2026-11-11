@@ -163,3 +163,61 @@ test("an untouched handprint follows the visible rect when it changes", () => {
   expect(field[117 * size + 8]).toBe(0);
   expect(field[85 * size + 8]).toBeGreaterThan(0);
 });
+
+const GOLDEN: [number, string][] = [
+  [4137705614, "still"],
+  [4272130193, "active"],
+  [2629332019, "active"],
+  [3130474220, "active"],
+  [1835401642, "active"],
+  [1107083285, "active"],
+  [2315578821, "idle"],
+  [2315578821, "idle"],
+  [2315578821, "idle"],
+  [2315578821, "idle"],
+  [2315578821, "idle"],
+  [627734265, "active"],
+  [1478653331, "active"],
+  [2314882880, "active"],
+];
+
+const fingerprint = (field: Float32Array) => {
+  const bits = new Uint32Array(field.buffer, field.byteOffset, field.length);
+  let hash = 2166136261;
+  for (const word of bits) hash = Math.imul(hash ^ word, 16777619) >>> 0;
+  return hash;
+};
+
+test("a scripted session relaxes exactly as it did when every pin was scanned each step", () => {
+  const { mode, input, field, run, press } = setup();
+  const seen: [number, string][] = [];
+  const sample = () => seen.push([fingerprint(field), mode.pace()]);
+
+  run(1);
+  sample();
+  input.lastInputAt = 0;
+  run(40, (i) => {
+    input.pointer = { x: 30 + i * 2, y: 70 + Math.sin(i / 5) * 10 };
+  });
+  sample();
+  press(100, 90);
+  run(90, (i) => {
+    input.pointer = { x: 100 + i * 0.3, y: 90 };
+  });
+  sample();
+  input.press!.held = false;
+  run(1);
+  sample();
+  run(100);
+  sample();
+  run(300);
+  sample();
+  input.pointer = undefined;
+  input.lastInputAt = 30_000;
+  for (let second = 0; second < 40; second += 1) {
+    run(60);
+    if (second % 5 === 4) sample();
+  }
+
+  expect(seen).toEqual(GOLDEN);
+});
