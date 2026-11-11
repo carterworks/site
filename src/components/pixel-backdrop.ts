@@ -171,6 +171,21 @@ function clamp(value: number, min: number, max: number) {
 }
 
 /**
+ * Distance into the grid along one axis, in CSS pixels -> logical position.
+ * Cells sit a stride apart and each gap is split between its neighbours, so a
+ * cell's centre maps to its pixel's centre. `extent` is the grid's box, which
+ * ends at the last cell.
+ */
+export function gridCoordinate(
+  offset: number,
+  extent: number,
+  count: number,
+  gap: number,
+) {
+  return ((offset + gap / 2) / (extent + gap)) * count;
+}
+
+/**
  * A small 2D simplex noise, after Stefan Gustavson's public-domain reference.
  * Simplex is preferred over Perlin here: it has no axis-aligned directional
  * artifacts, so the field reads as organic rather than gridded.
@@ -584,23 +599,27 @@ class PixelBackdrop extends HTMLElement {
     context.putImageData(image, 0, 0);
   }
 
-  /** Viewport point -> logical cell in the source bitmap. */
-  #cell(clientX: number, clientY: number) {
+  /** Viewport point -> position in the source bitmap, in logical pixels. */
+  #logical(clientX: number, clientY: number) {
     const canvas = this.#canvas;
     if (canvas === undefined) return undefined;
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return undefined;
-    const x = clamp(
-      Math.floor(((clientX - rect.left) / rect.width) * this.#columns),
-      0,
-      this.#columns - 1,
-    );
-    const y = clamp(
-      Math.floor(((clientY - rect.top) / rect.height) * this.#rows),
-      0,
-      this.#rows - 1,
-    );
-    return { x, y };
+    const gap = this.#options.gap;
+    return {
+      x: gridCoordinate(clientX - rect.left, rect.width, this.#columns, gap),
+      y: gridCoordinate(clientY - rect.top, rect.height, this.#rows, gap),
+    };
+  }
+
+  /** Viewport point -> logical cell in the source bitmap. */
+  #cell(clientX: number, clientY: number) {
+    const point = this.#logical(clientX, clientY);
+    if (point === undefined) return undefined;
+    return {
+      x: clamp(Math.floor(point.x), 0, this.#columns - 1),
+      y: clamp(Math.floor(point.y), 0, this.#rows - 1),
+    };
   }
 
   #onPointerMove = (event: PointerEvent) => {
@@ -626,12 +645,9 @@ class PixelBackdrop extends HTMLElement {
   };
 
   #onPointerDown = (event: PointerEvent) => {
-    const canvas = this.#canvas;
-    if (canvas === undefined) return;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-    const x = ((event.clientX - rect.left) / rect.width) * this.#columns;
-    const y = ((event.clientY - rect.top) / rect.height) * this.#rows;
+    const point = this.#logical(event.clientX, event.clientY);
+    if (point === undefined) return;
+    const { x, y } = point;
     if (x < 0 || y < 0 || x > this.#columns || y > this.#rows) return;
 
     this.#ripples.push({ x, y, born: performance.now() });
