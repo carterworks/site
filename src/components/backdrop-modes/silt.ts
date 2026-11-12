@@ -1,10 +1,11 @@
 import { line } from "./line";
-import { TUNED_GRID, type Mode, type Point } from "./mode";
+import { pointOn, TUNED_GRID, visibleCells, type Point, type Toy } from "./toy";
 
-const SHADES = [0, 0.55, 0.78, 1];
+/** White on transparent, so a faint grain lets any page show through. */
+const ALPHAS = [0, 140, 199, 255];
 /**
- * Tunables below were set on the tuned grid; they scale by `columns / TUNED_GRID`
- * so pours, taps and the trickle keep their on-screen size on a denser grid.
+ * Tunables below were set on the tuned grid; they scale by `width / TUNED_GRID`
+ * so pours, taps and the trickle keep their on-screen size on a denser canvas.
  */
 const POUR_GRAINS = 3;
 const POUR_SPREAD = 3;
@@ -24,6 +25,8 @@ const DUNE_HEIGHT_SHARE = 0.14;
 const TRICKLE_AFTER_MS = 3000;
 const TRICKLE_UNTIL_MS = 10_000;
 const TRICKLE_EVERY_STEPS = 2;
+/** Steps in the trickle window run at ~8 fps: nothing moves between grains. */
+const IDLE_FRAME_MS = 125;
 
 /**
  * Grains the sieve lets through per step: a steady trickle plus a share of the
@@ -43,11 +46,14 @@ const TIPPED_DRAIN = 12;
  * the tray is live. It is frozen and costs nothing; the first input hands it
  * to the normal sim, so it drains like any poured sand.
  */
-export const silt: Mode = {
+export const silt: Toy = {
   id: "silt",
   label: "Silt",
   look: { ghost: 55, noise: 12 },
-  create({ columns, rows, random }) {
+  start(canvas) {
+    const context = canvas.getContext("2d");
+    if (context === null) return () => {};
+    const { width: columns, height: rows } = canvas;
     const scale = columns / TUNED_GRID;
     const pourGrains = Math.round(POUR_GRAINS * scale);
     const pourSpread = POUR_SPREAD * scale;
@@ -59,18 +65,28 @@ export const silt: Mode = {
     // The tray holds scale² as many grains, so a tip-out needs scale² the rate.
     const tippedDrain = Math.round(TIPPED_DRAIN * scale * scale);
     const grains = new Uint8Array(columns * rows);
+    const image = context.createImageData(columns, rows);
+    const pixels = image.data;
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = pixels[i + 1] = pixels[i + 2] = 255;
+    }
     let count = 0;
     let gravity = 1;
     let tipped = false;
     let owed = 0;
     let sweep = 0;
-    let seenPress: object | undefined;
-    let lastTap = { at: -Infinity, x: 0, y: 0 };
+    let lastTapAt = -Infinity;
+    const lastTap: Point = { x: 0, y: 0 };
+    const pressAt: Point = { x: 0, y: 0 };
+    const pointer: Point = { x: 0, y: 0 };
+    let hasPointer = false;
+    let held = false;
     const pourAt: Point = { x: 0, y: 0 };
     let pourTrail = false;
     const lineFrom: Point = { x: 0, y: 0 };
     const lineTo: Point = { x: 0, y: 0 };
     let pouring = false;
+    let lastInputAt = -Infinity;
     let quietSince = Infinity;
     let pristine = true;
     let seeded = false;
@@ -78,12 +94,18 @@ export const silt: Mode = {
     let right = columns - 1;
     let top = 0;
     let bottom = rows - 1;
+    let refit = true;
     // Rows that may hold grains, so a sweep and a render skip the empty rest.
     // Both only ever hold a superset of the grains, never fewer.
     let minRow = rows;
     let maxRow = -1;
+    // Rows the image last showed grains in, which the next render must clear.
+    let shownMin = rows;
+    let shownMax = -1;
     // Set once a sweep moves nothing; anything that can move a grain clears it.
     let settled = false;
+    let frame: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     const put = (x: number, y: number) => {
       const cx = Math.floor(x);
@@ -91,7 +113,7 @@ export const silt: Mode = {
       if (cx < left || cx > right || cy < top || cy > bottom) return;
       const i = cy * columns + cx;
       if (grains[i] === 0) {
-        grains[i] = 1 + Math.floor(random() * 3);
+        grains[i] = 1 + Math.floor(Math.random() * 3);
         count += 1;
         settled = false;
         minRow = Math.min(minRow, cy);
@@ -102,8 +124,8 @@ export const silt: Mode = {
     const pour = (x: number, y: number) => {
       for (let k = 0; k < pourGrains; k += 1) {
         put(
-          x + (random() - 0.5) * pourSpread,
-          y + (random() - 0.5) * pourSpread,
+          x + (Math.random() - 0.5) * pourSpread,
+          y + (Math.random() - 0.5) * pourSpread,
         );
       }
     };
@@ -151,7 +173,7 @@ export const silt: Mode = {
         slide(row + x, next + x);
         return true;
       }
-      const side = random() < 0.5 ? -1 : 1;
+      const side = Math.random() < 0.5 ? -1 : 1;
       return (
         slip(x, row, next, x + side) ||
         slip(x, row, next, x - side) ||
@@ -161,7 +183,7 @@ export const silt: Mode = {
     };
 
     const sieve = (floor: number, allowed: number) => {
-      const start = Math.floor(random() * (right - left + 1));
+      const start = Math.floor(Math.random() * (right - left + 1));
       const width = right - left + 1;
       for (let k = 0; k < width && allowed > 0; k += 1) {
         const i = floor + left + ((start + k) % width);
@@ -207,150 +229,225 @@ export const silt: Mode = {
       }
     };
 
-    const tap = (press: { at: number; x: number; y: number }) => {
+    const tap = (at: number, x: number, y: number) => {
       if (
-        press.at - lastTap.at < DOUBLE_TAP_MS &&
-        Math.hypot(press.x - lastTap.x, press.y - lastTap.y) < tapCells
+        at - lastTapAt < DOUBLE_TAP_MS &&
+        Math.hypot(x - lastTap.x, y - lastTap.y) < tapCells
       ) {
         gravity = -gravity;
         settled = false;
         minRow = top;
         maxRow = bottom;
         tipped = gravity < 0;
-        lastTap = { at: -Infinity, x: 0, y: 0 };
+        lastTapAt = -Infinity;
       } else {
-        lastTap = { at: press.at, x: press.x, y: press.y };
+        lastTapAt = at;
+        lastTap.x = x;
+        lastTap.y = y;
       }
     };
-    return {
-      step({ press, pointer, lastInputAt, visible }, now) {
-        if (
-          lastInputAt !== -Infinity ||
-          press !== undefined ||
-          pointer !== undefined
-        ) {
-          pristine = false;
-        }
-        const nextLeft = Math.max(0, Math.ceil(visible.left));
-        const nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1);
-        const nextTop = Math.max(0, Math.ceil(visible.top));
-        const nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
-        const moved =
-          left !== nextLeft ||
-          right !== nextRight ||
-          top !== nextTop ||
-          bottom !== nextBottom;
-        if (moved) settled = false;
-        left = nextLeft;
-        right = nextRight;
-        top = nextTop;
-        bottom = nextBottom;
-        if (right <= left || bottom <= top) return;
-        if (pristine) {
-          if (moved || !seeded) seedDune();
-          seeded = true;
-          return;
-        }
-        if (moved) dropOutside();
 
-        if (press !== undefined && press !== seenPress) {
-          seenPress = press;
-          pourTrail = false;
-          tap(press);
-        }
-        pouring = press?.held === true;
-        if (pouring && press !== undefined) {
-          const here = pointer ?? press;
-          const origin = pourTrail ? pourAt : press;
-          lineFrom.x = Math.floor(origin.x);
-          lineFrom.y = Math.floor(origin.y);
-          lineTo.x = Math.floor(here.x);
-          lineTo.y = Math.floor(here.y);
-          line(lineFrom, lineTo, put);
-          pourAt.x = here.x;
-          pourAt.y = here.y;
-          pourTrail = true;
-          pour(here.x, here.y);
-        } else {
-          pourTrail = false;
-        }
+    // Whether the visible rect moved since the last fit. A viewport that
+    // measures empty (not laid out, or hidden) falls back to the whole canvas,
+    // so the scene still has room to run.
+    const fit = () => {
+      const visible = visibleCells(canvas);
+      let nextLeft = Math.max(0, Math.ceil(visible.left));
+      let nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1);
+      let nextTop = Math.max(0, Math.ceil(visible.top));
+      let nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
+      if (nextRight <= nextLeft || nextBottom <= nextTop) {
+        nextLeft = nextTop = 0;
+        nextRight = columns - 1;
+        nextBottom = rows - 1;
+      }
+      const moved =
+        left !== nextLeft ||
+        right !== nextRight ||
+        top !== nextTop ||
+        bottom !== nextBottom;
+      if (moved) settled = false;
+      left = nextLeft;
+      right = nextRight;
+      top = nextTop;
+      bottom = nextBottom;
+      return moved;
+    };
 
-        quietSince = now - lastInputAt;
-        sweep += 1;
-        if (
-          !tipped &&
-          quietSince > TRICKLE_AFTER_MS &&
-          quietSince < TRICKLE_UNTIL_MS &&
-          sweep % TRICKLE_EVERY_STEPS === 0
-        ) {
-          const wander = Math.sin(now / 5200) * (right - left) * 0.34;
-          put(
-            (left + right) / 2 +
-              wander +
-              (random() - 0.5) * TRICKLE_JITTER * scale,
-            gravity > 0 ? top : bottom,
-          );
-        }
+    const render = () => {
+      const first = Math.max(0, Math.min(minRow, shownMin));
+      const last = Math.min(rows - 1, Math.max(maxRow, shownMax));
+      for (let i = first * columns; i < (last + 1) * columns; i += 1) {
+        pixels[i * 4 + 3] = ALPHAS[grains[i]];
+      }
+      shownMin = minRow;
+      shownMax = maxRow;
+      context.putImageData(image, 0, 0);
+    };
 
-        const floorRow = gravity > 0 ? bottom : top;
-        let farthest = floorRow;
-        let swept = false;
-        for (let s = 0; !settled && s < sweepsPerStep; s += 1) {
-          const farRow =
-            gravity > 0
-              ? Math.min(bottom, Math.max(top, minRow))
-              : Math.max(top, Math.min(bottom, maxRow));
-          farthest = floorRow;
-          swept = true;
-          let shifted = false;
-          for (
-            let y = floorRow - gravity;
-            y !== farRow - gravity;
-            y -= gravity
-          ) {
-            const row = y * columns;
-            const next = (y + gravity) * columns;
-            const forward = (y + sweep + s) & 1;
-            for (let k = 0; k < right - left + 1; k += 1) {
-              const x = forward ? left + k : right - k;
-              if (grains[row + x] === 0) continue;
-              farthest = y;
-              if (fall(x, row, next)) shifted = true;
-            }
+    const step = (now: number) => {
+      const moved = refit && fit();
+      refit = false;
+      if (pristine) {
+        if (moved || !seeded) seedDune();
+        seeded = true;
+        return;
+      }
+      if (moved) dropOutside();
+
+      pouring = held;
+      if (pouring) {
+        const here = hasPointer ? pointer : pressAt;
+        const origin = pourTrail ? pourAt : pressAt;
+        lineFrom.x = Math.floor(origin.x);
+        lineFrom.y = Math.floor(origin.y);
+        lineTo.x = Math.floor(here.x);
+        lineTo.y = Math.floor(here.y);
+        line(lineFrom, lineTo, put);
+        pourAt.x = here.x;
+        pourAt.y = here.y;
+        pourTrail = true;
+        pour(here.x, here.y);
+      } else {
+        pourTrail = false;
+      }
+
+      quietSince = now - lastInputAt;
+      sweep += 1;
+      if (
+        !tipped &&
+        quietSince > TRICKLE_AFTER_MS &&
+        quietSince < TRICKLE_UNTIL_MS &&
+        sweep % TRICKLE_EVERY_STEPS === 0
+      ) {
+        const wander = Math.sin(now / 5200) * (right - left) * 0.34;
+        put(
+          (left + right) / 2 +
+            wander +
+            (Math.random() - 0.5) * TRICKLE_JITTER * scale,
+          gravity > 0 ? top : bottom,
+        );
+      }
+
+      const floorRow = gravity > 0 ? bottom : top;
+      let farthest = floorRow;
+      let swept = false;
+      for (let s = 0; !settled && s < sweepsPerStep; s += 1) {
+        const farRow =
+          gravity > 0
+            ? Math.min(bottom, Math.max(top, minRow))
+            : Math.max(top, Math.min(bottom, maxRow));
+        farthest = floorRow;
+        swept = true;
+        let shifted = false;
+        for (let y = floorRow - gravity; y !== farRow - gravity; y -= gravity) {
+          const row = y * columns;
+          const next = (y + gravity) * columns;
+          const forward = (y + sweep + s) & 1;
+          for (let k = 0; k < right - left + 1; k += 1) {
+            const x = forward ? left + k : right - k;
+            if (grains[row + x] === 0) continue;
+            farthest = y;
+            if (fall(x, row, next)) shifted = true;
           }
-          settled = !shifted;
         }
-        if (swept) {
-          minRow = Math.min(farthest, floorRow);
-          maxRow = Math.max(farthest, floorRow);
-        }
+        settled = !shifted;
+      }
+      if (swept) {
+        minRow = Math.min(farthest, floorRow);
+        maxRow = Math.max(farthest, floorRow);
+      }
 
-        if (tipped) {
-          sieve(floorRow * columns, tippedDrain);
-          if (count === 0) {
-            gravity = 1;
-            tipped = false;
-          }
-        } else if (!pouring) {
-          owed += drainBase + count * DRAIN_PER_GRAIN;
-          const whole = Math.floor(owed);
-          owed -= whole;
-          sieve(floorRow * columns, whole);
+      if (tipped) {
+        sieve(floorRow * columns, tippedDrain);
+        if (count === 0) {
+          gravity = 1;
+          tipped = false;
         }
-      },
+      } else if (!pouring) {
+        owed += drainBase + count * DRAIN_PER_GRAIN;
+        const whole = Math.floor(owed);
+        owed -= whole;
+        sieve(floorRow * columns, whole);
+      }
+    };
 
-      render(field) {
-        const end = Math.min(field.length, (maxRow + 1) * columns);
-        for (let i = Math.max(0, minRow) * columns; i < end; i += 1) {
-          field[i] = SHADES[grains[i]];
-        }
-      },
+    const tick = (now: number) => {
+      frame = undefined;
+      step(now);
+      render();
+      if (pristine) return;
+      if (count > 0 || pouring) {
+        wake();
+      } else if (quietSince < TRICKLE_UNTIL_MS) {
+        timer = setTimeout(wake, IDLE_FRAME_MS);
+      }
+    };
 
-      pace() {
-        if (pristine) return "still";
-        if (count > 0 || pouring) return "active";
-        return quietSince < TRICKLE_UNTIL_MS ? "idle" : "still";
-      },
+    const wake = () => {
+      clearTimeout(timer);
+      timer = undefined;
+      frame ??= requestAnimationFrame(tick);
+    };
+
+    const touched = () => {
+      pristine = false;
+      lastInputAt = performance.now();
+      wake();
+    };
+
+    const onDown = (event: PointerEvent) => {
+      const point = pointOn(canvas, event);
+      pressAt.x = point.x;
+      pressAt.y = point.y;
+      held = true;
+      hasPointer = false;
+      pourTrail = false;
+      touched();
+      tap(lastInputAt, point.x, point.y);
+    };
+
+    const onMove = (event: PointerEvent) => {
+      const point = pointOn(canvas, event);
+      pointer.x = point.x;
+      pointer.y = point.y;
+      hasPointer = true;
+      touched();
+    };
+
+    const onLift = (event: PointerEvent) => {
+      held = false;
+      if (event.pointerType === "touch") hasPointer = false;
+      wake();
+    };
+
+    const onLeave = () => {
+      hasPointer = false;
+      wake();
+    };
+
+    const onResize = () => {
+      refit = true;
+      wake();
+    };
+
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onLift);
+    canvas.addEventListener("pointercancel", onLift);
+    canvas.addEventListener("pointerleave", onLeave);
+    window.addEventListener("resize", onResize);
+    wake();
+
+    return () => {
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onLift);
+      canvas.removeEventListener("pointercancel", onLift);
+      canvas.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(frame ?? 0);
+      clearTimeout(timer);
     };
   },
 };
