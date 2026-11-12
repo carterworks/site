@@ -126,9 +126,10 @@ export type ShaderPass = {
 
 /**
  * Builds a pass for one element, so any state it keeps between frames belongs
- * to that element. A pass reads its own knobs from `frame.data`, so a new
- * effect never touches the element: write one, add it to `SHADERS` and
- * document its `data-*` attribute. For example, an inverter:
+ * to that element. A pass reading its knobs from `frame.data` needs no change
+ * to the element: write one, add it to `SHADERS` and document its `data-*`
+ * attribute. One that parses them in `configure` must also list them in
+ * `EmulatedCanvas.observedAttributes`. For example, an inverter:
  *
  * ```ts
  * const invert: Shader = () => ({
