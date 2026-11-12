@@ -1,3 +1,4 @@
+import { makeCoarseNoise, makeNoise2D } from "./backdrop-noise";
 import { clamp, MAX_GHOST } from "./emulated-canvas-limits";
 
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
@@ -96,9 +97,15 @@ export type ShaderFrame = {
 };
 
 /**
+ * How soon a pass needs the next present: never, at the ~8 fps idle rate (for
+ * a slow drift, whose steps don't show), or on the next animation frame.
+ */
+export type Pace = "still" | "idle" | "active";
+
+/**
  * One element's instance of a shader. `apply` edits the logical bitmap's RGBA
- * bytes in place and returns true while its output is still changing, so the
- * owner knows to keep presenting. A pass whose knobs leave it off reports so
+ * bytes in place and returns how soon its output changes again, so the canvas
+ * knows when to present next. A pass whose knobs leave it off reports so
  * through `active`, a pure query checked first: when no pass is active the
  * bitmap skips the pixel read-back and goes to the display in one copy. A pass
  * that goes inactive and active again is rebuilt, so it starts from the
@@ -106,7 +113,7 @@ export type ShaderFrame = {
  */
 export type ShaderPass = {
   active(frame: ShaderFrame): boolean;
-  apply(pixels: Uint8ClampedArray, frame: ShaderFrame): boolean;
+  apply(pixels: Uint8ClampedArray, frame: ShaderFrame): Pace;
 };
 
 /**
@@ -121,7 +128,7 @@ export type ShaderPass = {
  *   apply(pixels) {
  *     for (let i = 0; i < pixels.length; i += 4)
  *       for (let c = i; c < i + 3; c += 1) pixels[c] = 255 - pixels[c];
- *     return false;
+ *     return "still";
  *   },
  * });
  * ```
@@ -162,7 +169,7 @@ const ghost: Shader = () => {
         // Seed the panel with this frame so it starts opaque; otherwise a high
         // retention would fade in from transparent.
         panel = Float32Array.from(pixels);
-        return false;
+        return "still";
       }
       // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
       const tau = SIXTY_HZ_FRAME_MS / -Math.log(ghost);
@@ -179,7 +186,7 @@ const ghost: Shader = () => {
           changing = true;
         }
       }
-      return changing;
+      return changing ? "active" : "still";
     },
   };
 };
@@ -251,7 +258,85 @@ const palette: Shader = () => {
         pixels[i + 2] = table[entry + 2];
         pixels[i + 3] = 255;
       }
-      return false;
+      return "still";
+    },
+  };
+};
+
+const NOISE_SEED = 0x9e3779b9;
+
+/**
+ * Simplex is exactly zero on integer lattice points, so sample off-lattice:
+ * without this a 1-pixel feature size would flatten to a constant.
+ */
+const NOISE_OFFSET_X = 12.9898;
+const NOISE_OFFSET_Y = 78.233;
+
+/**
+ * The noise is sampled at most this many pixels apart and filled in between.
+ * At the backdrop's feature size that is a quarter of the samples per axis,
+ * within 0.02 RMS (0.075 at worst) of sampling every pixel.
+ */
+const MAX_NOISE_STEP = 4;
+
+/** Fewer samples than this per feature visibly flatten its peaks. */
+const NOISE_SAMPLES_PER_FEATURE = 7.5;
+
+function knob(value: string | undefined, fallback: number) {
+  const parsed = Number.parseFloat(value ?? "");
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * A drifting simplex field under the frame, so its dark pixels shimmer: each
+ * channel is lifted to the noise where that is brighter, like a `lighten`
+ * blend, and the drawing shows on top. `data-noise` is its intensity (0–100),
+ * `data-noise-scale` its feature size in pixels (default 8) and
+ * `data-noise-speed` how fast it drifts (0–100, default 0). At the speeds the
+ * backdrop uses the drift moves about a pixel per 60 Hz frame on a desktop
+ * screen, so it redraws at the idle rate.
+ */
+const noise: Shader = () => {
+  const sample = makeNoise2D(NOISE_SEED);
+  let layer: ReturnType<typeof makeCoarseNoise> | undefined;
+  let field = new Float32Array(0);
+  let clock = 0;
+  return {
+    active: ({ data }) => knob(data.noise, 0) > 0,
+    apply(pixels, { width, height, elapsedMs, data }) {
+      if (layer === undefined || field.length !== width * height) {
+        layer = makeCoarseNoise(sample, width, height);
+        field = new Float32Array(width * height);
+      }
+      const speed = knob(data.noiseSpeed, 0);
+      clock += elapsedMs;
+      const drift = clock * speed * 0.00005;
+      const feature = Math.max(1, knob(data.noiseScale, 8));
+      const step = clamp(
+        Math.floor(feature / NOISE_SAMPLES_PER_FEATURE),
+        1,
+        MAX_NOISE_STEP,
+      );
+      field.fill(0);
+      layer(
+        field,
+        step,
+        1 / feature,
+        drift + NOISE_OFFSET_X,
+        drift * 0.5 + NOISE_OFFSET_Y,
+        clamp(knob(data.noise, 0), 0, 100) / 100,
+      );
+      for (let i = 0, cell = 0; i < pixels.length; i += 4, cell += 1) {
+        const level = field[cell] * 255;
+        // Over black, so a transparent pixel takes the noise rather than hiding it.
+        const opacity = pixels[i + 3] / 255;
+        for (let channel = i; channel < i + 3; channel += 1) {
+          const value = pixels[channel] * opacity;
+          pixels[channel] = value > level ? value : level;
+        }
+        pixels[i + 3] = 255;
+      }
+      return speed > 0 ? "idle" : "still";
     },
   };
 };
@@ -260,7 +345,7 @@ const palette: Shader = () => {
  * Per-pixel passes over the logical bitmap, in order. To add an effect, write a
  * `Shader` and add it to this list.
  */
-export const SHADERS: Shader[] = [palette, ghost];
+export const SHADERS: Shader[] = [noise, palette, ghost];
 
 /**
  * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
@@ -307,7 +392,11 @@ export type EmulatedCanvasProps = {
  *
  * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
  * recolour the frame in two colours, by each pixel's luma: black shows as the
- * base and white as the ink. The knobs are live.
+ * base and white as the ink.
+ *
+ * `data-noise` (0–100) lifts the frame to a drifting noise field, so its dark
+ * pixels shimmer; `data-noise-scale` and `data-noise-speed` set its feature
+ * size in pixels and its drift. The knobs are live.
  *
  * Effects like the ghost are `SHADERS`, an ordered list of per-pixel passes
  * that run on the logical bitmap, never at display resolution, so each costs
@@ -317,8 +406,9 @@ export type EmulatedCanvasProps = {
  * drawn on it: drawing through the 2D context queues a present for when the
  * drawing code returns, so a frame drawn in an animation frame shows in that
  * same frame, and several calls cost one present. While a pass is still
- * changing the display, the canvas keeps presenting every animation frame,
- * then stops. `data-manual` opts out: the owner calls `present()` itself.
+ * changing the display, the canvas keeps presenting every animation frame, or
+ * at about 8 fps for a pass that only drifts, then stops. `data-manual` opts
+ * out: the owner calls `present()` itself.
  *
  * The context is the inner canvas's own, with only its pixel-writing methods
  * wrapped to note that the bitmap changed: nothing is proxied or replayed, so
@@ -339,6 +429,9 @@ export class EmulatedCanvas extends HTMLElement {
     "data-ghost",
     "data-palette-base",
     "data-palette-ink",
+    "data-noise",
+    "data-noise-scale",
+    "data-noise-speed",
     "data-manual",
   ];
 
@@ -356,6 +449,7 @@ export class EmulatedCanvas extends HTMLElement {
   /** The image a whole-bitmap `putImageData` drew, if nothing was drawn after it. */
   #handed?: ImageData;
   #presentQueued = false;
+  #drewAt = -Infinity;
   #passes = SHADERS.map((shader) => shader());
   #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
@@ -367,6 +461,7 @@ export class EmulatedCanvas extends HTMLElement {
   #presentedAt?: number;
   #style?: HTMLStyleElement;
   #nextFrame?: number;
+  #idleTimer?: number;
 
   connectedCallback() {
     this.#initialize();
@@ -417,7 +512,7 @@ export class EmulatedCanvas extends HTMLElement {
    * owner whose bitmap is static knows when it can stop presenting.
    */
   present() {
-    return this.#blit();
+    return this.#blit() !== "still";
   }
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
@@ -467,6 +562,7 @@ export class EmulatedCanvas extends HTMLElement {
       image.height === this.height;
     this.#handed = whole ? image : undefined;
     this.#drawn = true;
+    this.#drewAt = performance.now();
     this.#requestPresent();
   };
 
@@ -493,19 +589,24 @@ export class EmulatedCanvas extends HTMLElement {
    * A present cancels the one scheduled before it, so a consumer drawing every
    * frame never gets a second present in the same frame.
    */
-  #follow(changing: boolean) {
+  #follow(pace: Pace) {
     this.#cancelNext();
-    if (!changing) return;
-    this.#nextFrame = requestAnimationFrame(() => {
-      this.#nextFrame = undefined;
-      this.#follow(this.#blit());
-    });
+    if (pace === "active") {
+      this.#nextFrame = requestAnimationFrame(this.#next);
+    } else if (pace === "idle") {
+      this.#idleTimer = window.setTimeout(this.#next, IDLE_FRAME_MS);
+    }
   }
 
+  #next = () => {
+    this.#nextFrame = this.#idleTimer = undefined;
+    this.#follow(this.#blit());
+  };
+
   #cancelNext() {
-    if (this.#nextFrame === undefined) return;
-    cancelAnimationFrame(this.#nextFrame);
-    this.#nextFrame = undefined;
+    cancelAnimationFrame(this.#nextFrame ?? 0);
+    clearTimeout(this.#idleTimer);
+    this.#nextFrame = this.#idleTimer = undefined;
   }
 
   #initialize() {
@@ -551,15 +652,15 @@ export class EmulatedCanvas extends HTMLElement {
     return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
   }
 
-  #blit() {
+  #blit(): Pace {
     const outerCanvas = this.#outerCanvas;
-    if (outerCanvas === undefined) return false;
+    if (outerCanvas === undefined) return "still";
     const innerCanvas = this.#bitmap();
 
     let context = this.#outerContext;
     if (context === undefined) {
       const created = outerCanvas.getContext("2d");
-      if (created === null) return false;
+      if (created === null) return "still";
       // `copy` replaces the display outright, so no clear is needed first.
       created.globalCompositeOperation = "copy";
       context = this.#outerContext = created;
@@ -575,7 +676,8 @@ export class EmulatedCanvas extends HTMLElement {
     const handed = this.#handed;
     this.#handed = undefined;
     let image: ImageData | undefined;
-    let changing = false;
+    let active = false;
+    let idle = false;
     for (let index = 0; index < this.#passes.length; index += 1) {
       const pass = this.#passes[index];
       if (!pass.active(frame)) {
@@ -586,12 +688,19 @@ export class EmulatedCanvas extends HTMLElement {
       this.#wasActive.add(pass);
       image ??= this.#pixels(innerCanvas, handed);
       if (image === undefined) break;
-      changing = pass.apply(image.data, frame) || changing;
+      const pace = pass.apply(image.data, frame);
+      active ||= pace === "active";
+      idle ||= pace === "idle";
     }
 
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
-    return changing;
+    // A drifting frame can keep a fade more than a level behind on every
+    // present, so it never reports settled and would hold full rate for good.
+    if (active && (!idle || now - this.#drewAt < DRIFTING_FADE_MS)) {
+      return "active";
+    }
+    return active || idle ? "idle" : "still";
   }
 
   /**
@@ -642,6 +751,12 @@ export class EmulatedCanvas extends HTMLElement {
     return readback.getImageData(0, 0, source.width, source.height);
   }
 }
+
+/** The idle redraw rate, for a pass that only drifts. */
+const IDLE_FRAME_MS = 1000 / 8;
+
+/** How long after a draw a fade over a drifting pass may keep full rate. */
+const DRIFTING_FADE_MS = 1000;
 
 /** The 2D context's methods that change pixels; every other call leaves them be. */
 const PIXEL_WRITERS = [

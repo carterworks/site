@@ -181,7 +181,7 @@ test("a shader added to SHADERS recolours the logical bitmap, reading its own da
     for (let i = 0; i < pixels.length; i += 4) {
       pixels.fill(pixels[i] < 128 ? dark : light, i, i + 3);
     }
-    return false;
+    return "still" as const;
   };
   SHADERS.push(() => ({ active: () => true, apply: twoColour }));
   try {
@@ -417,6 +417,61 @@ test("a palette follows its knobs, and is off without both", () => {
   expect(display.drawImage).toHaveBeenCalledTimes(1);
 });
 
+/** A `size` x `size` bitmap of one opaque grey, as whole-bitmap image data. */
+function square(size: number, level: number) {
+  const data = new Uint8ClampedArray(size * size * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    data.set([level, level, level, 255], i);
+  }
+  return { width: size, height: size, data } as ImageData;
+}
+
+test("data-noise lightens the frame up to a noise of that intensity, and never darkens it", () => {
+  const canvas = mountCanvas({
+    width: "32",
+    height: "32",
+    noise: "50",
+    noiseScale: "4",
+  });
+  const image = square(32, 0);
+  image.data.set([255, 255, 255, 255]);
+  canvas.getContext("2d")?.putImageData(image, 0, 0);
+
+  canvas.present();
+
+  const reds = [...shown()].filter((_, i) => i % 4 === 0);
+  expect(reds[0]).toBe(255);
+  expect(Math.max(...reds.slice(1))).toBeGreaterThan(64);
+  expect(Math.max(...reds.slice(1))).toBeLessThanOrEqual(128);
+  expect(new Set(reds).size).toBeGreaterThan(10);
+});
+
+test("noise over a transparent pixel lightens it as though over black, and makes it opaque", () => {
+  const canvas = mountCanvas({ width: "1", height: "1", noise: "100" });
+  drawRow(canvas, [255, 255, 255, 0]);
+
+  canvas.present();
+
+  expect(shown()[3]).toBe(255);
+  expect(shown()[0]).toBeLessThan(255);
+});
+
+test("noise drifts with data-noise-speed, and holds still without it", () => {
+  const canvas = mountCanvas({ width: "16", height: "16", noise: "50" });
+  canvas.getContext("2d")?.putImageData(square(16, 0), 0, 0);
+  const presentAfter = (ms: number) => {
+    clock += ms;
+    canvas.present();
+    return [...shown()].join();
+  };
+
+  const still = presentAfter(0);
+  expect(presentAfter(1000)).toBe(still);
+
+  canvas.dataset.noiseSpeed = "50";
+  expect(presentAfter(1000)).not.toBe(still);
+});
+
 describe("presenting on its own", () => {
   beforeEach(() => {
     vi.useFakeTimers({
@@ -565,5 +620,68 @@ describe("presenting on its own", () => {
     canvas.remove();
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe("presenting drifting noise", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: [
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+        "setTimeout",
+        "clearTimeout",
+        "performance",
+      ],
+    });
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  function mountDrifting(data: Record<string, string> = {}) {
+    const canvas = document.createElement("emulated-canvas");
+    Object.assign(
+      canvas.dataset,
+      { width: "16", height: "16", noise: "50", noiseSpeed: "50" },
+      data,
+    );
+    document.body.replaceChildren(canvas);
+    canvas.getContext("2d")!.putImageData(square(16, 0), 0, 0);
+    return canvas;
+  }
+
+  async function presentsOver(ms: number) {
+    display.putImageData.mockClear();
+    await vi.advanceTimersByTimeAsync(ms);
+    return display.putImageData.mock.calls.length;
+  }
+
+  test("idles at about eight presents a second", async () => {
+    mountDrifting();
+    await vi.advanceTimersByTimeAsync(500);
+
+    const presents = await presentsOver(1000);
+    expect(presents).toBeGreaterThanOrEqual(7);
+    expect(presents).toBeLessThanOrEqual(8);
+  });
+
+  test("static noise presents once and stops", async () => {
+    mountDrifting({ noiseSpeed: "0" });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("a ghost fade over drifting noise, which never settles, holds full rate only for a second after a draw", async () => {
+    const canvas = mountDrifting({ ghost: "90", noiseSpeed: "100" });
+    await vi.advanceTimersByTimeAsync(2000);
+
+    canvas.getContext("2d")!.putImageData(square(16, 255), 0, 0);
+    expect(await presentsOver(400)).toBeGreaterThan(20);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    for (let second = 0; second < 3; second += 1) {
+      expect(await presentsOver(1000)).toBeLessThanOrEqual(8);
+    }
   });
 });
