@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
 import { GRID_SIZE, type BackdropInput, type Point } from "./mode";
-import { renderBlobs, wax } from "./wax";
+import { farCells, renderBlobs, wax } from "./wax";
 
 const columns = GRID_SIZE;
 const rows = GRID_SIZE;
@@ -213,7 +213,7 @@ test("the bounded render matches summing every blob over every cell but for cell
     columns,
     {
       near: new Float64Array(columns * rows),
-      far: new Float64Array(columns * rows),
+      far: new Float64Array(farCells(columns, rows)),
     },
     bounded,
   );

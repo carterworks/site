@@ -35,6 +35,10 @@ const TAIL = 0.02;
 /** Cells between samples of the capped remainder. */
 const FAR_STRIDE = 4;
 
+/** The lattice spans at most the whole grid, sampled every `FAR_STRIDE` cells plus a border. */
+export const farCells = (columns: number, rows: number) =>
+  (Math.ceil(columns / FAR_STRIDE) + 2) * (Math.ceil(rows / FAR_STRIDE) + 2);
+
 export type BlobScratch = { near: Float64Array; far: Float64Array };
 
 type Press = NonNullable<BackdropInput["press"]>;
@@ -57,7 +61,7 @@ export const wax: Mode = {
     const blobs: Blob[] = [];
     const scratch: BlobScratch = {
       near: new Float64Array(columns * rows),
-      far: new Float64Array(columns * rows),
+      far: new Float64Array(farCells(columns, rows)),
     };
     let visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
     let grab: Grab | undefined;
