@@ -1,221 +1,253 @@
-import { expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import {
+  installSoftCanvas,
+  place,
+  pointerAt,
+  type SoftBitmap,
+  useFakeFrames,
+} from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
-import { GRID_SIZE, type BackdropInput } from "./mode";
 import { pinbed } from "./pinbed";
 
-const size = GRID_SIZE;
-const STEP = 1000 / 60;
+const size = 160;
+const FRAME = 16;
 
-function setup() {
-  const mode = pinbed.create({
-    columns: size,
-    rows: size,
-    random: mulberry32(1),
-    options: {} as never,
-  });
-  const input: BackdropInput = {
-    lastInputAt: -Infinity,
-    visible: { left: 0, top: 35, right: size, bottom: 125 },
-  };
-  const field = new Float32Array(size * size);
-  let now = 0;
-  const run = (steps: number, each?: (step: number) => void) => {
-    for (let i = 0; i < steps; i += 1) {
-      now += STEP;
-      each?.(i);
-      mode.step(input, now);
-    }
-    field.fill(0);
-    mode.render(field);
-  };
-  const deepest = () => field.reduce((a, b) => Math.max(a, b));
-  const press = (x: number, y: number) => {
-    input.press = { x, y, at: now, held: true };
-  };
-  return { mode, input, field, run, deepest, press, now: () => now };
+let canvas: HTMLCanvasElement;
+let bitmap: () => SoftBitmap;
+let stop: () => void;
+
+function mount() {
+  canvas = document.createElement("canvas");
+  Object.assign(canvas, { width: size, height: size });
+  place(canvas, new DOMRect(0, 0, size, size));
+  document.body.append(canvas);
+  stop = pinbed.start(canvas);
 }
 
-test("a press dents the pins under it and leaves the far corners flat", () => {
-  const { field, run, press } = setup();
-  press(80, 80);
-  run(5);
-
-  expect(field[80 * size + 80]).toBeGreaterThan(0);
-  expect(field[0]).toBe(0);
-});
-
-test("a longer hold dents deeper", () => {
-  const brief = setup();
-  brief.press(80, 80);
-  brief.run(10);
-
-  const long = setup();
-  long.press(80, 80);
-  long.run(60);
-
-  expect(long.field[80 * size + 80]).toBeGreaterThan(
-    brief.field[80 * size + 80],
+beforeEach(() => {
+  useFakeFrames();
+  const { plain } = installSoftCanvas();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
+  // The visible rows are 35 to 125, as on a 16:9 viewport over the square grid.
+  vi.spyOn(HTMLDivElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 35, size, 90),
   );
+  bitmap = () => plain[plain.length - 1];
+  mount();
 });
 
-test("hover alone presses lighter than a hold", () => {
-  const hover = setup();
-  hover.run(60, (i) => {
-    hover.input.pointer = { x: 40 + i, y: 80 };
-  });
-
-  const hold = setup();
-  hold.press(80, 80);
-  hold.run(60);
-
-  expect(hover.deepest()).toBeGreaterThan(0);
-  expect(hover.deepest()).toBeLessThan(hold.deepest());
+afterEach(() => {
+  stop();
+  document.body.replaceChildren();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
-test("a pointer that rests springs back instead of pressing forever", () => {
-  const { input, run, mode } = setup();
-  run(30, (i) => {
-    input.pointer = { x: 40 + i * 2, y: 80 };
-  });
-  run(600);
+const run = async (frames: number, each?: (frame: number) => void) => {
+  for (let i = 0; i < frames; i += 1) {
+    each?.(i);
+    await vi.advanceTimersByTimeAsync(FRAME);
+  }
+};
 
-  expect(mode.pace()).toBe("still");
-});
+const level = (x: number, y: number) =>
+  bitmap().pixels[(y * size + x) * 4 + 3] / 255;
 
-test("pins spring back at different times until the mode is still", () => {
-  const { mode, field, input, run, press, deepest } = setup();
+const field = () => {
+  const levels = new Float32Array(size * size);
+  for (let i = 0; i < levels.length; i += 1) {
+    levels[i] = bitmap().pixels[i * 4 + 3] / 255;
+  }
+  return levels;
+};
+
+const dents = () => field().filter((v) => v > 0).length;
+const deepest = () => field().reduce((a, b) => Math.max(a, b));
+const still = () => vi.getTimerCount() === 0;
+
+const press = (x: number, y: number) =>
+  pointerAt(canvas, "pointerdown", x, y, { buttons: 1 });
+const release = (x: number, y: number) => pointerAt(canvas, "pointerup", x, y);
+
+test("a press dents the pins under it and leaves the far corners flat", async () => {
+  await run(1);
   press(80, 80);
-  run(60);
-  expect(mode.pace()).toBe("active");
+  await run(5);
 
-  input.press!.held = false;
-  run(120);
-  const lifted = field.filter((v) => v > 0).length;
-  run(60);
-  const partway = field.filter((v) => v > 0).length;
+  expect(level(80, 80)).toBeGreaterThan(0);
+  expect(level(0, 0)).toBe(0);
+});
+
+test("a longer hold dents deeper", async () => {
+  press(80, 80);
+  await run(10);
+  const brief = level(80, 80);
+  await run(50);
+
+  expect(level(80, 80)).toBeGreaterThan(brief);
+});
+
+test("hover alone presses lighter than a hold", async () => {
+  await run(60, (i) => pointerAt(canvas, "pointermove", 40 + i, 80));
+  const hovered = deepest();
+  stop();
+  canvas.remove();
+  mount();
+
+  press(80, 80);
+  await run(60);
+
+  expect(hovered).toBeGreaterThan(0);
+  expect(hovered).toBeLessThan(deepest());
+});
+
+test("a pointer that rests springs back instead of pressing forever", async () => {
+  await run(30, (i) => pointerAt(canvas, "pointermove", 40 + i * 2, 80));
+  await run(200);
+
+  expect(deepest()).toBe(0);
+  expect(vi.getTimerCount()).toBe(1);
+});
+
+test("touch has no hover: a move without a press leaves the bed alone", async () => {
+  await run(1);
+  const printed = dents();
+  pointerAt(canvas, "pointermove", 80, 80, { pointerType: "touch" });
+  await run(5);
+
+  expect(level(80, 80)).toBe(0);
+  expect(dents()).toBe(printed);
+});
+
+test("pins spring back at different times until the toy is still", async () => {
+  press(80, 80);
+  await run(60);
+  expect(still()).toBe(false);
+
+  release(80, 80);
+  await run(120);
+  const lifted = dents();
+  await run(60);
+  const partway = dents();
   expect(partway).toBeLessThan(lifted);
   expect(partway).toBeGreaterThan(0);
 
-  run(600);
+  await run(60 * 40);
   expect(deepest()).toBe(0);
-  expect(mode.pace()).toBe("still");
+  expect(still()).toBe(true);
 });
 
-test("a pebble rolls only after input, then everything goes still", () => {
-  const quiet = setup();
-  quiet.run(60 * 40);
-  expect(quiet.mode.pace()).toBe("still");
+test("a pebble rolls only after input, then everything goes still", async () => {
+  await run(60 * 40);
+  expect(still()).toBe(true);
 
-  const { mode, input, run, field } = setup();
-  input.lastInputAt = 0;
-  run(1);
-  expect(mode.pace()).toBe("idle");
+  pointerAt(canvas, "pointermove", 80, 80);
+  await run(60);
+  expect(deepest()).toBeGreaterThan(0);
+  await run(60 * 3);
+  expect(deepest()).toBe(0);
+  expect(vi.getTimerCount()).toBe(1);
 
   let rolled = false;
-  for (let second = 0; second < 60; second += 1) {
-    run(60);
-    if (field.some((v) => v > 0)) rolled = true;
+  for (let second = 0; second < 25; second += 1) {
+    await run(60);
+    if (deepest() > 0) rolled = true;
   }
   expect(rolled).toBe(true);
-  expect(mode.pace()).toBe("still");
+  expect(deepest()).toBe(0);
+  expect(still()).toBe(true);
 });
 
-test("an untouched bed shows a faint handprint in the lower-left margin and stays still", () => {
-  const { mode, field, run } = setup();
-  run(1);
+test("an untouched bed shows a faint handprint in the lower-left margin and stays still", async () => {
+  await run(1);
 
-  const printed = field.filter((v) => v > 0).length;
-  expect(printed).toBeGreaterThan(100);
-  expect(field[117 * size + 8]).toBeGreaterThan(0);
-  expect(field[60 * size + 140]).toBe(0);
-  expect(Math.max(...field)).toBeLessThan(0.7);
-  expect(mode.pace()).toBe("still");
+  expect(dents()).toBeGreaterThan(100);
+  expect(level(8, 117)).toBeGreaterThan(0);
+  expect(level(140, 60)).toBe(0);
+  expect(deepest()).toBeLessThan(0.7);
+  expect(still()).toBe(true);
 });
 
-test("the handprint stays put for a minute without input", () => {
-  const { mode, field, run } = setup();
-  run(1);
-  const before = Float32Array.from(field);
+test("the handprint stays put for a minute without input", async () => {
+  await run(1);
+  const before = field();
 
-  run(60 * 60);
+  await run(60 * 60);
 
-  expect(field).toEqual(before);
-  expect(mode.pace()).toBe("still");
+  expect(field()).toEqual(before);
+  expect(still()).toBe(true);
 });
 
-test("the first input lets the handprint spring back", () => {
-  const { mode, field, input, run } = setup();
-  run(1);
-  input.lastInputAt = 0;
-  run(200);
+test("the first input lets the handprint spring back", async () => {
+  await run(1);
+  pointerAt(canvas, "pointermove", 140, 60);
+  await run(200);
 
-  expect(field[117 * size + 8]).toBe(0);
-  expect(mode.pace()).toBe("idle");
+  expect(level(8, 117)).toBe(0);
 });
 
-test("an untouched handprint follows the visible rect when it changes", () => {
-  const { field, input, run } = setup();
-  run(1);
+test("an untouched handprint follows the visible rect when it changes", async () => {
+  await run(1);
 
-  input.visible = { left: 0, top: 35, right: size, bottom: 95 };
-  run(1);
+  vi.spyOn(HTMLDivElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 35, size, 60),
+  );
+  window.dispatchEvent(new Event("resize"));
+  await run(1);
 
-  expect(field[117 * size + 8]).toBe(0);
-  expect(field[85 * size + 8]).toBeGreaterThan(0);
+  expect(level(8, 117)).toBe(0);
+  expect(level(8, 85)).toBeGreaterThan(0);
 });
 
-const GOLDEN: [number, string][] = [
-  [4137705614, "still"],
-  [4272130193, "active"],
-  [2629332019, "active"],
-  [3130474220, "active"],
-  [1835401642, "active"],
-  [1107083285, "active"],
-  [2315578821, "idle"],
-  [2315578821, "idle"],
-  [2315578821, "idle"],
-  [2315578821, "idle"],
-  [2315578821, "idle"],
-  [627734265, "active"],
-  [1478653331, "active"],
-  [2314882880, "active"],
+const GOLDEN: [number, boolean][] = [
+  [4137705614, true],
+  [4272130193, false],
+  [1872246488, false],
+  [331512265, false],
+  [3417811005, false],
+  [3137965761, false],
+  [2315578821, false],
+  [554162531, false],
+  [2816725065, false],
+  [1292241666, false],
+  [2315578821, true],
+  [2315578821, true],
+  [2315578821, true],
+  [2315578821, true],
 ];
 
-const fingerprint = (field: Float32Array) => {
-  const bits = new Uint32Array(field.buffer, field.byteOffset, field.length);
+const fingerprint = (levels: Float32Array) => {
+  const bits = new Uint32Array(levels.buffer, levels.byteOffset, levels.length);
   let hash = 2166136261;
   for (const word of bits) hash = Math.imul(hash ^ word, 16777619) >>> 0;
   return hash;
 };
 
-test("a scripted session relaxes exactly as it did when every pin was scanned each step", () => {
-  const { mode, input, field, run, press } = setup();
-  const seen: [number, string][] = [];
-  const sample = () => seen.push([fingerprint(field), mode.pace()]);
+test("a scripted session relaxes exactly as it did when every pin was scanned each step", async () => {
+  const seen: [number, boolean][] = [];
+  const sample = () => seen.push([fingerprint(field()), still()]);
 
-  run(1);
+  await run(1);
   sample();
-  input.lastInputAt = 0;
-  run(40, (i) => {
-    input.pointer = { x: 30 + i * 2, y: 70 + Math.sin(i / 5) * 10 };
-  });
+  await run(40, (i) =>
+    pointerAt(canvas, "pointermove", 30 + i * 2, 70 + Math.sin(i / 5) * 10),
+  );
   sample();
   press(100, 90);
-  run(90, (i) => {
-    input.pointer = { x: 100 + i * 0.3, y: 90 };
-  });
+  await run(90, (i) => pointerAt(canvas, "pointermove", 100 + i * 0.3, 90));
   sample();
-  input.press!.held = false;
-  run(1);
+  release(100, 90);
+  await run(1);
   sample();
-  run(100);
+  await run(100);
   sample();
-  run(300);
+  await run(300);
   sample();
-  input.pointer = undefined;
-  input.lastInputAt = 30_000;
+  canvas.dispatchEvent(new PointerEvent("pointerleave"));
+  pointerAt(canvas, "pointerup", 100, 90);
   for (let second = 0; second < 40; second += 1) {
-    run(60);
+    await run(60);
     if (second % 5 === 4) sample();
   }
 
