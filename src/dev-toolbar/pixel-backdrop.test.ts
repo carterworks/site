@@ -11,6 +11,22 @@ import {
   default as app,
 } from "./pixel-backdrop";
 
+vi.mock("../components/backdrop-modes", () => {
+  const toy = (id: string, look?: { ghost: number; noise: number }) => ({
+    id,
+    label: id.toUpperCase(),
+    look,
+    start: () => () => {},
+  });
+  return {
+    MODES: [
+      toy("plain"),
+      toy("silty", { ghost: 55, noise: 12 }),
+      toy("cultured", { ghost: 70, noise: 0 }),
+    ],
+  };
+});
+
 const range = (key: string) =>
   CONTROLS.find((control) => control.kind === "range" && control.key === key);
 
@@ -202,7 +218,7 @@ const slider = (canvas: HTMLElement, key: string) =>
 
 test("the ghost and noise sliders open on the shown mode's look", () => {
   const backdrop = mountBackdrop();
-  backdrop.setMode("silt");
+  backdrop.setMode("silty");
   const canvas = document.createElement("div");
   init(canvas);
 
@@ -217,7 +233,7 @@ test("choosing a mode moves the ghost and noise sliders to its look", () => {
   init(canvas);
 
   const select = modeSelect(canvas);
-  select.element.value = "culture";
+  select.element.value = "cultured";
   select.element.dispatchEvent(new Event("change"));
 
   expect(slider(canvas, "ghost").value).toBe("70");
@@ -227,7 +243,7 @@ test("choosing a mode moves the ghost and noise sliders to its look", () => {
 
 test("a slider tweak overrides the look, and is what persists", async () => {
   const backdrop = mountBackdrop();
-  backdrop.setMode("silt");
+  backdrop.setMode("silty");
   const canvas = document.createElement("div");
   init(canvas);
 

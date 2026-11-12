@@ -1,79 +1,130 @@
-import { expect, test } from "vitest";
-import { mulberry32 } from "../backdrop-noise";
-import { GRID_SIZE, type BackdropInput } from "./mode";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import {
+  installSoftCanvas,
+  levelAt,
+  place,
+  pointerAt,
+  type SoftBitmap,
+  useFakeFrames,
+} from "../../test/toy-canvas";
 import { shimmer } from "./shimmer";
 
-const columns = GRID_SIZE;
-const rows = GRID_SIZE;
-const RIPPLE_REFERENCE_GRID = 80;
-const gridScale = GRID_SIZE / RIPPLE_REFERENCE_GRID;
+let canvas: HTMLCanvasElement;
+let bitmap: () => SoftBitmap;
+let stop: () => void;
 
-function setup() {
-  const mode = shimmer.create({
-    columns,
-    rows,
-    random: mulberry32(1),
-    options: { rippleSize: 6, rippleSpeed: 100 } as never,
-  });
-  const input: BackdropInput = {
-    lastInputAt: 0,
-    visible: { left: 0, top: 0, right: columns, bottom: rows },
-  };
-  const field = new Float32Array(columns * rows);
-  const frame = (now: number) => {
-    mode.step(input, now);
-    const pace = mode.pace();
-    field.fill(0);
-    mode.render(field);
-    return pace;
-  };
-  const at = (x: number, y: number) => field[y * columns + x];
-  return { mode, input, field, frame, at };
+beforeEach(() => {
+  useFakeFrames();
+  const { plain } = installSoftCanvas();
+  canvas = document.createElement("canvas");
+  Object.assign(canvas, { width: 160, height: 160 });
+  place(canvas, new DOMRect(0, 0, 640, 640));
+  document.body.append(canvas);
+  stop = shimmer.start(canvas);
+  bitmap = () => plain[0];
+});
+
+afterEach(() => {
+  stop();
+  document.body.replaceChildren();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const frame = () => vi.advanceTimersByTimeAsync(17);
+
+/** The lit pixels, as "x,y" keys. */
+function lit() {
+  const { width, height } = bitmap();
+  const keys: string[] = [];
+  for (let y = 0; y < height; y += 1)
+    for (let x = 0; x < width; x += 1)
+      if (levelAt(bitmap(), x, y) > 0) keys.push(`${x},${y}`);
+  return keys;
 }
 
-test("a move draws a two-cell-thick hover segment once, then nothing", () => {
-  const { input, field, frame, at } = setup();
-  input.pointer = { x: 2.5, y: 2.5 };
-  frame(0);
-  input.pointer = { x: 5.5, y: 2.5 };
+/** Every pixel of the two-pixel-thick segment from column `from` to `to`, on rows 2 and 3. */
+const segment = (from: number, to: number) =>
+  [2, 3].flatMap((y) =>
+    Array.from({ length: to - from + 2 }, (_, i) => `${from + i},${y}`),
+  );
 
-  expect(frame(16)).toBe("active");
-  expect([2, 3, 4, 5].map((x) => at(x, 2))).toEqual([1, 1, 1, 1]);
-  expect([2, 3, 4, 5].map((x) => at(x, 3))).toEqual([1, 1, 1, 1]);
-  expect(field.reduce((sum, value) => sum + value)).toBe(10);
+test("a hover move draws a segment from the pixel it left to the one it entered, for one frame", async () => {
+  await frame();
+  pointerAt(canvas, "pointermove", 2.5, 2.5);
+  await frame();
+  pointerAt(canvas, "pointermove", 5.5, 2.5);
+  await frame();
 
-  expect(frame(32)).toBe("still");
-  expect(field.every((value) => value === 0)).toBe(true);
+  expect(lit().sort()).toEqual(segment(2, 5).sort());
+
+  await frame();
+  expect(lit()).toEqual([]);
+  expect(vi.getTimerCount()).toBe(0);
 });
 
-test("a pointer that left draws nothing", () => {
-  const { input, field, frame } = setup();
-  input.pointer = { x: 2.5, y: 2.5 };
-  frame(0);
-  input.pointer = undefined;
+test("a pointer that left starts afresh where it comes back", async () => {
+  pointerAt(canvas, "pointermove", 2.5, 2.5);
+  await frame();
+  canvas.dispatchEvent(new PointerEvent("pointerleave"));
+  pointerAt(canvas, "pointermove", 40.5, 2.5);
+  await frame();
 
-  expect(frame(16)).toBe("still");
-  expect(field.every((value) => value === 0)).toBe(true);
+  expect(lit().sort()).toEqual(segment(40, 40).sort());
 });
 
-test("a press grows a fading ring that lasts the ripple speed", () => {
-  const { input, frame, at } = setup();
-  input.press = { x: 8.5, y: 8.5, at: 0, held: false };
+test("a held finger smears where it drags, and a new press never joins on to the last", async () => {
+  const touch = { pointerType: "touch" };
+  pointerAt(canvas, "pointerdown", 2.5, 2.5, touch);
+  pointerAt(canvas, "pointermove", 10.5, 2.5, touch);
+  pointerAt(canvas, "pointermove", 12.5, 2.5, touch);
+  await vi.advanceTimersByTimeAsync(2000);
+  pointerAt(canvas, "pointerup", 12.5, 2.5, touch);
+  pointerAt(canvas, "pointerdown", 40.5, 2.5, touch);
+  await vi.advanceTimersByTimeAsync(2000);
 
-  expect(frame(50)).toBe("active");
-  expect(at(8 + 3 * gridScale, 8)).toBeCloseTo(0.5);
-  expect(at(8, 8)).toBe(0);
+  pointerAt(canvas, "pointermove", 42.5, 2.5, touch);
+  await frame();
 
-  expect(frame(100)).toBe("still");
+  expect(lit().sort()).toEqual(segment(42, 42).sort());
 });
 
-test("a later press starts its own ripple after the first has finished", () => {
-  const { input, frame, at } = setup();
-  input.press = { x: 8.5, y: 8.5, at: 0, held: false };
-  frame(50);
-  frame(60);
-  input.press = { x: 8.5, y: 8.5, at: 60, held: false };
+test("a press grows a ring that fades over --backdrop-ripple-speed, then stops drawing", async () => {
+  canvas.style.setProperty("--backdrop-ripple-size", "6");
+  canvas.style.setProperty("--backdrop-ripple-speed", ".1s");
+  pointerAt(canvas, "pointerdown", 40.5, 40.5);
+  await vi.advanceTimersByTimeAsync(50);
 
-  expect(frame(110)).toBe("active");
-  expect(at(8 + 3 * gridScale, 8)).toBeCloseTo(0.5);
+  const distances = lit().map((key) => {
+    const [x, y] = key.split(",").map(Number);
+    return Math.hypot(x + 0.5 - 40.5, y + 0.5 - 40.5);
+  });
+  expect(distances.length).toBeGreaterThan(0);
+  expect(levelAt(bitmap(), 40, 40)).toBe(0);
+  expect(Math.max(...distances)).toBeLessThan(12);
+
+  await vi.advanceTimersByTimeAsync(100);
+  expect(lit()).toEqual([]);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("without --backdrop-ripple-* a ring lasts its default 900 ms", async () => {
+  pointerAt(canvas, "pointerdown", 40.5, 40.5);
+
+  await vi.advanceTimersByTimeAsync(800);
+  expect(lit().length).toBeGreaterThan(0);
+
+  await vi.advanceTimersByTimeAsync(200);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("stop cancels its frame and ignores the pointer from then on", async () => {
+  pointerAt(canvas, "pointerdown", 40.5, 40.5);
+  stop();
+
+  expect(vi.getTimerCount()).toBe(0);
+  pointerAt(canvas, "pointermove", 10, 10);
+  pointerAt(canvas, "pointerdown", 10, 10);
+  expect(vi.getTimerCount()).toBe(0);
 });

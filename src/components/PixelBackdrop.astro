@@ -5,15 +5,14 @@ import EmulatedCanvas from "./EmulatedCanvas.astro";
 /**
  * The site-wide pixel backdrop. `<pixel-backdrop>` is a fixed, non-interactive
  * layer that fills the viewport with a live `<emulated-canvas>`; the custom
- * element drives it from pointer input and owns its tweakable render knobs.
- * The square bitmap is sized to cover the viewport, so its pixel grid can
- * never run out at the edges.
+ * element runs a toy on it, passes it the pointer and owns its tweakable
+ * render knobs. The square bitmap is sized to cover the viewport, so its
+ * pixel grid can never run out at the edges.
  */
 ---
 
 <pixel-backdrop aria-hidden="true" transition:persist>
   <EmulatedCanvas width={GRID_SIZE} height={GRID_SIZE} />
-  <div class="small-viewport"></div>
 </pixel-backdrop>
 
 <script>
@@ -50,22 +49,6 @@ import EmulatedCanvas from "./EmulatedCanvas.astro";
     position: absolute;
     top: round(50%, 1px);
     translate: round(-50%, 1px) round(-50%, 1px);
-  }
-
-  /* What the toys fit to: the area on screen even with the toolbars out, so
-     they slide away without reshaping a toy. The safe areas come off because
-     the status bar and iOS's floating toolbar may sit over the page there. */
-  .small-viewport {
-    block-size: calc(
-      100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-    );
-    inline-size: calc(
-      100svw - env(safe-area-inset-left) - env(safe-area-inset-right)
-    );
-    left: env(safe-area-inset-left);
-    position: fixed;
-    top: env(safe-area-inset-top);
-    visibility: hidden;
   }
 
   /* A held finger would otherwise raise iOS's callout, and the overscroll is

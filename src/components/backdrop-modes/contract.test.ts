@@ -1,384 +1,218 @@
-import { beforeAll, describe, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../../test/backdrop-defaults";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  countAllocations,
+  installSoftCanvas,
+  place,
+  pointerAt,
+  type SoftBitmap,
+  softStats,
+  useFakeFrames,
+} from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import { MAX_GHOST } from "../emulated-canvas-limits";
-import { readDefaults } from "../pixel-backdrop";
+import "../emulated-canvas";
 import { MODES } from ".";
-import { GRID_SIZE, type BackdropInput, type Mode, type Pace } from "./mode";
+import type { Toy, ToyCanvas } from "./toy";
 
-const COLUMNS = GRID_SIZE;
-const ROWS = GRID_SIZE;
-
-/** Noise samples, `random()` draws and costly `Math` calls since the last reset. */
-const work = vi.hoisted(() => ({ count: 0 }));
-
-vi.mock("../backdrop-noise", async (importOriginal) => {
-  const noise = await importOriginal<typeof import("../backdrop-noise")>();
-  return {
-    ...noise,
-    makeNoise2D(seed: number) {
-      const sample = noise.makeNoise2D(seed);
-      return (x: number, y: number) => {
-        work.count += 1;
-        return sample(x, y);
-      };
-    },
-  };
-});
+const SIZE = 160;
 
 /**
- * Modes allowed to rest at "idle" (the ~8 fps timer) rather than "still" once
- * input stops. Only an ambient mode that keeps animating on its own belongs
- * here, with the reason beside it; every other mode must stop asking for
+ * Toys allowed to keep an idle loop (at most ~8 frames a second) once input
+ * stops, each with the reason beside it. Every other toy must stop asking for
  * frames, so an untouched tab costs nothing.
  */
-const RESTING_PACE: Record<string, Pace> = {};
+const RESTING_IDLE: Record<string, string> = {};
 
-/** How long after the last input a mode may stay "active". */
+/** How long after the last input a toy may keep animating. */
 const SETTLE_MS = 30_000;
 
-/**
- * Per step + render, in noise samples, `random()` draws and costly `Math`
- * calls: room for about two per cell.
- */
-const WORK_BUDGET = 2 * COLUMNS * ROWS;
-
-/** A 16:9 viewport over the square grid, which overhangs it top and bottom. */
-const VISIBLE = {
-  left: 0,
-  top: (ROWS * 7) / 32,
-  right: COLUMNS,
-  bottom: (ROWS * 25) / 32,
+/** The canvases a toy must run on unchanged, each with the bitmap it draws on. */
+const KINDS = {
+  plain(bitmaps: ReturnType<typeof installSoftCanvas>) {
+    const canvas = document.createElement("canvas");
+    Object.assign(canvas, { width: SIZE, height: SIZE });
+    return { canvas, bitmap: () => bitmaps.plain[0] };
+  },
+  emulated(bitmaps: ReturnType<typeof installSoftCanvas>) {
+    const canvas = document.createElement("emulated-canvas");
+    Object.assign(canvas.dataset, {
+      width: String(SIZE),
+      height: String(SIZE),
+      ghost: "70",
+    });
+    return { canvas, bitmap: () => bitmaps.offscreen[0] };
+  },
 };
-const STEP = 1000 / 60;
-/** Fixed only so a failure reproduces; every assertion holds for any seed. */
-const SEED = 1;
 
-const INPUT_STEPS = 150;
-const SESSION_STEPS = INPUT_STEPS + Math.ceil(35_000 / STEP);
+let bitmaps: ReturnType<typeof installSoftCanvas>;
 
-/** A point `share` of the way along the visible rect's diagonal. */
-function across(share: number) {
-  return {
-    x: VISIBLE.left + share * (VISIBLE.right - VISIBLE.left),
-    y: VISIBLE.top + share * (VISIBLE.bottom - VISIBLE.top),
-  };
-}
-
-/**
- * The scripted session, as the host would report it: a hover sweep down the
- * diagonal, a press-and-hold dragged back up it, a tap in the middle, then the
- * pointer leaves and nothing happens for the rest of the session.
- */
-function feed(input: BackdropInput, i: number, now: number) {
-  if (i < 120) input.pointer = across(i < 60 ? i / 60 : (120 - i) / 60);
-  if (i === 60) input.press = { ...input.pointer!, at: now, held: true };
-  if (i === 135) input.press = { ...across(0.5), at: now, held: true };
-  if (i === 120 || i === 138) input.press!.held = false;
-  if (i === INPUT_STEPS) input.pointer = undefined;
-  if (i < 120 || i === 135) input.lastInputAt = now;
-}
-
-/** Same as `feed`, but the pointer stops over empty space and never leaves. */
-function feedResting(input: BackdropInput, i: number, now: number) {
-  feed(input, i, now);
-  if (i >= INPUT_STEPS) input.pointer = across(0.5);
-}
-
-/** One mode instance driven like the host drives it. */
-function start(
-  mode: Mode,
-  { startAt = 0, lastInputAt = -Infinity, script = feed } = {},
-) {
-  const random = mulberry32(SEED);
-  const instance = mode.create({
-    columns: COLUMNS,
-    rows: ROWS,
-    random: () => {
-      work.count += 1;
-      return random();
-    },
-    options: readDefaults(),
-  });
-  const field = new Float32Array(COLUMNS * ROWS);
-  const input: BackdropInput = { lastInputAt, visible: VISIBLE };
-  let now = startAt;
-  return {
-    field,
-    /** Steps and renders the script's `i`th step, returning the pace between. */
-    frame(i: number) {
-      now += STEP;
-      script(input, i, now);
-      instance.step(input, now);
-      const pace = instance.pace();
-      field.fill(0);
-      instance.render(field);
-      return pace;
-    },
-    jump(ms: number) {
-      now += ms;
-    },
-  };
-}
-
-function inRange(field: Float32Array) {
-  return field.every((value) => value >= 0 && value <= 1);
-}
-
-const COSTLY_MATH = [
-  "sqrt",
-  "cbrt",
-  "hypot",
-  "exp",
-  "log",
-  "pow",
-  "sin",
-  "cos",
-  "tan",
-  "atan2",
-] as const;
-
-/** Counts calls to the costly `Math` functions into `work` until restored. */
-function countMath() {
-  const originals = COSTLY_MATH.map((name) => [name, Math[name]] as const);
-  for (const [name, original] of originals) {
-    const call = original as (...args: number[]) => number;
-    Object.assign(Math, {
-      [name]: (...args: number[]) => {
-        work.count += 1;
-        return call(...args);
-      },
-    });
-  }
-  return () => {
-    for (const [name, original] of originals) {
-      Object.assign(Math, { [name]: original });
-    }
-  };
-}
-
-const BUFFERS = [
-  "ArrayBuffer",
-  "Int8Array",
-  "Uint8Array",
-  "Uint8ClampedArray",
-  "Int16Array",
-  "Uint16Array",
-  "Int32Array",
-  "Uint32Array",
-  "Float32Array",
-  "Float64Array",
-  "BigInt64Array",
-  "BigUint64Array",
-  "ImageData",
-  "Path2D",
-  "OffscreenCanvas",
-] as const;
-
-/** Arrays this long are buffers, not a handful of bookkeeping values. */
-const LARGE_ARRAY = 64;
-
-/**
- * Counts buffers, canvases and large arrays made until `restore`. Small
- * objects are left alone: they are cheap, and modes make them freely.
- */
-function countAllocations() {
-  let count = 0;
-  const large = (length: unknown) =>
-    typeof length === "number" && length > LARGE_ARRAY;
-
-  // Array literals and spreads are invisible, but the copying methods are not: any call, however small, is a per-step allocation.
-  type Copier = (this: unknown, ...args: unknown[]) => unknown;
-  const typedArray = Object.getPrototypeOf(Uint8Array.prototype);
-  type Owned = [Record<string, Copier>, string];
-  const copiers: Owned[] = [
-    ...["slice", "map", "filter"].map((name): Owned => [typedArray, name]),
-    ...["slice", "map", "filter", "concat", "flat", "flatMap", "toSorted"].map(
-      (name): Owned => [Array.prototype as never, name],
-    ),
-    [Array as never, "from"],
-  ];
-  const originals = copiers.map(([owner, name]) => owner[name]);
-  copiers.forEach(([owner, name], index) => {
-    const original = originals[index];
-    owner[name] = function (...args) {
-      const result = original.apply(this, args);
-      count += 1;
-      return result;
-    };
-  });
-
-  const counted = (target: object, counts = (_args: unknown[]) => true) =>
-    new Proxy(target as new (...args: unknown[]) => object, {
-      apply(target, self, args) {
-        if (counts(args)) count += 1;
-        return Reflect.apply(target, self, args);
-      },
-      construct(target, args, newTarget) {
-        if (counts(args)) count += 1;
-        return Reflect.construct(target, args, newTarget);
-      },
-    });
-  const globals = globalThis as unknown as Record<string, object | undefined>;
-  for (const name of BUFFERS) {
-    vi.stubGlobal(name, counted(globals[name] ?? class {}));
-  }
-  vi.stubGlobal(
-    "Array",
-    counted(Array, (args) => args.length === 1 && large(args[0])),
-  );
-
-  return {
-    count: () => count,
-    restore() {
-      vi.unstubAllGlobals();
-      copiers.forEach(([owner, name], index) => {
-        owner[name] = originals[index];
-      });
-    },
-  };
-}
-
-beforeAll(installBackdropDefaults);
-
-test("only registered modes are allowed to rest idle", () => {
-  const ids = MODES.map((mode) => mode.id);
-  expect(ids).toEqual(expect.arrayContaining(Object.keys(RESTING_PACE)));
+beforeEach(() => {
+  useFakeFrames();
+  bitmaps = installSoftCanvas();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
 });
 
-test("the allocation count catches a mode that copies a buffer every frame", () => {
-  const leaky: Mode = {
+afterEach(() => {
+  document.body.replaceChildren();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+/** Mounts `kind` as a 16:9 viewport over the square canvas, and starts `toy` on it. */
+function run(toy: Toy, kind: keyof typeof KINDS) {
+  const { canvas, bitmap } = KINDS[kind](bitmaps);
+  place(canvas, new DOMRect(0, -280, 1280, 1280));
+  document.body.append(canvas);
+  const stop = toy.start(canvas as ToyCanvas);
+  return { canvas: canvas as ToyCanvas, bitmap, stop };
+}
+
+/** A point `share` of the way down the visible part's diagonal. */
+const across = (share: number) => [share * SIZE, (0.22 + 0.56 * share) * SIZE];
+
+/**
+ * About 3 s of input: a hover sweep down the diagonal, a press-and-hold
+ * dragged back up it, a tap in the middle, then the pointer leaves.
+ */
+async function play(canvas: ToyCanvas) {
+  const at = (type: string, share: number, init?: PointerEventInit) =>
+    pointerAt(canvas, type, ...(across(share) as [number, number]), init);
+  for (let ms = 0; ms < 1000; ms += 16) {
+    at("pointermove", ms / 1000);
+    await vi.advanceTimersByTimeAsync(16);
+  }
+  at("pointerdown", 1, { buttons: 1 });
+  for (let ms = 0; ms < 1000; ms += 16) {
+    at("pointermove", 1 - ms / 1000, { buttons: 1 });
+    await vi.advanceTimersByTimeAsync(16);
+  }
+  at("pointerup", 0);
+  await vi.advanceTimersByTimeAsync(250);
+  at("pointerdown", 0.5, { buttons: 1 });
+  await vi.advanceTimersByTimeAsync(50);
+  at("pointerup", 0.5);
+  canvas.dispatchEvent(new PointerEvent("pointerleave"));
+  await vi.advanceTimersByTimeAsync(700);
+}
+
+const lit = (bitmap: SoftBitmap) => bitmap.pixels.some((value) => value > 0);
+
+test("the allocation count catches a toy that copies a buffer every frame", async () => {
+  const leaky: Toy = {
     id: "leaky",
     label: "Leaky",
-    create: () => ({
-      step() {},
-      render: (field) => field.set(field.slice()),
-      pace: () => "still",
-    }),
+    start(canvas) {
+      const context = canvas.getContext("2d")!;
+      const image = context.createImageData(canvas.width, canvas.height);
+      const draw = () => {
+        context.putImageData(new ImageData(image.data.slice(), SIZE), 0, 0);
+        frame = requestAnimationFrame(draw);
+      };
+      let frame = requestAnimationFrame(draw);
+      return () => cancelAnimationFrame(frame);
+    },
   };
-  const session = start(leaky);
+  const { stop } = run(leaky, "plain");
   const allocations = countAllocations();
   try {
-    for (let i = 0; i < 10; i += 1) session.frame(i);
+    await vi.advanceTimersByTimeAsync(160);
   } finally {
     allocations.restore();
   }
-  expect(allocations.count()).toBe(10);
+  stop();
+  expect(allocations.count()).toBeGreaterThanOrEqual(18);
 });
 
-describe.each(MODES.map((mode) => [mode.id, mode] as const))(
-  "%s",
-  (id, mode) => {
-    test("has a look, if any, within 0–100 and under the canvas's ghost cap", () => {
-      const { ghost = 0, noise = 0 } = mode.look ?? {};
-      expect(ghost).toBeGreaterThanOrEqual(0);
-      expect(ghost).toBeLessThanOrEqual(MAX_GHOST * 100);
-      expect(noise).toBeGreaterThanOrEqual(0);
-      expect(noise).toBeLessThanOrEqual(100);
-    });
+test("only registered toys are allowed to rest idle", () => {
+  const ids = MODES.map((toy) => toy.id);
+  expect(ids).toEqual(expect.arrayContaining(Object.keys(RESTING_IDLE)));
+});
 
-    test("keeps every field value finite and within 0–1", () => {
-      const session = start(mode);
-      const badSteps: number[] = [];
-      for (let i = 0; i < SESSION_STEPS; i += 1) {
-        session.frame(i);
-        if (!inRange(session.field)) badSteps.push(i);
+describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
+  test("has a look, if any, within 0–100 and under the canvas's ghost cap", () => {
+    const { ghost = 0, noise = 0 } = toy.look ?? {};
+    expect(ghost).toBeGreaterThanOrEqual(0);
+    expect(ghost).toBeLessThanOrEqual(MAX_GHOST * 100);
+    expect(noise).toBeGreaterThanOrEqual(0);
+    expect(noise).toBeLessThanOrEqual(100);
+  });
+
+  test("draws the same pixels on a plain canvas as on an emulated one", async () => {
+    const shown: Record<string, Uint8ClampedArray> = {};
+    for (const kind of ["plain", "emulated"] as const) {
+      vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
+      const { canvas, bitmap, stop } = run(toy, kind);
+      let drew = false;
+      for (let ms = 0; ms < 500; ms += 16) {
+        pointerAt(
+          canvas,
+          "pointermove",
+          ...(across(ms / 500) as [number, number]),
+        );
+        await vi.advanceTimersByTimeAsync(16);
+        drew ||= lit(bitmap());
       }
-      expect(badSteps).toEqual([]);
-    });
+      expect(drew).toBe(true);
+      shown[kind] = bitmap().pixels.slice();
+      stop();
+      canvas.remove();
+      bitmaps.plain.length = bitmaps.offscreen.length = 0;
+    }
+    expect(shown.emulated).toEqual(shown.plain);
+  });
 
-    test(`rests within ${SETTLE_MS / 1000} s of the last input`, () => {
-      const session = start(mode);
-      const resting = new Set<Pace>(["still", RESTING_PACE[id] ?? "still"]);
-      const settledFrom = INPUT_STEPS + Math.ceil(SETTLE_MS / STEP);
-      const restless: Pace[] = [];
-      for (let i = 0; i < SESSION_STEPS; i += 1) {
-        const pace = session.frame(i);
-        if (i >= settledFrom && !resting.has(pace)) restless.push(pace);
-      }
-      expect(restless).toEqual([]);
-    });
+  describe.each(Object.keys(KINDS) as (keyof typeof KINDS)[])(
+    "on a %s canvas",
+    (kind) => {
+      test("keeps its drawing inside the canvas", async () => {
+        const { canvas } = run(toy, kind);
+        await play(canvas);
+        await vi.advanceTimersByTimeAsync(SETTLE_MS);
 
-    test("rests within the settle bound with the pointer resting over empty space", () => {
-      const session = start(mode, { script: feedResting });
-      const resting = new Set<Pace>(["still", RESTING_PACE[id] ?? "still"]);
-      const settledFrom = INPUT_STEPS + Math.ceil(SETTLE_MS / STEP);
-      const restless: Pace[] = [];
-      for (let i = 0; i < SESSION_STEPS; i += 1) {
-        const pace = session.frame(i);
-        if (i >= settledFrom && !resting.has(pace)) restless.push(pace);
-      }
-      expect(restless).toEqual([]);
-    });
+        expect(softStats.outOfBounds).toBe(0);
+      });
 
-    test.each([0, 30_000])(
-      "created a minute in with the last input at %i ms, it stays in range and settles with no input",
-      (lastInputAt) => {
-        const session = start(mode, {
-          startAt: 60_000,
-          lastInputAt,
-          script: () => {},
-        });
-        const resting = new Set<Pace>(["still", RESTING_PACE[id] ?? "still"]);
-        const settledFrom = Math.ceil(SETTLE_MS / STEP);
-        const restless: Pace[] = [];
-        for (let i = 0; i < SESSION_STEPS; i += 1) {
-          const pace = session.frame(i);
-          expect(inRange(session.field)).toBe(true);
-          if (i >= settledFrom && !resting.has(pace)) restless.push(pace);
+      test(`stops asking for frames within ${SETTLE_MS / 1000} s of the last input`, async () => {
+        const { canvas } = run(toy, kind);
+        await play(canvas);
+        await vi.advanceTimersByTimeAsync(SETTLE_MS);
+
+        if (id in RESTING_IDLE) {
+          const frames = vi.spyOn(window, "requestAnimationFrame");
+          await vi.advanceTimersByTimeAsync(1000);
+          expect(frames.mock.calls.length).toBeLessThanOrEqual(8);
+        } else {
+          expect(vi.getTimerCount()).toBe(0);
         }
-        expect(restless).toEqual([]);
-      },
-    );
+      });
 
-    test("allocates no buffers, large arrays or array copies per frame once warmed up", () => {
-      const session = start(mode);
-      for (let i = 0; i < SESSION_STEPS; i += 1) session.frame(i);
+      test("allocates no buffers, large arrays or array copies per frame once warmed up", async () => {
+        const { canvas } = run(toy, kind);
+        await play(canvas);
 
-      const allocations = countAllocations();
-      try {
-        for (let i = 0; i < SESSION_STEPS; i += 1) session.frame(i);
-      } finally {
-        allocations.restore();
-      }
-      expect(allocations.count()).toBe(0);
-    });
-
-    test("keeps every frame within the work budget", () => {
-      const session = start(mode);
-      let most = 0;
-      const restore = countMath();
-      try {
-        for (let i = 0; i < SESSION_STEPS; i += 1) {
-          work.count = 0;
-          session.frame(i);
-          most = Math.max(most, work.count);
+        const allocations = countAllocations();
+        try {
+          await play(canvas);
+        } finally {
+          allocations.restore();
         }
-      } finally {
-        restore();
-      }
-      expect(most).toBeLessThanOrEqual(WORK_BUDGET);
-    });
+        expect(allocations.count()).toBe(0);
+      });
 
-    test("survives the clock jumping an hour mid-gesture", () => {
-      const session = start(mode);
-      for (let i = 0; i < 90; i += 1) session.frame(i);
+      test("stop cancels its frames and stops listening", async () => {
+        const { canvas, stop } = run(toy, kind);
+        pointerAt(canvas, "pointermove", 10, 60);
+        pointerAt(canvas, "pointerdown", 20, 60);
+        stop();
+        await vi.advanceTimersByTimeAsync(SETTLE_MS);
+        const frames = vi.spyOn(window, "requestAnimationFrame");
 
-      session.jump(60 * 60 * 1000);
-      work.count = 0;
-      const restore = countMath();
-      let pace: Pace;
-      try {
-        pace = session.frame(90);
-      } finally {
-        restore();
-      }
-      expect(work.count).toBeLessThanOrEqual(WORK_BUDGET);
-      expect(["active", "idle", "still"]).toContain(pace);
-      expect(inRange(session.field)).toBe(true);
+        await play(canvas);
 
-      for (let i = 91; i < SESSION_STEPS; i += 1) session.frame(i);
-      expect(inRange(session.field)).toBe(true);
-    });
-  },
-);
+        expect(frames).not.toHaveBeenCalled();
+        expect(vi.getTimerCount()).toBe(0);
+      });
+    },
+  );
+});
