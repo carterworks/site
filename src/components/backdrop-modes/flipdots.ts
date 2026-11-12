@@ -242,13 +242,12 @@ export const flipdots: Toy = {
     };
 
     for (let index = 0; index < discs; index += 1) drawDisc(index);
-    context.putImageData(image, 0, 0);
-    changed = false;
 
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointerleave", onLeave);
     window.addEventListener("resize", onResize);
+    wake();
 
     return () => {
       canvas.removeEventListener("pointermove", onMove);

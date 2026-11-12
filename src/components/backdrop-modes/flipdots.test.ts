@@ -64,7 +64,8 @@ const hover = (column: number, row: number) => {
 
 const settle = (ms = FLIP_MS) => vi.advanceTimersByTimeAsync(ms);
 
-test("starts as a board of dim discs with gaps between them", () => {
+test("starts as a board of dim discs with gaps between them", async () => {
+  await settle(20);
   expect(disc(3, 3)).toBe(DARK);
   expect(disc(20, 10)).toBe(DARK);
   expect(alphaAt(INSET + 3 * PITCH + 5, INSET + 3 * PITCH + 2)).toBe(0);
