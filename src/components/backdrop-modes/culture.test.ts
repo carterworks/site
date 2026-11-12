@@ -187,10 +187,11 @@ test("a dish created a minute into the clock with stale input is not frozen empt
 const GOLDEN = -32487818;
 
 /**
- * Recorded from the full-grid passes on a grid size where the tunables equal
- * their original 80-cell values, so bounding the work must not change a frame.
+ * Re-recorded with the bounded code, and a full-grid patch of that same code
+ * yields it too. The grid size makes the tunables equal their original 80-cell
+ * values, so bounding the work must not change a frame.
  */
-test("a scripted session renders exactly as the full-grid passes did", () => {
+test("a scripted session renders exactly as the full-grid passes would", () => {
   const size = 240;
   const mode = culture.create({
     columns: size,
