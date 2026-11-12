@@ -338,3 +338,19 @@ test("a scripted pour builds a wide heap with gentle flanks, not a spike", () =>
   expect(Math.max(...steps)).toBeLessThanOrEqual(8);
   expect(steps.reduce((a, b) => a + b, 0) / steps.length).toBeLessThan(1.2);
 });
+
+test("a full tray keeps every grain inside a visible rect that lost its top and bottom rows", () => {
+  const sim = setup();
+  sim.fillTray();
+
+  const top = ROWS * 0.375;
+  const bottom = ROWS * 0.625;
+  sim.input.visible = { left: 0, top, right: COLUMNS, bottom };
+  sim.run(Math.ceil(5_000 / STEP));
+
+  for (let y = 0; y < ROWS; y += 1) {
+    if (y < Math.ceil(top) || y >= Math.floor(bottom)) {
+      expect(sim.rowCells(y)).toBe(0);
+    }
+  }
+});

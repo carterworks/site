@@ -174,7 +174,7 @@ export function gridCoordinate(
  */
 export function visibleCells(
   grid: DOMRect,
-  viewport: { width: number; height: number },
+  viewport: { left: number; top: number; width: number; height: number },
   columns: number,
   rows: number,
   gap: number,
@@ -182,10 +182,39 @@ export function visibleCells(
   const cells = (offset: number, extent: number, count: number) =>
     clamp((offset * count) / (extent + gap), 0, count);
   return {
-    left: cells(-grid.left, grid.width, columns),
-    top: cells(-grid.top, grid.height, rows),
-    right: cells(viewport.width - grid.left + gap, grid.width, columns),
-    bottom: cells(viewport.height - grid.top + gap, grid.height, rows),
+    left: cells(viewport.left - grid.left, grid.width, columns),
+    top: cells(viewport.top - grid.top, grid.height, rows),
+    right: cells(
+      viewport.left + viewport.width - grid.left + gap,
+      grid.width,
+      columns,
+    ),
+    bottom: cells(
+      viewport.top + viewport.height - grid.top + gap,
+      grid.height,
+      rows,
+    ),
+  };
+}
+
+/**
+ * What the screen shows of the page right now, in client pixels. The grid is
+ * sized to the large viewport, so rows under a mobile toolbar are only told
+ * apart by the visual viewport. Pinch-zoom is ignored: the zoomed window is
+ * scaled back to the layout area, so panning a zoomed page never refits the
+ * toys, while toolbars (which resize it at scale 1) still do.
+ */
+function shownArea() {
+  const viewport = window.visualViewport;
+  if (!viewport) {
+    return { left: 0, top: 0, width: innerWidth, height: innerHeight };
+  }
+  const zoomed = viewport.scale !== 1;
+  return {
+    left: zoomed ? 0 : viewport.offsetLeft,
+    top: zoomed ? 0 : viewport.offsetTop,
+    width: viewport.width * viewport.scale,
+    height: viewport.height * viewport.scale,
   };
 }
 
@@ -399,6 +428,12 @@ export class PixelBackdrop extends HTMLElement {
       passive: true,
     });
     window.addEventListener("resize", this.#onResize);
+    window.visualViewport?.addEventListener("resize", this.#onResize, {
+      passive: true,
+    });
+    window.visualViewport?.addEventListener("scroll", this.#onResize, {
+      passive: true,
+    });
     document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
     darkScheme.addEventListener("change", this.#wake);
@@ -424,6 +459,8 @@ export class PixelBackdrop extends HTMLElement {
     window.removeEventListener("touchcancel", this.#onTouchEnd);
     document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
+    window.visualViewport?.removeEventListener("resize", this.#onResize);
+    window.visualViewport?.removeEventListener("scroll", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#wake);
@@ -776,9 +813,7 @@ export class PixelBackdrop extends HTMLElement {
 
   /**
    * The grid's box, measured once per resize or knob change, and the cells of
-   * it the viewport shows. `innerWidth` and `innerHeight` are the viewport as
-   * it is now, so a mobile toolbar covering the bottom rows counts as hiding
-   * them.
+   * it the viewport shows.
    */
   #measure() {
     if (this.#rect !== undefined) return this.#rect;
@@ -789,7 +824,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#rect = rect;
     this.#input.visible = visibleCells(
       rect,
-      { width: innerWidth, height: innerHeight },
+      shownArea(),
       this.#columns,
       this.#rows,
       this.#options.gap,

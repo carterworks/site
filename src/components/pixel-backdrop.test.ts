@@ -82,7 +82,9 @@ test("the visible cells are the grid's overlap with the viewport, whole on the a
   const stride = (box + 5) / 80;
   const grid = new DOMRect(-358, 0, box, box);
 
-  expect(visibleCells(grid, { width: 800, height: box }, 80, 80, 5)).toEqual({
+  expect(
+    visibleCells(grid, { left: 0, top: 0, width: 800, height: box }, 80, 80, 5),
+  ).toEqual({
     left: 358 / stride,
     top: 0,
     right: (800 + 358 + 5) / stride,
