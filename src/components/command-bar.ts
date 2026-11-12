@@ -150,7 +150,9 @@ class CommandBarElement extends HTMLElement {
         const value = row.querySelector(".command-detail");
         if (!value) return;
         const label = settings[name].label();
-        const paused = name === "backdrop" && matchMedia(reducedMotion).matches;
+        const paused =
+          (name === "backdrop" || name === "display") &&
+          matchMedia(reducedMotion).matches;
         value.textContent = paused ? `${label} (paused)` : label;
         row.setAttribute(
           "aria-label",

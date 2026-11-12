@@ -1,4 +1,5 @@
 ---
+import { DISPLAYS } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
 import { getPostTitle, getPublishedPosts } from "../lib/blog";
 
@@ -109,6 +110,17 @@ const sitemapPages = [
               data-search={`backdrop background random ${MODES.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
             >
               <span>Backdrop</span><span class="command-detail"></span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-command
+              data-cycle-setting="display"
+              data-title="Display"
+              data-search={`display screen ${DISPLAYS.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
+            >
+              <span>Display</span><span class="command-detail"></span>
             </button>
           </li>
         </ul>

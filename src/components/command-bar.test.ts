@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { createBackdropDisplay } from "./backdrop-display-setting";
+import { DISPLAYS } from "./backdrop-displays";
 import { createBackdropMode } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 import "./command-bar";
@@ -33,6 +35,7 @@ const markup = `
         <section data-group>
           <button type="button" data-command data-cycle-setting="theme" data-title="Theme" data-search="theme dark light system"><span>Theme</span><span class="command-detail"></span></button>
           <button type="button" data-command data-cycle-setting="backdrop" data-title="Backdrop" data-search="backdrop shimmer"><span>Backdrop</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="display" data-title="Display" data-search="display screen lcd"><span>Display</span><span class="command-detail"></span></button>
         </section>
         <output class="empty" hidden>No matching commands</output>
       </div>
@@ -44,20 +47,23 @@ let osScheme: "light" | "dark" = "light";
 let reducedMotion = false;
 let osListeners: (() => void)[] = [];
 const setMode = vi.fn();
+const setDisplay = vi.fn();
 
 function setupCommandBar() {
   document.documentElement.style.colorScheme = "";
   localStorage.clear();
   setMode.mockClear();
+  setDisplay.mockClear();
   Object.assign(settings, {
     theme: createThemeSetting(),
     backdrop: createBackdropMode(() => 0, new EventTarget()),
+    display: createBackdropDisplay(),
   });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
-  Object.assign(backdrop, { setMode });
+  Object.assign(backdrop, { setMode, setDisplay });
   document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
@@ -76,11 +82,11 @@ function setupCommandBar() {
   };
 }
 
-function row(name: "theme" | "backdrop") {
+function row(name: "theme" | "backdrop" | "display") {
   return getElement<HTMLButtonElement>(`[data-cycle-setting="${name}"]`);
 }
 
-const value = (name: "theme" | "backdrop") =>
+const value = (name: "theme" | "backdrop" | "display") =>
   row(name).querySelector(".command-detail")?.textContent;
 
 function osPrefers(scheme: "light" | "dark") {
@@ -221,14 +227,31 @@ describe("command bar", () => {
     expect(value("backdrop")).toBe(MODES[1].label);
   });
 
-  test("the backdrop row notes that reduced motion pauses it", () => {
+  test("activating the display row stores and applies the next display", () => {
+    openSettings();
+    expect(value("display")).toBe(DISPLAYS[0].label);
+
+    row("display").click();
+
+    expect(localStorage.getItem("backdrop-display")).toBe(DISPLAYS[1].id);
+    expect(setDisplay).toHaveBeenLastCalledWith(DISPLAYS[1].id);
+    expect(value("display")).toBe(DISPLAYS[1].label);
+  });
+
+  test("the backdrop and display rows note that reduced motion pauses it", () => {
     reducedMotion = true;
     openSettings();
 
-    expect(value("backdrop")).toBe(`${MODES[0].label} (paused)`);
-    expect(row("backdrop").getAttribute("aria-label")).toContain(
-      "paused for reduced motion",
-    );
+    const labels = {
+      backdrop: MODES[0].label,
+      display: DISPLAYS[0].label,
+    };
+    for (const name of ["backdrop", "display"] as const) {
+      expect(value(name)).toBe(`${labels[name]} (paused)`);
+      expect(row(name).getAttribute("aria-label")).toContain(
+        "paused for reduced motion",
+      );
+    }
   });
 });
 
