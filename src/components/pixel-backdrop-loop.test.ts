@@ -120,10 +120,6 @@ async function presentsOver(ms: number) {
 }
 
 beforeEach(() => {
-  Object.defineProperty(document, "caretPositionFromPoint", {
-    value: () => null,
-    configurable: true,
-  });
   vi.useFakeTimers({
     toFake: [
       "requestAnimationFrame",
@@ -150,7 +146,6 @@ beforeEach(() => {
 
 afterEach(() => {
   motion.set(false);
-  Reflect.deleteProperty(document, "caretPositionFromPoint");
   getSelection()?.removeAllRanges();
   document.body.replaceChildren();
   document.head.replaceChildren();
@@ -468,22 +463,16 @@ test("a press in empty space reaches the mode as held", async () => {
   expect((await latestInput()).press).toMatchObject({ held: true });
 });
 
-test("a press on a link or on text never reaches the mode", async () => {
+test("a press on a link or in a content panel never reaches the mode", async () => {
   mount();
   const link = document.createElement("a");
   document.body.append(link);
   press(link);
   expect((await latestInput()).press).toBeUndefined();
 
-  const text = document.createTextNode("words");
-  Object.defineProperty(document, "caretPositionFromPoint", {
-    value: () => ({ offsetNode: text, offset: 0 }),
-    configurable: true,
-  });
-  vi.spyOn(Range.prototype, "getClientRects").mockReturnValue([
-    new DOMRect(0, 0, 200, 200),
-  ] as unknown as DOMRectList);
-  press(document.body);
+  const panel = document.createElement("main");
+  document.body.append(panel);
+  press(panel);
   expect((await latestInput()).press).toBeUndefined();
 });
 
@@ -633,7 +622,7 @@ test("a grabbed touch blocks the page's scroll until it is released", () => {
   expect(scrollBlocked()).toBe(false);
 });
 
-test("a touch on a link or on text never grabs, so the page scrolls", async () => {
+test("a touch on a link or in a content panel never grabs, so the page scrolls", async () => {
   mount();
   const link = document.createElement("a");
   document.body.append(link);
@@ -641,15 +630,9 @@ test("a touch on a link or on text never grabs, so the page scrolls", async () =
   expect(scrollBlocked()).toBe(false);
   finger("pointerup");
 
-  const text = document.createTextNode("words");
-  Object.defineProperty(document, "caretPositionFromPoint", {
-    value: () => ({ offsetNode: text, offset: 0 }),
-    configurable: true,
-  });
-  vi.spyOn(Range.prototype, "getClientRects").mockReturnValue([
-    new DOMRect(0, 0, 200, 200),
-  ] as unknown as DOMRectList);
-  fingerDown();
+  const panel = document.createElement("main");
+  document.body.append(panel);
+  fingerDown(panel);
 
   expect(scrollBlocked()).toBe(false);
   expect((await latestInput()).press).toBeUndefined();

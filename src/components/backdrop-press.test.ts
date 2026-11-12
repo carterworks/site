@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { isToyPress, type NodeAtPoint } from "./backdrop-press";
+import { isToyPress } from "./backdrop-press";
 
 afterEach(() => document.body.replaceChildren());
 
@@ -14,11 +14,9 @@ const press = (target: Element | Window, init: PointerEventInit = {}) => {
   return event;
 };
 
-const nowhere: NodeAtPoint = () => null;
-
 test("a press in empty space is accepted, wherever the window itself is the target", () => {
-  expect(isToyPress(press(document.body), nowhere)).toBe(true);
-  expect(isToyPress(press(window), nowhere)).toBe(true);
+  expect(isToyPress(press(document.body))).toBe(true);
+  expect(isToyPress(press(window))).toBe(true);
 });
 
 test.each([
@@ -45,7 +43,7 @@ test.each([
   outer.append(inner);
   document.body.append(outer);
 
-  expect(isToyPress(press(inner), nowhere)).toBe(false);
+  expect(isToyPress(press(inner))).toBe(false);
 });
 
 test.each([
@@ -54,43 +52,23 @@ test.each([
   ["a non-primary touch", { pointerType: "touch", isPrimary: false }],
   ["a non-primary pen", { pointerType: "pen", isPrimary: false }],
 ] as const)("%s is rejected", (_, init) => {
-  expect(isToyPress(press(document.body, init), nowhere)).toBe(false);
+  expect(isToyPress(press(document.body, init))).toBe(false);
 });
 
 test.each(["touch", "pen"])(
   "a primary %s contact is accepted",
   (pointerType) => {
-    expect(isToyPress(press(document.body, { pointerType }), nowhere)).toBe(
-      true,
-    );
+    expect(isToyPress(press(document.body, { pointerType }))).toBe(true);
   },
 );
 
-const words = () => document.createTextNode("Some words");
-const line = () => [new DOMRect(10, 10, 100, 20)];
+test("with no caret API at all, empty background is accepted and main is rejected", () => {
+  Reflect.deleteProperty(document, "caretPositionFromPoint");
+  const main = document.createElement("main");
+  const inner = document.createElement("span");
+  main.append(inner);
+  document.body.append(main);
 
-test("a press on the rects of the text under the caret is rejected", () => {
-  const node = words();
-  const event = press(document.body, { clientX: 50, clientY: 20 });
-
-  expect(isToyPress(event, () => node, line)).toBe(false);
-});
-
-test("a press in the gap beside the text the caret snapped to is accepted", () => {
-  const node = words();
-  const event = press(document.body, { clientX: 300, clientY: 20 });
-
-  expect(isToyPress(event, () => node, line)).toBe(true);
-});
-
-test("a caret that lands on no text leaves the press accepted", () => {
-  const event = press(document.body, { clientX: 50, clientY: 20 });
-
-  expect(isToyPress(event, () => document.body, line)).toBe(true);
-});
-
-test("a browser that cannot say what is under the point rejects the press", () => {
-  const event = press(document.body, { clientX: 50, clientY: 20 });
-
-  expect(isToyPress(event, () => undefined, line)).toBe(false);
+  expect(isToyPress(press(document.body))).toBe(true);
+  expect(isToyPress(press(inner))).toBe(false);
 });
