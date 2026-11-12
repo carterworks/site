@@ -6,6 +6,7 @@ import { pond } from "./pond";
 import { shimmer } from "./shimmer";
 import { silt } from "./silt";
 import { wax } from "./wax";
+import { pendulums } from "./pendulums";
 import type { Toy } from "./toy";
 
 /**
@@ -20,4 +21,5 @@ export const MODES: Toy[] = [
   silt,
   mote,
   filings,
+  pendulums,
 ];
