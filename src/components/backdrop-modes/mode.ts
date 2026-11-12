@@ -1,14 +1,15 @@
 import type { PixelBackdropOptions } from "../pixel-backdrop";
+import type { CellRect, Look, Point } from "./toy";
+
+/**
+ * The host-driven mode API, which each mode leaves as it is ported to `Toy`
+ * (see `./toy`); this file goes with the last of them.
+ */
+
+export { TUNED_GRID, type CellRect, type Look, type Point } from "./toy";
 
 /** Cells along each side of the square grid every mode runs on. */
 export const GRID_SIZE = 160;
-
-/**
- * The grid the modes' and the host's feature sizes were tuned on. Sizes in
- * cells scale by `columns / TUNED_GRID`, so a finer grid keeps them the same
- * size on screen.
- */
-export const TUNED_GRID = 80;
 
 const REFERENCE_WIDTH_PX = 1440;
 
@@ -19,16 +20,6 @@ const REFERENCE_WIDTH_PX = 1440;
  */
 export const cellScale = (designCellPx: number, columns: number) =>
   (designCellPx * columns) / REFERENCE_WIDTH_PX;
-
-export type Point = { x: number; y: number };
-
-/** A span of the grid in logical cells; `right` and `bottom` are exclusive. */
-export type CellRect = {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-};
 
 /** Everything a mode learns about the outside world, refreshed every step. */
 export type BackdropInput = {
@@ -44,8 +35,6 @@ export type BackdropInput = {
    */
   visible: CellRect;
 };
-
-export type Look = Pick<PixelBackdropOptions, "ghost" | "noise">;
 
 /** Full frame rate, the ~8 fps idle timer, or no frames at all. */
 export type Pace = "active" | "idle" | "still";
