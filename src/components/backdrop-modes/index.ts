@@ -9,6 +9,7 @@ import { wax } from "./wax";
 import { pendulums } from "./pendulums";
 import { curtain } from "./curtain";
 import { tray } from "./tray";
+import { bubblewrap } from "./bubblewrap";
 import type { Toy } from "./toy";
 
 /**
@@ -26,4 +27,5 @@ export const MODES: Toy[] = [
   pendulums,
   curtain,
   tray,
+  bubblewrap,
 ];
