@@ -4,6 +4,7 @@ import { ClientRouter } from "astro:transitions";
 import CommandBar from "../components/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/PixelBackdrop.astro";
+import { SCHEME_KEY } from "../lib/color-scheme";
 import { getPageMetadata, type PageMetadata } from "../lib/pages";
 interface Props {
   class?: string;
@@ -36,6 +37,14 @@ const socialTitle = metadata.ogTitle ?? title;
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#f1f1f1" />
+    <script is:inline define:vars={{ key: SCHEME_KEY }}>
+      // Runs before first paint, which a bundled module can't; the key is
+      // injected so it can't drift from the one saveScheme writes.
+      try {
+        document.documentElement.style.colorScheme =
+          localStorage.getItem(key) ?? "";
+      } catch {}
+    </script>
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />
@@ -112,18 +121,10 @@ const socialTitle = metadata.ogTitle ?? title;
     z-index: 1;
   }
 
-  /* Frost the content: a little page colour over a gaussian blur of the pixel
-     grid behind it. The header shares the base's width and padding so the two
-     surfaces line up. Both knobs are driven by the backdrop's dev toolbar app. */
+  /* The header shares the base's width and padding so the two surfaces line up. */
   main,
   header {
-    backdrop-filter: blur(var(--backdrop-panel-blur, 4px));
-    background: color-mix(
-      in oklab,
-      var(--color-bg) var(--backdrop-panel-opacity, 41%),
-      transparent
-    );
-    border: 0.5px solid var(--color-bg);
+    background: var(--color-bg);
     border-radius: var(--size-sm);
     /* The inline padding holds the hanging list markers; the matching negative
        margin keeps the text on its original column. The roomier value applies
@@ -153,14 +154,7 @@ const socialTitle = metadata.ogTitle ?? title;
   }
 
   header::after {
-    background: linear-gradient(
-      color-mix(
-          in oklab,
-          var(--color-bg) var(--backdrop-panel-opacity, 41%),
-          transparent
-        ),
-      transparent
-    );
+    background: linear-gradient(var(--color-bg), transparent);
     block-size: var(--size-lg);
     content: "";
     inset: 100% 0 auto;

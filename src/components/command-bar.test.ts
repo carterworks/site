@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, test } from "vitest";
-import "./command-bar";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { createBackdropMode } from "./backdrop-mode-setting";
+import { MODES } from "./backdrop-modes";
+import { settings } from "./command-bar";
+import { createThemeSetting } from "./theme-setting";
+
+vi.mock("./backdrop-modes", () => ({
+  MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
+}));
 
 const markup = `
   <a href="/blog/post/">Article on this page</a>
@@ -23,9 +30,8 @@ const markup = `
       </div>
       <div id="command-settings-menu" data-panel="settings" hidden>
         <section data-group>
-          <button type="button" aria-pressed="false" data-command data-appearance data-search="toggle appearance theme light dark">
-            Dark mode <span data-scheme></span>
-          </button>
+          <button type="button" data-command data-cycle-setting="theme" data-title="Theme" data-search="theme dark light system"><span>Theme</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="backdrop" data-title="Backdrop" data-search="backdrop shimmer"><span>Backdrop</span><span class="command-detail"></span></button>
         </section>
         <output class="empty" hidden>No matching commands</output>
       </div>
@@ -33,11 +39,25 @@ const markup = `
   </command-bar>
 `;
 
+let osScheme: "light" | "dark" = "light";
+let reducedMotion = false;
+let osListeners: (() => void)[] = [];
+const setMode = vi.fn();
+
 function setupCommandBar() {
   document.documentElement.style.colorScheme = "";
+  localStorage.clear();
+  setMode.mockClear();
+  Object.assign(settings, {
+    theme: createThemeSetting(),
+    backdrop: createBackdropMode(() => 0, new EventTarget()),
+  });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
+  const backdrop = document.createElement("pixel-backdrop");
+  Object.assign(backdrop, { setMode });
+  document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
   if (!dialog || typeof dialog.showPopover === "function") return;
@@ -53,6 +73,23 @@ function setupCommandBar() {
     Object.defineProperty(event, "newState", { value: "closed" });
     dialog.dispatchEvent(event);
   };
+}
+
+function row(name: "theme" | "backdrop") {
+  return getElement<HTMLButtonElement>(`[data-cycle-setting="${name}"]`);
+}
+
+const value = (name: "theme" | "backdrop") =>
+  row(name).querySelector(".command-detail")?.textContent;
+
+function osPrefers(scheme: "light" | "dark") {
+  osScheme = scheme;
+  osListeners.forEach((listener) => listener());
+}
+
+function openSettings() {
+  getElement<HTMLInputElement>(".command-trigger").click();
+  getElement<HTMLButtonElement>("[data-settings]").click();
 }
 
 function getElement<T extends Element>(selector: string) {
@@ -72,7 +109,23 @@ function pressKey(target: Element, key: string, init?: KeyboardEventInit) {
   );
 }
 
-beforeEach(setupCommandBar);
+beforeEach(() => {
+  osScheme = "light";
+  reducedMotion = false;
+  osListeners = [];
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    get matches() {
+      return query.includes("reduced-motion")
+        ? reducedMotion
+        : query.includes("dark") === (osScheme === "dark");
+    },
+    addEventListener: (_: string, listener: () => void) =>
+      osListeners.push(listener),
+    removeEventListener: () => {},
+  }));
+  setupCommandBar();
+});
+afterEach(() => vi.unstubAllGlobals());
 
 describe("command bar", () => {
   test("opens with links from the current page and omits sitemap duplicates", () => {
@@ -108,22 +161,73 @@ describe("command bar", () => {
     ).toBe(false);
   });
 
-  test("opens settings and toggles dark mode", () => {
-    getElement<HTMLInputElement>(".command-trigger").click();
-    getElement<HTMLButtonElement>("[data-settings]").click();
+  test("opens settings showing the current theme and backdrop", () => {
+    openSettings();
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
-    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
-      false,
+    expect(value("theme")).toBe("Light");
+    expect(value("backdrop")).toBe(MODES[0].label);
+    expect(row("theme").getAttribute("aria-label")).toBe(
+      "Theme: Light. Activate to change.",
     );
-    const appearance = getElement<HTMLButtonElement>("[data-appearance]");
-    appearance.click();
+  });
 
-    expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(appearance.getAttribute("aria-pressed")).toBe("true");
+  test("activating the theme row applies the opposite and keeps the dialog open", () => {
+    osPrefers("dark");
+    openSettings();
+
+    row("theme").click();
+
+    expect(document.documentElement.style.colorScheme).toBe("light");
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+    expect(value("theme")).toBe("Light");
     expect(
       getElement<HTMLDialogElement>("dialog").matches(":popover-open"),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  test("the theme row offers System after a choice and clears storage on it", () => {
+    osPrefers("dark");
+    openSettings();
+
+    row("theme").click();
+    row("theme").click();
+    row("theme").click();
+
+    expect(value("theme")).toBe("System");
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+    expect(document.documentElement.style.colorScheme).toBe("");
+  });
+
+  test("an OS change updates the label but not storage", () => {
+    osPrefers("dark");
+    openSettings();
+    expect(value("theme")).toBe("Dark");
+
+    osPrefers("light");
+
+    expect(value("theme")).toBe("Light");
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+  });
+
+  test("activating the backdrop row stores and applies the next mode", () => {
+    openSettings();
+
+    row("backdrop").click();
+
+    expect(localStorage.getItem("backdrop-mode")).toBe(MODES[1].id);
+    expect(setMode).toHaveBeenLastCalledWith(MODES[1].id);
+    expect(value("backdrop")).toBe(MODES[1].label);
+  });
+
+  test("the backdrop row notes that reduced motion pauses it", () => {
+    reducedMotion = true;
+    openSettings();
+
+    expect(value("backdrop")).toBe(`${MODES[0].label} (paused)`);
+    expect(row("backdrop").getAttribute("aria-label")).toContain(
+      "paused for reduced motion",
+    );
   });
 });
 
@@ -190,21 +294,104 @@ describe("command bar dialog", () => {
     expect(dialog.matches(":popover-open")).toBe(false);
   });
 
-  test("Shift+Enter toggles appearance without closing the dialog", () => {
-    getElement<HTMLInputElement>(".command-trigger").click();
-    getElement<HTMLButtonElement>("[data-settings]").click();
+  test("focus restored to the trigger while the dialog closes does not reopen it", () => {
+    openSettings();
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    const show = vi.spyOn(dialog, "showPopover");
+
+    dialog.removeAttribute("data-popover-open");
+    getElement<HTMLInputElement>(".command-trigger").dispatchEvent(
+      new FocusEvent("focus", { relatedTarget: row("theme") }),
+    );
+
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  test("a click whose pointerup light-dismisses the popover its mousedown focus opened reopens it", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    const closing = new Event("beforetoggle");
+    Object.defineProperty(closing, "newState", { value: "closed" });
+
+    trigger.dispatchEvent(new FocusEvent("focus"));
+    dialog.dispatchEvent(closing);
+    dialog.removeAttribute("data-popover-open");
+    trigger.click();
+
+    expect(dialog.matches(":popover-open")).toBe(true);
+  });
+
+  test("clicking the field of an open bar keeps the query and panel although pointerup light-dismissed it", () => {
+    openSettings();
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.value = "the";
+    trigger.dispatchEvent(new Event("input", { bubbles: true }));
+
+    trigger.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    dialog.hidePopover();
+    trigger.click();
+
+    expect(dialog.matches(":popover-open")).toBe(true);
+    expect(trigger.value).toBe("the");
+    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
+      false,
+    );
+  });
+
+  test("Escape closes the dialog but leaves focus on the field without reopening", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    const show = vi.spyOn(dialog, "showPopover");
+
+    pressKey(trigger, "Escape");
+
+    expect(dialog.matches(":popover-open")).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  test("Escape from a command in the dialog closes it with focus back on the field", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    const command = getElement<HTMLButtonElement>("[data-settings]");
+    command.focus();
+
+    pressKey(command, "Escape");
+    trigger.focus();
+    dialog.hidePopover();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  test("Alt+K on the field that kept focus after Escape reopens the dialog", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    pressKey(trigger, "Escape");
+
+    pressKey(trigger, "k", { altKey: true });
+
+    expect(dialog.matches(":popover-open")).toBe(true);
+  });
+
+  test("Shift+Enter advances the theme without closing the dialog", () => {
+    osPrefers("dark");
+    openSettings();
     const dialog = getElement<HTMLDialogElement>("dialog");
     const input = getElement<HTMLInputElement>("input");
 
     pressKey(input, "Enter", { shiftKey: true });
-
-    expect(document.documentElement.style.colorScheme).toBe("dark");
-    expect(
-      getElement<HTMLButtonElement>("[data-appearance]").getAttribute(
-        "aria-pressed",
-      ),
-    ).toBe("true");
+    expect(localStorage.getItem("color-scheme")).toBe("light");
+    expect(value("theme")).toBe("Light");
     expect(dialog.matches(":popover-open")).toBe(true);
+
+    pressKey(input, "Enter", { shiftKey: true });
+    pressKey(input, "Enter", { shiftKey: true });
+    expect(localStorage.getItem("color-scheme")).toBeNull();
+    expect(value("theme")).toBe("System");
   });
 });
 
@@ -254,5 +441,17 @@ describe("command bar dynamic behavior", () => {
     expect(settings.hidden).toBe(true);
     expect(active.hidden).toBe(false);
     expect(active.textContent).toBe("Home");
+  });
+
+  test("persists the manual scheme and applies it to the incoming document on swap", () => {
+    openSettings();
+    row("theme").click();
+    const newDocument = document.implementation.createHTMLDocument();
+
+    document.dispatchEvent(
+      Object.assign(new Event("astro:before-swap"), { newDocument }),
+    );
+
+    expect(newDocument.documentElement.style.colorScheme).toBe("dark");
   });
 });

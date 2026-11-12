@@ -1,18 +1,19 @@
 ---
 import EmulatedCanvas from "./EmulatedCanvas.astro";
 
+const GRID_SIZE = 160;
+
 /**
  * The site-wide pixel backdrop. `<pixel-backdrop>` is a fixed, non-interactive
  * layer that fills the viewport with a live `<emulated-canvas>`; the custom
- * element drives it from pointer input and owns its tweakable render knobs.
- * The square bitmap is sized to cover the viewport, so its pixel grid can
- * never run out at the edges.
+ * element runs a toy on it, passes it the pointer and owns its tweakable
+ * render knobs. The square bitmap is sized to cover the viewport, so its
+ * pixel grid can never run out at the edges.
  */
-const size = 80;
 ---
 
-<pixel-backdrop aria-hidden="true">
-  <EmulatedCanvas width={size} height={size} />
+<pixel-backdrop aria-hidden="true" transition:persist>
+  <EmulatedCanvas data-fit="viewport" width={GRID_SIZE} height={GRID_SIZE} />
 </pixel-backdrop>
 
 <script>
@@ -20,9 +21,15 @@ const size = 80;
 </script>
 
 <style>
+  /* The large viewport, like the cell size, so mobile toolbars sliding in and
+     out can't move the grid. */
+  /* 100vw runs under a classic scrollbar, whose track is transparent, so the
+     grid shows through it and is centred on the full viewport. */
   pixel-backdrop {
+    block-size: 100lvh;
     display: block;
-    inset: 0;
+    inline-size: 100vw;
+    inset: 0 auto auto 0;
     overflow: hidden;
     pointer-events: none;
     position: fixed;
@@ -33,13 +40,25 @@ const size = 80;
     display: none;
   }
 
-  /* Centre the oversized grid so its middle always covers the viewport. */
+  /* Centre the oversized grid so its middle always covers the viewport. The
+     offsets are rounded because a half-pixel shift would blur the gap overlay.
+     The gaps are painted in the body colour that shows behind this layer. */
   pixel-backdrop :global(emulated-canvas) {
+    --emulated-canvas-gap-color: var(--color-bg);
     inline-size: max-content;
-    left: 50%;
+    left: round(50%, 1px);
     position: absolute;
-    top: 50%;
-    translate: -50% -50%;
+    top: round(50%, 1px);
+    translate: round(-50%, 1px) round(-50%, 1px);
+  }
+
+  /* A held finger would otherwise raise iOS's callout, and the overscroll is
+     belt and braces for the touchmove the element already blocks. */
+  :global(:root[data-backdrop-holding]) {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none;
+    user-select: none;
   }
 
   @media (prefers-reduced-motion: reduce) {

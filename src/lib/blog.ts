@@ -22,9 +22,7 @@ export function getPostTitle(post: BlogPost): string {
   const title = post.data.title?.trim();
   if (title) return title;
 
-  const firstLine = post.body
-    ?.split(/\r?\n/)
-    .find((line) => line.trim());
+  const firstLine = post.body?.split(/\r?\n/).find((line) => line.trim());
 
   if (!firstLine)
     return `Post from ${post.data.pubDate.toISOString().slice(0, 10)}`;
@@ -44,7 +42,5 @@ export function getPostDescription(post: BlogPost): string | undefined {
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   return (await getCollection("blog"))
     .filter((post) => DEV || post.data.draft !== true)
-    .toSorted(
-      (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
-    );
+    .toSorted((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 }

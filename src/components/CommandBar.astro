@@ -1,4 +1,5 @@
 ---
+import { MODES } from "./backdrop-modes";
 import { getPostTitle, getPublishedPosts } from "../lib/blog";
 
 const posts = await getPublishedPosts();
@@ -36,7 +37,7 @@ const sitemapPages = [
               type="button"
               data-command
               data-settings
-              data-search="settings appearance theme light dark"
+              data-search="settings appearance theme light dark backdrop"
             >
               <span>Settings</span><span
                 class="command-detail"
@@ -91,15 +92,23 @@ const sitemapPages = [
           <li>
             <button
               type="button"
-              aria-pressed="false"
               data-command
-              data-appearance
-              data-search="toggle appearance theme light dark"
+              data-cycle-setting="theme"
+              data-title="Theme"
+              data-search="theme appearance dark light system mode"
             >
-              <span>Dark mode</span><span
-                class="command-detail"
-                data-scheme
-                aria-live="polite"></span>
+              <span>Theme</span><span class="command-detail"></span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-command
+              data-cycle-setting="backdrop"
+              data-title="Backdrop"
+              data-search={`backdrop background random ${MODES.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
+            >
+              <span>Backdrop</span><span class="command-detail"></span>
             </button>
           </li>
         </ul>

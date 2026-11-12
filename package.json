@@ -28,6 +28,7 @@
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
+    "verify": "oxfmt --check . && pnpm check && pnpm test",
     "deploy": "alchemy deploy"
   },
   "devDependencies": {

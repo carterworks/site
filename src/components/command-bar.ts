@@ -1,13 +1,32 @@
+import { createBackdropMode } from "./backdrop-mode-setting";
+import { createThemeSetting } from "./theme-setting";
+
+// Module-level so a ClientRouter swap, which recreates the element, keeps
+// which reset entries are on offer; only a full reload forgets them.
+export const settings = {
+  theme: createThemeSetting(),
+  backdrop: createBackdropMode(),
+};
+
+const reducedMotion = "(prefers-reduced-motion: reduce)";
+const colorScheme = "(prefers-color-scheme: dark)";
+
 class CommandBarElement extends HTMLElement {
+  cleanup?: () => void;
+
+  disconnectedCallback() {
+    this.cleanup?.();
+  }
+
   connectedCallback() {
     if (this.dataset.ready) return;
     const dialog = this.querySelector<HTMLDialogElement>("dialog");
     const trigger = this.querySelector<HTMLInputElement>(".command-trigger");
     const back = this.querySelector<HTMLButtonElement>("[data-back]");
     const pageLinks = this.querySelector<HTMLElement>("[data-page-links]");
-    const appearance =
-      this.querySelector<HTMLButtonElement>("[data-appearance]");
-    const scheme = this.querySelector<HTMLElement>("[data-scheme]");
+    const rows = [
+      ...this.querySelectorAll<HTMLButtonElement>("[data-cycle-setting]"),
+    ];
     const rootPanel = this.querySelector<HTMLElement>('[data-panel="root"]');
     const settingsPanel = this.querySelector<HTMLElement>(
       '[data-panel="settings"]',
@@ -17,8 +36,7 @@ class CommandBarElement extends HTMLElement {
       !trigger ||
       !back ||
       !pageLinks ||
-      !appearance ||
-      !scheme ||
+      !rows.length ||
       !rootPanel ||
       !settingsPanel
     ) {
@@ -99,10 +117,7 @@ class CommandBarElement extends HTMLElement {
       });
       back.hidden = name === "root";
       trigger.value = "";
-      trigger.setAttribute(
-        "aria-controls",
-        panels[name].id,
-      );
+      trigger.setAttribute("aria-controls", panels[name].id);
       filter();
       trigger.focus();
     };
@@ -137,26 +152,35 @@ class CommandBarElement extends HTMLElement {
       });
     };
 
-    const currentScheme = () =>
-      document.documentElement.style.colorScheme ||
-      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
-    const updateSchemeLabel = () => {
-      const dark = currentScheme() === "dark";
-      scheme.textContent = dark ? "On" : "Off";
-      appearance.setAttribute("aria-pressed", String(dark));
+    const renderRows = () => {
+      rows.forEach((row) => {
+        const name = row.dataset.cycleSetting as keyof typeof settings;
+        const value = row.querySelector(".command-detail");
+        if (!value) return;
+        const label = settings[name].label();
+        const paused = name === "backdrop" && matchMedia(reducedMotion).matches;
+        value.textContent = paused ? `${label} (paused)` : label;
+        row.setAttribute(
+          "aria-label",
+          `${row.dataset.title}: ${label}${paused ? " (paused for reduced motion)" : ""}. Activate to change.`,
+        );
+      });
     };
 
-    const toggleAppearance = () => {
-      document.documentElement.style.colorScheme =
-        currentScheme() === "dark" ? "light" : "dark";
-      updateSchemeLabel();
+    const cycleSetting = (name: keyof typeof settings) => {
+      settings[name].cycle();
+      renderRows();
     };
+
+    // The label alone follows the OS; storage is never touched by it.
+    const osScheme = matchMedia(colorScheme);
+    osScheme.addEventListener?.("change", renderRows);
+    this.cleanup = () => osScheme.removeEventListener?.("change", renderRows);
 
     const prepare = () => {
       if (dialog.matches(":popover-open")) return;
       rebuildPageLinks();
-      updateSchemeLabel();
+      renderRows();
       dialog.showPopover();
       showPanel("root");
     };
@@ -177,20 +201,42 @@ class CommandBarElement extends HTMLElement {
       visible[next].scrollIntoView({ block: "nearest" });
     };
 
-    trigger.addEventListener("focus", prepare);
-    trigger.addEventListener("click", prepare);
+    // Focus arriving from inside the dialog is dismissal restoring it to the
+    // trigger mid-hide, where showPopover would throw. Click stays unguarded:
+    // its pointerup light-dismisses the popover that mousedown's focus just
+    // opened, and only the click reopens it.
+    trigger.addEventListener("focus", (event) => {
+      const from = event.relatedTarget;
+      if (!(from instanceof Node && dialog.contains(from))) prepare();
+    });
+    // showPopover({ source }) would stop this light-dismiss, but Firefox lacks it.
+    // A click on an already-open bar must restore it as it was, not rebuild it.
+    let wasOpen = false;
+    trigger.addEventListener("pointerdown", () => {
+      wasOpen = dialog.matches(":popover-open");
+    });
+    trigger.addEventListener("click", () => {
+      if (!wasOpen) return prepare();
+      wasOpen = false;
+      if (!dialog.matches(":popover-open")) dialog.showPopover();
+      trigger.focus();
+    });
     back.addEventListener("click", () => showPanel("root"));
+    let keepFocus = false;
     trigger.addEventListener("input", filter);
     trigger.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         if (activePanel === "settings") {
           event.preventDefault();
           showPanel("root");
-        } else {
+        } else if (dialog.matches(":popover-open")) {
+          keepFocus = true;
           dialog.hidePopover();
         }
         return;
       }
+      // Escape leaves focus here, so a later Alt+K raises no focus event.
+      if (event.key.length === 1) prepare();
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         move(event.key === "ArrowDown" ? 1 : -1);
@@ -198,7 +244,7 @@ class CommandBarElement extends HTMLElement {
       if (event.key === "Enter") {
         event.preventDefault();
         if (event.shiftKey && activePanel === "settings") {
-          toggleAppearance();
+          cycleSetting("theme");
           return;
         }
         visibleCommands()
@@ -207,6 +253,11 @@ class CommandBarElement extends HTMLElement {
       }
     });
     this.addEventListener("keydown", (event) => {
+      // The browser's own Escape dismissal restores focus to the field, but
+      // only the toggle handler's blur would follow it unless told to keep it.
+      if (event.key === "Escape" && dialog.contains(event.target as Node)) {
+        keepFocus = true;
+      }
       const command = commandFrom(event.target);
       if (!command || !panel().contains(command)) return;
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -219,11 +270,13 @@ class CommandBarElement extends HTMLElement {
         activePanel === "settings"
       ) {
         event.preventDefault();
-        toggleAppearance();
+        cycleSetting("theme");
       }
     });
     dialog.addEventListener("toggle", (event) => {
-      if (event.newState === "closed") trigger.blur();
+      if (event.newState !== "closed") return;
+      if (!keepFocus) trigger.blur();
+      keepFocus = false;
     });
     this.addEventListener("pointermove", (event) => {
       const command = commandFrom(event.target);
@@ -237,10 +290,8 @@ class CommandBarElement extends HTMLElement {
       if (!(event.target instanceof Element)) return;
       const target = event.target;
       if (target.closest("[data-settings]")) showPanel("settings");
-      if (target.closest("[data-appearance]")) {
-        toggleAppearance();
-        dialog.hidePopover();
-      }
+      const row = target.closest<HTMLElement>("[data-cycle-setting]");
+      if (row) cycleSetting(row.dataset.cycleSetting as keyof typeof settings);
     });
   }
 }
@@ -248,3 +299,11 @@ class CommandBarElement extends HTMLElement {
 if (!customElements.get("command-bar")) {
   customElements.define("command-bar", CommandBarElement);
 }
+
+// ClientRouter resets <html>'s attributes (inline style included) on every
+// swap; setting it on the incoming document avoids a frame of the OS scheme.
+document.addEventListener("astro:before-swap", (event) => {
+  const { newDocument } = event as Event & { newDocument: Document };
+  newDocument.documentElement.style.colorScheme =
+    document.documentElement.style.colorScheme;
+});
