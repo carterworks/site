@@ -570,6 +570,26 @@ test("a display paints its grid in its own colour, and one without a grid or Sit
   expect(grid()).toBe("");
 });
 
+test("only a display with a backlight vignette lays one over the screen", () => {
+  const backdrop = mount();
+  const vignette = () => [
+    backdrop.hasAttribute("data-vignette"),
+    backdrop.style.getPropertyValue("--backdrop-display-vignette"),
+  ];
+  const amber = DISPLAYS[2].look!;
+
+  backdrop.setDisplay("amber-lcd");
+  expect(amber.vignette).toBeDefined();
+  expect(vignette()).toEqual([true, amber.vignette]);
+
+  backdrop.setDisplay("pocket-lcd");
+  expect(vignette()).toEqual([false, ""]);
+
+  backdrop.setDisplay("amber-lcd");
+  backdrop.setDisplay("site");
+  expect(vignette()).toEqual([false, ""]);
+});
+
 test("an unknown display is ignored", () => {
   const backdrop = mount();
 

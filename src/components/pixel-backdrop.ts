@@ -421,16 +421,12 @@ export class PixelBackdrop extends HTMLElement {
     this.#shownPalette = palette;
     set(canvas, "paletteBase", base);
     set(canvas, "paletteInk", ink);
-    if (look === undefined) {
-      delete canvas.dataset.paletteLevels;
-      this.style.removeProperty("--backdrop-display-screen");
-    } else {
-      set(canvas, "paletteLevels", String(look.levels));
-      this.style.setProperty("--backdrop-display-screen", look.screen);
-    }
-    if (look?.grid === undefined)
-      this.style.removeProperty("--backdrop-display-grid");
-    else this.style.setProperty("--backdrop-display-grid", look.grid);
+    if (look === undefined) delete canvas.dataset.paletteLevels;
+    else set(canvas, "paletteLevels", String(look.levels));
+    setStyle(this, "--backdrop-display-screen", look?.screen);
+    setStyle(this, "--backdrop-display-grid", look?.grid);
+    setStyle(this, "--backdrop-display-vignette", look?.vignette);
+    this.toggleAttribute("data-vignette", look?.vignette !== undefined);
   };
 
   /**
@@ -548,6 +544,11 @@ export class PixelBackdrop extends HTMLElement {
 /** Written only on a change, as every write re-presents the canvas. */
 function set(canvas: EmulatedCanvas, key: string, value: string) {
   if (canvas.dataset[key] !== value) canvas.dataset[key] = value;
+}
+
+function setStyle(element: HTMLElement, name: string, value?: string) {
+  if (value === undefined) element.style.removeProperty(name);
+  else element.style.setProperty(name, value);
 }
 
 if (!customElements.get("pixel-backdrop")) {

@@ -11,6 +11,8 @@ export type DisplayLook = {
    * pixel show through, so dark neighbours merge and the grid stays faint.
    */
   grid?: string;
+  /** A backlight's fall-off, as an image multiplied over the whole screen. */
+  vignette?: string;
   /** The off pixels, which `data-palette-base` takes. */
   base: string;
   /** The lit pixels, which `data-palette-ink` takes. */
@@ -69,6 +71,7 @@ export const DISPLAYS: Display[] = [
     label: "Amber LCD",
     look: {
       screen: "#e8a33a",
+      vignette: "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
       base: "#e8a33a",
       ink: "#3a2410",
       levels: 2,
