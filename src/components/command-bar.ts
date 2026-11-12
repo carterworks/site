@@ -206,7 +206,8 @@ class CommandBarElement extends HTMLElement {
     // its pointerup light-dismisses the popover that mousedown's focus just
     // opened, and only the click reopens it.
     trigger.addEventListener("focus", (event) => {
-      if (!dialog.contains(event.relatedTarget as Node | null)) prepare();
+      const from = event.relatedTarget;
+      if (!(from instanceof Node && dialog.contains(from))) prepare();
     });
     trigger.addEventListener("click", prepare);
     back.addEventListener("click", () => showPanel("root"));
