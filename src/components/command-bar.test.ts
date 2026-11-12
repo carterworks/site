@@ -317,6 +317,24 @@ describe("command bar dialog", () => {
     expect(dialog.matches(":popover-open")).toBe(true);
   });
 
+  test("clicking the field of an open bar keeps the query and panel although pointerup light-dismissed it", () => {
+    openSettings();
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.value = "the";
+    trigger.dispatchEvent(new Event("input", { bubbles: true }));
+
+    trigger.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    dialog.hidePopover();
+    trigger.click();
+
+    expect(dialog.matches(":popover-open")).toBe(true);
+    expect(trigger.value).toBe("the");
+    expect(getElement<HTMLElement>('[data-panel="settings"]').hidden).toBe(
+      false,
+    );
+  });
+
   test("Shift+Enter advances the theme without closing the dialog", () => {
     osPrefers("dark");
     openSettings();

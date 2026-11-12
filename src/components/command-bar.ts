@@ -209,7 +209,18 @@ class CommandBarElement extends HTMLElement {
       const from = event.relatedTarget;
       if (!(from instanceof Node && dialog.contains(from))) prepare();
     });
-    trigger.addEventListener("click", prepare);
+    // showPopover({ source }) would stop this light-dismiss, but Firefox lacks it.
+    // A click on an already-open bar must restore it as it was, not rebuild it.
+    let wasOpen = false;
+    trigger.addEventListener("pointerdown", () => {
+      wasOpen = dialog.matches(":popover-open");
+    });
+    trigger.addEventListener("click", () => {
+      if (!wasOpen) return prepare();
+      wasOpen = false;
+      if (!dialog.matches(":popover-open")) dialog.showPopover();
+      trigger.focus();
+    });
     back.addEventListener("click", () => showPanel("root"));
     trigger.addEventListener("input", filter);
     trigger.addEventListener("keydown", (event) => {
