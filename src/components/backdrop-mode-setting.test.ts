@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import { createBackdropMode } from "./backdrop-mode-setting";
+import { createBackdropMode, RANDOM } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 
 vi.mock("./backdrop-modes", () => ({
@@ -124,4 +124,38 @@ test("with a single mode, every navigation shows it", async () => {
 
   expect(setMode.mock.calls.map(([id]) => id)).toEqual(["only", "only"]);
   vi.doUnmock("./backdrop-modes");
+});
+
+test("choosing a mode stores and applies it", () => {
+  const events = new EventTarget();
+  const backdrop = createBackdropMode(fixedRandom(0), events);
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  backdrop.choose(MODES[2].id);
+
+  expect(localStorage.getItem("backdrop-mode")).toBe(MODES[2].id);
+  expect(setMode).toHaveBeenLastCalledWith(MODES[2].id);
+  expect(backdrop.value()).toBe(MODES[2].id);
+});
+
+test("choosing Random clears storage and applies a different mode", () => {
+  localStorage.setItem("backdrop-mode", MODES[0].id);
+  const events = new EventTarget();
+  const backdrop = createBackdropMode(fixedRandom(0), events);
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  backdrop.choose(RANDOM);
+
+  expect(localStorage.getItem("backdrop-mode")).toBeNull();
+  expect(setMode).toHaveBeenLastCalledWith(MODES[1].id);
+  expect(backdrop.value()).toBe(RANDOM);
+});
+
+test("with nothing stored, the value is the mode on show", () => {
+  const events = new EventTarget();
+  const backdrop = createBackdropMode(fixedRandom(0.5), events);
+
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  expect(backdrop.value()).toBe(MODES[1].id);
 });

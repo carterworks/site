@@ -7,7 +7,7 @@ import { MODES } from "./backdrop-modes";
 
 export const MODE_KEY = "backdrop-mode";
 
-const RANDOM = "random";
+export const RANDOM = "random";
 const IDS = MODES.map((mode) => mode.id);
 
 const stored = () => storedChoice(MODE_KEY, IDS);
@@ -44,25 +44,27 @@ export function createBackdropMode(
     else showRandom();
   });
 
+  const choose = (id: string) => {
+    if (id === RANDOM) {
+      storeChoice(MODE_KEY);
+      showRandom();
+    } else {
+      storeChoice(MODE_KEY, id);
+      show(id);
+    }
+    offerRandom = true;
+  };
+
   return {
+    /** The stored mode's id, `RANDOM`, or the mode on show. */
+    value: current,
     label() {
       const id = current();
       return MODES.find((mode) => mode.id === id)?.label ?? "Random";
     },
+    choose,
     cycle() {
-      const next = nextInRotation(
-        IDS,
-        current(),
-        offerRandom ? RANDOM : undefined,
-      );
-      if (next === RANDOM) {
-        storeChoice(MODE_KEY);
-        showRandom();
-        return;
-      }
-      storeChoice(MODE_KEY, next);
-      offerRandom = true;
-      show(next);
+      choose(nextInRotation(IDS, current(), offerRandom ? RANDOM : undefined));
     },
   };
 }
