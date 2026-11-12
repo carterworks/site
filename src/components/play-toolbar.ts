@@ -13,7 +13,8 @@ const SAMPLE_MS = 500;
 const HISTORY_MS = 30_000;
 const SLOTS = HISTORY_MS / SAMPLE_MS;
 
-const pad = (rate: number) => String(Math.round(rate)).padStart(3, "0");
+/** U+2007 is a figure space, as wide as a tabular digit. */
+const pad = (rate: number) => String(Math.round(rate)).padStart(3, " ");
 
 /**
  * Shows the frame rate each half second, with the 1% low and a sparkline of
