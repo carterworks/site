@@ -1,0 +1,1 @@
+- The light/dark toggle has two states; never add "System" to it. A press flips what is shown, and clears storage when that matches the OS, per [Lea Verou](https://lea.verou.me/blog/2026/dark-mode-toggles/).
