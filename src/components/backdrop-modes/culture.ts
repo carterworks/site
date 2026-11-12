@@ -37,29 +37,16 @@ const SPORE_AFTER_IDLE_MS = 2500;
 const SPORE_COOLDOWN_MS = 1000;
 const FADING_COLONY = 25;
 const STALLED_GENERATIONS = 40;
-const RIM_WIDTH = 1.2;
-/** A thinner ring on a coarse grid steps diagonally and reads as dots. */
-const MIN_RIM_WIDTH = 1.6;
 /** Smaller than a cell the jitter rounds back onto the stroke and it stays one cell thin. */
 const MIN_SCATTER = 1.5;
-const DISH_MARGIN = 2.5;
 const SPORE_RADIUS = 3;
-const SPORE_INSET = 6;
-const RIM_LEVEL = 0.4;
 const TRAIL_LEVEL = 0.4;
 const CURSOR_LEVEL = 0.6;
 
-/** Whether an offset from the dish centre is inside the ellipse of these radii. */
-function inside(dx: number, dy: number, radiusX: number, radiusY: number) {
-  return (
-    radiusX > 0 && radiusY > 0 && (dx / radiusX) ** 2 + (dy / radiusY) ** 2 < 1
-  );
-}
-
 /**
- * Conway's life in a round dish with a rim. Drawing seeds cells; dead cells
- * leave a fading trail. The dish is the ellipse inscribed in the visible rect,
- * so the margins beside the page content hold live dish rather than corners.
+ * Conway's life across the whole visible region. Drawing seeds cells; dead
+ * cells leave a fading trail. Cells beyond the region's edge count as dead, so
+ * a colony meets the edge and dies there rather than wrapping round.
  *
  * It draws white on transparent, fading by alpha, into its own image data put
  * whole each frame, though only the box where cells changed is repainted.
@@ -74,10 +61,7 @@ export const culture: Toy = {
     const { width: columns, height: rows } = canvas;
     const size = columns * rows;
     const scale = columns / GALLERY_COLUMNS;
-    const rimWidth = Math.max(MIN_RIM_WIDTH, RIM_WIDTH * scale);
-    const dishMargin = DISH_MARGIN * scale;
     const sporeRadius = Math.round(SPORE_RADIUS * scale);
-    const sporeInset = SPORE_INSET * scale;
     const stepsPerGeneration = Math.round(STEPS_PER_GENERATION / scale);
     const stepsPerHeldGeneration = Math.round(
       STEPS_PER_HELD_GENERATION / scale,
@@ -87,15 +71,14 @@ export const culture: Toy = {
     const image = context.createImageData(columns, rows);
     const pixels = image.data;
     pixels.fill(255);
-    const dish = new Uint8Array(size);
-    const rim = new Uint8Array(size);
     let cells = new Uint8Array(size);
     let next = new Uint8Array(size);
     const trail = new Float32Array(size);
-    let centreX = 0;
-    let centreY = 0;
-    let radiusX = 0;
-    let radiusY = 0;
+    // Inclusive bounds of the cells that touch the visible region.
+    let regionLeft = 0;
+    let regionTop = 0;
+    let regionRight = columns - 1;
+    let regionBottom = rows - 1;
     let fitted: CellRect | undefined;
 
     let time = 0;
@@ -143,16 +126,16 @@ export const culture: Toy = {
       dirtyBottom = Math.max(dirtyBottom, y);
     };
 
+    const inRegion = (x: number, y: number) =>
+      x >= regionLeft &&
+      x <= regionRight &&
+      y >= regionTop &&
+      y <= regionBottom;
+
     const seed = (x: number, y: number) => {
       x = Math.round(x);
       y = Math.round(y);
-      if (
-        x >= 0 &&
-        y >= 0 &&
-        x < columns &&
-        y < rows &&
-        dish[y * columns + x]
-      ) {
+      if (inRegion(x, y)) {
         cells[y * columns + x] = 1;
         liveLeft = Math.min(liveLeft, x);
         liveTop = Math.min(liveTop, y);
@@ -165,21 +148,13 @@ export const culture: Toy = {
       const visible = visibleCells(canvas);
       if (fitted !== undefined && sameRect(fitted, visible)) return;
       fitted = visible;
-      const { left, top, right, bottom } = visible;
-      centreX = (left + right) / 2 - 0.5;
-      centreY = (top + bottom) / 2 - 0.5;
-      radiusX = (right - left) / 2 - dishMargin;
-      radiusY = (bottom - top) / 2 - dishMargin;
-      const rimX = radiusX + rimWidth;
-      const rimY = radiusY + rimWidth;
+      regionLeft = Math.floor(visible.left);
+      regionTop = Math.floor(visible.top);
+      regionRight = Math.ceil(visible.right) - 1;
+      regionBottom = Math.ceil(visible.bottom) - 1;
       for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < columns; x += 1) {
-          const dx = x - centreX;
-          const dy = y - centreY;
-          const i = y * columns + x;
-          dish[i] = inside(dx, dy, radiusX, radiusY) ? 1 : 0;
-          rim[i] = !dish[i] && inside(dx, dy, rimX, rimY) ? 1 : 0;
-          if (!dish[i]) cells[i] = 0;
+          if (!inRegion(x, y)) cells[y * columns + x] = 0;
         }
       }
       dirtyLeft = 0;
@@ -189,12 +164,10 @@ export const culture: Toy = {
     };
 
     const spore = () => {
-      const angle = Math.random() * Math.PI * 2;
-      const reach = Math.sqrt(Math.random());
       const x =
-        centreX + Math.cos(angle) * reach * Math.max(0, radiusX - sporeInset);
+        regionLeft + Math.floor(Math.random() * (regionRight - regionLeft + 1));
       const y =
-        centreY + Math.sin(angle) * reach * Math.max(0, radiusY - sporeInset);
+        regionTop + Math.floor(Math.random() * (regionBottom - regionTop + 1));
       for (let dy = -sporeRadius; dy <= sporeRadius; dy += 1) {
         for (let dx = -sporeRadius; dx <= sporeRadius; dx += 1) {
           if (Math.random() < 0.45) seed(x + dx, y + dy);
@@ -206,10 +179,10 @@ export const culture: Toy = {
 
     const generation = () => {
       population = 0;
-      const left = Math.max(liveLeft - 1, 0);
-      const top = Math.max(liveTop - 1, 0);
-      const right = Math.min(liveRight + 1, columns - 1);
-      const bottom = Math.min(liveBottom + 1, rows - 1);
+      const left = Math.max(liveLeft - 1, regionLeft);
+      const top = Math.max(liveTop - 1, regionTop);
+      const right = Math.min(liveRight + 1, regionRight);
+      const bottom = Math.min(liveBottom + 1, regionBottom);
       liveLeft = columns;
       liveTop = rows;
       liveRight = -1;
@@ -217,16 +190,21 @@ export const culture: Toy = {
       for (let y = top; y <= bottom; y += 1) {
         for (let x = left; x <= right; x += 1) {
           const i = y * columns + x;
-          if (!dish[i]) continue;
-          const n =
-            cells[i - 1] +
-            cells[i + 1] +
-            cells[i - columns] +
-            cells[i + columns] +
-            cells[i - columns - 1] +
-            cells[i - columns + 1] +
-            cells[i + columns - 1] +
-            cells[i + columns + 1];
+          const west = x > 0;
+          const east = x < columns - 1;
+          let n = 0;
+          if (west) n += cells[i - 1];
+          if (east) n += cells[i + 1];
+          if (y > 0) {
+            n += cells[i - columns];
+            if (west) n += cells[i - columns - 1];
+            if (east) n += cells[i - columns + 1];
+          }
+          if (y < rows - 1) {
+            n += cells[i + columns];
+            if (west) n += cells[i + columns - 1];
+            if (east) n += cells[i + columns + 1];
+          }
           if (!(cells[i] ? n === 2 || n === 3 : n === 3)) continue;
           next[i] = 1;
           population += 1;
@@ -326,17 +304,9 @@ export const culture: Toy = {
     };
 
     const cursor = () => {
-      if (
-        !hovering ||
-        last.x < 0 ||
-        last.y < 0 ||
-        last.x >= columns ||
-        last.y >= rows
-      ) {
-        return -1;
-      }
+      if (!hovering || !inRegion(last.x, last.y)) return -1;
       const i = last.y * columns + last.x;
-      return dish[i] && !cells[i] ? i : -1;
+      return cells[i] ? -1 : i;
     };
 
     const draw = () => {
@@ -353,7 +323,6 @@ export const culture: Toy = {
           if (cells[i]) level = 1;
           else if (i === hover) level = CURSOR_LEVEL;
           else if (trail[i] > 0) level = trail[i] * TRAIL_LEVEL;
-          else if (rim[i]) level = RIM_LEVEL;
           pixels[i * 4 + 3] = level * 255;
         }
       }
