@@ -127,7 +127,6 @@ export const mote: Toy = {
     let ground = 0;
     let now = 0;
     let lastInputAt = 0;
-    let walking = false;
     let frame: number | undefined;
     const pace = fixedStep(STEP_MS, MAX_OWED_MS);
 
@@ -280,7 +279,6 @@ export const mote: Toy = {
         }
       }
 
-      walking = false;
       if (critter.asleep) {
         if (critter.breath < NAP_BREATH_STEPS) {
           critter.breath += 1;
@@ -310,7 +308,6 @@ export const mote: Toy = {
           critter.x +=
             critter.face * (critter.happy > 0 || crumb ? 0.28 : 0.18);
           critter.walk += 1;
-          walking = true;
         } else {
           critter.walk = 0;
           critter.face = pointer
