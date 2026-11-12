@@ -1,7 +1,8 @@
 import { expect, test } from "vitest";
 import { makeCoarseNoise, makeNoise2D } from "./backdrop-noise";
+import { GRID_SIZE } from "./backdrop-modes/mode";
 
-const SIZE = 160;
+const SIZE = GRID_SIZE;
 const STEP = 4;
 const FREQUENCY = 1 / 30;
 const OFFSET_X = 12.9898;

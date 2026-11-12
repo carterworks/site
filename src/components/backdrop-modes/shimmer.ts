@@ -16,6 +16,7 @@ export const shimmer: Mode = {
   create({ columns, rows, options }) {
     // rippleSize is authored in cells of the tuned grid.
     const gridScale = columns / TUNED_GRID;
+    const thickness = Math.max(1, Math.round(gridScale));
     const ripples: { x: number; y: number; born: number }[] = [];
     let seenPointer: Point | undefined;
     let seenPress: object | undefined;
@@ -25,11 +26,11 @@ export const shimmer: Mode = {
     let moved = false;
     let now = 0;
 
-    // Two cells thick keeps the segment as heavy on screen as one cell was at 80.
     let target: Float32Array = new Float32Array(0);
+    // Scaling the thickness with the grid keeps the segment as heavy on screen as one cell was at 80.
     const stamp = (x: number, y: number) => {
-      const right = Math.min(x + 1, columns - 1);
-      const bottom = Math.min(y + 1, rows - 1);
+      const right = Math.min(x + thickness - 1, columns - 1);
+      const bottom = Math.min(y + thickness - 1, rows - 1);
       for (let row = y; row <= bottom; row += 1)
         for (let column = x; column <= right; column += 1)
           target[row * columns + column] = 1;

@@ -61,7 +61,8 @@ export const pinbed: Mode = {
     const depth = new Float32Array(columns * rows);
     const pushedAt = new Float32Array(columns * rows).fill(-Infinity);
     // Only pins that are down are relaxed and drawn; scanning all of them each
-    // step costs 25,600 reads at 160 cells for a handful of dents.
+    // step reads every cell of the grid, which is far more than the handful of
+    // dents ever need.
     const down = new Int32Array(columns * rows);
     const isDown = new Uint8Array(columns * rows);
     let downCount = 0;
