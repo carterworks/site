@@ -155,6 +155,7 @@ export const pond: Mode = {
           nextRain = now + RAIN_GAP_MS + random() * RAIN_SPREAD_MS;
         }
 
+        const dirty = maxX >= 0;
         owedSteps += scale;
         const steps = Math.floor(owedSteps);
         owedSteps -= steps;
@@ -163,8 +164,10 @@ export const pond: Mode = {
 
         flat = peak < FLAT;
         if (flat) {
-          height.fill(0);
-          previous.fill(0);
+          if (dirty) {
+            height.fill(0);
+            previous.fill(0);
+          }
           minX = minY = size;
           maxX = maxY = -1;
         }

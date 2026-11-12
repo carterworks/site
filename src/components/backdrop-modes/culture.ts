@@ -161,7 +161,6 @@ export const culture: Mode = {
 
     const generation = () => {
       population = 0;
-      next.fill(0);
       const left = Math.max(liveLeft - 1, 0);
       const top = Math.max(liveTop - 1, 0);
       const right = Math.min(liveRight + 1, columns - 1);
@@ -193,6 +192,10 @@ export const culture: Mode = {
         }
       }
       [cells, next] = [next, cells];
+      // `next` is the old generation, which lives only inside the box swept above.
+      for (let y = top; y <= bottom; y += 1) {
+        next.fill(0, y * columns + left, y * columns + right + 1);
+      }
       unchanged = population === previousPopulation ? unchanged + 1 : 0;
       previousPopulation = population;
     };

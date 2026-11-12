@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
 import { GRID_SIZE, type BackdropInput } from "./mode";
 import { pond } from "./pond";
@@ -192,4 +192,20 @@ test("a scripted session paints the same frames as the unbounded pond", () => {
   }
 
   expect(digest).toBe(40637979.74715558);
+});
+
+test("an untouched pond never clears its buffers", () => {
+  const { input } = setup();
+  const mode = pond.create({
+    columns: size,
+    rows: size,
+    random: mulberry32(1),
+    options: {} as never,
+  });
+  const fill = vi.spyOn(Float32Array.prototype, "fill");
+  for (let f = 1; f <= 60; f += 1) mode.step(input, f * STEP);
+  const calls = fill.mock.calls.length;
+  fill.mockRestore();
+
+  expect(calls).toBe(0);
 });
