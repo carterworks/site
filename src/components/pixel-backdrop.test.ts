@@ -347,6 +347,49 @@ test("setMode stops the toy, dissolves the canvas and starts the next, and ignor
   expect(transition).toHaveBeenCalledTimes(1);
 });
 
+const unlisted: Toy = {
+  id: "unlisted",
+  label: "Unlisted",
+  start(canvas) {
+    seen.log.push("start unlisted");
+    canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    return () => seen.log.push("stop unlisted");
+  },
+};
+
+test("play dissolves into a toy outside the registry, and setMode swaps back", () => {
+  const transition = vi.spyOn(EmulatedCanvas.prototype, "transition");
+  const backdrop = mount();
+
+  backdrop.play(unlisted);
+
+  expect(backdrop.mode).toBe("unlisted");
+  expect(transition).toHaveBeenCalledTimes(1);
+
+  backdrop.setMode("tuned");
+
+  expect(backdrop.mode).toBe("tuned");
+  expect(seen.log).toEqual([
+    "start probe",
+    "stop probe",
+    "start unlisted",
+    "stop unlisted",
+    "start tuned",
+  ]);
+});
+
+test("a toy played under reduced motion starts once motion resumes", () => {
+  motion.set(true);
+  const backdrop = mount();
+
+  backdrop.play(unlisted);
+  expect(seen.log).toEqual([]);
+
+  motion.set(false);
+
+  expect(seen.log).toEqual(["start unlisted"]);
+});
+
 test("a toy chosen while none runs starts once one can, with no dissolve", async () => {
   const transition = vi.spyOn(EmulatedCanvas.prototype, "transition");
   const backdrop = document.createElement("pixel-backdrop");

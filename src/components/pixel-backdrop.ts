@@ -1,7 +1,12 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
 import { MODES } from "./backdrop-modes";
-import { duration, TUNED_GRID, type Look } from "./backdrop-modes/toy";
+import {
+  duration,
+  TUNED_GRID,
+  type Look,
+  type Toy,
+} from "./backdrop-modes/toy";
 import { isToyPress } from "./backdrop-press";
 
 /**
@@ -259,7 +264,12 @@ export class PixelBackdrop extends HTMLElement {
    */
   setMode(id: string) {
     const toy = MODES.find((candidate) => candidate.id === id);
-    if (toy === undefined || toy === this.#chosen) return;
+    if (toy !== undefined) this.play(toy);
+  }
+
+  /** Like `setMode` for a toy the registry does not list. */
+  play(toy: Toy) {
+    if (toy === this.#chosen) return;
     this.#chosen = toy;
     const canvas = this.#canvas;
     if (canvas === undefined || this.#stopToy === undefined) return;
