@@ -348,6 +348,20 @@ describe("command bar dialog", () => {
     expect(show).not.toHaveBeenCalled();
   });
 
+  test("Escape from a command in the dialog closes it with focus back on the field", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    const command = getElement<HTMLButtonElement>("[data-settings]");
+    command.focus();
+
+    pressKey(command, "Escape");
+    trigger.focus();
+    dialog.hidePopover();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
   test("Alt+K on the field that kept focus after Escape reopens the dialog", () => {
     const trigger = getElement<HTMLInputElement>(".command-trigger");
     const dialog = getElement<HTMLDialogElement>("dialog");

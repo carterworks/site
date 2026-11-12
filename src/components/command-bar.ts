@@ -253,6 +253,11 @@ class CommandBarElement extends HTMLElement {
       }
     });
     this.addEventListener("keydown", (event) => {
+      // The browser's own Escape dismissal restores focus to the field, but
+      // only the toggle handler's blur would follow it unless told to keep it.
+      if (event.key === "Escape" && dialog.contains(event.target as Node)) {
+        keepFocus = true;
+      }
       const command = commandFrom(event.target);
       if (!command || !panel().contains(command)) return;
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
