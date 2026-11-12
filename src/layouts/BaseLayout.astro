@@ -16,9 +16,7 @@ const metadata = pageMetadata ?? getPageMetadata(Astro.url.pathname);
 if (!metadata?.title)
   throw new Error(`Missing page title: ${Astro.url.pathname}`);
 const { title } = metadata;
-const ogImage = metadata.ogImage
-  ? new URL(metadata.ogImage, Astro.site)
-  : undefined;
+const ogImage = new URL(`/og/${metadata.id}.webp`, Astro.site);
 const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 ---
@@ -75,10 +73,10 @@ const socialTitle = metadata.ogTitle ?? title;
       )
     }
     {metadata.ogType && <meta property="og:type" content={metadata.ogType} />}
-    {ogImage && <meta property="og:image" content={ogImage} />}
-    {ogImage && <meta property="og:image:type" content="image/webp" />}
-    {ogImage && <meta property="og:image:width" content="1200" />}
-    {ogImage && <meta property="og:image:height" content="630" />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={socialTitle} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={socialTitle} />
@@ -87,8 +85,8 @@ const socialTitle = metadata.ogTitle ?? title;
         <meta name="twitter:description" content={metadata.description} />
       )
     }
-    {ogImage && <meta name="twitter:image" content={ogImage} />}
-    {ogImage && <meta name="twitter:image:alt" content={socialTitle} />}
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={socialTitle} />
     <slot name="head" />
   </head>
   <body>
