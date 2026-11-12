@@ -1,5 +1,6 @@
 import { line } from "./line";
 import {
+  fixedStep,
   pointOn,
   sameRect,
   visibleCells,
@@ -98,8 +99,7 @@ export const culture: Toy = {
     let fitted: CellRect | undefined;
 
     let time = 0;
-    let lastTick: number | undefined;
-    let accumulated = 0;
+    const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
     let frame: number | undefined;
     let clock = 0;
     let population = 0;
@@ -320,18 +320,9 @@ export const culture: Toy = {
       }
     };
 
-    const advance = (now: number) => {
-      const elapsed =
-        lastTick === undefined
-          ? STEP_MS
-          : Math.min(now - lastTick, MAX_CATCH_UP_MS);
-      lastTick = now;
-      accumulated += elapsed;
-      while (accumulated >= STEP_MS) {
-        accumulated -= STEP_MS;
-        time += STEP_MS;
-        step();
-      }
+    const advanceClock = () => {
+      time += STEP_MS;
+      step();
     };
 
     const cursor = () => {
@@ -375,10 +366,10 @@ export const culture: Toy = {
 
     const tick = (now: number) => {
       frame = undefined;
-      advance(now);
+      pace.advance(now, advanceClock);
       draw();
       if (awake || fading) wake();
-      else lastTick = undefined;
+      else pace.restart();
     };
 
     const wake = () => {

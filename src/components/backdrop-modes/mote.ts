@@ -1,5 +1,6 @@
 import { clamp } from "../emulated-canvas-limits";
 import {
+  fixedStep,
   cellScale,
   pointOn,
   visibleCells,
@@ -128,8 +129,7 @@ export const mote: Toy = {
     let lastInputAt = 0;
     let walking = false;
     let frame: number | undefined;
-    let last = 0;
-    let owed = 0;
+    const pace = fixedStep(STEP_MS, MAX_OWED_MS);
 
     const layout = () => {
       const cells = visibleCells(canvas);
@@ -400,19 +400,14 @@ export const mote: Toy = {
     const tick = () => {
       frame = undefined;
       now = performance.now();
-      owed = Math.min(owed + now - last, MAX_OWED_MS);
-      last = now;
-      while (owed >= STEP_MS) {
-        step();
-        owed -= STEP_MS;
-      }
+      pace.advance(now, step);
       render();
       if (moving()) frame = requestAnimationFrame(tick);
     };
 
     const wakeLoop = () => {
       if (frame !== undefined) return;
-      last = performance.now();
+      pace.restart();
       frame = requestAnimationFrame(tick);
     };
 

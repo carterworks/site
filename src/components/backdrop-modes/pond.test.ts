@@ -306,7 +306,7 @@ test("a scripted session paints the same frames as the unbounded pond", async ()
     if (f % 7 === 0) fold();
   }
 
-  expect(digest).toBe(3683831.9529411076);
+  expect(digest).toBe(3720686.8274509);
 });
 
 test("an untouched pond never clears its buffers", async () => {

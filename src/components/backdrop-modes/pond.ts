@@ -1,5 +1,5 @@
 import { clamp } from "../emulated-canvas-limits";
-import { pointOn, visibleCells, type Point, type Toy } from "./toy";
+import { fixedStep, pointOn, visibleCells, type Point, type Toy } from "./toy";
 
 /** The gallery tile this was tuned on; every length and speed scales from it. */
 const REFERENCE_CELLS = 64;
@@ -50,7 +50,9 @@ export const pond: Toy = {
     const damping = DAMPING_PER_FRAME ** (1 / scale);
     const image = context.createImageData(width, rows);
     const pixels = image.data;
-    let owedSteps = 0;
+    const pace = fixedStep(FRAME_MS / scale, MAX_ADVANCE_MS);
+    let peak = 0;
+    let steps = 0;
     // Everything outside this box is exactly zero in both buffers, so the wave
     // and the paint skip it. It only grows (by a cell per wave step) until the
     // surface goes flat, which keeps results identical to sweeping the grid.
@@ -71,7 +73,6 @@ export const pond: Toy = {
     let flat = true;
     let lit = false;
     let visible = visibleCells(canvas);
-    let lastFrameAt: number | undefined;
     let frame: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -169,14 +170,13 @@ export const pond: Toy = {
     const rainFrom = () => Math.max(lastInputAt, arrivedAt) + RAIN_AFTER_MS;
     const rainUntil = () => Math.max(lastInputAt, arrivedAt) + RAIN_UNTIL_MS;
 
+    const stepWave = () => {
+      peak = wave();
+      steps += 1;
+    };
+
     const draw = (now: number) => {
       frame = undefined;
-      const advance =
-        lastFrameAt === undefined
-          ? FRAME_MS
-          : Math.min(now - lastFrameAt, MAX_ADVANCE_MS);
-      lastFrameAt = now;
-
       if (now > rainFrom() && now < rainUntil() && now > nextRain) {
         const margin = RAIN_MARGIN * scale;
         poke(
@@ -193,11 +193,8 @@ export const pond: Toy = {
       }
 
       const dirty = maxX >= 0;
-      owedSteps += (scale * advance) / FRAME_MS;
-      const steps = Math.floor(owedSteps);
-      owedSteps -= steps;
-      let peak = 0;
-      for (let n = 0; n < steps; n += 1) peak = wave();
+      steps = 0;
+      pace.advance(now, stepWave);
       if (steps > 0) flat = peak < FLAT;
 
       if (!flat) {
@@ -217,7 +214,7 @@ export const pond: Toy = {
         context.putImageData(image, 0, 0);
         lit = false;
       }
-      lastFrameAt = undefined;
+      pace.restart();
       sleep(now);
     };
 

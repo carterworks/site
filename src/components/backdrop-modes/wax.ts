@@ -1,4 +1,5 @@
 import {
+  fixedStep,
   cellScale,
   pointOn,
   visibleCells,
@@ -88,8 +89,8 @@ export const wax: Toy = {
     let lastInputAt = performance.now();
     let settled = false;
     let frame: number | undefined;
-    let last = 0;
-    let owed = 0;
+    const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
+    let now = 0;
 
     const spawn = () => {
       const width = visible.right - visible.left;
@@ -134,7 +135,7 @@ export const wax: Toy = {
       return { blob: nearest, dx: nearest.x - x, dy: nearest.y - y };
     };
 
-    const advance = (now: number) => {
+    const advance = () => {
       const awake = grab !== undefined || now - lastInputAt < COOL_MS;
       const height = visible.bottom - visible.top;
 
@@ -213,14 +214,10 @@ export const wax: Toy = {
       }
     };
 
-    const draw = (now: number) => {
+    const draw = (time: number) => {
       frame = undefined;
-      owed = Math.min(owed + now - last, MAX_CATCH_UP_MS);
-      last = now;
-      while (owed >= STEP_MS) {
-        owed -= STEP_MS;
-        advance(now);
-      }
+      now = time;
+      pace.advance(now, advance);
       field.fill(0);
       renderBlobs(blobs, visible, columns, scratch, field);
       for (let i = 0; i < field.length; i += 1) {
@@ -234,8 +231,7 @@ export const wax: Toy = {
       if (frame !== undefined) return;
       if (settled) {
         settled = false;
-        owed = 0;
-        last = performance.now();
+        pace.restart();
       }
       frame = requestAnimationFrame(draw);
     };
@@ -286,7 +282,6 @@ export const wax: Toy = {
     canvas.addEventListener("pointercancel", onLift);
     canvas.addEventListener("pointerleave", onLeave);
     window.addEventListener("resize", onResize);
-    last = performance.now();
     wake();
 
     return () => {
