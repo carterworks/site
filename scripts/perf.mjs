@@ -3,7 +3,7 @@
  * Chromium, while a scripted pointer plays with it.
  *
  *   pnpm perf [--toy pond] [--display pocket] [--throttle 4] [--seconds 2]
- *             [--json out.json] [--baseline base.json] [--dist dist]
+ *             [--against ../base/dist] [--dist dist]
  *
  * Per combination, each averaged over the frames played:
  *   fps, low   frame rate and its 1% low, as the /play meter shows them
@@ -14,13 +14,17 @@
  *   script     ms the main thread spends in script, waits included
  *
  * The frame rate sits at the display's 60 until a frame overruns, so compare
- * `cpu` between runs and use `--throttle`, DevTools' CPU slowdown, to see the
- * frame rate give way. The slowdown also inflates `renderer`, so read the CPU
- * columns unthrottled. Headless Chromium has no GPU and ignores the device
- * pixel ratio: the numbers rank changes on one machine, and are not what a
- * real screen costs.
+ * `cpu` and use `--throttle`, DevTools' CPU slowdown, to see the frame rate
+ * give way. The slowdown also inflates `renderer`, so read the CPU columns
+ * unthrottled.
+ *
+ * A frame's CPU time moves by half with the machine's load and clock speed,
+ * so two runs do not compare. `--against` takes another build and measures
+ * both back to back for each combination, which does. Headless Chromium has
+ * no GPU and ignores the device pixel ratio: the numbers rank changes on one
+ * machine, and are not what a real screen costs.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -33,18 +37,21 @@ const { values: options } = parseArgs({
     display: { type: "string" },
     throttle: { type: "string", default: "1" },
     seconds: { type: "string", default: "2" },
-    json: { type: "string" },
-    baseline: { type: "string" },
+    against: { type: "string" },
     dist: { type: "string", default: "dist" },
   },
 });
 
 const WARM_UP_MS = 500;
-const dist = pathToFileURL(`${resolve(options.dist)}/`);
-if (!existsSync(new URL("play/index.html", dist))) {
-  throw new Error(
-    `No /play page in ${options.dist}: run \`pnpm build\` first.`,
-  );
+
+/** Each build is served at its own host, so neither sees the other's storage. */
+const builds = { head: options.dist };
+if (options.against) builds.base = options.against;
+for (const [host, path] of Object.entries(builds)) {
+  builds[host] = pathToFileURL(`${resolve(path)}/`);
+  if (!existsSync(new URL("play/index.html", builds[host]))) {
+    throw new Error(`No /play page in ${path}: run \`pnpm build\` first.`);
+  }
 }
 
 const browser = await chromium.launch({ channel: "chromium" });
@@ -52,17 +59,16 @@ const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
 });
 await context.route("**/*", (route) => {
-  const { pathname } = new URL(route.request().url());
+  const { hostname, pathname } = new URL(route.request().url());
   const file = new URL(
     `.${pathname.endsWith("/") ? `${pathname}index.html` : pathname}`,
-    dist,
+    builds[hostname.split(".")[0]],
   );
   return existsSync(file)
     ? route.fulfill({ path: file.pathname })
     : route.fulfill({ status: 404 });
 });
 const page = await context.newPage();
-await page.goto("http://localhost/play/");
 const devtools = await context.newCDPSession(page);
 const system = await browser.newBrowserCDPSession();
 await devtools.send("Performance.enable");
@@ -70,17 +76,19 @@ await devtools.send("Emulation.setCPUThrottlingRate", {
   rate: Number(options.throttle),
 });
 
-const toys = await page
-  .locator("[data-toy] option:not([hidden])")
-  .evaluateAll((all) =>
-    all.map((option) => option.value).filter((id) => id !== "random"),
-  );
-if (toys.length === 0) {
-  throw new Error(`The /play page in ${options.dist} has no toy menu.`);
-}
+const open = (host) => page.goto(`http://${host}.localhost/play/`);
+const toyOptions = page.locator("[data-toy] option:not([hidden])");
 const displayButton = page.locator("[data-display]");
 const shownDisplay = async () =>
   (await displayButton.textContent()).replace("Display: ", "");
+
+await open("head");
+const toys = await toyOptions.evaluateAll((all) =>
+  all.map((option) => option.value).filter((id) => id !== "random"),
+);
+if (toys.length === 0) {
+  throw new Error(`The /play page in ${options.dist} has no toy menu.`);
+}
 const displays = [];
 while (!displays.includes(await shownDisplay())) {
   displays.push(await shownDisplay());
@@ -146,52 +154,56 @@ const spent = async () => {
   };
 };
 
+/** A fresh page load per measurement, so one toy's leftovers never cost the next. */
+const measure = async (host, toy, display) => {
+  await open(host);
+  if ((await toyOptions.and(page.locator(`[value="${toy}"]`)).count()) === 0) {
+    return undefined;
+  }
+  for (let presses = 0; (await shownDisplay()) !== display; presses += 1) {
+    if (presses === displays.length) return undefined;
+    await displayButton.click();
+  }
+  await page.selectOption("[data-toy]", toy);
+  await page.evaluate(play, WARM_UP_MS);
+  const before = await spent();
+  const gaps = await page.evaluate(play, Number(options.seconds) * 1000);
+  const after = await spent();
+  const perFrame = (key) => (after[key] - before[key]) / gaps.length;
+  return {
+    fps: (gaps.length * 1000) / gaps.reduce((sum, gap) => sum + gap, 0),
+    low: onePercentLow(gaps),
+    cpu: perFrame("renderer") + perFrame("gpu"),
+    renderer: perFrame("renderer"),
+    gpu: perFrame("gpu"),
+    script: perFrame("script"),
+  };
+};
+
 const matches = (name, filter) =>
   !filter || name.toLowerCase().includes(filter.toLowerCase());
-const baseline = options.baseline
-  ? JSON.parse(readFileSync(options.baseline, "utf8"))
-  : [];
+const round = (value) => Math.round(value * 100) / 100;
 
-const results = [];
-for (const display of displays) {
-  while ((await shownDisplay()) !== display) await displayButton.click();
-  if (!matches(display, options.display)) continue;
+const rows = [];
+for (const display of displays.filter((name) =>
+  matches(name, options.display),
+)) {
   for (const toy of toys.filter((id) => matches(id, options.toy))) {
-    await page.selectOption("[data-toy]", toy);
-    await page.evaluate(play, WARM_UP_MS);
-    const before = await spent();
-    const gaps = await page.evaluate(play, Number(options.seconds) * 1000);
-    const after = await spent();
-    const perFrame = (key) => (after[key] - before[key]) / gaps.length;
-    results.push({
+    const base = builds.base && (await measure("base", toy, display));
+    const head = await measure("head", toy, display);
+    rows.push({
       toy,
       display,
-      fps: (gaps.length * 1000) / gaps.reduce((sum, gap) => sum + gap, 0),
-      low: onePercentLow(gaps),
-      cpu: perFrame("renderer") + perFrame("gpu"),
-      renderer: perFrame("renderer"),
-      gpu: perFrame("gpu"),
-      script: perFrame("script"),
+      ...Object.fromEntries(
+        Object.entries(head).map(([key, value]) => [key, round(value)]),
+      ),
+      ...(base && {
+        "base cpu": round(base.cpu),
+        "cpu Δ%": Math.round((head.cpu / base.cpu - 1) * 100),
+      }),
     });
   }
 }
 await browser.close();
 
-if (options.json) writeFileSync(options.json, JSON.stringify(results, null, 2));
-
-const round = (value) => Math.round(value * 100) / 100;
-console.table(
-  results.map(({ toy, display, ...numbers }) => {
-    const base = baseline.find(
-      (row) => row.toy === toy && row.display === display,
-    );
-    return {
-      toy,
-      display,
-      ...Object.fromEntries(
-        Object.entries(numbers).map(([key, value]) => [key, round(value)]),
-      ),
-      ...(base && { "cpu Δ%": Math.round((numbers.cpu / base.cpu - 1) * 100) }),
-    };
-  }),
-);
+console.table(rows);
