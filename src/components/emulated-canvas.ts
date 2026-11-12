@@ -447,6 +447,8 @@ export class EmulatedCanvas extends HTMLElement {
   /** Drawn on since the last present, so `#source` is out of date. */
   #drawn = false;
   #presentQueued = false;
+  /** A scheduled present ran in this animation frame, so another waits for the next. */
+  #presentedThisFrame = false;
   #drewAt = -Infinity;
   #passes = SHADERS.map((shader) => shader());
   #wasActive = new Set<ShaderPass>();
@@ -604,7 +606,13 @@ export class EmulatedCanvas extends HTMLElement {
     this.#presentQueued = true;
     queueMicrotask(() => {
       this.#presentQueued = false;
-      if (this.#presents()) this.#follow(this.#blit());
+      if (!this.#presents()) return;
+      if (this.#presentedThisFrame) {
+        this.#cancelNext();
+        this.#nextFrame = requestAnimationFrame(this.#next);
+      } else {
+        this.#follow(this.#blit());
+      }
     });
   }
 
@@ -632,6 +640,9 @@ export class EmulatedCanvas extends HTMLElement {
 
   #next = () => {
     this.#nextFrame = this.#idleTimer = undefined;
+    this.#presentedThisFrame = true;
+    // Registered before #follow schedules the next present, so it runs first.
+    requestAnimationFrame(() => (this.#presentedThisFrame = false));
     this.#follow(this.#blit());
   };
 

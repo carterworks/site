@@ -617,6 +617,23 @@ describe("presenting on its own", () => {
     expect(presents()).toBe(frames);
   });
 
+  test("a toy waking in the frame a fade presents in does not present a second time", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+    context.putImageData(pixels(0), 0, 0);
+    await Promise.resolve();
+    requestAnimationFrame(() => context.putImageData(pixels(128), 0, 0));
+    display.putImageData.mockClear();
+
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(presents()).toBe(1);
+    await vi.advanceTimersByTimeAsync(20);
+    expect(presents()).toBe(2);
+  });
+
   test("a whole-bitmap putImageData is presented from the consumer's pixels, without reading the bitmap back", async () => {
     const canvas = mountLive({ ghost: "70" });
     const context = canvas.getContext("2d")!;
