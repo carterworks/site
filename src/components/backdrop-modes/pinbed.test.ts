@@ -225,7 +225,8 @@ const fingerprint = (levels: Float32Array) => {
   return hash;
 };
 
-test("a scripted session relaxes exactly as it did when every pin was scanned each step", async () => {
+// Recorded while it matched a scan of every pin each step, which it cannot check itself: it only detects change.
+test("a scripted session relaxes as recorded", async () => {
   const seen: [number, boolean][] = [];
   const sample = () => seen.push([fingerprint(field()), still()]);
 

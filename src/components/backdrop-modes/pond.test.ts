@@ -283,7 +283,8 @@ test("a lone ripple costs far less to step than one that fills the pond", async 
   expect(lone * 4).toBeLessThan(filled);
 });
 
-test("a scripted session paints the same frames as the unbounded pond", async () => {
+// Recorded while it matched a full-grid run, which it cannot check itself: it only detects change.
+test("a scripted session paints the recorded frames", async () => {
   let digest = 0;
   const fold = () => {
     const { pixels } = bitmap();
