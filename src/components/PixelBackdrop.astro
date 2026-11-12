@@ -44,9 +44,13 @@ const GRID_SIZE = 160;
   /* Centre the oversized grid so its middle always covers the viewport. The
      offsets are rounded because a half-pixel shift would blur the gap overlay.
      The gaps are painted in the body colour that shows behind this layer, or in
-     a display's screen colour, which also fills the strip past the grid's edge. */
+     a display's screen colour, which also fills the strip past the grid's edge,
+     or in a display's own grid paint. */
   pixel-backdrop :global(emulated-canvas) {
-    --emulated-canvas-gap-color: var(--backdrop-display-screen, var(--color-bg));
+    --emulated-canvas-gap-color: var(
+      --backdrop-display-grid,
+      var(--backdrop-display-screen, var(--color-bg))
+    );
     inline-size: max-content;
     left: round(50%, 1px);
     position: absolute;

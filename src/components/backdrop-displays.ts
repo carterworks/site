@@ -6,6 +6,11 @@
 export type DisplayLook = {
   /** What shows through the gaps and past the grid's edge. */
   screen: string;
+  /**
+   * Paints the gaps instead of the screen. A translucent one lets each
+   * pixel show through, so dark neighbours merge and the grid stays faint.
+   */
+  grid?: string;
   /** The off pixels, which `data-palette-base` takes. */
   base: string;
   /** The lit pixels, which `data-palette-ink` takes. */
@@ -40,6 +45,7 @@ export const DISPLAYS: Display[] = [
     label: "Pocket LCD",
     look: {
       screen: "#889d58",
+      grid: "#0000000a",
       base: "#889d58",
       ink: "#1f3326",
       levels: 4,

@@ -554,6 +554,22 @@ test("a display colours the canvas and the screen behind it in its own palette, 
   expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe("");
 });
 
+test("a display paints its grid in its own colour, and one without a grid or Site leaves the gaps the screen's", () => {
+  const backdrop = mount();
+  const grid = () => backdrop.style.getPropertyValue("--backdrop-display-grid");
+
+  backdrop.setDisplay("pocket-lcd");
+  expect(grid()).toBe(pocket.grid);
+  expect(pocket.grid).toBeDefined();
+
+  backdrop.setDisplay("amber-lcd");
+  expect(grid()).toBe("");
+
+  backdrop.setDisplay("pocket-lcd");
+  backdrop.setDisplay("site");
+  expect(grid()).toBe("");
+});
+
 test("an unknown display is ignored", () => {
   const backdrop = mount();
 

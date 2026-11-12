@@ -428,6 +428,9 @@ export class PixelBackdrop extends HTMLElement {
       set(canvas, "paletteLevels", String(look.levels));
       this.style.setProperty("--backdrop-display-screen", look.screen);
     }
+    if (look?.grid === undefined)
+      this.style.removeProperty("--backdrop-display-grid");
+    else this.style.setProperty("--backdrop-display-grid", look.grid);
   };
 
   /**
