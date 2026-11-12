@@ -1,5 +1,6 @@
 import { clamp } from "../emulated-canvas-limits";
-import { cellScale, sameRect, type CellRect, type Mode } from "./mode";
+import { cellScale, sameRect } from "./mode";
+import { pointOn, visibleCells, type CellRect, type Toy } from "./toy";
 
 /**
  * The prototype tile was tuned at 48 cells across about 360 px. Radii and
@@ -37,18 +38,25 @@ const PRINT_DEPTH = 0.35;
  * back at its own rate once left alone. A press held longer goes deeper.
  *
  * Until the first input, a faint handprint rests in the lower-left of the
- * visible area as a hint that the bed is live. It is frozen, so the mode stays
+ * visible area as a hint that the bed is live. It is frozen, so the toy stays
  * still; the first input lets it spring back like any other dent.
  *
- * The host cannot wake a still mode, so the ambient pebble is tied to input:
- * one rolls across the visible area a few seconds after the last input, then
- * the mode goes still until the pointer is next touched.
+ * The loop sleeps once every pin is up, so the ambient pebble is tied to
+ * input: one rolls across the visible area a few seconds after the last
+ * input, woken by a timer, then the toy goes still until the pointer is next
+ * touched.
+ *
+ * It draws white on transparent, a pin's depth as its opacity in fifths, into
+ * its own image data put whole each frame.
  */
-export const pinbed: Mode = {
+export const pinbed: Toy = {
   id: "pinbed",
   label: "Pinbed",
   look: { ghost: 40, noise: 8 },
-  create({ columns, rows, random }) {
+  start(canvas) {
+    const context = canvas.getContext("2d");
+    if (context === null) return () => {};
+    const { width: columns, height: rows } = canvas;
     const scale = cellScale(PROTOTYPE_CELL_PX, columns);
     const hoverRadius = 3.4 * scale;
     const pressRadius = 5.5 * scale;
@@ -57,28 +65,38 @@ export const pinbed: Mode = {
     const fingerRadius = 2.2 * scale;
     // The dent's far wall is lit above this rise over its up-left neighbour.
     const litRise = 0.04 / scale;
+    const image = context.createImageData(columns, rows);
+    const pixels = image.data;
     const depth = new Float32Array(columns * rows);
     const pushedAt = new Float32Array(columns * rows).fill(-Infinity);
     // Only pins that are down are relaxed and drawn; scanning all of them each
-    // step reads every cell of the grid, which is far more than the handful of
+    // frame reads every cell of the grid, which is far more than the handful of
     // dents ever need.
     const down = new Int32Array(columns * rows);
     const isDown = new Uint8Array(columns * rows);
     let downCount = 0;
     const spring = Float32Array.from(
       { length: columns * rows },
-      () => 0.003 + random() * 0.011,
+      () => 0.003 + Math.random() * 0.011,
     );
     let pebble: { x: number; y: number; vx: number; vy: number } | undefined;
     let pebbleAt: number | undefined;
-    let seenInputAt = -Infinity;
-    let seenPress: object | undefined;
-    let seenPointer: { x: number; y: number } | undefined;
-    let holding = false;
-    let dented = false;
-    let pristine = true;
+    let visible = visibleCells(canvas);
     let printedIn: CellRect | undefined;
+    let pristine = true;
+    let inputPending = false;
+    let tapPending = false;
+    let held = false;
+    let pressAt: number | undefined;
+    let hovering = false;
+    let pointerX = 0;
+    let pointerY = 0;
+    let seenX = Number.NaN;
+    let seenY = Number.NaN;
+    let lit = false;
     let now = 0;
+    let frame: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     const push = (
       x: number,
@@ -108,20 +126,37 @@ export const pinbed: Mode = {
       }
     };
 
-    const launchPebble = (visible: CellRect) => {
-      const fromLeft = random() < 0.5;
+    const launchPebble = () => {
+      const fromLeft = Math.random() < 0.5;
       const margin = 4 * scale;
       const height = visible.bottom - visible.top;
-      const speed = PEBBLE_SPEED + random() * PEBBLE_SPEED_JITTER;
+      const speed = PEBBLE_SPEED + Math.random() * PEBBLE_SPEED_JITTER;
       pebble = {
         x: fromLeft ? visible.left - margin : visible.right + margin,
-        y: visible.top + height * (0.15 + random() * 0.7),
+        y: visible.top + height * (0.15 + Math.random() * 0.7),
         vx: fromLeft ? speed : -speed,
-        vy: (random() - 0.5) * 0.05 * scale,
+        vy: (Math.random() - 0.5) * 0.05 * scale,
       };
     };
 
-    const imprintHand = (visible: CellRect) => {
+    const paint = () => {
+      pixels.fill(0);
+      for (let k = 0; k < downCount; k += 1) {
+        const i = down[k];
+        const rise =
+          i % columns > 0 && i >= columns
+            ? depth[i] - depth[i - columns - 1]
+            : 0;
+        const level = depth[i] * 0.7 + (rise > litRise ? 0.3 : 0);
+        const o = i * 4;
+        pixels[o] = pixels[o + 1] = pixels[o + 2] = 255;
+        pixels[o + 3] = Math.round(clamp(level, 0, 1) * 5) * 51;
+      }
+      context.putImageData(image, 0, 0);
+      lit = downCount > 0;
+    };
+
+    const imprintHand = () => {
       depth.fill(0);
       isDown.fill(0);
       downCount = 0;
@@ -132,101 +167,142 @@ export const pinbed: Mode = {
         push(x + dx * scale, y + dy * scale, fingerRadius, PRINT_DEPTH, 1);
       }
       printedIn = { ...visible };
+      paint();
     };
 
-    return {
-      step({ pointer, press, lastInputAt, visible }, time) {
-        now = time;
+    const relax = () => {
+      let kept = 0;
+      for (let k = 0; k < downCount; k += 1) {
+        const i = down[k];
+        if (now - pushedAt[i] > HOLD_MS) {
+          depth[i] = Math.max(0, depth[i] - spring[i]);
+        }
+        if (depth[i] > 0) down[kept++] = i;
+        else isDown[i] = 0;
+      }
+      downCount = kept;
+    };
 
+    const step = (time: number) => {
+      frame = undefined;
+      clearTimeout(timer);
+      timer = undefined;
+      now = time;
+
+      if (pristine) {
+        if (printedIn === undefined || !sameRect(printedIn, visible)) {
+          imprintHand();
+        }
+        return;
+      }
+
+      if (tapPending) {
+        tapPending = false;
+        pressAt = now;
+        push(pointerX, pointerY, pressRadius, TAP_DEPTH, 1);
+      }
+      if (held && pressAt !== undefined) {
+        const strength = Math.min(
+          1,
+          HOLD_START + (now - pressAt) / HOLD_RAMP_MS,
+        );
+        push(pointerX, pointerY, pressRadius, strength, GRAB);
+      } else if (hovering && (pointerX !== seenX || pointerY !== seenY)) {
+        push(pointerX, pointerY, hoverRadius, HOVER_DEPTH, GRAB);
+      }
+      seenX = hovering ? pointerX : Number.NaN;
+      seenY = hovering ? pointerY : Number.NaN;
+
+      if (inputPending) {
+        inputPending = false;
+        pebble = undefined;
+        pebbleAt = now + PEBBLE_DELAY_MS + Math.random() * PEBBLE_JITTER_MS;
+      }
+      if (pebbleAt !== undefined && now >= pebbleAt) {
+        pebbleAt = undefined;
+        launchPebble();
+      }
+      if (pebble !== undefined) {
+        pebble.x += pebble.vx;
+        pebble.y += pebble.vy;
+        push(pebble.x, pebble.y, pebbleRadius, PEBBLE_DEPTH, 0.5);
+        const margin = 6 * scale;
         if (
-          lastInputAt !== -Infinity ||
-          press !== undefined ||
-          pointer !== undefined
+          pebble.x < visible.left - margin ||
+          pebble.x > visible.right + margin
         ) {
-          pristine = false;
-        }
-        if (pristine) {
-          if (printedIn === undefined || !sameRect(printedIn, visible)) {
-            imprintHand(visible);
-          }
-          return;
-        }
-
-        if (press !== undefined && press !== seenPress) {
-          seenPress = press;
-          push(press.x, press.y, pressRadius, TAP_DEPTH, 1);
-        }
-        holding = press?.held === true;
-        if (press !== undefined && holding) {
-          const at = pointer ?? press;
-          const strength = Math.min(
-            1,
-            HOLD_START + (now - press.at) / HOLD_RAMP_MS,
-          );
-          push(at.x, at.y, pressRadius, strength, GRAB);
-        } else if (
-          pointer !== undefined &&
-          (pointer.x !== seenPointer?.x || pointer.y !== seenPointer?.y)
-        ) {
-          push(pointer.x, pointer.y, hoverRadius, HOVER_DEPTH, GRAB);
-        }
-        seenPointer = pointer;
-
-        if (lastInputAt !== seenInputAt) {
-          seenInputAt = lastInputAt;
           pebble = undefined;
-          pebbleAt =
-            lastInputAt === -Infinity
-              ? undefined
-              : lastInputAt + PEBBLE_DELAY_MS + random() * PEBBLE_JITTER_MS;
         }
-        if (pebbleAt !== undefined && now >= pebbleAt) {
-          pebbleAt = undefined;
-          launchPebble(visible);
-        }
-        if (pebble !== undefined) {
-          pebble.x += pebble.vx;
-          pebble.y += pebble.vy;
-          push(pebble.x, pebble.y, pebbleRadius, PEBBLE_DEPTH, 0.5);
-          const margin = 6 * scale;
-          if (
-            pebble.x < visible.left - margin ||
-            pebble.x > visible.right + margin
-          ) {
-            pebble = undefined;
-          }
-        }
+      }
 
-        let kept = 0;
-        for (let k = 0; k < downCount; k += 1) {
-          const i = down[k];
-          if (now - pushedAt[i] > HOLD_MS) {
-            depth[i] = Math.max(0, depth[i] - spring[i]);
-          }
-          if (depth[i] > 0) down[kept++] = i;
-          else isDown[i] = 0;
-        }
-        downCount = kept;
-        dented = downCount > 0;
-      },
+      relax();
+      if (downCount > 0 || lit) paint();
 
-      render(field) {
-        for (let k = 0; k < downCount; k += 1) {
-          const i = down[k];
-          const rise =
-            i % columns > 0 && i >= columns
-              ? depth[i] - depth[i - columns - 1]
-              : 0;
-          const level = depth[i] * 0.7 + (rise > litRise ? 0.3 : 0);
-          field[i] = Math.round(clamp(level, 0, 1) * 5) / 5;
-        }
-      },
+      if (held || downCount > 0 || pebble !== undefined) wake();
+      else if (pebbleAt !== undefined) {
+        timer = setTimeout(wake, Math.max(0, pebbleAt - now));
+      }
+    };
 
-      pace() {
-        if (pristine) return "still";
-        if (holding || dented || pebble !== undefined) return "active";
-        return pebbleAt === undefined ? "still" : "idle";
-      },
+    const wake = () => {
+      frame ??= requestAnimationFrame(step);
+    };
+
+    const receive = (event: PointerEvent) => {
+      const point = pointOn(canvas, event);
+      pointerX = point.x;
+      pointerY = point.y;
+      hovering = true;
+      pristine = false;
+      inputPending = true;
+      wake();
+    };
+
+    const onDown = (event: PointerEvent) => {
+      held = true;
+      tapPending = true;
+      receive(event);
+    };
+
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch" && !held) return;
+      receive(event);
+    };
+
+    const onLift = (event: PointerEvent) => {
+      if (pristine) return;
+      held = false;
+      inputPending = true;
+      if (event.pointerType === "touch") hovering = false;
+      wake();
+    };
+
+    const onLeave = () => {
+      hovering = false;
+    };
+
+    const onResize = () => {
+      visible = visibleCells(canvas);
+      if (pristine) wake();
+    };
+
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onLift);
+    canvas.addEventListener("pointercancel", onLift);
+    canvas.addEventListener("pointerleave", onLeave);
+    window.addEventListener("resize", onResize);
+    wake();
+
+    return () => {
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onLift);
+      canvas.removeEventListener("pointercancel", onLift);
+      canvas.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(frame ?? 0);
+      clearTimeout(timer);
     };
   },
 };
