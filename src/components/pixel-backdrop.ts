@@ -1,7 +1,7 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
 import { MODES } from "./backdrop-modes";
-import { TUNED_GRID, type Look } from "./backdrop-modes/toy";
+import { duration, TUNED_GRID, type Look } from "./backdrop-modes/toy";
 import { isToyPress } from "./backdrop-press";
 
 /**
@@ -54,10 +54,6 @@ export type PixelBackdropOptions = {
 
 const number = Number.parseFloat;
 const flag = (value: string) => value === "true";
-// The CSS minifier rewrites durations to their shortest form (`900ms` ->
-// `.9s`), so the unit must be honoured, not stripped.
-const duration = (value: string) =>
-  Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
 const text = <T extends string>(value: string) => value as T;
 
 /** `--backdrop-*`, the custom property each knob's default is read from. */

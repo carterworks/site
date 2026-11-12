@@ -1,6 +1,12 @@
-import { clamp } from "../emulated-canvas-limits";
 import { line } from "./line";
-import { pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
+import {
+  clamp,
+  duration,
+  pointOn,
+  TUNED_GRID,
+  type Point,
+  type Toy,
+} from "./toy";
 
 const MAX_RIPPLES = 24;
 
@@ -9,11 +15,6 @@ const DEFAULT_RIPPLE_SIZE = 25;
 const DEFAULT_RIPPLE_MS = 900;
 
 type Ripple = Point & { size: number; ms: number; born?: number };
-
-/** A length in milliseconds; minified CSS may give it in seconds. */
-function duration(value: string) {
-  return Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
-}
 
 function knob(canvas: Element, name: string, parse: typeof duration) {
   const value = parse(getComputedStyle(canvas).getPropertyValue(name).trim());

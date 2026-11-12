@@ -1,5 +1,3 @@
-import { clamp } from "../emulated-canvas-limits";
-
 /**
  * The 2D context a toy draws with: what a plain canvas's and an
  * `OffscreenCanvas`'s contexts share.
@@ -82,6 +80,18 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
     },
   };
 }
+
+export function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * A CSS time in milliseconds. The minifier rewrites durations to their
+ * shortest form (`900ms` -> `.9s`), so the unit must be honoured, not
+ * stripped.
+ */
+export const duration = (value: string) =>
+  Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
 
 export type Point = { x: number; y: number };
 

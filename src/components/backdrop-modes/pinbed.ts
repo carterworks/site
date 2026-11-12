@@ -1,6 +1,6 @@
-import { clamp } from "../emulated-canvas-limits";
 import {
   cellScale,
+  clamp,
   fixedStep,
   pointOn,
   sameRect,

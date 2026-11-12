@@ -1,5 +1,11 @@
-import { clamp } from "../emulated-canvas-limits";
-import { fixedStep, pointOn, visibleCells, type Point, type Toy } from "./toy";
+import {
+  clamp,
+  fixedStep,
+  pointOn,
+  visibleCells,
+  type Point,
+  type Toy,
+} from "./toy";
 
 /** The gallery tile this was tuned on; every length and speed scales from it. */
 const REFERENCE_CELLS = 64;
