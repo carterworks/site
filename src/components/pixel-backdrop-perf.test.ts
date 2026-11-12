@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
+import { motion, mount, play, pointer } from "../test/backdrop-play";
 import {
   countAllocations,
   installSoftCanvas,
   litPixels,
-  place,
   SoftContext,
   softStats,
   useFakeFrames,
@@ -12,34 +12,9 @@ import {
 } from "../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
-import type { PixelBackdropOptions } from "./pixel-backdrop";
 import "./pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
-
-const motion = vi.hoisted(() => {
-  const listeners = new Set<() => void>();
-  const query = {
-    matches: false,
-    addEventListener: (_: string, listener: () => void) =>
-      listeners.add(listener),
-    removeEventListener: (_: string, listener: () => void) =>
-      listeners.delete(listener),
-  };
-  vi.stubGlobal("matchMedia", (media: string) =>
-    media.includes("reduced-motion")
-      ? query
-      : { matches: false, addEventListener() {}, removeEventListener() {} },
-  );
-  return {
-    set(reduced: boolean) {
-      query.matches = reduced;
-      for (const listener of listeners) listener();
-    },
-  };
-});
-
-const SIZE = 160;
 
 /** How long after the last input a toy may keep animating, as the contract allows. */
 const SETTLE_MS = 30_000;
@@ -111,67 +86,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
-
-/** A 4:3 viewport over the square grid, which overhangs it top and bottom. */
-function mount(
-  id: string,
-  knobs: Partial<PixelBackdropOptions> = {},
-  display = "site",
-) {
-  const backdrop = document.createElement("pixel-backdrop");
-  backdrop.setMode(id);
-  backdrop.setDisplay(display);
-  backdrop.configure(knobs);
-  const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, {
-    width: String(SIZE),
-    height: String(SIZE),
-    fit: "viewport",
-  });
-  place(
-    canvas,
-    new DOMRect(0, (innerHeight - innerWidth) / 2, innerWidth, innerWidth),
-  );
-  backdrop.append(canvas);
-  document.body.append(backdrop);
-  return canvas;
-}
-
-const pointer = (type: string, share: number, init: PointerEventInit = {}) =>
-  window.dispatchEvent(
-    new PointerEvent(type, {
-      clientX: share * innerWidth,
-      clientY: share * innerHeight,
-      pointerType: "mouse",
-      pointerId: 1,
-      isPrimary: true,
-      ...init,
-    }),
-  );
-
-/**
- * About 3 s of input: a hover sweep down the viewport's diagonal, a
- * press-and-hold dragged back up it, a tap in the middle, then the pointer
- * leaves.
- */
-async function play() {
-  for (let ms = 0; ms < 1000; ms += 16) {
-    pointer("pointermove", ms / 1000);
-    await vi.advanceTimersByTimeAsync(16);
-  }
-  pointer("pointerdown", 1, { buttons: 1 });
-  for (let ms = 0; ms < 1000; ms += 16) {
-    pointer("pointermove", 1 - ms / 1000, { buttons: 1 });
-    await vi.advanceTimersByTimeAsync(16);
-  }
-  pointer("pointerup", 0);
-  await vi.advanceTimersByTimeAsync(250);
-  pointer("pointerdown", 0.5, { buttons: 1 });
-  await vi.advanceTimersByTimeAsync(50);
-  pointer("pointerup", 0.5);
-  document.dispatchEvent(new MouseEvent("mouseleave"));
-  await vi.advanceTimersByTimeAsync(700);
-}
 
 /** Presents in each of the next `seconds` seconds. */
 async function presentsPerSecond(seconds: number) {
