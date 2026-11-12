@@ -158,8 +158,9 @@ for (const { id } of MODES) {
       await play(recording.advance);
       await recording.advance(SETTLE_MS);
 
-      expect(recording.result()).toMatchSnapshot();
-      expect(markup(canvas, shadow)).toMatchSnapshot("markup");
+      // Soft, so a change that moves both entries shows both diffs at once.
+      expect.soft(recording.result()).toMatchSnapshot();
+      expect.soft(markup(canvas, shadow)).toMatchSnapshot("markup");
     });
   }
 }
