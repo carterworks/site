@@ -10,6 +10,7 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../test/toy-canvas";
+import { DISPLAYS } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
 import type { PixelBackdropOptions } from "./pixel-backdrop";
 import "./pixel-backdrop";
@@ -49,12 +50,16 @@ let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
 let animationFrames: Set<number>;
 
-/** Copies onto the display: the canvas inside the closed shadow root is the only plain one. */
+const isEcho = (context: unknown) =>
+  (context as SoftContext).canvas?.classList.contains("echo");
+
+/** Copies onto the display: the plain canvas inside the closed shadow root that is not the echo. */
 function presents() {
-  const display = bitmaps.plain[0];
   const onDisplay = (spy: { mock: { contexts: unknown[] } }) =>
     spy.mock.contexts.filter(
-      (context) => (context as SoftContext).bitmap === display,
+      (context) =>
+        bitmaps.plain.includes((context as SoftContext).bitmap) &&
+        !isEcho(context),
     ).length;
   return (
     onDisplay(vi.mocked(SoftContext.prototype.putImageData)) +
@@ -93,9 +98,14 @@ afterEach(() => {
 });
 
 /** A 4:3 viewport over the square grid, which overhangs it top and bottom. */
-function mount(id: string, knobs: Partial<PixelBackdropOptions> = {}) {
+function mount(
+  id: string,
+  knobs: Partial<PixelBackdropOptions> = {},
+  display = "site",
+) {
   const backdrop = document.createElement("pixel-backdrop");
   backdrop.setMode(id);
+  backdrop.setDisplay(display);
   backdrop.configure(knobs);
   const canvas = document.createElement("emulated-canvas");
   Object.assign(canvas.dataset, {
@@ -227,6 +237,63 @@ describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
     expect(softStats.reads).toBe(0);
     expect(allocations.count()).toBe(0);
   });
+
+  test("with a pixel shadow, copies each present to the echo once, reading and allocating nothing", async () => {
+    const canvas = mount(id);
+    canvas.dataset.shadow = "40";
+    await play();
+    softStats.reads = 0;
+    const before = presents();
+    const echoCopies = () =>
+      vi.mocked(SoftContext.prototype.drawImage).mock.contexts.filter(isEcho)
+        .length;
+    const echoedBefore = echoCopies();
+
+    const allocations = countAllocations();
+    try {
+      await play();
+    } finally {
+      allocations.restore();
+    }
+
+    expect(presents() - before).toBeGreaterThan(100);
+    expect(echoCopies() - echoedBefore).toBe(presents() - before);
+    expect(softStats.reads).toBe(0);
+    expect(allocations.count()).toBe(0);
+  });
+
+  describe.each(DISPLAYS.filter(({ look }) => look).map(({ id }) => [id]))(
+    "on the %s display",
+    (display) => {
+      test("presents at most once per animation frame, reading and allocating nothing once warmed up", async () => {
+        mount(id, {}, display);
+        await play();
+        softStats.reads = 0;
+        const before = presents();
+
+        const allocations = countAllocations();
+        try {
+          await play();
+        } finally {
+          allocations.restore();
+        }
+
+        expect(presents() - before).toBeGreaterThan(100);
+        expect(presents()).toBeLessThanOrEqual(animationFrames.size + 1);
+        expect(softStats.reads).toBe(0);
+        expect(allocations.count()).toBe(0);
+      });
+
+      test("presents nothing once still, as its noise is off", async () => {
+        mount(id, {}, display);
+        await play();
+        await vi.advanceTimersByTimeAsync(SETTLE_MS + FADE_MS);
+
+        expect(await presentsPerSecond(5)).toEqual([0, 0, 0, 0, 0]);
+        expect(vi.getTimerCount()).toBe(0);
+      });
+    },
+  );
 
   test.each([
     ["disabled", () => mount(id, { enabled: false })],

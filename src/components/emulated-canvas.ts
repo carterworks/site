@@ -21,7 +21,33 @@ type Geometry = {
   scale: number;
   gap: number;
   shape: PixelShape;
+  /** The echo's opacity (0–100, 0 for none) and its offset in CSS pixels. */
+  shadow: { opacity: number; x: number; y: number };
 };
+
+/**
+ * The echo is a copy of the display, offset and multiplied over it, like the
+ * shadow each lit pixel casts on an LCD's backplate. It sits above the gap
+ * overlay so the shadow falls across the gaps too, and the host isolates the
+ * blend so it darkens only the display, never the page behind it.
+ */
+function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
+  if (opacity === 0) return "";
+  return `
+    :host {
+      isolation: isolate;
+    }
+    .echo {
+      inset: 0 auto auto 0;
+      mix-blend-mode: multiply;
+      opacity: ${opacity / 100};
+      pointer-events: none;
+      position: absolute;
+      translate: ${x}px ${y}px;
+      z-index: 1;
+    }
+  `;
+}
 
 /**
  * Cells are enlarged and cut out in CSS, so the display's backing store stays
@@ -42,7 +68,7 @@ type Geometry = {
  * The canvas is inline rather than block so those negative margins can't
  * collapse through a block-level host and change its height.
  */
-function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
+function displayStyle({ columns, rows, scale, gap, shape, shadow }: Geometry) {
   const lead = Math.floor(gap / 2);
   const overhang = `${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px`;
   const cell = "var(--scale)";
@@ -83,7 +109,7 @@ function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
       pointer-events: none;
       position: absolute;
     }
-  `;
+    ${echoStyle(shadow)}`;
 }
 
 /** What every shader is told about the frame it is processing. */
@@ -146,10 +172,21 @@ export type Shader = () => ShaderPass;
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
-/** `data-ghost` as the share of the previous frame kept per 60 Hz frame. */
-function retention({ ghost }: DOMStringMap) {
+/** A `data-ghost` percentage as the share of the previous frame kept per 60 Hz frame. */
+function retention(ghost: string | undefined) {
   const percent = Number.parseInt(ghost ?? "");
   return Number.isFinite(percent) ? clamp(percent / 100, 0, MAX_GHOST) : 0;
+}
+
+/** Retention r per 60 Hz frame is the same curve as τ = -frame / ln r. */
+function timeConstant(retained: number) {
+  return SIXTY_HZ_FRAME_MS / -Math.log(retained);
+}
+
+/** The share of the way to its target a channel moves in `elapsedMs`. */
+function response(tau: number, elapsedMs: number) {
+  // No retention gives τ = 0, and 0 / 0 at no elapsed time would be NaN.
+  return tau > 0 ? 1 - Math.exp(-elapsedMs / tau) : 1;
 }
 
 /**
@@ -167,18 +204,26 @@ const SETTLED_LEVELS = 1;
  * trail the same length at any refresh rate, and keeping the state in floats
  * lets it land on the frame exactly instead of stalling a few 8-bit steps
  * short.
+ *
+ * Real panels brighten and darken at different speeds, so a pixel getting
+ * brighter overall follows the rise curve in every channel and one getting
+ * darker the fall curve. Choosing per pixel rather than per channel keeps a
+ * colour change from splitting into a fast and a slow channel.
  */
 const ghost: Shader = () => {
   let panel: Float32Array | undefined;
-  let tau = 0;
-  let retained = 0;
+  let riseTau = 0;
+  let fallTau = 0;
+  let active = false;
   return {
     configure(data) {
-      retained = retention(data);
-      // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
-      tau = SIXTY_HZ_FRAME_MS / -Math.log(retained);
+      const rise = retention(data.ghostRise ?? data.ghost);
+      const fall = retention(data.ghostFall ?? data.ghost);
+      riseTau = timeConstant(rise);
+      fallTau = timeConstant(fall);
+      active = rise > 0 || fall > 0;
     },
-    active: () => retained > 0,
+    active: () => active,
     apply(pixels, { elapsedMs }) {
       if (panel?.length !== pixels.length) {
         // Seed the panel with this frame so it starts opaque; otherwise a high
@@ -186,17 +231,24 @@ const ghost: Shader = () => {
         panel = Float32Array.from(pixels);
         return "still";
       }
-      const response = 1 - Math.exp(-elapsedMs / tau);
+      const rise = response(riseTau, elapsedMs);
+      const fall = response(fallTau, elapsedMs);
       let changing = false;
-      for (let i = 0; i < pixels.length; i += 1) {
-        const target = pixels[i];
-        const level = panel[i] + (target - panel[i]) * response;
-        if (Math.abs(target - level) < SETTLED_LEVELS) {
-          panel[i] = target;
-        } else {
-          panel[i] = level;
-          pixels[i] = level;
-          changing = true;
+      for (let pixel = 0; pixel < pixels.length; pixel += 4) {
+        const brightening =
+          pixels[pixel] + pixels[pixel + 1] + pixels[pixel + 2] >
+          panel[pixel] + panel[pixel + 1] + panel[pixel + 2];
+        const share = brightening ? rise : fall;
+        for (let i = pixel; i < pixel + 4; i += 1) {
+          const target = pixels[i];
+          const level = panel[i] + (target - panel[i]) * share;
+          if (Math.abs(target - level) < SETTLED_LEVELS) {
+            panel[i] = target;
+          } else {
+            panel[i] = level;
+            pixels[i] = level;
+            changing = true;
+          }
         }
       }
       return changing ? "active" : "still";
@@ -239,18 +291,30 @@ function colourRgb(value: string): Rgb {
  * Recolours the frame in two colours: each pixel's luma, over black, picks its
  * place on the scale from `data-palette-base` (dark) to `data-palette-ink`
  * (light), so a consumer can draw in any colour and still show in the theme's.
- * The scale is a 256-entry table, rebuilt only when a colour changes.
+ * `data-palette-levels` (2 or more) snaps each pixel to the nearest of that
+ * many evenly spaced shades, like a panel with few grey levels. The scale is a
+ * 256-entry table, rebuilt only when a knob changes.
  */
 const palette: Shader = () => {
   let base: string | undefined;
   let ink: string | undefined;
+  let steps = 0;
   let stale = true;
   const table = new Uint8ClampedArray(256 * 3);
   return {
     configure(data) {
-      if (base !== data.paletteBase || ink !== data.paletteInk) stale = true;
+      const levels = Number.parseInt(data.paletteLevels ?? "");
+      const nextSteps = levels >= 2 ? levels - 1 : 0;
+      if (
+        base !== data.paletteBase ||
+        ink !== data.paletteInk ||
+        steps !== nextSteps
+      ) {
+        stale = true;
+      }
       base = data.paletteBase;
       ink = data.paletteInk;
+      steps = nextSteps;
     },
     active: () => base !== undefined && ink !== undefined,
     apply(pixels) {
@@ -259,9 +323,13 @@ const palette: Shader = () => {
         const from = colourRgb(base!);
         const to = colourRgb(ink!);
         for (let level = 0; level < 256; level += 1) {
+          const shade =
+            steps > 0
+              ? (Math.round((level * steps) / 255) * 255) / steps
+              : level;
           for (let channel = 0; channel < 3; channel += 1) {
             table[level * 3 + channel] =
-              from[channel] + ((to[channel] - from[channel]) * level) / 255;
+              from[channel] + ((to[channel] - from[channel]) * shade) / 255;
           }
         }
       }
@@ -413,10 +481,19 @@ export type EmulatedCanvasProps = {
  * the percentage of the previous frame the panel keeps per 60 Hz frame, so
  * moving content smears into a fading trail that lasts as long at any refresh
  * rate. It is capped just below 100 so the panel can never freeze.
+ * `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting to
+ * `data-ghost`) set it apart for pixels getting brighter and darker.
+ *
+ * `data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's
+ * segments over their backplate: a copy of the display at that opacity,
+ * multiplied over it and offset by `data-shadow-x` and `data-shadow-y` (whole
+ * CSS pixels, default 0). It is copied on the GPU on each present. With a
+ * palette, only pixels darker than the base cast a shadow.
  *
  * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
  * recolour the frame in two colours, by each pixel's luma: black shows as the
- * base and white as the ink.
+ * base and white as the ink. `data-palette-levels` (2 or more, default
+ * smooth) quantises that scale to so many evenly spaced shades.
  *
  * `data-noise` (0–100) lifts the frame to a drifting noise field, so its dark
  * pixels shimmer; `data-noise-scale` and `data-noise-speed` set its feature
@@ -451,8 +528,14 @@ export class EmulatedCanvas extends HTMLElement {
     "data-gap",
     "data-shape",
     "data-ghost",
+    "data-ghost-rise",
+    "data-ghost-fall",
+    "data-shadow",
+    "data-shadow-x",
+    "data-shadow-y",
     "data-palette-base",
     "data-palette-ink",
+    "data-palette-levels",
     "data-noise",
     "data-noise-scale",
     "data-noise-speed",
@@ -462,6 +545,8 @@ export class EmulatedCanvas extends HTMLElement {
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
+  #echoContext?: CanvasRenderingContext2D;
+  #echoDodge?: string;
   #readback?: OffscreenCanvasRenderingContext2D | null;
   #watched?: OffscreenCanvasRenderingContext2D;
   /** The consumer's pixels as last drawn, kept for presents with nothing new drawn. */
@@ -573,10 +658,11 @@ export class EmulatedCanvas extends HTMLElement {
     this.#requestPresent();
   }
 
-  /** Drops every pass's state, so the next present shows the bitmap opaque. */
+  /** Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn. */
   reset() {
     this.#passes = SHADERS.map((_, index) => this.#build(index));
     this.#wasActive.clear();
+    this.#dissolving = false;
   }
 
   #build(index: number) {
@@ -703,16 +789,20 @@ export class EmulatedCanvas extends HTMLElement {
     this.#outerCanvas = outerCanvas;
 
     this.#style = document.createElement("style");
+    this.attachShadow({ mode: "closed" }).append(this.#style, outerCanvas);
     this.#configure();
-
-    const shadow = this.attachShadow({ mode: "closed" });
-    shadow.append(this.#style, outerCanvas);
   }
 
   #configure() {
     const style = this.#style;
     if (style === undefined) return;
     const innerCanvas = this.#bitmap();
+    const shadow = {
+      opacity: Math.min(this.#integer("shadow", 0, 0), 100),
+      x: this.#integer("shadowX", 0, -Infinity),
+      y: this.#integer("shadowY", 0, -Infinity),
+    };
+    this.#showEcho(shadow.opacity > 0);
 
     style.textContent = displayStyle({
       columns: innerCanvas.width,
@@ -723,11 +813,74 @@ export class EmulatedCanvas extends HTMLElement {
         this.dataset.shape === "circle"
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
+      shadow,
     });
   }
 
+  /**
+   * A colour-dodge by the base's inverse divides the echo by the base, so an
+   * off pixel multiplies by white and casts nothing. Without a palette the off
+   * colour is unknown, and a plain multiply is the same rule with white as off.
+   */
+  #dodgeColour() {
+    const { paletteBase, paletteInk } = this.dataset;
+    if (paletteBase === undefined || paletteInk === undefined) return undefined;
+    const [r, g, b] = colourRgb(paletteBase);
+    return `rgb(${255 - r} ${255 - g} ${255 - b})`;
+  }
+
+  /** Created only once a shadow is wanted, so a canvas without one pays nothing. */
+  #showEcho(shown: boolean) {
+    if (!shown) {
+      this.#echoContext?.canvas.remove();
+      this.#echoContext = undefined;
+      return;
+    }
+    const outerCanvas = this.#outerCanvas;
+    if (outerCanvas === undefined) return;
+    const created = this.#echoContext === undefined;
+    const context = (this.#echoContext ??= this.#createEcho(outerCanvas));
+    if (context === undefined) return;
+    this.#echoDodge = this.#dodgeColour();
+    if (this.#echoDodge !== undefined) context.fillStyle = this.#echoDodge;
+    if (created && this.#outerContext !== undefined) {
+      this.#copyToEcho(outerCanvas);
+    }
+  }
+
+  #createEcho(outerCanvas: HTMLCanvasElement) {
+    const echo = document.createElement("canvas");
+    echo.className = "echo";
+    echo.width = this.width;
+    echo.height = this.height;
+    const context = echo.getContext("2d");
+    if (context !== null) outerCanvas.after(echo);
+    return context ?? undefined;
+  }
+
+  /**
+   * One GPU-side copy of what the display just showed, with no read-back. The
+   * multiply blend composites at display resolution, but only when this runs.
+   */
+  #copyToEcho(outerCanvas: HTMLCanvasElement) {
+    const echo = this.#echoContext;
+    if (echo === undefined) return;
+    echo.globalCompositeOperation = "copy";
+    echo.drawImage(outerCanvas, 0, 0);
+    if (this.#echoDodge === undefined) return;
+    echo.globalCompositeOperation = "color-dodge";
+    echo.fillRect(0, 0, outerCanvas.width, outerCanvas.height);
+  }
+
   #integer(
-    name: "width" | "height" | "scale" | "gap",
+    name:
+      | "width"
+      | "height"
+      | "scale"
+      | "gap"
+      | "shadow"
+      | "shadowX"
+      | "shadowY",
     fallback: number,
     min: number,
   ) {
@@ -782,6 +935,7 @@ export class EmulatedCanvas extends HTMLElement {
     this.#shownImage = image !== undefined;
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
+    this.#copyToEcho(outerCanvas);
     if (dissolving) return "active";
     // A drifting frame can keep a fade more than a level behind on every
     // present, so it never reports settled and would hold full rate for good.

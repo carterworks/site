@@ -1,5 +1,6 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
+import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
 import {
   duration,
@@ -139,7 +140,8 @@ export class PixelBackdrop extends HTMLElement {
   /** Waits for the canvas when the element is connected before its child is parsed. */
   #canvasObserver = new MutationObserver(() => this.#attach());
   #schemeObserver = new MutationObserver(() => this.#applyPalette());
-  #wasDark?: boolean;
+  #shownPalette?: string;
+  #display?: Display;
   #chosen = MODES[0];
   /** Stops the running toy; set exactly while one runs. */
   #stopToy?: () => void;
@@ -189,6 +191,7 @@ export class PixelBackdrop extends HTMLElement {
     customElements.upgrade(canvas);
     this.#canvas = canvas;
     this.#options ??= readDefaults();
+    this.#display ??= DISPLAYS.find(({ id }) => id === storedDisplay());
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {
@@ -256,6 +259,14 @@ export class PixelBackdrop extends HTMLElement {
     this.#apply();
   }
 
+  /** Show the canvas as a registered display theme; an unknown id is ignored. */
+  setDisplay(id: string) {
+    const display = DISPLAYS.find((candidate) => candidate.id === id);
+    if (display === undefined || display === this.#display) return;
+    this.#display = display;
+    this.#apply();
+  }
+
   /**
    * Dissolve into a registered toy, starting it fresh; an unknown id is
    * ignored, and so is the toy already chosen. A request while no toy runs
@@ -280,11 +291,35 @@ export class PixelBackdrop extends HTMLElement {
     this.#stopToy = toy.start(canvas);
   }
 
+  /**
+   * Precedence: a configured knob, the display's, the toy's, the default. A
+   * display fixes the cells square and stops the noise, so a screen stays a
+   * plain grid whatever toy runs on it.
+   */
+  #knob<K extends keyof PixelBackdropOptions>(
+    key: K,
+    toy?: PixelBackdropOptions[K],
+  ): PixelBackdropOptions[K] {
+    if (this.#tweaked.has(key)) return this.#options[key];
+    return this.#displayed[key] ?? toy ?? this.#options[key];
+  }
+
+  get #displayed(): Partial<PixelBackdropOptions> {
+    const look = this.#display?.look;
+    if (look === undefined) return {};
+    return {
+      gap: look.gap,
+      shape: "square",
+      noise: 0,
+      lightBase: look.base,
+      darkBase: look.base,
+      lightInk: look.ink,
+      darkInk: look.ink,
+    };
+  }
+
   #lookOf(key: keyof Look) {
-    const look = this.#chosen.look;
-    return look === undefined || this.#tweaked.has(key)
-      ? this.#options[key]
-      : look[key];
+    return this.#knob(key, this.#chosen.look?.[key]);
   }
 
   #start() {
@@ -308,11 +343,10 @@ export class PixelBackdrop extends HTMLElement {
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const { autoFit, enabled, gap, noiseScale, noiseSpeed, scale, shape } =
-      this.#options;
+    const { autoFit, enabled, noiseScale, noiseSpeed, scale } = this.#options;
 
-    set(canvas, "gap", String(gap));
-    set(canvas, "shape", shape);
+    set(canvas, "gap", String(this.#knob("gap")));
+    set(canvas, "shape", this.#knob("shape"));
     set(canvas, "scale", String(scale));
     set(canvas, "noiseScale", String((noiseScale * canvas.width) / TUNED_GRID));
     set(canvas, "noiseSpeed", String(noiseSpeed));
@@ -335,21 +369,59 @@ export class PixelBackdrop extends HTMLElement {
   #applyLook(canvas: EmulatedCanvas) {
     set(canvas, "ghost", String(Math.round(this.#lookOf("ghost"))));
     set(canvas, "noise", String(Math.round(this.#lookOf("noise"))));
+    this.#applyDisplayEffects(canvas);
+  }
+
+  /** A configured ghost sets both responses itself, so it clears the display's ghost. */
+  #applyDisplayEffects(canvas: EmulatedCanvas) {
+    const look = this.#display?.look;
+    if (look?.shadow === undefined) {
+      for (const key of ["shadow", "shadowX", "shadowY"]) {
+        delete canvas.dataset[key];
+      }
+    } else {
+      const { opacity, x, y } = look.shadow;
+      set(canvas, "shadow", String(opacity));
+      set(canvas, "shadowX", String(x));
+      set(canvas, "shadowY", String(y));
+    }
+    if (look === undefined || this.#tweaked.has("ghost")) {
+      delete canvas.dataset.ghostRise;
+      delete canvas.dataset.ghostFall;
+    } else {
+      set(canvas, "ghostRise", String(look.ghostRise));
+      set(canvas, "ghostFall", String(look.ghostFall));
+    }
   }
 
   /**
-   * The ghost would otherwise cross-fade the old scheme through grey while
-   * the page colour changes at once, so a flip starts the passes afresh.
+   * The ghost would otherwise cross-fade the old palette through grey while
+   * the page colour changes at once, so a change of palette starts the passes
+   * afresh. A display's palette is the same in both schemes, so a flip under
+   * one changes nothing.
    */
   #applyPalette = () => {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const dark = prefersDark();
-    if (this.#wasDark !== undefined && this.#wasDark !== dark) canvas.reset();
-    this.#wasDark = dark;
-    const { darkBase, darkInk, lightBase, lightInk } = this.#options;
-    set(canvas, "paletteBase", dark ? darkBase : lightBase);
-    set(canvas, "paletteInk", dark ? darkInk : lightInk);
+    const [baseKey, inkKey] = prefersDark()
+      ? (["darkBase", "darkInk"] as const)
+      : (["lightBase", "lightInk"] as const);
+    const look = this.#display?.look;
+    const base = this.#knob(baseKey);
+    const ink = this.#knob(inkKey);
+    const palette = `${base} ${ink}`;
+    if (this.#shownPalette !== undefined && this.#shownPalette !== palette) {
+      canvas.reset();
+    }
+    this.#shownPalette = palette;
+    set(canvas, "paletteBase", base);
+    set(canvas, "paletteInk", ink);
+    if (look === undefined) delete canvas.dataset.paletteLevels;
+    else set(canvas, "paletteLevels", String(look.levels));
+    setStyle(this, "--backdrop-display-screen", look?.base);
+    setStyle(this, "--backdrop-display-grid", look?.grid);
+    setStyle(this, "--backdrop-display-vignette", look?.vignette);
+    this.toggleAttribute("data-vignette", look?.vignette !== undefined);
   };
 
   /**
@@ -364,7 +436,7 @@ export class PixelBackdrop extends HTMLElement {
    * instead would make a 1440 px screen round a 9 px stride up to 10.
    */
   #fit(canvas: EmulatedCanvas) {
-    return `max(1px, round(up, max(100lvw, 100lvh) / ${canvas.width}, 1px) - ${this.#options.gap}px)`;
+    return `max(1px, round(up, max(100lvw, 100lvh) / ${canvas.width}, 1px) - ${this.#knob("gap")}px)`;
   }
 
   #forward(type: string, event: PointerEvent) {
@@ -467,6 +539,11 @@ export class PixelBackdrop extends HTMLElement {
 /** Written only on a change, as every write re-presents the canvas. */
 function set(canvas: EmulatedCanvas, key: string, value: string) {
   if (canvas.dataset[key] !== value) canvas.dataset[key] = value;
+}
+
+function setStyle(element: HTMLElement, name: string, value?: string) {
+  if (value === undefined) element.style.removeProperty(name);
+  else element.style.setProperty(name, value);
 }
 
 if (!customElements.get("pixel-backdrop")) {

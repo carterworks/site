@@ -1,3 +1,4 @@
+import { createBackdropDisplay } from "./backdrop-display-setting";
 import { createBackdropMode } from "./backdrop-mode-setting";
 import { createThemeSetting } from "./theme-setting";
 
@@ -6,6 +7,7 @@ import { createThemeSetting } from "./theme-setting";
 export const settings = {
   theme: createThemeSetting(),
   backdrop: createBackdropMode(),
+  display: createBackdropDisplay(),
 };
 
 // ClientRouter resets <html>'s attributes (inline style included) on every

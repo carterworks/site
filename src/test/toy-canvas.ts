@@ -14,11 +14,12 @@ export class SoftBitmap {
   constructor(
     public width: number,
     public height: number,
+    private readonly element?: HTMLCanvasElement,
   ) {
     this.pixels = new Uint8ClampedArray(width * height * 4);
   }
   getContext() {
-    return (this.#context ??= new SoftContext(this));
+    return (this.#context ??= new SoftContext(this, this.element));
   }
 }
 
@@ -48,7 +49,10 @@ export class SoftContext {
   #style = "#000";
   #colour: Rgba = [0, 0, 0, 255];
 
-  constructor(readonly bitmap: SoftBitmap) {}
+  constructor(
+    readonly bitmap: SoftBitmap,
+    readonly canvas?: HTMLCanvasElement,
+  ) {}
 
   get fillStyle() {
     return this.#style;
@@ -170,7 +174,7 @@ export function installSoftCanvas() {
     function (this: HTMLCanvasElement) {
       let bitmap = softCanvases.get(this);
       if (bitmap === undefined) {
-        bitmap = new SoftBitmap(this.width, this.height);
+        bitmap = new SoftBitmap(this.width, this.height, this);
         softCanvases.set(this, bitmap);
         plain.push(bitmap);
       }

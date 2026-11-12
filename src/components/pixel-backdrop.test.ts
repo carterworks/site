@@ -3,6 +3,7 @@ import { installBackdropDefaults } from "../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
 import type { Toy } from "./backdrop-modes/toy";
 import { EmulatedCanvas } from "./emulated-canvas";
+import { DISPLAYS } from "./backdrop-displays";
 import { readDefaults, type PixelBackdrop } from "./pixel-backdrop";
 
 const motion = vi.hoisted(() => {
@@ -74,6 +75,7 @@ afterEach(() => {
   document.body.replaceChildren();
   document.head.replaceChildren();
   document.documentElement.removeAttribute("style");
+  localStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -519,4 +521,204 @@ test("auto-fit tiles the viewport's larger side with whole strides of the grid, 
   expect(
     canvasOf(backdrop).style.getPropertyValue("--emulated-canvas-scale"),
   ).toBe("max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)");
+});
+
+const pocket = DISPLAYS[1].look!;
+
+test("a display colours the canvas and the screen behind it in its own palette, and Site restores the scheme's", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  const { lightBase, lightInk } = backdrop.options;
+
+  backdrop.setDisplay("pocket-lcd");
+
+  expect(canvas.dataset).toMatchObject({
+    paletteBase: pocket.base,
+    paletteInk: pocket.ink,
+    paletteLevels: String(pocket.levels),
+  });
+  expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe(
+    pocket.base,
+  );
+
+  backdrop.setDisplay("site");
+
+  expect(canvas.dataset).toMatchObject({
+    paletteBase: lightBase,
+    paletteInk: lightInk,
+  });
+  expect(canvas.dataset.paletteLevels).toBeUndefined();
+  expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe("");
+});
+
+test("a display paints its grid in its own colour, and one without a grid or Site leaves the gaps the screen's", () => {
+  const backdrop = mount();
+  const grid = () => backdrop.style.getPropertyValue("--backdrop-display-grid");
+
+  backdrop.setDisplay("pocket-lcd");
+  expect(grid()).toBe(pocket.grid);
+  expect(pocket.grid).toBeDefined();
+
+  backdrop.setDisplay("amber-lcd");
+  expect(grid()).toBe("");
+
+  backdrop.setDisplay("pocket-lcd");
+  backdrop.setDisplay("site");
+  expect(grid()).toBe("");
+});
+
+test("only a display with a backlight vignette lays one over the screen", () => {
+  const backdrop = mount();
+  const vignette = () => [
+    backdrop.hasAttribute("data-vignette"),
+    backdrop.style.getPropertyValue("--backdrop-display-vignette"),
+  ];
+  const amber = DISPLAYS[2].look!;
+
+  backdrop.setDisplay("amber-lcd");
+  expect(amber.vignette).toBeDefined();
+  expect(vignette()).toEqual([true, amber.vignette]);
+
+  backdrop.setDisplay("pocket-lcd");
+  expect(vignette()).toEqual([false, ""]);
+
+  backdrop.setDisplay("amber-lcd");
+  backdrop.setDisplay("site");
+  expect(vignette()).toEqual([false, ""]);
+});
+
+test("an unknown display is ignored", () => {
+  const backdrop = mount();
+
+  backdrop.setDisplay("pocket-lcd");
+  backdrop.setDisplay("missing");
+
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
+});
+
+test("a display restarts the canvas's passes once when its palette changes, and a scheme flip does not", async () => {
+  const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
+  const backdrop = mount();
+
+  backdrop.setDisplay("pocket-lcd");
+  expect(reset).toHaveBeenCalledTimes(1);
+
+  document.documentElement.style.colorScheme = "dark";
+  await Promise.resolve();
+
+  expect(reset).toHaveBeenCalledTimes(1);
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
+});
+
+test("a palette knob set through configure outranks the display's", () => {
+  const backdrop = mount();
+  backdrop.setDisplay("pocket-lcd");
+
+  backdrop.configure({ lightBase: "#123456" });
+
+  expect(canvasOf(backdrop).dataset).toMatchObject({
+    paletteBase: "#123456",
+    paletteInk: pocket.ink,
+  });
+});
+
+test("a display's look reaches the canvas, and Site gives back the look it had", () => {
+  const backdrop = mount();
+  backdrop.setMode("tuned");
+  const canvas = canvasOf(backdrop);
+  const defaults = readDefaults();
+
+  backdrop.setDisplay("pocket-lcd");
+
+  expect(canvas.dataset).toMatchObject({
+    gap: String(pocket.gap),
+    shape: "square",
+    ghost: "55",
+    ghostRise: String(pocket.ghostRise),
+    ghostFall: String(pocket.ghostFall),
+    noise: "0",
+    shadow: String(pocket.shadow!.opacity),
+    shadowX: String(pocket.shadow!.x),
+    shadowY: String(pocket.shadow!.y),
+  });
+  expect(backdrop.look.noise).toBe(0);
+
+  backdrop.setDisplay("site");
+
+  expect(canvas.dataset).toMatchObject({
+    gap: String(defaults.gap),
+    shape: defaults.shape,
+    ghost: "55",
+    noise: "12",
+  });
+  for (const key of [
+    "ghostRise",
+    "ghostFall",
+    "shadow",
+    "shadowX",
+    "shadowY",
+  ]) {
+    expect(canvas.dataset[key]).toBeUndefined();
+  }
+});
+
+test("a knob set through configure outranks the display's", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  backdrop.setDisplay("pocket-lcd");
+
+  backdrop.configure({ gap: 5, shape: "circle", noise: 30 });
+  expect(canvas.dataset).toMatchObject({
+    gap: "5",
+    shape: "circle",
+    noise: "30",
+  });
+
+  backdrop.configure({ ghost: 20 });
+  expect(canvas.dataset.ghost).toBe("20");
+  expect(canvas.dataset.ghostRise).toBeUndefined();
+  expect(canvas.dataset.ghostFall).toBeUndefined();
+});
+
+test("auto-fit takes the effective gap out of each stride", () => {
+  const backdrop = mount();
+  const scale = () =>
+    canvasOf(backdrop).style.getPropertyValue("--emulated-canvas-scale");
+  backdrop.configure({ autoFit: true });
+  backdrop.setDisplay("pocket-lcd");
+  expect(scale()).toContain(`) - ${pocket.gap}px)`);
+
+  backdrop.configure({ gap: 5 });
+  expect(scale()).toContain(") - 5px)");
+});
+
+test("a stored display is on the canvas before the toy first draws, without a restart", () => {
+  localStorage.setItem("backdrop-display", "pocket-lcd");
+  const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
+  const canvas = document.createElement("emulated-canvas");
+  const getContext = canvas.getContext.bind(canvas);
+  let paletteAtDraw: string | undefined;
+  vi.spyOn(canvas, "getContext").mockImplementation(((id: "2d") => {
+    paletteAtDraw = canvas.dataset.paletteBase;
+    return getContext(id);
+  }) as typeof canvas.getContext);
+  const backdrop = document.createElement("pixel-backdrop");
+
+  backdrop.append(canvas);
+  document.body.append(backdrop);
+
+  expect(paletteAtDraw).toBe(pocket.base);
+  expect(reset).not.toHaveBeenCalled();
+});
+
+test("a display chosen before the backdrop attaches outranks the stored one", () => {
+  localStorage.setItem("backdrop-display", "pocket-lcd");
+  const backdrop = document.createElement("pixel-backdrop");
+  backdrop.setDisplay("site");
+
+  const canvas = document.createElement("emulated-canvas");
+  backdrop.append(canvas);
+  document.body.append(backdrop);
+
+  expect(canvas.dataset.paletteBase).not.toBe(pocket.base);
 });
