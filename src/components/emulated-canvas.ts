@@ -239,18 +239,30 @@ function colourRgb(value: string): Rgb {
  * Recolours the frame in two colours: each pixel's luma, over black, picks its
  * place on the scale from `data-palette-base` (dark) to `data-palette-ink`
  * (light), so a consumer can draw in any colour and still show in the theme's.
- * The scale is a 256-entry table, rebuilt only when a colour changes.
+ * `data-palette-levels` (2 or more) snaps each pixel to the nearest of that
+ * many evenly spaced shades, like a panel with few grey levels. The scale is a
+ * 256-entry table, rebuilt only when a knob changes.
  */
 const palette: Shader = () => {
   let base: string | undefined;
   let ink: string | undefined;
+  let steps = 0;
   let stale = true;
   const table = new Uint8ClampedArray(256 * 3);
   return {
     configure(data) {
-      if (base !== data.paletteBase || ink !== data.paletteInk) stale = true;
+      const levels = Number.parseInt(data.paletteLevels ?? "");
+      const nextSteps = levels >= 2 ? levels - 1 : 0;
+      if (
+        base !== data.paletteBase ||
+        ink !== data.paletteInk ||
+        steps !== nextSteps
+      ) {
+        stale = true;
+      }
       base = data.paletteBase;
       ink = data.paletteInk;
+      steps = nextSteps;
     },
     active: () => base !== undefined && ink !== undefined,
     apply(pixels) {
@@ -259,9 +271,13 @@ const palette: Shader = () => {
         const from = colourRgb(base!);
         const to = colourRgb(ink!);
         for (let level = 0; level < 256; level += 1) {
+          const shade =
+            steps > 0
+              ? (Math.round((level * steps) / 255) * 255) / steps
+              : level;
           for (let channel = 0; channel < 3; channel += 1) {
             table[level * 3 + channel] =
-              from[channel] + ((to[channel] - from[channel]) * level) / 255;
+              from[channel] + ((to[channel] - from[channel]) * shade) / 255;
           }
         }
       }
@@ -416,7 +432,8 @@ export type EmulatedCanvasProps = {
  *
  * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
  * recolour the frame in two colours, by each pixel's luma: black shows as the
- * base and white as the ink.
+ * base and white as the ink. `data-palette-levels` (2 or more, default
+ * smooth) quantises that scale to so many evenly spaced shades.
  *
  * `data-noise` (0–100) lifts the frame to a drifting noise field, so its dark
  * pixels shimmer; `data-noise-scale` and `data-noise-speed` set its feature
@@ -453,6 +470,7 @@ export class EmulatedCanvas extends HTMLElement {
     "data-ghost",
     "data-palette-base",
     "data-palette-ink",
+    "data-palette-levels",
     "data-noise",
     "data-noise-scale",
     "data-noise-speed",

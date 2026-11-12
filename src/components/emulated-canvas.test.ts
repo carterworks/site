@@ -418,6 +418,42 @@ test("a palette follows its knobs, and is off without both", () => {
   expect(display.drawImage).toHaveBeenCalledTimes(1);
 });
 
+test("data-palette-levels snaps each pixel to the nearest of that many evenly spaced shades", () => {
+  const canvas = mountCanvas({
+    width: "4",
+    height: "1",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+    paletteLevels: "4",
+  });
+  const greys = [0, 100, 200, 255];
+  drawRow(canvas, ...greys.map((grey) => [grey, grey, grey, 255]));
+  const shades = () => [...shown()].filter((_, i) => i % 4 === 0);
+
+  canvas.present();
+  expect(shades()).toEqual([0, 85, 170, 255]);
+
+  canvas.dataset.paletteLevels = "2";
+  canvas.present();
+  expect(shades()).toEqual([0, 0, 255, 255]);
+});
+
+test.each(["1", "x", ""])(
+  "a data-palette-levels of %j leaves the palette smooth",
+  (levels) => {
+    const canvas = mountCanvas({
+      paletteBase: "#000000",
+      paletteInk: "#ffffff",
+      paletteLevels: levels,
+    });
+    drawRow(canvas, [100, 100, 100, 255]);
+
+    canvas.present();
+
+    expect(pixelsShown()).toBe("100 100 100 255");
+  },
+);
+
 /** A `size` x `size` bitmap of one opaque grey, as whole-bitmap image data. */
 function square(size: number, level: number) {
   const data = new Uint8ClampedArray(size * size * 4);
