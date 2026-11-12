@@ -1,39 +1,23 @@
-import { nextInRotation } from "../lib/cycle-setting";
 import { osScheme, saveScheme, type Scheme } from "../lib/color-scheme";
 
-const SCHEMES: Scheme[] = ["light", "dark"];
-const SYSTEM = "system";
-
 /**
- * The inline colorScheme (set from storage by the head script before paint) is
- * the stored value; empty means follow the OS. System is offered once a value
- * is stored, and stays offered after choosing it until the next full load.
+ * A two-state toggle over three states, per
+ * https://lea.verou.me/blog/2026/dark-mode-toggles/. The inline colorScheme
+ * (set from storage by the head script before paint) is the stored override;
+ * empty follows the OS. A press flips what is shown, and a flip that lands on
+ * the OS scheme clears the override instead of pinning it. OS changes never
+ * touch storage; only a press does.
  */
 export function createThemeSetting(root = document.documentElement) {
-  let offerSystem = root.style.colorScheme !== "";
-
-  const current = () =>
-    (root.style.colorScheme || (offerSystem ? SYSTEM : osScheme())) as
-      | Scheme
-      | typeof SYSTEM;
+  const current = () => (root.style.colorScheme || osScheme()) as Scheme;
 
   return {
     label() {
-      const value = current();
-      return value[0].toUpperCase() + value.slice(1);
+      return current() === "dark" ? "Dark" : "Light";
     },
     cycle() {
-      const next = nextInRotation(
-        SCHEMES,
-        current(),
-        offerSystem ? SYSTEM : undefined,
-      );
-      if (next === SYSTEM) {
-        saveScheme(root, null);
-        return;
-      }
-      saveScheme(root, next);
-      offerSystem = true;
+      const next = current() === "dark" ? "light" : "dark";
+      saveScheme(root, next === osScheme() ? null : next);
     },
   };
 }

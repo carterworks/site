@@ -35,50 +35,39 @@ test.each([
   expect(theme.label()).toBe(stored === "light" ? "Light" : "Dark");
 });
 
-test("a stored value rotates Light, Dark, System", () => {
+test("flipping back to the OS scheme clears storage and never shows System", () => {
   osPrefers("dark");
   const theme = createThemeSetting();
 
   theme.cycle();
-  expect(theme.label()).toBe("Light");
   theme.cycle();
+
   expect(theme.label()).toBe("Dark");
-  theme.cycle();
-  expect(theme.label()).toBe("System");
   expect(localStorage.getItem("color-scheme")).toBeNull();
   expect(root.style.colorScheme).toBe("");
-  theme.cycle();
-  expect(theme.label()).toBe("Light");
 });
 
-test("System stays in the rotation until a reload with nothing stored", () => {
+test("an override that came to match the OS is kept until the next press", () => {
   osPrefers("dark");
   const theme = createThemeSetting();
   theme.cycle();
-  theme.cycle();
-  theme.cycle();
-  expect(theme.label()).toBe("System");
 
-  expect(createThemeSetting().label()).toBe("Dark");
+  osPrefers("light");
+  expect(localStorage.getItem("color-scheme")).toBe("light");
+  expect(theme.label()).toBe("Light");
+
+  theme.cycle();
+  expect(theme.label()).toBe("Dark");
+  expect(localStorage.getItem("color-scheme")).toBe("dark");
 });
 
-test("a value stored before load offers System", () => {
+test("a value stored before load flips to the opposite", () => {
   osPrefers("light");
   root.style.colorScheme = "dark";
   const theme = createThemeSetting();
 
   theme.cycle();
 
-  expect(theme.label()).toBe("System");
-});
-
-test("an OS change never touches storage", () => {
-  osPrefers("dark");
-  const theme = createThemeSetting();
-  theme.cycle();
-
-  osPrefers("light");
-
-  expect(localStorage.getItem("color-scheme")).toBe("light");
   expect(theme.label()).toBe("Light");
+  expect(localStorage.getItem("color-scheme")).toBeNull();
 });
