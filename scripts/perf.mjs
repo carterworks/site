@@ -3,26 +3,34 @@
  * Chromium, while a scripted pointer plays with it.
  *
  *   pnpm perf [--toy pond] [--display pocket] [--throttle 4] [--seconds 2]
- *             [--against ../base/dist] [--dist dist]
+ *             [--against ../base/dist] [--dist dist] [--gpu]
+ *
+ * Chromium renders in software unless `--gpu` asks for the machine's GPU,
+ * which fails rather than fall back. The first line printed says which.
  *
  * Per combination, each averaged over the frames played:
  *   fps, low   frame rate and its 1% low, as the /play meter shows them
  *   cpu        ms of CPU a frame costs: renderer + gpu
- *   renderer   CPU ms across the page's process: script, paint and raster
- *   gpu        CPU ms in the GPU process, where headless Chromium composites
- *              in software
- *   script     ms the main thread spends in script, waits included
+ *   renderer   CPU ms across the page's process: script, paint and, in
+ *              software, raster
+ *   gpu        CPU ms in the GPU process: in software, rastering and
+ *              compositing every pixel, so the LCD displays cost several
+ *              times what Site does; with `--gpu`, only issuing the GPU's
+ *              work, as time on the GPU itself is not counted
+ *   script     wall-clock ms the main thread spends in script
  *
  * The frame rate sits at the display's 60 until a frame overruns, so compare
  * `cpu` and use `--throttle`, DevTools' CPU slowdown, to see the frame rate
  * give way. The slowdown also inflates `renderer`, so read the CPU columns
  * unthrottled.
  *
- * A frame's CPU time moves by half with the machine's load and clock speed,
- * so two runs do not compare. `--against` takes another build and measures
- * both back to back for each combination, which does. Headless Chromium has
- * no GPU and ignores the device pixel ratio: the numbers rank changes on one
- * machine, and are not what a real screen costs.
+ * A powersave governor would clock the CPU by how hard each display loads it,
+ * skewing one display against another, so a spinning core holds the clock
+ * high throughout. The machine is still shared: three runs of one build moved
+ * `cpu` by up to a sixth and `script` by up to half. `--against` takes another
+ * build and measures both back to back for each combination, so drift between
+ * runs hits both alike. Pages render at a device pixel ratio of 1: the numbers
+ * rank changes on one machine, and are not what a real screen costs.
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
