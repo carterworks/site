@@ -35,8 +35,15 @@ export type Display = {
 
 /**
  * Every display theme, in menu order; the first is the site's own look. The
- * screens' numbers are tunable. A lit pixel is the ink, so its luma rises as
- * it appears: a panel brings its ink up faster than it clears it.
+ * screens' numbers are tuned against reference photos. The ghost runs after
+ * the palette, so ink appearing darkens a pixel and clearing brightens it: an
+ * STN panel switches on faster than it relaxes, so it rises slower than it
+ * falls.
+ *
+ * Pocket's ink is lighter than the photo's #1f3326 because its own shadow
+ * darkens solid ink to ink·(1 − o + o·ink/base). The shadow is kept to the
+ * reference render's ~16% rather than a reflective panel's full double pass,
+ * which darkens the backing beside every shape by 45%.
  */
 export const DISPLAYS: Display[] = [
   { id: "site", label: "Site" },
@@ -47,14 +54,14 @@ export const DISPLAYS: Display[] = [
       screen: "#889d58",
       grid: "#0000000a",
       base: "#889d58",
-      ink: "#1f3326",
+      ink: "#263c2b",
       levels: 4,
       gap: 2,
       shape: "square",
-      ghostRise: 30,
-      ghostFall: 45,
+      ghostRise: 45,
+      ghostFall: 30,
       noise: 0,
-      shadow: { opacity: 55, x: 3, y: 3 },
+      shadow: { opacity: 25, x: 4, y: 4 },
     },
   },
   {
