@@ -18,7 +18,7 @@ test("Site comes first and has no look, followed by the two screens", () => {
 test.each(DISPLAYS.filter(({ look }) => look))(
   "$label's colours are hex, since any other form needs a helper canvas to parse",
   ({ look }) => {
-    for (const colour of [look!.screen, look!.base, look!.ink]) {
+    for (const colour of [look!.base, look!.ink]) {
       expect(colour).toMatch(/^#[0-9a-f]{6}$/);
     }
   },

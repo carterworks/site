@@ -6,8 +6,6 @@ import { storedChoice } from "../lib/cycle-setting";
  * it through a helper canvas.
  */
 export type DisplayLook = {
-  /** What shows through the gaps and past the grid's edge. */
-  screen: string;
   /**
    * Paints the gaps instead of the screen. A translucent one lets each
    * pixel show through, so dark neighbours merge and the grid stays faint.
@@ -22,13 +20,11 @@ export type DisplayLook = {
   levels: number;
   /** Space between cells, in whole CSS pixels. */
   gap: number;
-  shape: "square" | "circle";
   /** Ghost, 0–100, for pixels getting brighter and darker. */
   ghostRise: number;
   ghostFall: number;
-  noise: number;
   /** Opacity 0–100 and offset in whole CSS pixels. */
-  shadow: { opacity: number; x: number; y: number };
+  shadow?: { opacity: number; x: number; y: number };
 };
 
 export type Display = {
@@ -55,16 +51,13 @@ export const DISPLAYS: Display[] = [
     id: "pocket-lcd",
     label: "Pocket LCD",
     look: {
-      screen: "#889d58",
       grid: "#0000000a",
       base: "#889d58",
       ink: "#263c2b",
       levels: 4,
       gap: 2,
-      shape: "square",
       ghostRise: 45,
       ghostFall: 30,
-      noise: 0,
       shadow: { opacity: 25, x: 4, y: 4 },
     },
   },
@@ -72,17 +65,13 @@ export const DISPLAYS: Display[] = [
     id: "amber-lcd",
     label: "Amber LCD",
     look: {
-      screen: "#f89b03",
       vignette: "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
       base: "#f89b03",
       ink: "#3c070d",
       levels: 2,
       gap: 1,
-      shape: "square",
       ghostRise: 86,
       ghostFall: 76,
-      noise: 0,
-      shadow: { opacity: 0, x: 0, y: 0 },
     },
   },
 ];

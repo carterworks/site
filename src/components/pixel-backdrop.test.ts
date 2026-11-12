@@ -540,7 +540,7 @@ test("a display colours the canvas and the screen behind it in its own palette, 
     paletteLevels: String(pocket.levels),
   });
   expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe(
-    pocket.screen,
+    pocket.base,
   );
 
   backdrop.setDisplay("site");
@@ -634,16 +634,16 @@ test("a display's look reaches the canvas, and Site gives back the look it had",
 
   expect(canvas.dataset).toMatchObject({
     gap: String(pocket.gap),
-    shape: pocket.shape,
+    shape: "square",
     ghost: "55",
     ghostRise: String(pocket.ghostRise),
     ghostFall: String(pocket.ghostFall),
-    noise: String(pocket.noise),
-    shadow: String(pocket.shadow.opacity),
-    shadowX: String(pocket.shadow.x),
-    shadowY: String(pocket.shadow.y),
+    noise: "0",
+    shadow: String(pocket.shadow!.opacity),
+    shadowX: String(pocket.shadow!.x),
+    shadowY: String(pocket.shadow!.y),
   });
-  expect(backdrop.look.noise).toBe(pocket.noise);
+  expect(backdrop.look.noise).toBe(0);
 
   backdrop.setDisplay("site");
 
