@@ -1,3 +1,5 @@
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
 import {
@@ -310,4 +312,63 @@ test("stop cancels its frame and stops listening", () => {
   pointerAt(canvas, "pointermove", 80, 80);
   window.dispatchEvent(new Event("resize"));
   expect(vi.getTimerCount()).toBe(0);
+});
+
+setFlagsFromString("--expose-gc");
+const collect = runInNewContext("gc") as () => void;
+
+/** Frames of the lamp, kept awake past its cooling by a nudge every 50. */
+async function runAwake(frames: number) {
+  for (let i = 0; i < frames; i += 50) {
+    pointerAt(canvas, "pointermove", 80, 80);
+    await run(50);
+  }
+}
+
+test("a frame of the lamp allocates next to nothing beyond the canvas it draws on", async () => {
+  const perFrame = async (frames: number) => {
+    collect();
+    const before = process.memoryUsage().heapUsed;
+    await runAwake(frames);
+    return (process.memoryUsage().heapUsed - before) / frames;
+  };
+  // A spy keeps every call it sees, which would read as the lamp leaking.
+  vi.mocked(Math.random).mockRestore();
+  stop();
+  const context = canvas.getContext("2d")!;
+  const image = context.createImageData(columns, rows);
+  let drawing = true;
+  requestAnimationFrame(function again() {
+    if (!drawing) return;
+    context.putImageData(image, 0, 0);
+    requestAnimationFrame(again);
+  });
+  await runAwake(1000);
+  const floor = await perFrame(500);
+  drawing = false;
+  await run(1);
+  canvas.remove();
+  mount();
+  await runAwake(1000);
+
+  expect(await perFrame(500)).toBeLessThan(floor + 900);
+});
+
+test("shrinking the glass wipes the wax drawn where it used to be", async () => {
+  await run(2);
+  const smaller = new DOMRect(edge, edge, span / 2, span / 2);
+  expect(mass()).toBeGreaterThan(0);
+
+  view = smaller;
+  window.dispatchEvent(new Event("resize"));
+  await run(1);
+
+  const bands = field();
+  const outside = bands.filter(
+    (value, i) =>
+      value > 0 &&
+      (i % columns >= smaller.right ||
+        Math.floor(i / columns) >= smaller.bottom),
+  );
+  expect(outside).toHaveLength(0);
 });

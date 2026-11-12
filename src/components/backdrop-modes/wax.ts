@@ -23,6 +23,7 @@ const BLOBS = 7;
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
 const STOPPED_SPEED = 0.002;
+const FAST_SQUARED = 0.16 * 0.16;
 /** The physics is tuned per 60 Hz frame, so a faster display steps it in fixed slices. */
 const STEP_MS = 1000 / 60;
 /** A tab returning from the background steps this much at most, not the whole gap. */
@@ -45,6 +46,18 @@ const FAR_STRIDE = 4;
 /** The lattice spans at most the whole grid, sampled every `FAR_STRIDE` cells plus a border. */
 export const farCells = (columns: number, rows: number) =>
   (Math.ceil(columns / FAR_STRIDE) + 2) * (Math.ceil(rows / FAR_STRIDE) + 2);
+
+/** The whole cells of `visible` that lie on the grid: the only ones the lamp draws. */
+const cellsInGrid = (
+  visible: CellRect,
+  columns: number,
+  rows: number,
+): CellRect => ({
+  left: Math.max(0, Math.floor(visible.left)),
+  top: Math.max(0, Math.floor(visible.top)),
+  right: Math.min(columns, Math.ceil(visible.right)),
+  bottom: Math.min(rows, Math.ceil(visible.bottom)),
+});
 
 export type BlobScratch = { near: Float64Array; far: Float64Array };
 
@@ -85,6 +98,7 @@ export const wax: Toy = {
     let hovering = false;
     let held = false;
     let visible: CellRect = visibleCells(canvas);
+    let box = cellsInGrid(visible, columns, rows);
     let grab: Grab | undefined;
     let lastInputAt = performance.now();
     let settled = false;
@@ -148,7 +162,8 @@ export const wax: Toy = {
       }
 
       let fastest = 0;
-      for (const blob of blobs) {
+      for (let k = 0; k < blobs.length; k += 1) {
+        const blob = blobs[k];
         if (blob !== grab?.blob) {
           if (!awake) {
             blob.vx *= COOLING_DRAG;
@@ -172,7 +187,10 @@ export const wax: Toy = {
             blob.vx += (Math.random() - 0.5) * 0.004 * scale;
             blob.vx *= 0.985;
             blob.vy *= 0.985;
-            if (Math.hypot(blob.vx, blob.vy) > 0.16 * scale) {
+            if (
+              blob.vx * blob.vx + blob.vy * blob.vy >
+              FAST_SQUARED * scale * scale
+            ) {
               blob.vx *= 0.95;
               blob.vy *= 0.95;
             }
@@ -202,7 +220,10 @@ export const wax: Toy = {
           blob.y = bottom;
           blob.vy = -Math.abs(blob.vy) * 0.4;
         }
-        fastest = Math.max(fastest, Math.abs(blob.vx), Math.abs(blob.vy));
+        const vx = blob.vx < 0 ? -blob.vx : blob.vx;
+        const vy = blob.vy < 0 ? -blob.vy : blob.vy;
+        if (vx > fastest) fastest = vx;
+        if (vy > fastest) fastest = vy;
       }
 
       settled = !awake && fastest < STOPPED_SPEED;
@@ -218,10 +239,15 @@ export const wax: Toy = {
       frame = undefined;
       now = time;
       pace.advance(now, advance);
-      field.fill(0);
-      renderBlobs(blobs, visible, columns, scratch, field);
-      for (let i = 0; i < field.length; i += 1) {
-        pixels[i * 4 + 3] = field[i] * 255;
+      renderBlobs(blobs, box, columns, scratch, field);
+      for (let y = box.top; y < box.bottom; y += 1) {
+        for (
+          let i = y * columns + box.left;
+          i < y * columns + box.right;
+          i += 1
+        ) {
+          pixels[i * 4 + 3] = field[i] * 255;
+        }
       }
       context.putImageData(image, 0, 0);
       if (!settled) wake();
@@ -272,6 +298,9 @@ export const wax: Toy = {
 
     const onResize = () => {
       visible = visibleCells(canvas);
+      box = cellsInGrid(visible, columns, rows);
+      field.fill(0);
+      for (let i = 3; i < pixels.length; i += 4) pixels[i] = 0;
       wake();
     };
 
