@@ -8,7 +8,10 @@ export default defineConfig({
   compressHTML: true,
   // Small shared styles should arrive with the document, not block its paint.
   build: { inlineStylesheets: "always" },
-  integrations: [sitemap(), pixelBackdropToolbar()],
+  integrations: [
+    sitemap({ filter: (page) => !page.endsWith("/play/") }),
+    pixelBackdropToolbar(),
+  ],
   output: "static",
   env: {
     schema: {
