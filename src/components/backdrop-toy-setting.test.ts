@@ -24,7 +24,7 @@ test("the storage key keeps its old name, so a saved choice survives", () => {
   expect(TOY_KEY).toBe("backdrop-mode");
 });
 
-test("applies a random mode on each page load with nothing stored", () => {
+test("applies a random toy on each page load with nothing stored", () => {
   const events = new EventTarget();
   createBackdropToy(fixedRandom(0, 0.99), events);
 
@@ -34,7 +34,7 @@ test("applies a random mode on each page load with nothing stored", () => {
   expect(localStorage.getItem("backdrop-mode")).toBeNull();
 });
 
-test("a navigation never repeats the previous mode", () => {
+test("a navigation never repeats the previous toy", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0, 0, 0), events);
 
@@ -50,7 +50,7 @@ test("a navigation never repeats the previous mode", () => {
   expect(backdrop.label()).toBe(TOYS[0].label);
 });
 
-test("activating stores the next mode and applies it", () => {
+test("activating stores the next toy and applies it", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
@@ -62,7 +62,7 @@ test("activating stores the next mode and applies it", () => {
   expect(backdrop.label()).toBe(TOYS[1].label);
 });
 
-test("a stored mode replaces random on load and navigation", () => {
+test("a stored toy replaces random on load and navigation", () => {
   localStorage.setItem("backdrop-mode", TOYS[2].id);
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
@@ -74,7 +74,7 @@ test("a stored mode replaces random on load and navigation", () => {
   expect(backdrop.label()).toBe(TOYS[2].label);
 });
 
-test("Random follows the last mode, clears storage and applies a different mode", () => {
+test("Random follows the last toy, clears storage and applies a different toy", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
@@ -101,7 +101,7 @@ test("Random is gone after a reload with nothing stored", () => {
   expect(localStorage.getItem("backdrop-mode")).not.toBeNull();
 });
 
-test("ignores a stored id that is no longer a mode", () => {
+test("ignores a stored id that is no longer a toy", () => {
   localStorage.setItem("backdrop-mode", "gone");
   const events = new EventTarget();
   createBackdropToy(fixedRandom(0), events);
@@ -111,7 +111,7 @@ test("ignores a stored id that is no longer a mode", () => {
   expect(setToy).toHaveBeenLastCalledWith(TOYS[0].id);
 });
 
-test("with a single mode, every navigation shows it", async () => {
+test("with a single toy, every navigation shows it", async () => {
   vi.resetModules();
   vi.doMock("./backdrop-toys", () => ({
     TOYS: [{ id: "only", label: "Only" }],
@@ -127,7 +127,7 @@ test("with a single mode, every navigation shows it", async () => {
   vi.doUnmock("./backdrop-toys");
 });
 
-test("choosing a mode stores and applies it", () => {
+test("choosing a toy stores and applies it", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
@@ -139,7 +139,7 @@ test("choosing a mode stores and applies it", () => {
   expect(backdrop.value()).toBe(TOYS[2].id);
 });
 
-test("choosing Random clears storage and applies a different mode", () => {
+test("choosing Random clears storage and applies a different toy", () => {
   localStorage.setItem("backdrop-mode", TOYS[0].id);
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
@@ -152,7 +152,7 @@ test("choosing Random clears storage and applies a different mode", () => {
   expect(backdrop.value()).toBe(RANDOM);
 });
 
-test("with nothing stored, the value is the mode on show", () => {
+test("with nothing stored, the value is the toy on show", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0.5), events);
 

@@ -155,7 +155,7 @@ test("Reset restores the defaults and clears storage", () => {
   backdrop.remove();
 });
 
-test("mode select lists every backdrop mode by label, in registry order", () => {
+test("toy select lists every backdrop toy by label, in registry order", () => {
   const canvas = document.createElement("div");
   init(canvas);
 
@@ -167,7 +167,7 @@ test("mode select lists every backdrop mode by label, in registry order", () => 
   ).toEqual(TOYS.map((toy) => toy.label));
 });
 
-test("choosing a mode calls setToy without saving a user preference", () => {
+test("choosing a toy calls setToy without saving a user preference", () => {
   const backdrop = mountBackdrop();
   const setToy = vi.fn();
   Object.assign(backdrop, { setToy });
@@ -191,7 +191,7 @@ function toySelect(canvas: HTMLElement) {
   )!;
 }
 
-test("mode select opens on the backdrop's current mode", () => {
+test("toy select opens on the backdrop's current toy", () => {
   const backdrop = mountBackdrop();
   backdrop.setToy(TOYS[2].id);
   const canvas = document.createElement("div");
@@ -201,7 +201,7 @@ test("mode select opens on the backdrop's current mode", () => {
   backdrop.remove();
 });
 
-test("mode select follows the backdrop's mode after a navigation", () => {
+test("toy select follows the backdrop's toy after a navigation", () => {
   const backdrop = mountBackdrop();
   const canvas = document.createElement("div");
   init(canvas);
@@ -216,7 +216,7 @@ test("mode select follows the backdrop's mode after a navigation", () => {
 const slider = (canvas: HTMLElement, key: string) =>
   canvas.querySelector<HTMLInputElement>(`#pixel-backdrop-${key}`)!;
 
-test("the ghost and noise sliders open on the shown mode's look", () => {
+test("the ghost and noise sliders open on the shown toy's look", () => {
   const backdrop = mountBackdrop();
   backdrop.setToy("silty");
   const canvas = document.createElement("div");
@@ -227,7 +227,7 @@ test("the ghost and noise sliders open on the shown mode's look", () => {
   backdrop.remove();
 });
 
-test("choosing a mode moves the ghost and noise sliders to its look", () => {
+test("choosing a toy moves the ghost and noise sliders to its look", () => {
   const backdrop = mountBackdrop();
   const canvas = document.createElement("div");
   init(canvas);

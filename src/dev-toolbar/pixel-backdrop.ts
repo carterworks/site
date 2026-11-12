@@ -24,7 +24,7 @@ const backdrop = () => document.querySelector("pixel-backdrop");
 
 /**
  * The knobs as the backdrop shows them, so the ghost and noise sliders read
- * the shown mode's look. Saving reads the raw options instead, so only a
+ * the shown toy's look. Saving reads the raw options instead, so only a
  * tweak persists, not a look.
  */
 const current = (): PixelBackdropOptions => {
@@ -286,7 +286,7 @@ function addControl(
     output.remove();
     // Not persisted: the dev picker is for tuning, not a user preference.
     const select = addSelect(cell, control.label, toyChoices);
-    // Modes are random per navigation, so the select must not assume one.
+    // Toys are random per navigation, so the select must not assume one.
     refreshers.push(() => {
       select.value = backdrop()?.toy ?? select.value;
     });

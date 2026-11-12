@@ -13,9 +13,9 @@ const IDS = TOYS.map((toy) => toy.id);
 const stored = () => storedChoice(TOY_KEY, IDS);
 
 /**
- * Picks a random mode on every page load and navigation unless one is stored.
+ * Picks a random toy on every page load and navigation unless one is stored.
  * `astro:page-load` fires for both; the backdrop is persisted across swaps so
- * its mode would otherwise stay put. Random is offered once a mode is stored,
+ * its toy would otherwise stay put. Random is offered once a toy is stored,
  * and stays offered after choosing it until the next full load.
  */
 export function createBackdropToy(
@@ -56,7 +56,7 @@ export function createBackdropToy(
   };
 
   return {
-    /** The stored mode's id, `RANDOM`, or the mode on show. */
+    /** The stored toy's id, `RANDOM`, or the toy on show. */
     value: current,
     label() {
       const id = current();

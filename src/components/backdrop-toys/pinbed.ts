@@ -30,7 +30,7 @@ const STEP_MS = 1000 / 60;
 const MAX_CATCH_UP_MS = 100;
 /**
  * Cells per step. Matching the tile in pixels would take over 20 s to cross a
- * 1440 px viewport, past the 30 s the contract allows the mode to settle in.
+ * 1440 px viewport, past the 30 s the contract allows the toy to settle in.
  */
 const PEBBLE_SPEED = 0.2;
 const PEBBLE_SPEED_JITTER = 0.08;

@@ -216,7 +216,7 @@ describe("command bar", () => {
     expect(localStorage.getItem("color-scheme")).toBeNull();
   });
 
-  test("activating the backdrop row stores and applies the next mode", () => {
+  test("activating the backdrop row stores and applies the next toy", () => {
     openSettings();
 
     row("backdrop").click();
