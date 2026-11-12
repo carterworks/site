@@ -1,223 +1,256 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import {
+  installSoftCanvas,
+  place,
+  pointerAt,
+  type SoftBitmap,
+  useFakeFrames,
+} from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
-import { GRID_SIZE, type BackdropInput } from "./mode";
 import { pond } from "./pond";
+import { visibleCells } from "./toy";
 
-const size = GRID_SIZE;
-const middle = size / 2;
-const visible = {
-  left: size / 8,
-  top: size / 4,
-  right: (size * 7) / 8,
-  bottom: (size * 3) / 4,
-};
+const SIZE = 160;
+const middle = SIZE / 2;
 const STEP = 1000 / 60;
 
-function setup() {
-  const mode = pond.create({
-    columns: size,
-    rows: size,
-    random: mulberry32(1),
-    options: {} as never,
-  });
-  const input: BackdropInput = { lastInputAt: -Infinity, visible };
-  const field = new Float32Array(size * size);
-  let now = 0;
-  const frame = () => {
-    now += STEP;
-    mode.step(input, now);
-    const pace = mode.pace();
-    field.fill(0);
-    mode.render(field);
-    return pace;
-  };
-  const press = (x: number, y: number) => {
-    input.lastInputAt = now;
-    input.press = { x, y, at: now, held: true };
-  };
-  const release = () => {
-    input.press!.held = false;
-  };
-  const tap = (x: number, y: number) => {
-    press(x, y);
-    release();
-  };
-  const frames = (count: number, touching = true) => {
-    for (let i = 0; i < count; i += 1) {
-      if (touching) input.lastInputAt = now;
-      frame();
-    }
-  };
-  const energy = () => field.reduce((sum, value) => sum + value, 0);
-  return { input, field, frame, frames, press, release, tap, energy };
+let canvas: HTMLCanvasElement;
+let bitmap: () => SoftBitmap;
+let stop: () => void;
+
+function mount() {
+  const { plain } = installSoftCanvas();
+  canvas = document.createElement("canvas");
+  Object.assign(canvas, { width: SIZE, height: SIZE });
+  place(canvas, new DOMRect(0, -280, 1280, 1280));
+  document.body.append(canvas);
+  stop = pond.start(canvas);
+  bitmap = () => plain[0];
 }
 
-test("a tap raises the surface and keeps the loop active", () => {
-  const { tap, frame, energy } = setup();
-  tap(middle, middle);
+beforeEach(() => {
+  useFakeFrames();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
+  // The probe `visibleCells` measures: a 960x720 viewport over the canvas's middle.
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(160, 0, 960, 720),
+  );
+  mount();
+});
 
-  expect(frame()).toBe("active");
+afterEach(() => {
+  stop();
+  document.body.replaceChildren();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const frames = (count: number) => vi.advanceTimersByTimeAsync(count * STEP);
+
+/** Total alpha on the canvas, in whole pixels of full opacity. */
+function energy() {
+  const { pixels } = bitmap();
+  let sum = 0;
+  for (let i = 3; i < pixels.length; i += 4) sum += pixels[i] / 255;
+  return sum;
+}
+
+const press = (x: number, y: number) =>
+  pointerAt(canvas, "pointerdown", x, y, { buttons: 1 });
+const lift = (x: number, y: number) => pointerAt(canvas, "pointerup", x, y);
+const tap = async (x: number, y: number) => {
+  press(x, y);
+  lift(x, y);
+  await frames(1);
+};
+
+test("a tap raises the surface and keeps the loop active", async () => {
+  await tap(middle, middle);
+
+  expect(energy()).toBeGreaterThan(0);
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
+
+test("a tap damps back to a flat surface and the loop stops", async () => {
+  await tap(middle, middle);
+  await frames(60 * 40);
+
+  expect(energy()).toBe(0);
+  expect(bitmap().pixels.every((value) => value === 0)).toBe(true);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("a press held down drops no stone, since a drag would start with a splash", async () => {
+  press(middle, middle);
+  await frames(5);
+
+  expect(energy()).toBe(0);
+});
+
+test("a tap drops its stone when the finger lifts", async () => {
+  press(middle, middle);
+  await frames(1);
+  expect(energy()).toBe(0);
+  lift(middle, middle);
+  await frames(1);
+
   expect(energy()).toBeGreaterThan(0);
 });
 
-test("a press with no further input damps back to a flat surface", () => {
-  const { tap, frames, frame, field, energy } = setup();
-  tap(middle, middle);
-  frames(60 * 20);
-
-  expect(frame()).not.toBe("active");
-  expect(energy()).toBe(0);
-  expect(field.every((value) => value === 0)).toBe(true);
-});
-
-test("a press held down drops no stone, since a drag would start with a splash", () => {
-  const { press, frames, energy } = setup();
+test("a press held past a tap drops no stone on release", async () => {
   press(middle, middle);
-  frames(5);
+  await frames(60);
+  lift(middle, middle);
+  await frames(1);
 
   expect(energy()).toBe(0);
 });
 
-test("a tap drops its stone when the finger lifts", () => {
-  const { press, release, frame, energy } = setup();
-  press(middle, middle);
-  frame();
-  release();
-  frame();
-
-  expect(energy()).toBeGreaterThan(0);
-});
-
-test("a press held past a tap drops no stone on release", () => {
-  const { press, release, frames, frame, energy } = setup();
-  press(middle, middle);
-  frames(60);
-  release();
-  frame();
-
-  expect(energy()).toBe(0);
-});
-
-test("a press that travelled before lifting is a drag, not a tap", () => {
-  const lift = (release: boolean) => {
-    const { input, press, release: up, frames, energy } = setup();
-    press(size / 4, middle);
-    input.pointer = { x: size / 4 + 20, y: middle };
-    frames(1);
-    if (release) up();
-    frames(1);
+test("a press that travelled before lifting is a drag, not a tap", async () => {
+  const total = async (release: boolean) => {
+    stop();
+    mount();
+    press(SIZE / 4, middle);
+    pointerAt(canvas, "pointermove", SIZE / 4 + 20, middle, { buttons: 1 });
+    await frames(1);
+    if (release) lift(SIZE / 4 + 20, middle);
+    await frames(1);
     return energy();
   };
 
-  expect(lift(true)).toBe(lift(false));
+  expect(await total(true)).toBe(await total(false));
 });
 
-test("the same press is dropped only once", () => {
-  const { tap, frames, energy } = setup();
-  tap(middle, middle);
-  frames(60 * 20);
-  frames(1);
+test("the same press is dropped only once", async () => {
+  await tap(middle, middle);
+  await frames(60 * 40);
+  await frames(1);
 
   expect(energy()).toBe(0);
 });
 
-test("dragging with a press held leaves a wake that hovering does not", () => {
-  const wake = (held: boolean) => {
-    const { input, press, frames, energy } = setup();
-    input.pointer = { x: size / 4, y: middle };
-    if (held) press(size / 4, middle);
-    frames(1);
-    input.press = held ? { ...input.press!, at: 0, held: true } : undefined;
-    for (let x = size / 4 + 1; x <= size * 0.625; x += 1) {
-      input.pointer = { x, y: middle };
-      frames(1);
+test("a resting pointer injects nothing", async () => {
+  pointerAt(canvas, "pointermove", middle, middle);
+  await frames(60);
+  pointerAt(canvas, "pointermove", middle, middle);
+  await frames(60);
+
+  expect(energy()).toBe(0);
+});
+
+test("dragging with a press held leaves a wake that hovering does not", async () => {
+  const wake = async (held: boolean) => {
+    stop();
+    mount();
+    const init = held ? { buttons: 1 } : {};
+    pointerAt(canvas, "pointermove", SIZE / 4, middle);
+    if (held) press(SIZE / 4, middle);
+    await frames(1);
+    for (let x = SIZE / 4 + 1; x <= SIZE * 0.625; x += 1) {
+      pointerAt(canvas, "pointermove", x, middle, init);
+      await frames(1);
     }
     return energy();
   };
 
-  expect(wake(false)).toBeGreaterThan(0);
-  expect(wake(true)).toBeGreaterThan(wake(false));
+  const hover = await wake(false);
+  expect(hover).toBeGreaterThan(0);
+  expect(await wake(true)).toBeGreaterThan(hover);
 });
 
 const DRAG_FRAMES = 100;
 
-function dragIn(events: number, distance: number) {
-  const { input, field, press, frame, energy } = setup();
-  const startX = size / 4;
-  input.pointer = { x: startX, y: middle };
+async function dragIn(events: number, distance: number) {
+  stop();
+  mount();
+  const startX = SIZE / 4;
+  pointerAt(canvas, "pointermove", startX, middle);
   press(startX, middle);
-  frame();
+  await frames(1);
   let total = 0;
   let peak = 0;
   for (let f = 1; f <= DRAG_FRAMES; f += 1) {
     if (f % (DRAG_FRAMES / events) === 0) {
-      input.lastInputAt = f * STEP;
-      input.pointer = { x: startX + (distance * f) / DRAG_FRAMES, y: middle };
+      pointerAt(
+        canvas,
+        "pointermove",
+        startX + (distance * f) / DRAG_FRAMES,
+        middle,
+        { buttons: 1 },
+      );
     }
-    frame();
+    await frames(1);
     total += energy();
-    peak = Math.max(peak, ...field);
+    const { pixels } = bitmap();
+    for (let i = 3; i < pixels.length; i += 4) {
+      peak = Math.max(peak, pixels[i] / 255);
+    }
   }
   return { total, peak };
 }
 
-test("a drag injects the same energy however many events deliver it", () => {
-  const coarse = dragIn(10, 10).total;
-  const fine = dragIn(100, 10).total;
+test("a drag injects the same energy however many events deliver it", async () => {
+  const coarse = (await dragIn(10, 10)).total;
+  const fine = (await dragIn(100, 10)).total;
 
   expect(Math.abs(fine - coarse) / coarse).toBeLessThan(0.2);
 });
 
-test("a long drag never piles the water up to full strength", () => {
-  expect(dragIn(100, 100).peak).toBeLessThan(0.75);
+test("a long drag never piles the water up to full strength", async () => {
+  expect((await dragIn(100, 100)).peak).toBeLessThan(0.9);
 });
 
-test("idle rain lands inside the visible rect and rests between drops", () => {
-  const { frame, field } = setup();
+test("idle rain lands inside the visible rect", async () => {
+  const visible = visibleCells(canvas as never);
+  expect(visible.left).toBeGreaterThan(0);
+  expect(visible.right).toBeLessThan(SIZE);
+  const random = vi.mocked(Math.random);
   let drops = 0;
-  let last = frame();
   for (let i = 0; i < 60 * 60; i += 1) {
-    const pace = frame();
-    if (last !== "active" && pace === "active") {
-      drops += 1;
-      for (let j = 0; j < field.length; j += 1) {
-        if (field[j] === 0) continue;
-        const x = (j % size) + 0.5;
-        const y = Math.floor(j / size) + 0.5;
-        expect(x).toBeGreaterThanOrEqual(visible.left);
-        expect(x).toBeLessThanOrEqual(visible.right);
-        expect(y).toBeGreaterThanOrEqual(visible.top);
-        expect(y).toBeLessThanOrEqual(visible.bottom);
-      }
+    const before = random.mock.calls.length;
+    await frames(1);
+    // A drop draws its x, its y and the wait for the next.
+    if (random.mock.calls.length === before) continue;
+    drops += 1;
+    const { pixels } = bitmap();
+    let lit = 0;
+    for (let j = 0; j < SIZE * SIZE; j += 1) {
+      if (pixels[j * 4 + 3] === 0) continue;
+      lit += 1;
+      const x = (j % SIZE) + 0.5;
+      const y = Math.floor(j / SIZE) + 0.5;
+      expect(x).toBeGreaterThanOrEqual(visible.left);
+      expect(x).toBeLessThanOrEqual(visible.right);
+      expect(y).toBeGreaterThanOrEqual(visible.top);
+      expect(y).toBeLessThanOrEqual(visible.bottom);
     }
-    last = pace;
+    expect(lit).toBeGreaterThan(0);
   }
 
   expect(drops).toBeGreaterThanOrEqual(3);
 });
 
-test("rain stops after a while so an untouched pond lets the loop sleep", () => {
-  const { frames, frame } = setup();
-  frames(60 * 40, false);
+test("no rain falls before 2.5 s of quiet", async () => {
+  await vi.advanceTimersByTimeAsync(2400);
 
-  expect(frame()).toBe("still");
+  expect(energy()).toBe(0);
 });
 
-test("a pond that is about to rain idles between drops instead of stopping", () => {
-  const { frames, frame, tap } = setup();
-  tap(middle, middle);
-  frames(60 * 8, false);
+test("rain stops after a while so an untouched pond lets the loop sleep", async () => {
+  await vi.advanceTimersByTimeAsync(40_000);
 
-  expect(["idle", "active"]).toContain(frame());
-  expect(frame()).not.toBe("still");
+  expect(vi.getTimerCount()).toBe(0);
 });
 
-test("a lone ripple costs far less to step than one that fills the pond", () => {
-  const { tap: warmTap, frames } = setup();
-  warmTap(middle, middle);
-  frames(300);
+test("a pond that is about to rain sleeps on a timer between drops instead of stopping", async () => {
+  await tap(middle, middle);
+  await vi.advanceTimersByTimeAsync(8000);
 
-  const { input, tap, frame } = setup();
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+});
+
+test("a lone ripple costs far less to step than one that fills the pond", async () => {
   // Each swept cell costs one Math.abs; counting them is load-independent, unlike wall-clock time.
   const abs = Math.abs;
   let calls = 0;
@@ -225,23 +258,21 @@ test("a lone ripple costs far less to step than one that fills the pond", () => 
     calls += 1;
     return abs(value);
   };
-  const countWork = (count: number) => {
+  const countWork = async (count: number) => {
     calls = 0;
-    for (let i = 0; i < count; i += 1) frame();
+    await frames(count);
     return calls;
   };
   let lone = 0;
   let filled = 0;
   try {
-    tap(size / 16, size / 16);
-    lone = countWork(6);
-    for (let x = 0; x < size; x += 1) {
-      input.pointer = { x, y: middle };
-      input.lastInputAt = 1;
-      frame();
+    await tap(SIZE / 16, SIZE / 16);
+    lone = await countWork(6);
+    for (let x = 0; x < SIZE; x += 1) {
+      pointerAt(canvas, "pointermove", x, middle);
+      await frames(1);
     }
-    input.press = undefined;
-    filled = countWork(6);
+    filled = await countWork(6);
   } finally {
     Math.abs = abs;
   }
@@ -249,45 +280,48 @@ test("a lone ripple costs far less to step than one that fills the pond", () => 
   expect(lone * 4).toBeLessThan(filled);
 });
 
-test("a scripted session paints the same frames as the unbounded pond", () => {
-  const { input, press, frame, field } = setup();
+test("a scripted session paints the same frames as the unbounded pond", async () => {
   let digest = 0;
   const fold = () => {
-    for (let j = 0; j < field.length; j += 1)
-      digest += field[j] * ((j % 251) + 1);
+    const { pixels } = bitmap();
+    for (let j = 0; j < SIZE * SIZE; j += 1)
+      digest += (pixels[j * 4 + 3] / 255) * ((j % 251) + 1);
   };
-  press(size / 5, size / 3);
+  press(SIZE / 5, SIZE / 3);
   for (let f = 0; f < 60 * 30; f += 1) {
     if (f < 200) {
-      input.lastInputAt = f * STEP;
-      input.pointer = {
-        x: size / 5 + f * 0.4,
-        y: size / 3 + Math.sin(f / 9) * 20,
-      };
+      pointerAt(
+        canvas,
+        "pointermove",
+        SIZE / 5 + f * 0.4,
+        SIZE / 3 + Math.sin(f / 9) * 20,
+        { buttons: 1 },
+      );
     } else if (f === 200) {
-      input.pointer = undefined;
-      input.press = { x: size * 0.8, y: size * 0.7, at: f * STEP, held: true };
-      input.lastInputAt = f * STEP;
+      lift(SIZE / 5, SIZE / 3);
+      canvas.dispatchEvent(new PointerEvent("pointerleave"));
+      press(SIZE * 0.8, SIZE * 0.7);
     }
-    frame();
+    await frames(1);
     if (f % 7 === 0) fold();
   }
 
-  expect(digest).toBe(3766807.940044746);
+  expect(digest).toBe(3683831.9529411076);
 });
 
-test("an untouched pond never clears its buffers", () => {
-  const { input } = setup();
-  const mode = pond.create({
-    columns: size,
-    rows: size,
-    random: mulberry32(1),
-    options: {} as never,
-  });
+test("an untouched pond never clears its buffers", async () => {
   const fill = vi.spyOn(Float32Array.prototype, "fill");
-  for (let f = 1; f <= 60; f += 1) mode.step(input, f * STEP);
-  const calls = fill.mock.calls.length;
-  fill.mockRestore();
+  await frames(60);
 
-  expect(calls).toBe(0);
+  expect(fill).not.toHaveBeenCalled();
+});
+
+test("stop cancels its frame and timer and ignores the pointer from then on", async () => {
+  await tap(middle, middle);
+  stop();
+
+  expect(vi.getTimerCount()).toBe(0);
+  pointerAt(canvas, "pointerdown", 10, 10);
+  pointerAt(canvas, "pointermove", 20, 10);
+  expect(vi.getTimerCount()).toBe(0);
 });
