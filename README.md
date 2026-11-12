@@ -13,6 +13,12 @@ pnpm run check
 pnpm run build
 ```
 
+`pnpm perf` measures what a frame of each toy costs on each display, in
+headless Chromium; its options are at the top of
+[`scripts/perf.mjs`](./scripts/perf.mjs). Install its browser once with
+`pnpm exec playwright install --no-shell chromium`. On NixOS, run it as
+`nix-shell --run "pnpm perf"`.
+
 ## Deployment
 
 The site deploys to Cloudflare as a Worker serving static assets, defined in
