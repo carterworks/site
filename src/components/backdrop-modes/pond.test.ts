@@ -136,20 +136,33 @@ test("a lone ripple costs far less to step than one that fills the pond", () => 
   frames(300);
 
   const { input, press, frame } = setup();
-  const timeFrames = (count: number) => {
-    const started = performance.now();
-    for (let i = 0; i < count; i += 1) frame();
-    return performance.now() - started;
+  // Each swept cell costs one Math.abs; counting them is load-independent, unlike wall-clock time.
+  const abs = Math.abs;
+  let calls = 0;
+  Math.abs = (value) => {
+    calls += 1;
+    return abs(value);
   };
-  press(size / 16, size / 16);
-  const lone = timeFrames(6);
-  for (let x = 0; x < size; x += 1) {
-    input.pointer = { x, y: middle };
-    input.lastInputAt = 1;
-    frame();
+  const countWork = (count: number) => {
+    calls = 0;
+    for (let i = 0; i < count; i += 1) frame();
+    return calls;
+  };
+  let lone = 0;
+  let filled = 0;
+  try {
+    press(size / 16, size / 16);
+    lone = countWork(6);
+    for (let x = 0; x < size; x += 1) {
+      input.pointer = { x, y: middle };
+      input.lastInputAt = 1;
+      frame();
+    }
+    input.press = undefined;
+    filled = countWork(6);
+  } finally {
+    Math.abs = abs;
   }
-  input.press = undefined;
-  const filled = timeFrames(6);
 
   expect(lone * 4).toBeLessThan(filled);
 });
