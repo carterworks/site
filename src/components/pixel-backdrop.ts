@@ -313,9 +313,9 @@ export class PixelBackdrop extends HTMLElement {
 
   /**
    * The ghost and noise the chosen mode shows once any dissolve ends: its
-   * look's, except that a knob tweaked off its stylesheet default wins in
-   * every mode. A mode's look is tuned to it, so it beats the site-wide
-   * default, while a tweak is someone deliberately trying a value.
+   * look's, except that a knob set through `configure()` wins in every mode.
+   * A mode's look is tuned to it, so it beats the site-wide default, while a
+   * configured value is someone deliberately trying it.
    */
   get look(): Look {
     return {
