@@ -186,27 +186,6 @@ export function visibleCells(
   };
 }
 
-/**
- * What the screen shows of the page right now, in client pixels. The grid is
- * sized to the large viewport, so rows under a mobile toolbar are only told
- * apart by the visual viewport. Pinch-zoom is ignored: the zoomed window is
- * scaled back to the layout area, so panning a zoomed page never refits the
- * toys, while toolbars (which resize it at scale 1) still do.
- */
-function shownArea() {
-  const viewport = window.visualViewport;
-  if (!viewport) {
-    return { left: 0, top: 0, width: innerWidth, height: innerHeight };
-  }
-  const zoomed = viewport.scale !== 1;
-  return {
-    left: zoomed ? 0 : viewport.offsetLeft,
-    top: zoomed ? 0 : viewport.offsetTop,
-    width: viewport.width * viewport.scale,
-    height: viewport.height * viewport.scale,
-  };
-}
-
 const NOISE_SEED = 0x9e3779b9;
 /**
  * Simplex is exactly zero on integer lattice points, so sample off-lattice:
@@ -423,12 +402,6 @@ export class PixelBackdrop extends HTMLElement {
       passive: true,
     });
     window.addEventListener("resize", this.#onResize);
-    window.visualViewport?.addEventListener("resize", this.#onResize, {
-      passive: true,
-    });
-    window.visualViewport?.addEventListener("scroll", this.#onResize, {
-      passive: true,
-    });
     document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
     darkScheme.addEventListener("change", this.#wake);
@@ -455,8 +428,6 @@ export class PixelBackdrop extends HTMLElement {
     window.removeEventListener("touchcancel", this.#onTouchEnd);
     document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
-    window.visualViewport?.removeEventListener("resize", this.#onResize);
-    window.visualViewport?.removeEventListener("scroll", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#wake);
@@ -808,7 +779,9 @@ export class PixelBackdrop extends HTMLElement {
 
   /**
    * The grid's box, measured once per resize or knob change, and the cells of
-   * it the viewport shows.
+   * it the small viewport shows. The toys fit to the small viewport, the
+   * area on screen even with the toolbars out, as one fit to the visual
+   * viewport reshaped on every frame of a scroll that slid them away.
    */
   #measure() {
     if (this.#rect !== undefined) return this.#rect;
@@ -819,7 +792,8 @@ export class PixelBackdrop extends HTMLElement {
     this.#rect = rect;
     this.#input.visible = visibleCells(
       rect,
-      shownArea(),
+      this.querySelector(".small-viewport")?.getBoundingClientRect() ??
+        new DOMRect(0, 0, innerWidth, innerHeight),
       this.#columns,
       this.#rows,
       this.#options.gap,

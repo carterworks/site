@@ -811,68 +811,60 @@ test.each([
   expect(vi.getTimerCount()).toBeGreaterThan(0);
 });
 
-function stubVisualViewport(init: Partial<VisualViewport> = {}) {
-  const viewport = Object.assign(new EventTarget(), {
-    offsetLeft: 0,
-    offsetTop: 0,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    scale: 1,
-    ...init,
-  });
-  vi.stubGlobal("visualViewport", viewport);
-  return viewport;
+/** Mounts a backdrop with the markup's small-viewport probe, measuring `rect`. */
+function mountWithSmallViewport(rect: DOMRect) {
+  vi.spyOn(StubCanvas.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 1280, 1280),
+  );
+  const shown = document.createElement("div");
+  shown.className = "small-viewport";
+  const measure = vi
+    .spyOn(shown, "getBoundingClientRect")
+    .mockReturnValue(rect);
+  const backdrop = document.createElement("pixel-backdrop");
+  backdrop.append(document.createElement("emulated-canvas"), shown);
+  document.body.append(backdrop);
+  return measure;
 }
 
-test("the mode is told the cells the visual viewport shows, not the whole layer", async () => {
-  stubVisualViewport({ offsetTop: 100, height: 300 });
-  vi.spyOn(StubCanvas.prototype, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 1280, 1280),
-  );
-  mount();
+const cells = (offset: number) => (offset * 64) / 1281;
+
+test("the mode is told the cells the small viewport shows, not the whole layer", async () => {
+  mountWithSmallViewport(new DOMRect(0, 47, 390, 600));
   await vi.advanceTimersByTimeAsync(20);
 
-  const cells = (offset: number) => (offset * 64) / 1281;
-  expect(probe.input?.visible.top).toBeCloseTo(cells(100));
-  expect(probe.input?.visible.bottom).toBeCloseTo(cells(400 + 1));
-  vi.unstubAllGlobals();
-});
-
-test("a visual viewport resize updates the visible cells and wakes the loop", async () => {
-  const viewport = stubVisualViewport();
-  vi.spyOn(StubCanvas.prototype, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 1280, 1280),
-  );
-  mount();
-  await vi.advanceTimersByTimeAsync(1000);
-  expect(vi.getTimerCount()).toBe(0);
-  const before = probe.input?.visible.bottom;
-
-  viewport.height -= 200;
-  viewport.dispatchEvent(new Event("resize"));
-  expect(vi.getTimerCount()).toBeGreaterThan(0);
-  await vi.advanceTimersByTimeAsync(100);
-
-  expect(probe.input?.visible.bottom).toBeLessThan(before!);
-  vi.unstubAllGlobals();
-});
-
-test("pinch-zoom does not shrink the visible cells", async () => {
-  stubVisualViewport({
-    scale: 2,
-    width: window.innerWidth / 2,
-    height: window.innerHeight / 2,
-    offsetTop: 50,
+  expect(probe.input?.visible).toEqual({
+    left: 0,
+    top: cells(47),
+    right: cells(390 + 1),
+    bottom: cells(647 + 1),
   });
-  vi.spyOn(StubCanvas.prototype, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 1280, 1280),
-  );
-  mount();
+});
+
+test("the visual viewport resizing or scrolling, as toolbars and pinch-zoom do, never refits the toys", async () => {
+  const viewport = new EventTarget();
+  vi.stubGlobal("visualViewport", viewport);
+  const measure = mountWithSmallViewport(new DOMRect(0, 0, 390, 600));
+  await vi.advanceTimersByTimeAsync(20);
+  const before = probe.input?.visible;
+
+  viewport.dispatchEvent(new Event("resize"));
+  viewport.dispatchEvent(new Event("scroll"));
   await vi.advanceTimersByTimeAsync(20);
 
-  expect(probe.input?.visible.top).toBe(0);
-  expect(probe.input?.visible.bottom).toBeCloseTo(
-    ((window.innerHeight + 1) * 64) / 1281,
-  );
+  expect(measure).toHaveBeenCalledTimes(1);
+  expect(probe.input?.visible).toEqual(before);
   vi.unstubAllGlobals();
+});
+
+test("a window resize refits the toys to the new small viewport", async () => {
+  const measure = mountWithSmallViewport(new DOMRect(0, 0, 390, 600));
+  await vi.advanceTimersByTimeAsync(20);
+
+  measure.mockReturnValue(new DOMRect(0, 0, 600, 390));
+  window.dispatchEvent(new Event("resize"));
+  await vi.advanceTimersByTimeAsync(20);
+
+  expect(probe.input?.visible.right).toBeCloseTo(cells(600 + 1));
+  expect(probe.input?.visible.bottom).toBeCloseTo(cells(390 + 1));
 });
