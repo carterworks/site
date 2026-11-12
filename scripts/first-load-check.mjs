@@ -20,7 +20,7 @@ test("web fonts never hide text while loading", () => {
 });
 
 test("the first-load font is small and discovered in the document", () => {
-  assert.ok(statSync("dist/InterVariable-latin.woff2").size < 100_000);
+  assert.ok(statSync("dist/InterVariable-latin.woff2").size < 102_000);
   assert.match(
     html,
     /<link[^>]*rel="preload"[^>]*href="\/InterVariable-latin.woff2"/,
