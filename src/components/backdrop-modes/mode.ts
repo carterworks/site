@@ -92,3 +92,9 @@ export type Mode = {
   look?: Look;
   create(setup: ModeSetup): ModeInstance;
 };
+
+export const sameRect = (a: CellRect, b: CellRect) =>
+  a.left === b.left &&
+  a.top === b.top &&
+  a.right === b.right &&
+  a.bottom === b.bottom;

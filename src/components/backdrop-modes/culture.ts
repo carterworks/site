@@ -1,5 +1,11 @@
 import { line } from "./line";
-import { cellScale, type CellRect, type Mode, type Point } from "./mode";
+import {
+  cellScale,
+  sameRect,
+  type CellRect,
+  type Mode,
+  type Point,
+} from "./mode";
 
 /**
  * The gallery tile this mode was tuned in draws cells about 6 px wide; the
@@ -70,7 +76,7 @@ export const culture: Mode = {
     let centreY = 0;
     let radiusX = 0;
     let radiusY = 0;
-    let fitted = "";
+    let fitted: CellRect | undefined;
     let clock = 0;
     let population = 0;
     let previousPopulation = -1;
@@ -112,10 +118,10 @@ export const culture: Mode = {
       }
     };
 
-    const fit = ({ left, top, right, bottom }: CellRect) => {
-      const key = `${left} ${top} ${right} ${bottom}`;
-      if (key === fitted) return;
-      fitted = key;
+    const fit = (visible: CellRect) => {
+      if (fitted !== undefined && sameRect(fitted, visible)) return;
+      fitted = { ...visible };
+      const { left, top, right, bottom } = visible;
       centreX = (left + right) / 2 - 0.5;
       centreY = (top + bottom) / 2 - 0.5;
       radiusX = (right - left) / 2 - dishMargin;

@@ -1,5 +1,5 @@
 import { clamp } from "../emulated-canvas-limits";
-import { cellScale, type CellRect, type Mode } from "./mode";
+import { cellScale, sameRect, type CellRect, type Mode } from "./mode";
 
 /**
  * The prototype tile was tuned at 48 cells across about 360 px. Radii and
@@ -133,12 +133,6 @@ export const pinbed: Mode = {
       }
       printedIn = { ...visible };
     };
-
-    const sameRect = (a: CellRect, b: CellRect) =>
-      a.left === b.left &&
-      a.top === b.top &&
-      a.right === b.right &&
-      a.bottom === b.bottom;
 
     return {
       step({ pointer, press, lastInputAt, visible }, time) {
