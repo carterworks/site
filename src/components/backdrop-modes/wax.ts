@@ -23,6 +23,7 @@ const BLOBS = 7;
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
 const STOPPED_SPEED = 0.002;
+const FAST_SQUARED = 0.16 * 0.16;
 /** The physics is tuned per 60 Hz frame, so a faster display steps it in fixed slices. */
 const STEP_MS = 1000 / 60;
 /** A tab returning from the background steps this much at most, not the whole gap. */
@@ -148,7 +149,8 @@ export const wax: Toy = {
       }
 
       let fastest = 0;
-      for (const blob of blobs) {
+      for (let k = 0; k < blobs.length; k += 1) {
+        const blob = blobs[k];
         if (blob !== grab?.blob) {
           if (!awake) {
             blob.vx *= COOLING_DRAG;
@@ -172,7 +174,10 @@ export const wax: Toy = {
             blob.vx += (Math.random() - 0.5) * 0.004 * scale;
             blob.vx *= 0.985;
             blob.vy *= 0.985;
-            if (Math.hypot(blob.vx, blob.vy) > 0.16 * scale) {
+            if (
+              blob.vx * blob.vx + blob.vy * blob.vy >
+              FAST_SQUARED * scale * scale
+            ) {
               blob.vx *= 0.95;
               blob.vy *= 0.95;
             }
@@ -202,7 +207,10 @@ export const wax: Toy = {
           blob.y = bottom;
           blob.vy = -Math.abs(blob.vy) * 0.4;
         }
-        fastest = Math.max(fastest, Math.abs(blob.vx), Math.abs(blob.vy));
+        const vx = blob.vx < 0 ? -blob.vx : blob.vx;
+        const vy = blob.vy < 0 ? -blob.vy : blob.vy;
+        if (vx > fastest) fastest = vx;
+        if (vy > fastest) fastest = vy;
       }
 
       settled = !awake && fastest < STOPPED_SPEED;
