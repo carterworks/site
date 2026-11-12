@@ -17,6 +17,7 @@ pkgs.mkShellNoCC {
           expat
           glib
           libgbm
+          libglvnd
           libx11
           libxcb
           libxcomposite

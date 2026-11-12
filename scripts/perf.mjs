@@ -40,6 +40,7 @@ const { values: options } = parseArgs({
     seconds: { type: "string", default: "2" },
     against: { type: "string" },
     dist: { type: "string", default: "dist" },
+    gpu: { type: "boolean" },
   },
 });
 
@@ -60,7 +61,22 @@ for (const [host, path] of Object.entries(builds)) {
 // another. A spinning core holds the clock high for every combination.
 new Worker("for (;;);", { eval: true }).unref();
 
-const browser = await chromium.launch({ channel: "chromium" });
+const browser = await chromium.launch({
+  channel: "chromium",
+  args: options.gpu ? ["--enable-gpu", "--ignore-gpu-blocklist"] : [],
+});
+const system = await browser.newBrowserCDPSession();
+const { gpu } = await system.send("SystemInfo.getInfo");
+const renderer =
+  gpu.featureStatus.gpu_compositing === "enabled"
+    ? gpu.devices[0].deviceString
+    : undefined;
+if (options.gpu && !renderer) {
+  throw new Error(
+    "--gpu found no usable GPU driver, so Chromium composites in software. On NixOS, run it with `nix-shell --run`.",
+  );
+}
+console.log(`Rendering: ${renderer ?? "software"}`);
 const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
 });
@@ -76,7 +92,6 @@ await context.route("**/*", (route) => {
 });
 const page = await context.newPage();
 const devtools = await context.newCDPSession(page);
-const system = await browser.newBrowserCDPSession();
 await devtools.send("Performance.enable");
 await devtools.send("Emulation.setCPUThrottlingRate", {
   rate: Number(options.throttle),
