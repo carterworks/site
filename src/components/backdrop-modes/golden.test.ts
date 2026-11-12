@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import { mount, play } from "../../test/backdrop-play";
@@ -70,29 +71,26 @@ function screen(): SoftBitmap[] {
   return [...shown.filter((b) => !isEcho(b)), ...shown.filter(isEcho)];
 }
 
-const FNV_OFFSET = 0x811c9dc5;
-const FNV_PRIME = 0x01000193;
-
-const fold = (hash: number, word: number) =>
-  Math.imul(hash ^ word, FNV_PRIME) >>> 0;
-
-function hashScreen() {
-  let hash = FNV_OFFSET;
-  for (const { pixels, width, height } of screen()) {
-    hash = fold(fold(hash, width), height);
-    const words = new Uint32Array(
-      pixels.buffer,
-      pixels.byteOffset,
-      width * height,
-    );
-    for (let at = 0; at < words.length; at += 1) hash = fold(hash, words[at]);
+/** A fully transparent pixel shows nothing, whatever RGB it keeps. */
+function visible(pixels: Uint8ClampedArray) {
+  const shown = pixels.slice();
+  for (let at = 0; at < shown.length; at += 4) {
+    if (shown[at + 3] === 0) shown.fill(0, at, at + 3);
   }
-  return hash;
+  return shown;
 }
 
-/** Folds the screen after every frame step into one digest, counting the steps that changed it. */
+function hashScreen() {
+  const hash = createHash("sha256");
+  for (const { pixels, width, height } of screen()) {
+    hash.update(`${width}x${height}`).update(visible(pixels));
+  }
+  return hash.digest("hex");
+}
+
+/** Hashes the screen after every frame step into one digest, counting the steps that changed it. */
 function recorder() {
-  let digest = FNV_OFFSET;
+  const digest = createHash("sha256");
   let shown = hashScreen();
   let changes = 0;
   return {
@@ -102,11 +100,10 @@ function recorder() {
         const frame = hashScreen();
         if (frame !== shown) changes += 1;
         shown = frame;
-        digest = fold(digest, frame);
+        digest.update(frame);
       }
     },
-    result: () =>
-      `${fold(digest, changes).toString(16).padStart(8, "0")} over ${changes} changed frames`,
+    result: () => `${digest.digest("hex")} over ${changes} changed frames`,
   };
 }
 
