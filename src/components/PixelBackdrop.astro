@@ -51,8 +51,12 @@ import EmulatedCanvas from "./EmulatedCanvas.astro";
     translate: round(-50%, 1px) round(-50%, 1px);
   }
 
+  /* A held finger would otherwise raise iOS's callout, and the overscroll is
+     belt and braces for the touchmove the element already blocks. */
   :global(:root[data-backdrop-holding]) {
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
+    overscroll-behavior: none;
     user-select: none;
   }
 
