@@ -295,11 +295,28 @@ export class PixelBackdrop extends HTMLElement {
     this.#stopToy = toy.start(canvas);
   }
 
+  /** The gap, which a display sets unless it was set through `configure`. */
+  get #gap() {
+    const look = this.#display?.look;
+    return look === undefined || this.#tweaked.has("gap")
+      ? this.#options.gap
+      : look.gap;
+  }
+
+  get #shape() {
+    const look = this.#display?.look;
+    return look === undefined || this.#tweaked.has("shape")
+      ? this.#options.shape
+      : look.shape;
+  }
+
+  /** Precedence: a configured knob, the display's, the toy's, the default. */
   #lookOf(key: keyof Look) {
-    const look = this.#chosen.look;
-    return look === undefined || this.#tweaked.has(key)
-      ? this.#options[key]
-      : look[key];
+    const toy = this.#chosen.look;
+    const display = this.#display?.look;
+    if (this.#tweaked.has(key)) return this.#options[key];
+    if (key === "noise" && display !== undefined) return display.noise;
+    return toy === undefined ? this.#options[key] : toy[key];
   }
 
   #start() {
@@ -323,11 +340,10 @@ export class PixelBackdrop extends HTMLElement {
   #apply() {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const { autoFit, enabled, gap, noiseScale, noiseSpeed, scale, shape } =
-      this.#options;
+    const { autoFit, enabled, noiseScale, noiseSpeed, scale } = this.#options;
 
-    set(canvas, "gap", String(gap));
-    set(canvas, "shape", shape);
+    set(canvas, "gap", String(this.#gap));
+    set(canvas, "shape", this.#shape);
     set(canvas, "scale", String(scale));
     set(canvas, "noiseScale", String((noiseScale * canvas.width) / TUNED_GRID));
     set(canvas, "noiseSpeed", String(noiseSpeed));
@@ -351,6 +367,29 @@ export class PixelBackdrop extends HTMLElement {
   #applyLook(canvas: EmulatedCanvas) {
     set(canvas, "ghost", String(Math.round(this.#lookOf("ghost"))));
     set(canvas, "noise", String(Math.round(this.#lookOf("noise"))));
+    this.#applyResponse(canvas);
+  }
+
+  /** A configured ghost sets both responses itself, so it clears the display's. */
+  #applyResponse(canvas: EmulatedCanvas) {
+    const look = this.#display?.look;
+    if (look === undefined) {
+      for (const key of ["shadow", "shadowX", "shadowY"]) {
+        delete canvas.dataset[key];
+      }
+    } else {
+      const { opacity, x, y } = look.shadow;
+      set(canvas, "shadow", String(opacity));
+      set(canvas, "shadowX", String(x));
+      set(canvas, "shadowY", String(y));
+    }
+    if (look === undefined || this.#tweaked.has("ghost")) {
+      delete canvas.dataset.ghostRise;
+      delete canvas.dataset.ghostFall;
+    } else {
+      set(canvas, "ghostRise", String(look.ghostRise));
+      set(canvas, "ghostFall", String(look.ghostFall));
+    }
   }
 
   /**
@@ -402,7 +441,7 @@ export class PixelBackdrop extends HTMLElement {
    * instead would make a 1440 px screen round a 9 px stride up to 10.
    */
   #fit(canvas: EmulatedCanvas) {
-    return `max(1px, round(up, max(100lvw, 100lvh) / ${canvas.width}, 1px) - ${this.#options.gap}px)`;
+    return `max(1px, round(up, max(100lvw, 100lvh) / ${canvas.width}, 1px) - ${this.#gap}px)`;
   }
 
   #forward(type: string, event: PointerEvent) {

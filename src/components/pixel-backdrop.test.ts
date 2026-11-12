@@ -587,3 +587,73 @@ test("a palette knob set through configure outranks the display's", () => {
     paletteInk: pocket.ink,
   });
 });
+
+test("a display's look reaches the canvas, and Site gives back the look it had", () => {
+  const backdrop = mount();
+  backdrop.setMode("tuned");
+  const canvas = canvasOf(backdrop);
+  const defaults = readDefaults();
+
+  backdrop.setDisplay("pocket-lcd");
+
+  expect(canvas.dataset).toMatchObject({
+    gap: String(pocket.gap),
+    shape: pocket.shape,
+    ghost: "55",
+    ghostRise: String(pocket.ghostRise),
+    ghostFall: String(pocket.ghostFall),
+    noise: String(pocket.noise),
+    shadow: String(pocket.shadow.opacity),
+    shadowX: String(pocket.shadow.x),
+    shadowY: String(pocket.shadow.y),
+  });
+  expect(backdrop.look.noise).toBe(pocket.noise);
+
+  backdrop.setDisplay("site");
+
+  expect(canvas.dataset).toMatchObject({
+    gap: String(defaults.gap),
+    shape: defaults.shape,
+    ghost: "55",
+    noise: "12",
+  });
+  for (const key of [
+    "ghostRise",
+    "ghostFall",
+    "shadow",
+    "shadowX",
+    "shadowY",
+  ]) {
+    expect(canvas.dataset[key]).toBeUndefined();
+  }
+});
+
+test("a knob set through configure outranks the display's", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  backdrop.setDisplay("pocket-lcd");
+
+  backdrop.configure({ gap: 5, shape: "circle", noise: 30 });
+  expect(canvas.dataset).toMatchObject({
+    gap: "5",
+    shape: "circle",
+    noise: "30",
+  });
+
+  backdrop.configure({ ghost: 20 });
+  expect(canvas.dataset.ghost).toBe("20");
+  expect(canvas.dataset.ghostRise).toBeUndefined();
+  expect(canvas.dataset.ghostFall).toBeUndefined();
+});
+
+test("auto-fit takes the effective gap out of each stride", () => {
+  const backdrop = mount();
+  const scale = () =>
+    canvasOf(backdrop).style.getPropertyValue("--emulated-canvas-scale");
+  backdrop.configure({ autoFit: true });
+  backdrop.setDisplay("pocket-lcd");
+  expect(scale()).toContain(`) - ${pocket.gap}px)`);
+
+  backdrop.configure({ gap: 5 });
+  expect(scale()).toContain(") - 5px)");
+});
