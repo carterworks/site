@@ -110,8 +110,15 @@ export type Pace = "still" | "idle" | "active";
  * bitmap skips the pixel read-back and goes to the display in one copy. A pass
  * that goes inactive and active again is rebuilt, so it starts from the
  * current frame, not a stale one.
+ *
+ * `configure` is how a pass reads its knobs: it is called with the element's
+ * `dataset` when the pass is built and whenever a `data-*` attribute changes,
+ * so a pass parses its knobs once instead of on every frame. A pass that
+ * reads `frame.data` instead pays for that on each frame. The attribute a
+ * pass reads must be in `EmulatedCanvas.observedAttributes`.
  */
 export type ShaderPass = {
+  configure?(data: DOMStringMap): void;
   active(frame: ShaderFrame): boolean;
   apply(pixels: Uint8ClampedArray, frame: ShaderFrame): Pace;
 };
@@ -161,18 +168,22 @@ const SETTLED_LEVELS = 1;
  */
 const ghost: Shader = () => {
   let panel: Float32Array | undefined;
+  let tau = 0;
+  let retained = 0;
   return {
-    active: ({ data }) => retention(data) > 0,
-    apply(pixels, { elapsedMs, data }) {
-      const ghost = retention(data);
+    configure(data) {
+      retained = retention(data);
+      // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
+      tau = SIXTY_HZ_FRAME_MS / -Math.log(retained);
+    },
+    active: () => retained > 0,
+    apply(pixels, { elapsedMs }) {
       if (panel?.length !== pixels.length) {
         // Seed the panel with this frame so it starts opaque; otherwise a high
         // retention would fade in from transparent.
         panel = Float32Array.from(pixels);
         return "still";
       }
-      // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
-      const tau = SIXTY_HZ_FRAME_MS / -Math.log(ghost);
       const response = 1 - Math.exp(-elapsedMs / tau);
       let changing = false;
       for (let i = 0; i < pixels.length; i += 1) {
@@ -229,18 +240,22 @@ function colourRgb(value: string): Rgb {
  * The scale is a 256-entry table, rebuilt only when a colour changes.
  */
 const palette: Shader = () => {
-  let colours = "";
+  let base: string | undefined;
+  let ink: string | undefined;
+  let stale = true;
   const table = new Uint8ClampedArray(256 * 3);
   return {
-    active: ({ data }) =>
-      data.paletteBase !== undefined && data.paletteInk !== undefined,
-    apply(pixels, { data }) {
-      const base = data.paletteBase!;
-      const ink = data.paletteInk!;
-      if (colours !== `${base} ${ink}`) {
-        colours = `${base} ${ink}`;
-        const from = colourRgb(base);
-        const to = colourRgb(ink);
+    configure(data) {
+      if (base !== data.paletteBase || ink !== data.paletteInk) stale = true;
+      base = data.paletteBase;
+      ink = data.paletteInk;
+    },
+    active: () => base !== undefined && ink !== undefined,
+    apply(pixels) {
+      if (stale) {
+        stale = false;
+        const from = colourRgb(base!);
+        const to = colourRgb(ink!);
         for (let level = 0; level < 256; level += 1) {
           for (let channel = 0; channel < 3; channel += 1) {
             table[level * 3 + channel] =
@@ -301,22 +316,29 @@ const noise: Shader = () => {
   let layer: ReturnType<typeof makeCoarseNoise> | undefined;
   let field = new Float32Array(0);
   let clock = 0;
+  let intensity = 0;
+  let speed = 0;
+  let feature = 8;
+  let step = 1;
   return {
-    active: ({ data }) => knob(data.noise, 0) > 0,
-    apply(pixels, { width, height, elapsedMs, data }) {
-      if (layer === undefined || field.length !== width * height) {
-        layer = makeCoarseNoise(sample, width, height);
-        field = new Float32Array(width * height);
-      }
-      const speed = knob(data.noiseSpeed, 0);
-      clock += elapsedMs;
-      const drift = clock * speed * 0.00005;
-      const feature = Math.max(1, knob(data.noiseScale, 8));
-      const step = clamp(
+    configure(data) {
+      intensity = clamp(knob(data.noise, 0), 0, 100) / 100;
+      speed = knob(data.noiseSpeed, 0);
+      feature = Math.max(1, knob(data.noiseScale, 8));
+      step = clamp(
         Math.floor(feature / NOISE_SAMPLES_PER_FEATURE),
         1,
         MAX_NOISE_STEP,
       );
+    },
+    active: () => intensity > 0,
+    apply(pixels, { width, height, elapsedMs }) {
+      if (layer === undefined || field.length !== width * height) {
+        layer = makeCoarseNoise(sample, width, height);
+        field = new Float32Array(width * height);
+      }
+      clock += elapsedMs;
+      const drift = clock * speed * 0.00005;
       field.fill(0);
       layer(
         field,
@@ -324,7 +346,7 @@ const noise: Shader = () => {
         1 / feature,
         drift + NOISE_OFFSET_X,
         drift * 0.5 + NOISE_OFFSET_Y,
-        clamp(knob(data.noise, 0), 0, 100) / 100,
+        intensity,
       );
       for (let i = 0, cell = 0; i < pixels.length; i += 4, cell += 1) {
         const level = field[cell] * 255;
@@ -450,7 +472,7 @@ export class EmulatedCanvas extends HTMLElement {
   /** A scheduled present ran in this animation frame, so another waits for the next. */
   #presentedThisFrame = false;
   #drewAt = -Infinity;
-  #passes = SHADERS.map((shader) => shader());
+  #passes = SHADERS.map((_, index) => this.#build(index));
   #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
     width: 0,
@@ -478,7 +500,10 @@ export class EmulatedCanvas extends HTMLElement {
 
   attributeChangedCallback(name: string) {
     if (name === "data-manual") this.#cancelNext();
-    else this.#configure();
+    else {
+      this.#configure();
+      for (const pass of this.#passes) pass.configure?.(this.dataset);
+    }
     this.#requestPresent();
   }
 
@@ -548,8 +573,14 @@ export class EmulatedCanvas extends HTMLElement {
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
   reset() {
-    this.#passes = SHADERS.map((shader) => shader());
+    this.#passes = SHADERS.map((_, index) => this.#build(index));
     this.#wasActive.clear();
+  }
+
+  #build(index: number) {
+    const pass = SHADERS[index]();
+    pass.configure?.(this.dataset);
+    return pass;
   }
 
   /** Created on demand: a consumer may ask for the context before connection. */
@@ -723,7 +754,7 @@ export class EmulatedCanvas extends HTMLElement {
       const pass = this.#passes[index];
       if (!pass.active(frame)) {
         if (this.#wasActive.delete(pass))
-          this.#passes[index] = SHADERS[index]();
+          this.#passes[index] = this.#build(index);
         continue;
       }
       this.#wasActive.add(pass);

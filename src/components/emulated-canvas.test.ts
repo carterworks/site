@@ -756,6 +756,25 @@ describe("presenting drifting noise", () => {
     expect(presents).toBeLessThanOrEqual(8);
   });
 
+  test("frames with unchanged attributes parse no knobs", async () => {
+    const canvas = mountDrifting({
+      ghost: "50",
+      paletteBase: "#000000",
+      paletteInk: "#ffffff",
+    });
+    await vi.advanceTimersByTimeAsync(500);
+    const parseFloat = vi.spyOn(Number, "parseFloat");
+    const parseInt = vi.spyOn(Number, "parseInt");
+
+    expect(await presentsOver(1000)).toBeGreaterThan(5);
+    expect(parseFloat).not.toHaveBeenCalled();
+    expect(parseInt).not.toHaveBeenCalled();
+
+    canvas.dataset.noiseSpeed = "100";
+    await Promise.resolve();
+    expect(parseFloat).toHaveBeenCalled();
+  });
+
   test("static noise presents once and stops", async () => {
     mountDrifting({ noiseSpeed: "0" });
     await vi.advanceTimersByTimeAsync(100);
