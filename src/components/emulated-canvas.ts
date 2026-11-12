@@ -658,10 +658,11 @@ export class EmulatedCanvas extends HTMLElement {
     this.#requestPresent();
   }
 
-  /** Drops every pass's state, so the next present shows the bitmap opaque. */
+  /** Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn. */
   reset() {
     this.#passes = SHADERS.map((_, index) => this.#build(index));
     this.#wasActive.clear();
+    this.#dissolving = false;
   }
 
   #build(index: number) {

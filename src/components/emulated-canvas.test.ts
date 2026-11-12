@@ -932,6 +932,21 @@ test("a transition mid-dissolve freezes the mix on show, so nothing jumps", () =
   expect([...shown()]).toEqual(mix);
 });
 
+test("a reset ends the dissolve, so the frozen frame does not outlive the palette it was drawn in", () => {
+  const canvas = mountCanvas({ width: "32", height: "32" });
+  const context = canvas.getContext("2d")!;
+  context.putImageData(square(32, 255), 0, 0);
+  canvas.present();
+  canvas.transition();
+  context.putImageData(square(32, 0), 0, 0);
+  display.drawImage.mockClear();
+
+  canvas.reset();
+
+  expect(canvas.present()).toBe(false);
+  expect(display.drawImage).toHaveBeenCalledTimes(1);
+});
+
 describe("presenting on its own", () => {
   beforeEach(() => {
     vi.useFakeTimers({
