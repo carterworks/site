@@ -4,6 +4,10 @@ import { MODES } from "./backdrop-modes";
 import { settings } from "./command-bar";
 import { createThemeSetting } from "./theme-setting";
 
+vi.mock("./backdrop-modes", () => ({
+  MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
+}));
+
 const markup = `
   <a href="/blog/post/">Article on this page</a>
   <a href="https://example.com/reference">External reference</a>

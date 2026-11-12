@@ -2,6 +2,10 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropMode } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 
+vi.mock("./backdrop-modes", () => ({
+  MODES: ["one", "two", "three"].map((id) => ({ id, label: id.toUpperCase() })),
+}));
+
 const setMode = vi.fn();
 
 function fixedRandom(...values: number[]) {
