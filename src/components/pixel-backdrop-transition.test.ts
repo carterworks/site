@@ -312,6 +312,18 @@ describe("a mode's look", () => {
     expect(shownAt(30)).toBe(BASE);
   });
 
+  test("starts a new dissolve from the outgoing look, even when configured before the next frame", async () => {
+    const backdrop = mount();
+    backdrop.setMode("misty");
+    await vi.advanceTimersByTimeAsync(100);
+    backdrop.setMode("clear");
+    await vi.advanceTimersByTimeAsync(1000);
+
+    backdrop.setMode("misty");
+    backdrop.configure({ rippleSize: 11 });
+    expect(ghostOf(backdrop)).toBe(80);
+  });
+
   test("gives way to a knob tweaked off its default, in every mode, until reset", async () => {
     const backdrop = mount();
     backdrop.setMode("misty");

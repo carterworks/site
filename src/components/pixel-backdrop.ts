@@ -474,8 +474,10 @@ export class PixelBackdrop extends HTMLElement {
     this.#input.press = undefined;
     this.#mode = this.#createMode();
     this.#dissolveStart = undefined;
+    this.#dissolveProgress = 0;
     if (this.#context === undefined || !this.#painted) {
       this.#outgoing = undefined;
+      this.#outgoingMode = undefined;
       return;
     }
     this.#outgoing = outgoing;
@@ -540,6 +542,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#lastTick = undefined;
     this.#context = undefined;
     this.#outgoing = undefined;
+    this.#outgoingMode = undefined;
   }
 
   /** Mirror the knobs the canvas draws with onto its attributes. */
@@ -643,6 +646,7 @@ export class PixelBackdrop extends HTMLElement {
     const progress = (now - this.#dissolveStart) / DISSOLVE_MS;
     if (progress >= 1) {
       this.#outgoing = undefined;
+      this.#outgoingMode = undefined;
       return false;
     }
     this.#dissolveProgress = progress;
