@@ -1,12 +1,12 @@
 {
-  "name": "Carter McBride",
-  "short_name": "Carter",
+  "name": "carter.works",
+  "short_name": "carter.works",
   "description": "A developer from Utah.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f1f1f1",
-  "theme_color": "#f1f1f1",
+  "background_color": "#f8f8f8",
+  "theme_color": "#f8f8f8",
   "icons": [
     {
       "src": "/favicon.png",
