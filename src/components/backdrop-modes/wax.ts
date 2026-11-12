@@ -69,8 +69,8 @@ type Grab = { blob: Blob; dx: number; dy: number };
  * shoves the wax away and hovering nudges it. Left alone the lamp cools to a
  * stop, so an untouched tab costs nothing, and any input warms it again.
  *
- * It draws white, each band of wax a different alpha, for the backdrop to
- * recolour.
+ * It draws white, each band of wax a different alpha, so an owner can recolour
+ * it without losing the bands.
  */
 export const wax: Toy = {
   id: "wax",

@@ -285,9 +285,11 @@ test("stop cancels its frame and ignores the pointer from then on", async () => 
   expect(vi.getTimerCount()).toBe(0);
 });
 
+// Recorded from the visible-area passes; it matched a full-grid run then, which
+// the test cannot recheck.
 const GOLDEN = -1673793001;
 
-test("a scripted session renders exactly as the full-grid passes would", async () => {
+test("a scripted session renders as recorded", async () => {
   const size = 240;
   begin(mulberry32(7), size);
   let hash = 0;
