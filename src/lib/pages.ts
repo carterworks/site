@@ -20,9 +20,9 @@ export const pages: Record<string, PageMetadata> = {
   "/blog/": {
     description: "A software engineer's blog? How original.",
     id: "blog",
-    ogTitle: "All blog posts",
+    ogTitle: "Blog",
     ogType: "website",
-    title: "All blog posts | carter.works",
+    title: "Blog | carter.works",
   },
   "/play/": {
     description: "The pixel backdrop, full-screen.",

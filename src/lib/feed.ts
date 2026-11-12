@@ -1,6 +1,7 @@
 import { getPostTitle, getPublishedPosts, type BlogPost } from "./blog";
 import { createSatteriMarkdownProcessor } from "@astrojs/markdown-satteri";
 import { Feed } from "feed";
+import { pages } from "./pages";
 
 const feeds = new Map<string, Promise<Feed>>();
 const markdownProcessor = createSatteriMarkdownProcessor();
@@ -55,8 +56,8 @@ async function createBlogFeed(
   const atomUrl = new URL("/blog/atom.xml", site).href;
   const rssUrl = new URL("/blog/rss.xml", site).href;
   const feed = new Feed({
-    title: "Carter's Blog",
-    description: "A software engineer's blog? How original.",
+    title: pages["/blog/"].title,
+    description: pages["/blog/"].description,
     id: siteUrl,
     link: siteUrl,
     language: "en-us",

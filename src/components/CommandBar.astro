@@ -6,7 +6,7 @@ import { getPostTitle, getPublishedPosts } from "../lib/blog";
 const posts = await getPublishedPosts();
 const sitemapPages = [
   { href: "/", label: "Home" },
-  { href: "/blog/", label: "Writing" },
+  { href: "/blog/", label: "Blog" },
   ...posts.map((post) => ({
     href: `/blog/${post.id}/`,
     label: getPostTitle(post),

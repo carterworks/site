@@ -5,7 +5,7 @@ import CommandBar from "../components/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/PixelBackdrop.astro";
 import { SCHEME_KEY } from "../lib/color-scheme";
-import { getPageMetadata, type PageMetadata } from "../lib/pages";
+import { getPageMetadata, pages, type PageMetadata } from "../lib/pages";
 interface Props {
   bare?: boolean;
   class?: string;
@@ -62,13 +62,13 @@ const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
     <link
       rel="alternate"
       type="application/atom+xml"
-      title="Carter's Blog"
+      title={pages["/blog/"].title}
       href="/blog/atom.xml"
     />
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="Carter's Blog"
+      title={pages["/blog/"].title}
       href="/blog/rss.xml"
     />
     <title>{title}</title>
