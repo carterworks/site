@@ -214,11 +214,12 @@ const BUFFERS = [
 ] as const;
 
 /** Counts buffers constructed until `restore`. */
-function countAllocations() {
+function countAllocations(...only: (typeof BUFFERS)[number][]) {
   let count = 0;
   const globals = globalThis as unknown as Record<string, object>;
   const originals = BUFFERS.map((name) => globals[name]);
   BUFFERS.forEach((name, index) => {
+    if (only.length > 0 && !only.includes(name)) return;
     globals[name] = new Proxy(originals[index] as new () => object, {
       construct(target, args, newTarget) {
         count += 1;
@@ -268,16 +269,17 @@ beforeEach(() => {
     new DOMRect(0, (innerHeight - innerWidth) / 2, innerWidth, innerWidth),
   );
   const present = EmulatedCanvas.prototype.present;
-  vi.spyOn(EmulatedCanvas.prototype, "present").mockImplementation(
-    function (this: EmulatedCanvas) {
-      const changing = present.call(this);
-      ledger.hostNoise = hostSamplers.reduce((sum, s) => sum + s.samples, 0);
-      for (const sampler of hostSamplers) sampler.samples = 0;
-      frames.push(ledger);
-      ledger = emptyLedger();
-      return changing;
-    },
-  );
+  vi.spyOn(EmulatedCanvas.prototype, "present").mockImplementation(function (
+    this: EmulatedCanvas,
+    pixels?: ImageData,
+  ) {
+    const changing = present.call(this, pixels);
+    ledger.hostNoise = hostSamplers.reduce((sum, s) => sum + s.samples, 0);
+    for (const sampler of hostSamplers) sampler.samples = 0;
+    frames.push(ledger);
+    ledger = emptyLedger();
+    return changing;
+  });
   installBackdropDefaults();
   ledger = emptyLedger();
   frames = [];
@@ -341,6 +343,22 @@ describe.each(MODES.map((mode) => [mode.id]))("%s", (id) => {
         frame.hostNoise > NOISE_BUDGET,
     );
     expect(unbounded).toEqual([]);
+    expect(allocations.count()).toBe(0);
+  });
+
+  test("with the ghost active, presenting reads nothing back and allocates no image data once warmed up", async () => {
+    mount(id);
+    await vi.advanceTimersByTimeAsync(500);
+    frames = [];
+    const allocations = countAllocations("ImageData");
+    try {
+      await play();
+    } finally {
+      allocations.restore();
+    }
+
+    expect(frames.length).toBeGreaterThan(100);
+    expect(frames.filter((frame) => frame.readbackReads > 0)).toEqual([]);
     expect(allocations.count()).toBe(0);
   });
 

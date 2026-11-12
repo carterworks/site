@@ -258,6 +258,7 @@ export class EmulatedCanvas extends HTMLElement {
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
   #readback?: OffscreenCanvasRenderingContext2D | null;
+  #scratch?: ImageData;
   #passes = SHADERS.map((shader) => shader());
   #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
@@ -319,9 +320,12 @@ export class EmulatedCanvas extends HTMLElement {
    * Paints the current bitmap now; the owner of a `data-manual` canvas calls
    * this. Returns whether the shaders are still changing the display, so an
    * owner whose bitmap is static knows when it can stop presenting.
+   *
+   * An owner that still holds the pixels it just drew can pass them, sparing
+   * the shaders a read-back of the bitmap.
    */
-  present() {
-    return this.#blit();
+  present(pixels?: ImageData) {
+    return this.#blit(pixels);
   }
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
@@ -393,7 +397,7 @@ export class EmulatedCanvas extends HTMLElement {
     this.#mirrorFrame = undefined;
   }
 
-  #blit() {
+  #blit(pixels?: ImageData) {
     const outerCanvas = this.#outerCanvas;
     if (outerCanvas === undefined) return false;
     const innerCanvas = this.#bitmap();
@@ -416,14 +420,16 @@ export class EmulatedCanvas extends HTMLElement {
 
     let image: ImageData | undefined;
     let changing = false;
-    for (const [index, pass] of this.#passes.entries()) {
+    for (let index = 0; index < this.#passes.length; index += 1) {
+      const pass = this.#passes[index];
       if (!pass.active(frame)) {
         if (this.#wasActive.delete(pass))
           this.#passes[index] = SHADERS[index]();
         continue;
       }
       this.#wasActive.add(pass);
-      image ??= this.#read(innerCanvas);
+      image ??=
+        pixels === undefined ? this.#read(innerCanvas) : this.#copy(pixels);
       if (image === undefined) break;
       changing = pass.apply(image.data, frame) || changing;
     }
@@ -431,6 +437,16 @@ export class EmulatedCanvas extends HTMLElement {
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
     return changing;
+  }
+
+  /** Shaders rewrite their pixels, which must stay the owner's to draw over. */
+  #copy(pixels: ImageData) {
+    let scratch = this.#scratch;
+    if (scratch?.width !== pixels.width || scratch.height !== pixels.height) {
+      scratch = this.#scratch = new ImageData(pixels.width, pixels.height);
+    }
+    scratch.data.set(pixels.data);
+    return scratch;
   }
 
   /**

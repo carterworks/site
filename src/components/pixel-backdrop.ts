@@ -604,7 +604,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#painted = true;
     // A fade in flight keeps full rate: at the idle rate it would visibly step,
     // and a static frame that stopped would freeze it half-faded.
-    const changing = this.#canvas?.present() ?? false;
+    const changing = this.#canvas?.present(this.#image) ?? false;
     // Like drifting noise, an idle mode changes on every redraw.
     const drifting = pace === "idle" || this.#noiseDrifts();
     const fading =

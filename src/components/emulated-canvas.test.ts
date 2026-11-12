@@ -25,13 +25,17 @@ class FakeBitmap {
     const { pixels, width, height } = this;
     return {
       drawImage: (source: FakeBitmap) => pixels.set(source.pixels),
-      getImageData: () => ({ width, height, data: pixels.slice() }),
+      getImageData: () => {
+        reads += 1;
+        return { width, height, data: pixels.slice() };
+      },
       putImageData: (image: ImageData) => pixels.set(image.data),
     };
   }
 }
 
 let clock = 0;
+let reads = 0;
 
 beforeEach(() => {
   vi.stubGlobal("OffscreenCanvas", FakeBitmap);
@@ -39,6 +43,7 @@ beforeEach(() => {
     display as unknown as CanvasRenderingContext2D,
   );
   clock = 0;
+  reads = 0;
   vi.spyOn(performance, "now").mockImplementation(() => clock);
   display.drawImage.mockClear();
   display.putImageData.mockClear();
@@ -340,4 +345,31 @@ test("a one-level step settles at once, so a slowly drifting frame lets its owne
 
   expect(canvas.present()).toBe(false);
   expect(shown()[0]).toBe(101);
+});
+
+test("presenting the pixels the consumer just drew shows what reading the bitmap back shows, without reading it back", () => {
+  const read = mountCanvas({ ghost: "70" });
+  const handed = mountCanvas({ ghost: "70" });
+  const pixels = (level: number) => {
+    const data = new Uint8ClampedArray(4);
+    data.set([level, level, level, 255]);
+    return { width: 1, height: 1, data } as ImageData;
+  };
+
+  const shownAfter = (canvas: EmulatedCanvas, level: number, hand: boolean) => {
+    canvas.getContext("2d")?.putImageData(pixels(level), 0, 0);
+    clock += 1000 / 60;
+    canvas.present(hand ? pixels(level) : undefined);
+    return [...shown()];
+  };
+
+  const levels = [255, 0, 0, 128];
+  const expected = levels.map((level) => shownAfter(read, level, false));
+  expect(reads).toBeGreaterThan(0);
+
+  reads = 0;
+  expect(levels.map((level) => shownAfter(handed, level, true))).toEqual(
+    expected,
+  );
+  expect(reads).toBe(0);
 });
