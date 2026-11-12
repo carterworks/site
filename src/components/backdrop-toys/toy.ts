@@ -28,9 +28,9 @@ export type Look = { ghost: number; noise: number };
  * listeners and cancels its frames and timers.
  *
  * An owner may style what it draws: `<pixel-backdrop>` recolours it in the
- * theme's palette, lays noise under it and dissolves between toys, but the toy
- * never sees any of that. `look` is the ghost and noise it was tuned with, for
- * an owner that has them.
+ * display's palette, lays noise under it and dissolves between toys, but the
+ * toy never sees any of that. `look` is the ghost and noise it was tuned with,
+ * for an owner that has them.
  */
 export type Toy = {
   id: string;

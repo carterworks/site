@@ -9,7 +9,7 @@ import { isToyPress } from "./backdrop-press";
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
  * runs a backdrop toy on it. The toy only draws on the canvas and listens to
  * it, as it would on any canvas; the element picks the toy, styles the canvas
- * (the theme's palette, the drifting noise, the dissolve between toys), and
+ * (the display's palette, the drifting noise, the dissolve between toys), and
  * passes it the pointer. The layer is fixed and non-interactive, so the page
  * above it paints its own solid panels over the result.
  *
@@ -254,7 +254,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#apply();
   }
 
-  /** Show the canvas as a registered display theme; an unknown id is ignored. */
+  /** Show the canvas as a registered display; an unknown id is ignored. */
   setDisplay(id: string) {
     const display = DISPLAYS.find((candidate) => candidate.id === id);
     if (display === undefined || display === this.#display) return;

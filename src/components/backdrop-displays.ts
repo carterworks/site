@@ -1,7 +1,7 @@
 import { storedChoice } from "../lib/cycle-setting";
 
 /**
- * The screen a display theme gives the backdrop, as the canvas knobs that
+ * The screen a display gives the backdrop, as the canvas knobs that
  * draw it. Colours are hex only: any other form makes the palette pass parse
  * it through a helper canvas.
  */
@@ -28,7 +28,7 @@ export type Display = {
 };
 
 /**
- * Every display theme, in menu order; the first is the site's own look. The
+ * Every display, in menu order; the first is the site's own look. The
  * screens' numbers are tuned against reference photos. The ghost runs after
  * the palette, so ink appearing darkens a pixel and clearing brightens it: an
  * STN panel switches on faster than it relaxes, so it rises slower than it

@@ -20,7 +20,7 @@ test("shows the site's own look and stores nothing by default", () => {
   expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
 });
 
-test("the first activation stores and applies the first themed display", () => {
+test("the first activation stores and applies the first screen", () => {
   const display = createBackdropDisplay();
 
   display.cycle();
@@ -30,7 +30,7 @@ test("the first activation stores and applies the first themed display", () => {
   expect(display.label()).toBe(pocket.label);
 });
 
-test("rotates through the themed displays, then back to the site's look", () => {
+test("rotates through the screens, then back to the site's look", () => {
   const display = createBackdropDisplay();
 
   display.cycle();

@@ -290,7 +290,7 @@ function colourRgb(value: string): Rgb {
 /**
  * Recolours the frame in two colours: each pixel's luma, over black, picks its
  * place on the scale from `data-palette-base` (dark) to `data-palette-ink`
- * (light), so a consumer can draw in any colour and still show in the theme's.
+ * (light), so a consumer can draw in any colour and still show in the palette.
  * `data-palette-levels` (2 or more) snaps each pixel to the nearest of that
  * many evenly spaced shades, like a panel with few grey levels. The scale is a
  * 256-entry table, rebuilt only when a knob changes.
