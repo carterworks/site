@@ -196,7 +196,7 @@ type Rgb = [number, number, number];
 let rgbContext: CanvasRenderingContext2D | null | undefined;
 
 /** Resolve any CSS colour to `[r, g, b]`. */
-export function colourRgb(value: string): Rgb {
+function colourRgb(value: string): Rgb {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
   if (hex !== null) {
     const digits =

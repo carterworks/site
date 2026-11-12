@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { countAllocations } from "../test/toy-canvas";
 import {
   type EmulatedCanvas,
   SHADERS,
@@ -769,4 +770,31 @@ test("a transition keeps the canvas presenting every frame until the dissolve en
   } finally {
     vi.useRealTimers();
   }
+});
+
+test("a transition after the first allocates no buffers, styled frame or not", () => {
+  const canvas = mountCanvas({
+    width: "16",
+    height: "16",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+  });
+  const context = canvas.getContext("2d")!;
+  const image = square(16, 255);
+  context.putImageData(image, 0, 0);
+  canvas.present();
+  canvas.transition();
+  canvas.present();
+
+  const allocations = countAllocations();
+  try {
+    canvas.transition();
+    context.putImageData(image, 0, 0);
+    clock += 400;
+    canvas.present();
+  } finally {
+    allocations.restore();
+  }
+
+  expect(allocations.count()).toBe(0);
 });
