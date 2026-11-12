@@ -1,5 +1,5 @@
 import { line } from "./line";
-import type { CellRect, Mode, Point } from "./mode";
+import { cellScale, type CellRect, type Mode, type Point } from "./mode";
 
 /**
  * The gallery tile this mode was tuned in draws cells about 6 px wide; the
@@ -8,7 +8,6 @@ import type { CellRect, Mode, Point } from "./mode";
  * colony keeps the tile's size and pace in pixels. It is 1 at 240 columns.
  */
 const GALLERY_CELL_PX = 6;
-const REFERENCE_WIDTH_PX = 1440;
 /** Steps between gallery generations; a held press stretches them so a shape can be finished. */
 const STEPS_PER_GENERATION = 6;
 const STEPS_PER_HELD_GENERATION = 36;
@@ -53,7 +52,7 @@ export const culture: Mode = {
   holds: true,
   create({ columns, rows, random }) {
     const size = columns * rows;
-    const scale = (GALLERY_CELL_PX * columns) / REFERENCE_WIDTH_PX;
+    const scale = cellScale(GALLERY_CELL_PX, columns);
     const rimWidth = Math.max(MIN_RIM_WIDTH, RIM_WIDTH * scale);
     const dishMargin = DISH_MARGIN * scale;
     const sporeRadius = Math.round(SPORE_RADIUS * scale);

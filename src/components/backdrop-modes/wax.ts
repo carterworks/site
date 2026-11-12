@@ -1,4 +1,9 @@
-import type { BackdropInput, CellRect, Mode } from "./mode";
+import {
+  cellScale,
+  type BackdropInput,
+  type CellRect,
+  type Mode,
+} from "./mode";
 
 /**
  * The gallery tile is 48 cells across at about 8 px a cell with 6 blobs. On the
@@ -6,7 +11,6 @@ import type { BackdropInput, CellRect, Mode } from "./mode";
  * the prototype tuned in cells, scale by the ratio of cell sizes at this width.
  */
 const PROTOTYPE_CELL_PX = 8;
-const REFERENCE_WIDTH_PX = 1440;
 /**
  * A handful of blobs however big the glass: every blob's slow tail adds to
  * every cell, so a count that grows with the area merges into one mass.
@@ -48,7 +52,7 @@ export const wax: Mode = {
   look: { ghost: 75, noise: 8 },
   holds: true,
   create({ columns, rows, random }) {
-    const scale = (columns * PROTOTYPE_CELL_PX) / REFERENCE_WIDTH_PX;
+    const scale = cellScale(PROTOTYPE_CELL_PX, columns);
     const reach = 18 * scale;
     const blobs: Blob[] = [];
     const scratch: BlobScratch = {

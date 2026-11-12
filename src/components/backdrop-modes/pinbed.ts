@@ -1,15 +1,12 @@
 import { clamp } from "../emulated-canvas-limits";
-import { GRID_SIZE, type CellRect, type Mode } from "./mode";
+import { cellScale, type CellRect, type Mode } from "./mode";
 
 /**
- * The prototype tile was tuned at 48 cells across about 360 px; on a 1440 px
- * viewport the site's cells are GRID_SIZE across it. Radii and speeds in cells
- * scale by the ratio of those cell pitches so they cover the same pixels.
+ * The prototype tile was tuned at 48 cells across about 360 px. Radii and
+ * speeds in its cells scale by the ratio of cell pitches so they cover the
+ * same pixels.
  */
-const SCALE = 360 / 48 / (1440 / GRID_SIZE);
-const HOVER_RADIUS = 3.4 * SCALE;
-const PRESS_RADIUS = 5.5 * SCALE;
-const PEBBLE_RADIUS = 3 * SCALE;
+const PROTOTYPE_CELL_PX = 360 / 48;
 const HOVER_DEPTH = 0.34;
 const PEBBLE_DEPTH = 0.6;
 const TAP_DEPTH = 0.6;
@@ -26,11 +23,7 @@ const PEBBLE_JITTER_MS = 4000;
  */
 const PEBBLE_SPEED = 0.2;
 const PEBBLE_SPEED_JITTER = 0.08;
-/** The dent's far wall is lit above this rise over its up-left neighbour. */
-const LIT_RISE = 0.04 / SCALE;
 
-const PALM_RADIUS = 7 * SCALE;
-const FINGER_RADIUS = 2.2 * SCALE;
 const FINGERS = [
   [-6, -8],
   [-2, -10],
@@ -57,6 +50,14 @@ export const pinbed: Mode = {
   look: { ghost: 40, noise: 8 },
   holds: true,
   create({ columns, rows, random }) {
+    const scale = cellScale(PROTOTYPE_CELL_PX, columns);
+    const hoverRadius = 3.4 * scale;
+    const pressRadius = 5.5 * scale;
+    const pebbleRadius = 3 * scale;
+    const palmRadius = 7 * scale;
+    const fingerRadius = 2.2 * scale;
+    // The dent's far wall is lit above this rise over its up-left neighbour.
+    const litRise = 0.04 / scale;
     const depth = new Float32Array(columns * rows);
     const pushedAt = new Float32Array(columns * rows).fill(-Infinity);
     // Only pins that are down are relaxed and drawn; scanning all of them each
@@ -109,14 +110,14 @@ export const pinbed: Mode = {
 
     const launchPebble = (visible: CellRect) => {
       const fromLeft = random() < 0.5;
-      const margin = 4 * SCALE;
+      const margin = 4 * scale;
       const height = visible.bottom - visible.top;
       const speed = PEBBLE_SPEED + random() * PEBBLE_SPEED_JITTER;
       pebble = {
         x: fromLeft ? visible.left - margin : visible.right + margin,
         y: visible.top + height * (0.15 + random() * 0.7),
         vx: fromLeft ? speed : -speed,
-        vy: (random() - 0.5) * 0.05 * SCALE,
+        vy: (random() - 0.5) * 0.05 * scale,
       };
     };
 
@@ -124,11 +125,11 @@ export const pinbed: Mode = {
       depth.fill(0);
       isDown.fill(0);
       downCount = 0;
-      const x = visible.left + 1.3 * PALM_RADIUS;
-      const y = visible.bottom - 1.3 * PALM_RADIUS;
-      push(x, y, PALM_RADIUS, PRINT_DEPTH, 1);
+      const x = visible.left + 1.3 * palmRadius;
+      const y = visible.bottom - 1.3 * palmRadius;
+      push(x, y, palmRadius, PRINT_DEPTH, 1);
       for (const [dx, dy] of FINGERS) {
-        push(x + dx * SCALE, y + dy * SCALE, FINGER_RADIUS, PRINT_DEPTH, 1);
+        push(x + dx * scale, y + dy * scale, fingerRadius, PRINT_DEPTH, 1);
       }
       printedIn = { ...visible };
     };
@@ -159,7 +160,7 @@ export const pinbed: Mode = {
 
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
-          push(press.x, press.y, PRESS_RADIUS, TAP_DEPTH, 1);
+          push(press.x, press.y, pressRadius, TAP_DEPTH, 1);
         }
         holding = press?.held === true;
         if (press !== undefined && holding) {
@@ -168,12 +169,12 @@ export const pinbed: Mode = {
             1,
             HOLD_START + (now - press.at) / HOLD_RAMP_MS,
           );
-          push(at.x, at.y, PRESS_RADIUS, strength, GRAB);
+          push(at.x, at.y, pressRadius, strength, GRAB);
         } else if (
           pointer !== undefined &&
           (pointer.x !== seenPointer?.x || pointer.y !== seenPointer?.y)
         ) {
-          push(pointer.x, pointer.y, HOVER_RADIUS, HOVER_DEPTH, GRAB);
+          push(pointer.x, pointer.y, hoverRadius, HOVER_DEPTH, GRAB);
         }
         seenPointer = pointer;
 
@@ -192,8 +193,8 @@ export const pinbed: Mode = {
         if (pebble !== undefined) {
           pebble.x += pebble.vx;
           pebble.y += pebble.vy;
-          push(pebble.x, pebble.y, PEBBLE_RADIUS, PEBBLE_DEPTH, 0.5);
-          const margin = 6 * SCALE;
+          push(pebble.x, pebble.y, pebbleRadius, PEBBLE_DEPTH, 0.5);
+          const margin = 6 * scale;
           if (
             pebble.x < visible.left - margin ||
             pebble.x > visible.right + margin
@@ -222,7 +223,7 @@ export const pinbed: Mode = {
             i % columns > 0 && i >= columns
               ? depth[i] - depth[i - columns - 1]
               : 0;
-          const level = depth[i] * 0.7 + (rise > LIT_RISE ? 0.3 : 0);
+          const level = depth[i] * 0.7 + (rise > litRise ? 0.3 : 0);
           field[i] = Math.round(clamp(level, 0, 1) * 5) / 5;
         }
       },

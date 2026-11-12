@@ -1,12 +1,11 @@
 import { line } from "./line";
-import type { Mode, Point } from "./mode";
+import { TUNED_GRID, type Mode, type Point } from "./mode";
 
 const SHADES = [0, 0.55, 0.78, 1];
 /**
- * Tunables below were set on an 80-cell grid; they scale by `columns / TUNED_COLUMNS`
+ * Tunables below were set on the tuned grid; they scale by `columns / TUNED_GRID`
  * so pours, taps and the trickle keep their on-screen size on a denser grid.
  */
-const TUNED_COLUMNS = 80;
 const POUR_GRAINS = 3;
 const POUR_SPREAD = 3;
 const DOUBLE_TAP_MS = 380;
@@ -50,7 +49,7 @@ export const silt: Mode = {
   look: { ghost: 55, noise: 12 },
   holds: true,
   create({ columns, rows, random }) {
-    const scale = columns / TUNED_COLUMNS;
+    const scale = columns / TUNED_GRID;
     const pourGrains = Math.round(POUR_GRAINS * scale);
     const pourSpread = POUR_SPREAD * scale;
     const tapCells = DOUBLE_TAP_CELLS * scale;

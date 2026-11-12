@@ -1,11 +1,8 @@
 import { clamp } from "../emulated-canvas-limits";
 import { line } from "./line";
-import { GRID_SIZE, type Mode, type Point } from "./mode";
+import { TUNED_GRID, type Mode, type Point } from "./mode";
 
 const MAX_RIPPLES = 24;
-
-// rippleSize is authored in cells of the 80-cell grid the look was tuned on.
-const RIPPLE_SIZE_SCALE = GRID_SIZE / 80;
 
 /**
  * The original backdrop: moving the pointer smears a segment from the cell it
@@ -17,6 +14,8 @@ export const shimmer: Mode = {
   id: "shimmer",
   label: "Shimmer",
   create({ columns, rows, options }) {
+    // rippleSize is authored in cells of the tuned grid.
+    const rippleSizeScale = columns / TUNED_GRID;
     const ripples: { x: number; y: number; born: number }[] = [];
     let seenPointer: Point | undefined;
     let seenPress: object | undefined;
@@ -78,7 +77,7 @@ export const shimmer: Mode = {
 
         for (const ripple of ripples) {
           const progress = (now - ripple.born) / options.rippleSpeed;
-          const radius = progress * options.rippleSize * RIPPLE_SIZE_SCALE;
+          const radius = progress * options.rippleSize * rippleSizeScale;
           const strength = 1 - progress;
           const reach = Math.ceil(radius + 1);
           const top = Math.max(0, Math.floor(ripple.y) - reach);
