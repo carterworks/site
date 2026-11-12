@@ -35,6 +35,13 @@ function setup() {
     input.lastInputAt = now;
     input.press = { x, y, at: now, held: true };
   };
+  const release = () => {
+    input.press!.held = false;
+  };
+  const tap = (x: number, y: number) => {
+    press(x, y);
+    release();
+  };
   const frames = (count: number, touching = true) => {
     for (let i = 0; i < count; i += 1) {
       if (touching) input.lastInputAt = now;
@@ -42,20 +49,20 @@ function setup() {
     }
   };
   const energy = () => field.reduce((sum, value) => sum + value, 0);
-  return { input, field, frame, frames, press, energy };
+  return { input, field, frame, frames, press, release, tap, energy };
 }
 
-test("a press raises the surface and keeps the loop active", () => {
-  const { press, frame, energy } = setup();
-  press(middle, middle);
+test("a tap raises the surface and keeps the loop active", () => {
+  const { tap, frame, energy } = setup();
+  tap(middle, middle);
 
   expect(frame()).toBe("active");
   expect(energy()).toBeGreaterThan(0);
 });
 
 test("a press with no further input damps back to a flat surface", () => {
-  const { press, frames, frame, field, energy } = setup();
-  press(middle, middle);
+  const { tap, frames, frame, field, energy } = setup();
+  tap(middle, middle);
   frames(60 * 20);
 
   expect(frame()).not.toBe("active");
@@ -63,9 +70,51 @@ test("a press with no further input damps back to a flat surface", () => {
   expect(field.every((value) => value === 0)).toBe(true);
 });
 
-test("the same press is dropped only once", () => {
+test("a press held down drops no stone, since a drag would start with a splash", () => {
   const { press, frames, energy } = setup();
   press(middle, middle);
+  frames(5);
+
+  expect(energy()).toBe(0);
+});
+
+test("a tap drops its stone when the finger lifts", () => {
+  const { press, release, frame, energy } = setup();
+  press(middle, middle);
+  frame();
+  release();
+  frame();
+
+  expect(energy()).toBeGreaterThan(0);
+});
+
+test("a press held past a tap drops no stone on release", () => {
+  const { press, release, frames, frame, energy } = setup();
+  press(middle, middle);
+  frames(60);
+  release();
+  frame();
+
+  expect(energy()).toBe(0);
+});
+
+test("a press that travelled before lifting is a drag, not a tap", () => {
+  const lift = (release: boolean) => {
+    const { input, press, release: up, frames, energy } = setup();
+    press(size / 4, middle);
+    input.pointer = { x: size / 4 + 20, y: middle };
+    frames(1);
+    if (release) up();
+    frames(1);
+    return energy();
+  };
+
+  expect(lift(true)).toBe(lift(false));
+});
+
+test("the same press is dropped only once", () => {
+  const { tap, frames, energy } = setup();
+  tap(middle, middle);
   frames(60 * 20);
   frames(1);
 
@@ -122,8 +171,8 @@ test("rain stops after a while so an untouched pond lets the loop sleep", () => 
 });
 
 test("a pond that is about to rain idles between drops instead of stopping", () => {
-  const { frames, frame, press } = setup();
-  press(middle, middle);
+  const { frames, frame, tap } = setup();
+  tap(middle, middle);
   frames(60 * 8, false);
 
   expect(["idle", "active"]).toContain(frame());
@@ -131,11 +180,11 @@ test("a pond that is about to rain idles between drops instead of stopping", () 
 });
 
 test("a lone ripple costs far less to step than one that fills the pond", () => {
-  const { press: warmPress, frames } = setup();
-  warmPress(middle, middle);
+  const { tap: warmTap, frames } = setup();
+  warmTap(middle, middle);
   frames(300);
 
-  const { input, press, frame } = setup();
+  const { input, tap, frame } = setup();
   // Each swept cell costs one Math.abs; counting them is load-independent, unlike wall-clock time.
   const abs = Math.abs;
   let calls = 0;
@@ -151,7 +200,7 @@ test("a lone ripple costs far less to step than one that fills the pond", () => 
   let lone = 0;
   let filled = 0;
   try {
-    press(size / 16, size / 16);
+    tap(size / 16, size / 16);
     lone = countWork(6);
     for (let x = 0; x < size; x += 1) {
       input.pointer = { x, y: middle };
@@ -191,7 +240,7 @@ test("a scripted session paints the same frames as the unbounded pond", () => {
     if (f % 7 === 0) fold();
   }
 
-  expect(digest).toBe(40637979.74715558);
+  expect(digest).toBe(35134348.05179492);
 });
 
 test("an untouched pond never clears its buffers", () => {

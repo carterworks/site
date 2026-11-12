@@ -1,5 +1,5 @@
 import { clamp } from "../emulated-canvas-limits";
-import type { Mode, Point } from "./mode";
+import type { BackdropInput, Mode, Point } from "./mode";
 
 /** The gallery tile this was tuned on; every length and speed scales from it. */
 const REFERENCE_CELLS = 64;
@@ -16,11 +16,14 @@ const STONE = { radius: 2.6, amount: -6 };
 const RAIN = { radius: 1.3, amount: -1.5 };
 const HOVER = { radius: 1, amount: -0.25 };
 const DRAG = { radius: 1.6, amount: -0.7 };
+/** A press is a tap, which drops a stone, only if it lifts soon and barely moves. */
+const TAP_MS = 300;
+const TAP_SLOP = 1.5;
 const SHADES = 6;
 
 /**
  * A ripple tank: a wave height field that spreads, bounces off the walls and
- * crosses itself. A press drops a stone, a held drag pulls a wake, a hovering
+ * crosses itself. A tap drops a stone, a held drag pulls a wake, a hovering
  * pointer skims the surface, and rain falls once nobody has touched it.
  * Rain lasts a while after the last touch, then the pond is left to go still.
  * Between drops the loop idles rather than stops, so the next drop can fall.
@@ -47,6 +50,7 @@ export const pond: Mode = {
     let height = new Float32Array(size * size);
     let previous = new Float32Array(size * size);
     let seenPress: object | undefined;
+    let tap: BackdropInput["press"];
     const seen: Point = { x: 0, y: 0 };
     let hasSeen = false;
     let nextRain = 0;
@@ -119,7 +123,10 @@ export const pond: Mode = {
       step({ pointer, press, lastInputAt, visible }, now) {
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
-          poke(press.x, press.y, STONE.radius * scale, STONE.amount);
+          tap = press;
+          seen.x = press.x;
+          seen.y = press.y;
+          hasSeen = true;
         }
         if (
           pointer !== undefined &&
@@ -130,10 +137,21 @@ export const pond: Mode = {
           const { radius, amount } = held ? DRAG : HOVER;
           stroke(seen, pointer, radius * scale, amount);
         }
-        hasSeen = pointer !== undefined;
         if (pointer !== undefined) {
           seen.x = pointer.x;
           seen.y = pointer.y;
+        }
+        hasSeen = pointer !== undefined || press?.held === true;
+
+        if (tap !== undefined) {
+          const moved =
+            pointer !== undefined &&
+            Math.hypot(pointer.x - tap.x, pointer.y - tap.y) > TAP_SLOP * scale;
+          const expired = now - tap.at > TAP_MS;
+          if (!moved && !expired && !tap.held) {
+            poke(tap.x, tap.y, STONE.radius * scale, STONE.amount);
+          }
+          if (moved || expired || !tap.held) tap = undefined;
         }
 
         // A pond nobody has touched yet rains from its first step.
