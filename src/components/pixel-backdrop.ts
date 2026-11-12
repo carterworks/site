@@ -161,11 +161,6 @@ export class PixelBackdrop extends HTMLElement {
     return this.#chosen.id;
   }
 
-  /** The id of the chosen display theme, "site" for the page's own look. */
-  get display(): string {
-    return this.#display?.id ?? DISPLAYS[0].id;
-  }
-
   /**
    * The ghost and noise the chosen toy shows: its look's, except that a knob
    * set through `configure()` wins for every toy. A toy's look is tuned to
@@ -369,7 +364,6 @@ export class PixelBackdrop extends HTMLElement {
     }
 
     this.toggleAttribute("data-disabled", !enabled);
-    this.dataset.display = this.display;
   }
 
   #applyLook(canvas: EmulatedCanvas) {

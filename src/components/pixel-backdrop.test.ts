@@ -532,8 +532,6 @@ test("a display colours the canvas and the screen behind it in its own palette, 
 
   backdrop.setDisplay("pocket-lcd");
 
-  expect(backdrop.display).toBe("pocket-lcd");
-  expect(backdrop.dataset.display).toBe("pocket-lcd");
   expect(canvas.dataset).toMatchObject({
     paletteBase: pocket.base,
     paletteInk: pocket.ink,
@@ -545,7 +543,6 @@ test("a display colours the canvas and the screen behind it in its own palette, 
 
   backdrop.setDisplay("site");
 
-  expect(backdrop.display).toBe("site");
   expect(canvas.dataset).toMatchObject({
     paletteBase: lightBase,
     paletteInk: lightInk,
@@ -593,9 +590,10 @@ test("only a display with a backlight vignette lays one over the screen", () => 
 test("an unknown display is ignored", () => {
   const backdrop = mount();
 
+  backdrop.setDisplay("pocket-lcd");
   backdrop.setDisplay("missing");
 
-  expect(backdrop.display).toBe("site");
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
 });
 
 test("a display restarts the canvas's passes once when its palette changes, and a scheme flip does not", async () => {
@@ -709,7 +707,6 @@ test("a stored display is on the canvas before the toy first draws, without a re
   backdrop.append(canvas);
   document.body.append(backdrop);
 
-  expect(backdrop.display).toBe("pocket-lcd");
   expect(paletteAtDraw).toBe(pocket.base);
   expect(reset).not.toHaveBeenCalled();
 });
@@ -719,8 +716,9 @@ test("a display chosen before the backdrop attaches outranks the stored one", ()
   const backdrop = document.createElement("pixel-backdrop");
   backdrop.setDisplay("site");
 
-  backdrop.append(document.createElement("emulated-canvas"));
+  const canvas = document.createElement("emulated-canvas");
+  backdrop.append(canvas);
   document.body.append(backdrop);
 
-  expect(backdrop.display).toBe("site");
+  expect(canvas.dataset.paletteBase).not.toBe(pocket.base);
 });
