@@ -263,8 +263,8 @@ export function shade(
 
 export class PixelBackdrop extends HTMLElement {
   #options!: PixelBackdropOptions;
-  /** The stylesheet defaults as last read: a knob off its default is a tweak. */
-  #defaults?: PixelBackdropOptions;
+  /** Knobs set through `configure` since the last `reset`: they outrank a mode's look. */
+  #tweaked = new Set<string>();
   #canvas?: EmulatedCanvas;
   #context?: OffscreenCanvasRenderingContext2D;
   #frame?: number;
@@ -412,6 +412,7 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Merge a partial set of knobs, and repaint. */
   configure(partial: Partial<PixelBackdropOptions>) {
+    for (const key of Object.keys(partial)) this.#tweaked.add(key);
     // In place, as the mode holds this object to read its knobs live.
     this.#options = Object.assign(
       this.#options ?? this.#loadDefaults(),
@@ -430,19 +431,17 @@ export class PixelBackdrop extends HTMLElement {
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
     this.configure(this.#loadDefaults());
+    this.#tweaked.clear();
   }
 
   #loadDefaults() {
-    this.#defaults = readDefaults();
-    return { ...this.#defaults };
+    return readDefaults();
   }
 
   #lookOf(mode: Mode, key: keyof Look) {
     const value = this.#options[key];
     const look = mode.look;
-    return look === undefined || value !== this.#defaults?.[key]
-      ? value
-      : look[key];
+    return look === undefined || this.#tweaked.has(key) ? value : look[key];
   }
 
   /** Mid-dissolve, the look slides from the outgoing mode's to the chosen one's. */

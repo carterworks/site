@@ -330,4 +330,17 @@ describe("a mode's look", () => {
     expect(backdrop.look).toEqual({ ghost: 80, noise: 0 });
     expect(ghostOf(backdrop)).toBe(80);
   });
+
+  test("gives way to a knob set to its stylesheet default, until reset", async () => {
+    const backdrop = mount();
+    backdrop.setMode("misty");
+    backdrop.configure({ ghost: 0 });
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(backdrop.look.ghost).toBe(0);
+
+    backdrop.reset();
+    await vi.advanceTimersByTimeAsync(20);
+    expect(backdrop.look.ghost).toBe(20);
+  });
 });
