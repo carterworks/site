@@ -15,7 +15,7 @@ export const pages: Record<string, PageMetadata> = {
     ogImageAlt: "Carter McBride, over a range of pixel peaks",
     ogTitle: "carter.works",
     ogType: "website",
-    title: "Carter McBride",
+    title: "Carter McBride | carter.works",
   },
   "/blog/": {
     description: "A software engineer's blog? How original.",
