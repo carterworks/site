@@ -1,0 +1,137 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`bubblewrap on Amber LCD 1`] = `"d557f612 over 91 changed frames"`;
+
+exports[`bubblewrap on Pocket LCD 1`] = `"04370130 over 62 changed frames"`;
+
+exports[`bubblewrap on Site in dark 1`] = `"a2b85a9f over 118 changed frames"`;
+
+exports[`bubblewrap on Site in light 1`] = `"bb66ae77 over 118 changed frames"`;
+
+exports[`cradle on Amber LCD 1`] = `"7229d118 over 500 changed frames"`;
+
+exports[`cradle on Pocket LCD 1`] = `"a2c8af30 over 500 changed frames"`;
+
+exports[`cradle on Site in dark 1`] = `"19492a17 over 500 changed frames"`;
+
+exports[`cradle on Site in light 1`] = `"79f6027e over 500 changed frames"`;
+
+exports[`culture on Amber LCD 1`] = `"9e2a4933 over 500 changed frames"`;
+
+exports[`culture on Pocket LCD 1`] = `"d9b45dda over 497 changed frames"`;
+
+exports[`culture on Site in dark 1`] = `"5f5ffeb1 over 500 changed frames"`;
+
+exports[`culture on Site in light 1`] = `"4d6fdfce over 500 changed frames"`;
+
+exports[`curtain on Amber LCD 1`] = `"fdcfc785 over 498 changed frames"`;
+
+exports[`curtain on Pocket LCD 1`] = `"fb58e043 over 498 changed frames"`;
+
+exports[`curtain on Site in dark 1`] = `"c5c1ebcd over 501 changed frames"`;
+
+exports[`curtain on Site in light 1`] = `"45725048 over 501 changed frames"`;
+
+exports[`dominoes on Amber LCD 1`] = `"630774b6 over 226 changed frames"`;
+
+exports[`dominoes on Pocket LCD 1`] = `"9f1416e7 over 164 changed frames"`;
+
+exports[`dominoes on Site in dark 1`] = `"456d93a1 over 228 changed frames"`;
+
+exports[`dominoes on Site in light 1`] = `"44d6c5d5 over 228 changed frames"`;
+
+exports[`filings on Amber LCD 1`] = `"785a7d54 over 242 changed frames"`;
+
+exports[`filings on Pocket LCD 1`] = `"954ccd71 over 213 changed frames"`;
+
+exports[`filings on Site in dark 1`] = `"2e27d387 over 251 changed frames"`;
+
+exports[`filings on Site in light 1`] = `"5d76673c over 251 changed frames"`;
+
+exports[`fireflies on Amber LCD 1`] = `"8b7b234b over 500 changed frames"`;
+
+exports[`fireflies on Pocket LCD 1`] = `"2c3095b3 over 500 changed frames"`;
+
+exports[`fireflies on Site in dark 1`] = `"b9e6a429 over 501 changed frames"`;
+
+exports[`fireflies on Site in light 1`] = `"e278c9f8 over 501 changed frames"`;
+
+exports[`flipdots on Amber LCD 1`] = `"617fc973 over 270 changed frames"`;
+
+exports[`flipdots on Pocket LCD 1`] = `"77c1eb54 over 194 changed frames"`;
+
+exports[`flipdots on Site in dark 1`] = `"901ccd6a over 212 changed frames"`;
+
+exports[`flipdots on Site in light 1`] = `"db8bc458 over 218 changed frames"`;
+
+exports[`mote on Amber LCD 1`] = `"3c03862c over 439 changed frames"`;
+
+exports[`mote on Pocket LCD 1`] = `"91393a1d over 439 changed frames"`;
+
+exports[`mote on Site in dark 1`] = `"6ec53372 over 501 changed frames"`;
+
+exports[`mote on Site in light 1`] = `"c587735e over 501 changed frames"`;
+
+exports[`pendulums on Amber LCD 1`] = `"61cd9798 over 474 changed frames"`;
+
+exports[`pendulums on Pocket LCD 1`] = `"bddc0a7f over 443 changed frames"`;
+
+exports[`pendulums on Site in dark 1`] = `"3c899bc5 over 501 changed frames"`;
+
+exports[`pendulums on Site in light 1`] = `"f5e3f301 over 501 changed frames"`;
+
+exports[`pinbed on Amber LCD 1`] = `"4ad0fb19 over 242 changed frames"`;
+
+exports[`pinbed on Pocket LCD 1`] = `"9ad5e709 over 328 changed frames"`;
+
+exports[`pinbed on Site in dark 1`] = `"7129b913 over 384 changed frames"`;
+
+exports[`pinbed on Site in light 1`] = `"f95ef1cd over 384 changed frames"`;
+
+exports[`pond on Amber LCD 1`] = `"6481a4af over 325 changed frames"`;
+
+exports[`pond on Pocket LCD 1`] = `"4d2a7892 over 418 changed frames"`;
+
+exports[`pond on Site in dark 1`] = `"2d71da62 over 501 changed frames"`;
+
+exports[`pond on Site in light 1`] = `"88e8a6b3 over 501 changed frames"`;
+
+exports[`rake on Amber LCD 1`] = `"7e92ebbf over 226 changed frames"`;
+
+exports[`rake on Pocket LCD 1`] = `"ca28cc14 over 180 changed frames"`;
+
+exports[`rake on Site in dark 1`] = `"8bc637fb over 176 changed frames"`;
+
+exports[`rake on Site in light 1`] = `"9985c7ab over 176 changed frames"`;
+
+exports[`shimmer on Amber LCD 1`] = `"0c9e4f34 over 196 changed frames"`;
+
+exports[`shimmer on Pocket LCD 1`] = `"fbe31ac9 over 184 changed frames"`;
+
+exports[`shimmer on Site in dark 1`] = `"57aa82a7 over 235 changed frames"`;
+
+exports[`shimmer on Site in light 1`] = `"e1fbed6b over 235 changed frames"`;
+
+exports[`silt on Amber LCD 1`] = `"b1f5d0e7 over 401 changed frames"`;
+
+exports[`silt on Pocket LCD 1`] = `"74b0c820 over 320 changed frames"`;
+
+exports[`silt on Site in dark 1`] = `"dcd58d30 over 405 changed frames"`;
+
+exports[`silt on Site in light 1`] = `"4d89c6ba over 405 changed frames"`;
+
+exports[`tray on Amber LCD 1`] = `"5614de2b over 296 changed frames"`;
+
+exports[`tray on Pocket LCD 1`] = `"cbeed0ea over 265 changed frames"`;
+
+exports[`tray on Site in dark 1`] = `"d2fd36d5 over 293 changed frames"`;
+
+exports[`tray on Site in light 1`] = `"6b65d4a3 over 293 changed frames"`;
+
+exports[`wax on Amber LCD 1`] = `"fdffb9ee over 499 changed frames"`;
+
+exports[`wax on Pocket LCD 1`] = `"813951fd over 499 changed frames"`;
+
+exports[`wax on Site in dark 1`] = `"6f4b594f over 501 changed frames"`;
+
+exports[`wax on Site in light 1`] = `"f33fe4cf over 501 changed frames"`;

@@ -74,23 +74,26 @@ export const pointer = (
 /**
  * About 3 s of input: a hover sweep down the viewport's diagonal, a
  * press-and-hold dragged back up it, a tap in the middle, then the pointer
- * leaves.
+ * leaves. `advance` moves the fake clock on by the given ms.
  */
-export async function play() {
+export async function play(
+  advance: (ms: number) => Promise<unknown> = (ms) =>
+    vi.advanceTimersByTimeAsync(ms),
+) {
   for (let ms = 0; ms < 1000; ms += 16) {
     pointer("pointermove", ms / 1000);
-    await vi.advanceTimersByTimeAsync(16);
+    await advance(16);
   }
   pointer("pointerdown", 1, { buttons: 1 });
   for (let ms = 0; ms < 1000; ms += 16) {
     pointer("pointermove", 1 - ms / 1000, { buttons: 1 });
-    await vi.advanceTimersByTimeAsync(16);
+    await advance(16);
   }
   pointer("pointerup", 0);
-  await vi.advanceTimersByTimeAsync(250);
+  await advance(250);
   pointer("pointerdown", 0.5, { buttons: 1 });
-  await vi.advanceTimersByTimeAsync(50);
+  await advance(50);
   pointer("pointerup", 0.5);
   document.dispatchEvent(new MouseEvent("mouseleave"));
-  await vi.advanceTimersByTimeAsync(700);
+  await advance(700);
 }
