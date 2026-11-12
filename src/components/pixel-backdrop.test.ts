@@ -657,3 +657,34 @@ test("auto-fit takes the effective gap out of each stride", () => {
   backdrop.configure({ gap: 5 });
   expect(scale()).toContain(") - 5px)");
 });
+
+test("a stored display is on the canvas before the toy first draws, without a restart", () => {
+  localStorage.setItem("backdrop-display", "pocket-lcd");
+  const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
+  const canvas = document.createElement("emulated-canvas");
+  const getContext = canvas.getContext.bind(canvas);
+  let paletteAtDraw: string | undefined;
+  vi.spyOn(canvas, "getContext").mockImplementation(((id: "2d") => {
+    paletteAtDraw = canvas.dataset.paletteBase;
+    return getContext(id);
+  }) as typeof canvas.getContext);
+  const backdrop = document.createElement("pixel-backdrop");
+
+  backdrop.append(canvas);
+  document.body.append(backdrop);
+
+  expect(backdrop.display).toBe("pocket-lcd");
+  expect(paletteAtDraw).toBe(pocket.base);
+  expect(reset).not.toHaveBeenCalled();
+});
+
+test("a display chosen before the backdrop attaches outranks the stored one", () => {
+  localStorage.setItem("backdrop-display", "pocket-lcd");
+  const backdrop = document.createElement("pixel-backdrop");
+  backdrop.setDisplay("site");
+
+  backdrop.append(document.createElement("emulated-canvas"));
+  document.body.append(backdrop);
+
+  expect(backdrop.display).toBe("site");
+});

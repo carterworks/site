@@ -1,6 +1,6 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
-import { DISPLAYS, type Display } from "./backdrop-displays";
+import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
 import {
   duration,
@@ -196,6 +196,7 @@ export class PixelBackdrop extends HTMLElement {
     customElements.upgrade(canvas);
     this.#canvas = canvas;
     this.#options ??= readDefaults();
+    this.#display ??= DISPLAYS.find(({ id }) => id === storedDisplay());
     this.#apply();
 
     window.addEventListener("pointermove", this.#onPointerMove, {
