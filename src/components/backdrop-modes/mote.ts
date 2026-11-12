@@ -76,11 +76,14 @@ export const mote: Mode = {
     const block = Math.max(1, Math.round(cellScale(SPRITE_CELL_PX, columns)));
     // Everything but the field is simulated in sprite pixels, not cells.
     const unitsAcross = Math.ceil(columns / block);
-    const toUnits = <T extends Point>(p: T): T => ({
-      ...p,
-      x: p.x / block,
-      y: p.y / block,
-    });
+    const pressUnits: Point = { x: 0, y: 0 };
+    const pointerUnits: Point = { x: 0, y: 0 };
+    const visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
+    const toUnits = (from: Point, into: Point) => {
+      into.x = from.x / block;
+      into.y = from.y / block;
+      return into;
+    };
     const critter = {
       x: 0,
       hop: 0,
@@ -195,15 +198,13 @@ export const mote: Mode = {
     return {
       step(input, time) {
         const { lastInputAt } = input;
-        const press = input.press && toUnits(input.press);
-        const visible = {
-          left: input.visible.left / block,
-          top: input.visible.top / block,
-          right: input.visible.right / block,
-          bottom: input.visible.bottom / block,
-        };
+        const press = input.press && toUnits(input.press, pressUnits);
+        visible.left = input.visible.left / block;
+        visible.top = input.visible.top / block;
+        visible.right = input.visible.right / block;
+        visible.bottom = input.visible.bottom / block;
         now = time;
-        pointer = input.pointer && toUnits(input.pointer);
+        pointer = input.pointer && toUnits(input.pointer, pointerUnits);
         ground = Math.floor(visible.bottom) - GROUND_INSET;
         reach(visible, bounds);
         if (!placed) {
