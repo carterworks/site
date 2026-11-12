@@ -19,6 +19,7 @@ let stop: () => void;
 function mount() {
   canvas = document.createElement("canvas");
   Object.assign(canvas, { width: size, height: size });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, size, size));
   document.body.append(canvas);
   stop = pinbed.start(canvas);

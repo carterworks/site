@@ -61,6 +61,7 @@ function setup({ top, bottom } = VISIBLE, size = GRID) {
   const { plain } = installSoftCanvas();
   const canvas = document.createElement("canvas");
   Object.assign(canvas, { width: size, height: size });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, size * CELL_PX, size * CELL_PX));
   view(top, bottom, size);
   document.body.append(canvas);

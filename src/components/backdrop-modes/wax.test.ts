@@ -44,6 +44,7 @@ function mount() {
   const { plain } = installSoftCanvas();
   canvas = document.createElement("canvas");
   Object.assign(canvas, { width: columns, height: rows });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, columns, rows));
   document.body.append(canvas);
   stop = wax.start(canvas);

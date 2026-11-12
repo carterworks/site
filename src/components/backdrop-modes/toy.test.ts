@@ -6,9 +6,10 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function canvasAt(rect: DOMRect, width = 100, height = 50) {
+function canvasAt(rect: DOMRect, width = 100, height = 50, fit?: "viewport") {
   const canvas = document.createElement("canvas");
   Object.assign(canvas, { width, height });
+  if (fit !== undefined) canvas.dataset.fit = fit;
   canvas.getBoundingClientRect = () => rect;
   return canvas;
 }
@@ -33,9 +34,26 @@ function smallViewport(rect: DOMRect) {
   );
 }
 
-test("the visible cells are the canvas's overlap with the small viewport", () => {
+test("a canvas that did not opt in is visible whole, however little of it is on screen", () => {
+  smallViewport(new DOMRect(0, 0, 390, 600));
+  const canvas = canvasAt(new DOMRect(0, 400, 390, 800), 100, 100);
+
+  expect(visibleCells(canvas)).toEqual({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+  });
+});
+
+test("the visible cells of a canvas fit to the viewport are its overlap with the small viewport", () => {
   smallViewport(new DOMRect(0, 40, 390, 600));
-  const canvas = canvasAt(new DOMRect(-100, 0, 1000, 1000), 100, 100);
+  const canvas = canvasAt(
+    new DOMRect(-100, 0, 1000, 1000),
+    100,
+    100,
+    "viewport",
+  );
 
   expect(visibleCells(canvas)).toEqual({
     left: 10,
@@ -45,9 +63,9 @@ test("the visible cells are the canvas's overlap with the small viewport", () =>
   });
 });
 
-test("a canvas wholly on screen is visible whole", () => {
+test("a canvas fit to the viewport and wholly on screen is visible whole", () => {
   smallViewport(new DOMRect(0, 0, 1000, 1000));
-  const canvas = canvasAt(new DOMRect(100, 100, 200, 100));
+  const canvas = canvasAt(new DOMRect(100, 100, 200, 100), 100, 50, "viewport");
 
   expect(visibleCells(canvas)).toEqual({
     left: 0,
@@ -57,8 +75,8 @@ test("a canvas wholly on screen is visible whole", () => {
   });
 });
 
-test("an unmeasured canvas counts as visible whole", () => {
-  const canvas = canvasAt(new DOMRect(0, 0, 0, 0));
+test("an unmeasured canvas fit to the viewport counts as visible whole", () => {
+  const canvas = canvasAt(new DOMRect(0, 0, 0, 0), 100, 50, "viewport");
 
   expect(visibleCells(canvas)).toEqual({
     left: 0,
@@ -69,7 +87,7 @@ test("an unmeasured canvas counts as visible whole", () => {
 });
 
 test("the viewport probe is made once, and again only once a page swap drops it", () => {
-  const canvas = canvasAt(new DOMRect(0, 0, 100, 50));
+  const canvas = canvasAt(new DOMRect(0, 0, 100, 50), 100, 50, "viewport");
   visibleCells(canvas);
   visibleCells(canvas);
   expect(document.body.children).toHaveLength(1);

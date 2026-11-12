@@ -22,6 +22,7 @@ function mount() {
   const { plain } = installSoftCanvas();
   canvas = document.createElement("canvas");
   Object.assign(canvas, { width: SIZE, height: SIZE });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, -280, 1280, 1280));
   document.body.append(canvas);
   stop = pond.start(canvas);

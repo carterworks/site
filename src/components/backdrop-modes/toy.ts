@@ -142,17 +142,18 @@ function smallViewport() {
 }
 
 /**
- * The part of the canvas on screen, in its pixels, for a toy to fit its scene
- * to: the backdrop's square canvas overhangs the viewport on one axis. A toy
- * measures it on start and on `resize`. A canvas not laid out yet counts as
- * visible whole.
+ * The part of the canvas a toy fits its scene to, in its pixels: the whole
+ * canvas, unless the owner set `data-fit="viewport"` because the canvas is a
+ * fixed layer larger than the viewport, as the backdrop's square one is. Then
+ * it is the part on screen. A toy measures it on start and on `resize`. A
+ * canvas not laid out yet counts as visible whole.
  */
 export function visibleCells(canvas: ToyCanvas): CellRect {
   const { width, height } = canvas;
+  const whole = { left: 0, top: 0, right: width, bottom: height };
+  if (canvas.dataset.fit !== "viewport") return whole;
   const rect = canvas.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
-    return { left: 0, top: 0, right: width, bottom: height };
-  }
+  if (rect.width === 0 || rect.height === 0) return whole;
   const view = smallViewport();
   const across = (offset: number, extent: number, count: number) =>
     clamp((offset * count) / extent, 0, count);

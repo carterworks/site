@@ -59,6 +59,7 @@ beforeEach(() => {
   mockViewport();
   canvas = document.createElement("canvas");
   Object.assign(canvas, { width: SIZE, height: SIZE });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, SIZE, SIZE));
   document.body.append(canvas);
   stop = silt.start(canvas);
@@ -362,6 +363,7 @@ test("a heap at rest costs no sweep, and still drains once released", async () =
 
   stop();
   canvas.replaceWith((canvas = canvas.cloneNode() as HTMLCanvasElement));
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, SIZE, SIZE));
   stop = silt.start(canvas);
   press(MID, -10);
@@ -425,6 +427,7 @@ async function grainsAfter(frameMs: number) {
   useFakeFrames(frameMs);
   canvas = document.createElement("canvas");
   Object.assign(canvas, { width: SIZE, height: SIZE });
+  canvas.dataset.fit = "viewport";
   place(canvas, new DOMRect(0, 0, SIZE, SIZE));
   document.body.append(canvas);
   vi.stubGlobal(
