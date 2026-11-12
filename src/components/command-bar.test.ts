@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createBackdropMode } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
-import { settings } from "./command-bar";
+import "./command-bar";
+import { settings } from "./site-settings";
 import { createThemeSetting } from "./theme-setting";
 
 vi.mock("./backdrop-modes", () => ({
