@@ -127,12 +127,12 @@ test("the toy button cycles the toy and shows the new one", () => {
   expect(toy().textContent).toBe(`Toy: ${MODES[1].label}`);
 });
 
-test("the theme button cycles the theme, then offers System once one is stored", () => {
+test("the theme button flips between light and dark", () => {
   theme().click();
   expect(theme().textContent).toBe("Theme: Dark");
 
   theme().click();
-  expect(theme().textContent).toBe("Theme: System");
+  expect(theme().textContent).toBe("Theme: Light");
 });
 
 test("a chosen picture is played as the image toy and named in the label", async () => {

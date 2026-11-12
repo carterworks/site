@@ -193,15 +193,14 @@ describe("command bar", () => {
     ).toBe(true);
   });
 
-  test("the theme row offers System after a choice and clears storage on it", () => {
+  test("the theme row flips back to the OS scheme and clears storage", () => {
     osPrefers("dark");
     openSettings();
 
     row("theme").click();
     row("theme").click();
-    row("theme").click();
 
-    expect(value("theme")).toBe("System");
+    expect(value("theme")).toBe("Dark");
     expect(localStorage.getItem("color-scheme")).toBeNull();
     expect(document.documentElement.style.colorScheme).toBe("");
   });
@@ -413,9 +412,8 @@ describe("command bar dialog", () => {
     expect(dialog.matches(":popover-open")).toBe(true);
 
     pressKey(input, "Enter", { shiftKey: true });
-    pressKey(input, "Enter", { shiftKey: true });
     expect(localStorage.getItem("color-scheme")).toBeNull();
-    expect(value("theme")).toBe("System");
+    expect(value("theme")).toBe("Dark");
   });
 });
 
