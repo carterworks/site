@@ -73,6 +73,10 @@ beforeEach(() => {
     }),
   );
   vi.spyOn(window, "setTimeout");
+  // The probe `visibleCells` measures; jsdom has no layout to size it.
+  vi.spyOn(HTMLDivElement.prototype, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, innerWidth, innerHeight),
+  );
   installBackdropDefaults();
 });
 
@@ -91,7 +95,11 @@ function mount(id: string, knobs: Partial<PixelBackdropOptions> = {}) {
   backdrop.setMode(id);
   backdrop.configure(knobs);
   const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, { width: String(SIZE), height: String(SIZE) });
+  Object.assign(canvas.dataset, {
+    width: String(SIZE),
+    height: String(SIZE),
+    fit: "viewport",
+  });
   place(
     canvas,
     new DOMRect(0, (innerHeight - innerWidth) / 2, innerWidth, innerWidth),
