@@ -35,6 +35,12 @@ function expectExercised(id: string, presentsDuringPlay: number) {
 
 /** Time for the ghost to fade out a still frame, with plenty to spare. */
 const FADE_MS = 2000;
+/** Presses in one `play()`: the drag, then the tap. */
+const PRESSES_PER_PLAY = 2;
+/** What `<pixel-backdrop>` sets on `<html>` for the length of a hold, so each press writes it twice. */
+const HOLDING = "data-backdrop-holding";
+/** Shimmer reads its ripple size and speed at each press, through a `getComputedStyle` each. */
+const STYLE_READS_PER_PRESS: Partial<Record<string, number>> = { shimmer: 2 };
 
 let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
@@ -172,6 +178,48 @@ describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
     expect(softStats.reads).toBe(0);
     expect(allocations.count()).toBe(0);
   });
+
+  test.each(DISPLAYS.map((display) => [display.id]))(
+    "on the %s display, writes nothing to the DOM but a press's hold, and reads computed style only on a press, once warmed up",
+    async (display) => {
+      // A document observer can't see into the canvas's closed shadow root, so it is caught as it is attached.
+      const attachShadow = vi.spyOn(Element.prototype, "attachShadow");
+      mount(id, {}, display);
+      const [{ value: shadow }] = attachShadow.mock.results;
+      await play();
+      const writes: string[] = [];
+      const note = (records: MutationRecord[]) => {
+        for (const { type, target, attributeName } of records) {
+          writes.push(`${type} ${target.nodeName} ${attributeName ?? ""}`);
+        }
+      };
+      const observer = new MutationObserver(note);
+      for (const root of [document, shadow]) {
+        observer.observe(root, {
+          subtree: true,
+          attributes: true,
+          childList: true,
+          characterData: true,
+        });
+      }
+      const styleReads = vi.spyOn(window, "getComputedStyle");
+
+      await play();
+      note(observer.takeRecords());
+      observer.disconnect();
+
+      const hold = `attributes HTML ${HOLDING}`;
+      expect(writes, "DOM writes").toEqual(
+        Array.from({ length: PRESSES_PER_PLAY * 2 }, () => hold),
+      );
+      expect(
+        styleReads.mock.calls.length,
+        "getComputedStyle calls",
+      ).toBeLessThanOrEqual(
+        PRESSES_PER_PLAY * (STYLE_READS_PER_PRESS[id] ?? 1),
+      );
+    },
+  );
 
   test("with a pixel shadow, copies each present to the echo once, reading and allocating nothing", async () => {
     const canvas = mount(id);
