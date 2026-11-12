@@ -12,6 +12,7 @@ import { tray } from "./tray";
 import { bubblewrap } from "./bubblewrap";
 import { fireflies } from "./fireflies";
 import { dominoes } from "./dominoes";
+import { rake } from "./rake";
 import type { Toy } from "./toy";
 
 /**
@@ -32,4 +33,5 @@ export const MODES: Toy[] = [
   bubblewrap,
   fireflies,
   dominoes,
+  rake,
 ];
