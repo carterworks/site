@@ -756,6 +756,30 @@ describe("presenting drifting noise", () => {
     expect(presents).toBeLessThanOrEqual(8);
   });
 
+  test("an idle present registers no animation frame", async () => {
+    mountDrifting();
+    await vi.advanceTimersByTimeAsync(500);
+    const request = vi.spyOn(globalThis, "requestAnimationFrame");
+
+    expect(await presentsOver(1000)).toBeGreaterThan(5);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  test("a toy drawing right after an idle present is shown at once", async () => {
+    const canvas = mountDrifting();
+    await vi.advanceTimersByTimeAsync(500);
+    const before = display.putImageData.mock.calls.length;
+    while (display.putImageData.mock.calls.length === before) {
+      await vi.advanceTimersByTimeAsync(1);
+    }
+    const idle = display.putImageData.mock.calls.length;
+
+    canvas.getContext("2d")!.putImageData(square(16, 255), 0, 0);
+    await Promise.resolve();
+
+    expect(display.putImageData.mock.calls.length).toBe(idle + 1);
+  });
+
   test("frames with unchanged attributes parse no knobs", async () => {
     const canvas = mountDrifting({
       ghost: "50",

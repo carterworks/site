@@ -470,8 +470,8 @@ export class EmulatedCanvas extends HTMLElement {
   /** Drawn on since the last present, so `#source` is out of date. */
   #drawn = false;
   #presentQueued = false;
-  /** A scheduled present ran in this animation frame, so another waits for the next. */
-  #presentedThisFrame = false;
+  /** When the animation frame of the last frame-driven present began; timer presents leave it. */
+  #presentedFrameAt = -Infinity;
   #drewAt = -Infinity;
   #passes = SHADERS.map((_, index) => this.#build(index));
   #wasActive = new Set<ShaderPass>();
@@ -639,13 +639,22 @@ export class EmulatedCanvas extends HTMLElement {
     queueMicrotask(() => {
       this.#presentQueued = false;
       if (!this.#presents()) return;
-      if (this.#presentedThisFrame) {
+      if (this.#presentedThisFrame()) {
         this.#cancelNext();
         this.#nextFrame = requestAnimationFrame(this.#next);
       } else {
         this.#follow(this.#blit());
       }
     });
+  }
+
+  /**
+   * A frame-driven present ran in this animation frame, so another waits for
+   * the next. The frame timestamp is the start of the frame, so the frame is
+   * over once half a 60 Hz frame has passed, which a later present never beats.
+   */
+  #presentedThisFrame() {
+    return performance.now() - this.#presentedFrameAt < SIXTY_HZ_FRAME_MS / 2;
   }
 
   /** Only once a consumer draws, and never for a manual or detached canvas. */
@@ -670,11 +679,9 @@ export class EmulatedCanvas extends HTMLElement {
     }
   }
 
-  #next = () => {
+  #next = (frameAt?: number) => {
     this.#nextFrame = this.#idleTimer = undefined;
-    this.#presentedThisFrame = true;
-    // Registered before #follow schedules the next present, so it runs first.
-    requestAnimationFrame(() => (this.#presentedThisFrame = false));
+    if (frameAt !== undefined) this.#presentedFrameAt = frameAt;
     this.#follow(this.#blit());
   };
 
