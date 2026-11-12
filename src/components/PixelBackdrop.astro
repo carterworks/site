@@ -26,6 +26,7 @@ const GRID_SIZE = 160;
   /* 100vw runs under a classic scrollbar, whose track is transparent, so the
      grid shows through it and is centred on the full viewport. */
   pixel-backdrop {
+    background-color: var(--backdrop-display-screen, transparent);
     block-size: 100lvh;
     display: block;
     inline-size: 100vw;
@@ -42,9 +43,10 @@ const GRID_SIZE = 160;
 
   /* Centre the oversized grid so its middle always covers the viewport. The
      offsets are rounded because a half-pixel shift would blur the gap overlay.
-     The gaps are painted in the body colour that shows behind this layer. */
+     The gaps are painted in the body colour that shows behind this layer, or in
+     a display's screen colour, which also fills the strip past the grid's edge. */
   pixel-backdrop :global(emulated-canvas) {
-    --emulated-canvas-gap-color: var(--color-bg);
+    --emulated-canvas-gap-color: var(--backdrop-display-screen, var(--color-bg));
     inline-size: max-content;
     left: round(50%, 1px);
     position: absolute;

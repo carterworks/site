@@ -1,5 +1,6 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
+import { DISPLAYS, type Display } from "./backdrop-displays";
 import { MODES } from "./backdrop-modes";
 import {
   duration,
@@ -139,7 +140,8 @@ export class PixelBackdrop extends HTMLElement {
   /** Waits for the canvas when the element is connected before its child is parsed. */
   #canvasObserver = new MutationObserver(() => this.#attach());
   #schemeObserver = new MutationObserver(() => this.#applyPalette());
-  #wasDark?: boolean;
+  #shownPalette?: string;
+  #display?: Display;
   #chosen = MODES[0];
   /** Stops the running toy; set exactly while one runs. */
   #stopToy?: () => void;
@@ -157,6 +159,11 @@ export class PixelBackdrop extends HTMLElement {
   /** The id of the chosen toy, which is the incoming one mid-dissolve. */
   get mode(): string {
     return this.#chosen.id;
+  }
+
+  /** The id of the chosen display theme, "site" for the page's own look. */
+  get display(): string {
+    return this.#display?.id ?? DISPLAYS[0].id;
   }
 
   /**
@@ -256,6 +263,14 @@ export class PixelBackdrop extends HTMLElement {
     this.#apply();
   }
 
+  /** Show the canvas as a registered display theme; an unknown id is ignored. */
+  setDisplay(id: string) {
+    const display = DISPLAYS.find((candidate) => candidate.id === id);
+    if (display === undefined || display === this.#display) return;
+    this.#display = display;
+    this.#apply();
+  }
+
   /**
    * Dissolve into a registered toy, starting it fresh; an unknown id is
    * ignored, and so is the toy already chosen. A request while no toy runs
@@ -330,6 +345,7 @@ export class PixelBackdrop extends HTMLElement {
     }
 
     this.toggleAttribute("data-disabled", !enabled);
+    this.dataset.display = this.display;
   }
 
   #applyLook(canvas: EmulatedCanvas) {
@@ -338,18 +354,40 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /**
-   * The ghost would otherwise cross-fade the old scheme through grey while
-   * the page colour changes at once, so a flip starts the passes afresh.
+   * The ghost would otherwise cross-fade the old palette through grey while
+   * the page colour changes at once, so a change of palette starts the passes
+   * afresh. A display's palette is the same in both schemes, so a flip under
+   * one changes nothing.
    */
   #applyPalette = () => {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const dark = prefersDark();
-    if (this.#wasDark !== undefined && this.#wasDark !== dark) canvas.reset();
-    this.#wasDark = dark;
-    const { darkBase, darkInk, lightBase, lightInk } = this.#options;
-    set(canvas, "paletteBase", dark ? darkBase : lightBase);
-    set(canvas, "paletteInk", dark ? darkInk : lightInk);
+    const [baseKey, inkKey] = prefersDark()
+      ? (["darkBase", "darkInk"] as const)
+      : (["lightBase", "lightInk"] as const);
+    const look = this.#display?.look;
+    const base =
+      look === undefined || this.#tweaked.has(baseKey)
+        ? this.#options[baseKey]
+        : look.base;
+    const ink =
+      look === undefined || this.#tweaked.has(inkKey)
+        ? this.#options[inkKey]
+        : look.ink;
+    const palette = `${base} ${ink}`;
+    if (this.#shownPalette !== undefined && this.#shownPalette !== palette) {
+      canvas.reset();
+    }
+    this.#shownPalette = palette;
+    set(canvas, "paletteBase", base);
+    set(canvas, "paletteInk", ink);
+    if (look === undefined) {
+      delete canvas.dataset.paletteLevels;
+      this.style.removeProperty("--backdrop-display-screen");
+    } else {
+      set(canvas, "paletteLevels", String(look.levels));
+      this.style.setProperty("--backdrop-display-screen", look.screen);
+    }
   };
 
   /**
