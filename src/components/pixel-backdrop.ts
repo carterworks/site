@@ -465,7 +465,6 @@ export class PixelBackdrop extends HTMLElement {
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#wake);
     this.#schemeObserver.disconnect();
-    this.#endHold();
   }
 
   /** Merge a partial set of knobs, and repaint. */
@@ -479,7 +478,6 @@ export class PixelBackdrop extends HTMLElement {
       this.#wake();
     } else {
       this.#stop();
-      this.#endHold();
     }
   }
 
@@ -599,6 +597,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#context = undefined;
     this.#outgoing = undefined;
     this.#outgoingMode = undefined;
+    this.#endHold();
   }
 
   /** Mirror the knobs the canvas draws with onto its attributes. */
@@ -877,8 +876,12 @@ export class PixelBackdrop extends HTMLElement {
     this.#wake();
   };
 
+  /**
+   * A stopped backdrop draws nothing, so a hold there would only block the
+   * page's scroll and selection over an empty screen.
+   */
   #onPointerDown = (event: PointerEvent) => {
-    if (!isToyPress(event)) return;
+    if (this.#context === undefined || !isToyPress(event)) return;
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#holdPointer = event.pointerId;

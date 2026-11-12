@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { BackdropInput, Mode, Pace } from "./backdrop-modes/mode";
+import type { PixelBackdrop } from "./pixel-backdrop";
 import "./pixel-backdrop";
 
 const motion = vi.hoisted(() => {
@@ -147,6 +148,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  motion.set(false);
   Reflect.deleteProperty(document, "caretPositionFromPoint");
   getSelection()?.removeAllRanges();
   document.body.replaceChildren();
@@ -746,6 +748,36 @@ test.each(touchHoldEnds)(
     expect(holding()).toBe(false);
   },
 );
+
+test.each([
+  [
+    "disabled",
+    (backdrop: PixelBackdrop) => backdrop.configure({ enabled: false }),
+  ],
+  ["under reduced motion", () => motion.set(true)],
+])("a backdrop %s grabs nothing, so the page scrolls", async (_, stop) => {
+  const backdrop = mount();
+  backdrop.setMode("silt");
+  stop(backdrop);
+
+  press(document.body);
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
+});
+
+test("reduced motion turning on lets go of a grabbed touch", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  motion.set(true);
+
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
+});
 
 test("a second finger lifting does not let go of a grabbed touch", async () => {
   mount().setMode("silt");
