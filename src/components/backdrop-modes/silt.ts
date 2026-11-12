@@ -262,20 +262,13 @@ export const silt: Toy = {
       }
     };
 
-    // Whether the visible rect moved since the last fit. A viewport that
-    // measures empty (not laid out, or hidden) falls back to the whole canvas,
-    // so the scene still has room to run.
+    // Whether the visible rect moved since the last fit.
     const fit = () => {
       const visible = visibleCells(canvas);
-      let nextLeft = Math.max(0, Math.ceil(visible.left));
-      let nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1);
-      let nextTop = Math.max(0, Math.ceil(visible.top));
-      let nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
-      if (nextRight <= nextLeft || nextBottom <= nextTop) {
-        nextLeft = nextTop = 0;
-        nextRight = columns - 1;
-        nextBottom = rows - 1;
-      }
+      const nextLeft = Math.max(0, Math.ceil(visible.left));
+      const nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1);
+      const nextTop = Math.max(0, Math.ceil(visible.top));
+      const nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1);
       const moved =
         left !== nextLeft ||
         right !== nextRight ||
