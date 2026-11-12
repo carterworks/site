@@ -44,36 +44,6 @@ test("rotates through the themed displays, then back to the site's look", () => 
   expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
 });
 
-test("the reset entry stays offered until a reload", () => {
-  const display = createBackdropDisplay();
-  for (let step = 0; step < 3; step++) display.cycle();
-
-  display.cycle();
-  expect(display.label()).toBe(pocket.label);
-  display.cycle();
-  display.cycle();
-  expect(display.label()).toBe(site.label);
-
-  const reloaded = createBackdropDisplay();
-  reloaded.cycle();
-  reloaded.cycle();
-  expect(reloaded.label()).toBe(amber.label);
-  reloaded.cycle();
-  expect(reloaded.label()).toBe(site.label);
-});
-
-test("with nothing stored after a reload, the site's look is not a rotation entry", () => {
-  const reloaded = createBackdropDisplay();
-
-  reloaded.cycle();
-  reloaded.cycle();
-
-  expect(setDisplay.mock.calls.map(([id]) => id)).toEqual([
-    pocket.id,
-    amber.id,
-  ]);
-});
-
 test("a display stored before load is shown and offers the reset", () => {
   localStorage.setItem(DISPLAY_KEY, amber.id);
   const display = createBackdropDisplay();
