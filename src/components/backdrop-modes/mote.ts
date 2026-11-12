@@ -1,6 +1,6 @@
 import { clamp } from "../emulated-canvas-limits";
-import { cellScale } from "./mode";
 import {
+  cellScale,
   pointOn,
   visibleCells,
   type CellRect,

@@ -45,6 +45,16 @@ export type Toy = {
  */
 export const TUNED_GRID = 80;
 
+const REFERENCE_WIDTH_PX = 1440;
+
+/**
+ * How many canvas pixels span one design cell of `designCellPx` pixels, with
+ * the canvas `width` pixels drawn across the reference viewport. Multiply a
+ * size authored in design cells by it to keep the same size on screen.
+ */
+export const cellScale = (designCellPx: number, width: number) =>
+  (designCellPx * width) / REFERENCE_WIDTH_PX;
+
 export type Point = { x: number; y: number };
 
 /** A span of the canvas in pixels; `right` and `bottom` are exclusive. */
@@ -54,6 +64,12 @@ export type CellRect = {
   right: number;
   bottom: number;
 };
+
+export const sameRect = (a: CellRect, b: CellRect) =>
+  a.left === b.left &&
+  a.top === b.top &&
+  a.right === b.right &&
+  a.bottom === b.bottom;
 
 /**
  * Where a pointer event falls on the canvas, in its pixels: fractional, and

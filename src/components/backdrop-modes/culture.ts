@@ -1,6 +1,7 @@
 import { line } from "./line";
 import {
   pointOn,
+  sameRect,
   visibleCells,
   type CellRect,
   type Point,
@@ -53,12 +54,6 @@ function inside(dx: number, dy: number, radiusX: number, radiusY: number) {
     radiusX > 0 && radiusY > 0 && (dx / radiusX) ** 2 + (dy / radiusY) ** 2 < 1
   );
 }
-
-const sameRect = (a: CellRect, b: CellRect) =>
-  a.left === b.left &&
-  a.top === b.top &&
-  a.right === b.right &&
-  a.bottom === b.bottom;
 
 /**
  * Conway's life in a round dish with a rim. Drawing seeds cells; dead cells

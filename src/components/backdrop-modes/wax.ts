@@ -1,5 +1,5 @@
-import { cellScale } from "./mode";
 import {
+  cellScale,
   pointOn,
   visibleCells,
   type CellRect,

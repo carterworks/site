@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { pointOn, visibleCells } from "./toy";
+import { cellScale, pointOn, sameRect, visibleCells } from "./toy";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -77,4 +77,19 @@ test("the viewport probe is made once, and again only once a page swap drops it"
   document.body.replaceChildren();
   visibleCells(canvas);
   expect(document.body.children).toHaveLength(1);
+});
+
+test("a design cell as wide as the canvas's pixel scales by 1", () => {
+  expect(cellScale(1440 / 160, 160)).toBe(1);
+});
+
+test("halving the cell width doubles the pixels a design size spans", () => {
+  expect(cellScale(6, 240)).toBe(1);
+  expect(cellScale(6, 480)).toBe(2);
+});
+
+test("sameRect compares every edge", () => {
+  const rect = { left: 0, top: 1, right: 2, bottom: 3 };
+  expect(sameRect(rect, { ...rect })).toBe(true);
+  expect(sameRect(rect, { ...rect, bottom: 4 })).toBe(false);
 });

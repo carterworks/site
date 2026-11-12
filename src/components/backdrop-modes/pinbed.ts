@@ -1,6 +1,12 @@
 import { clamp } from "../emulated-canvas-limits";
-import { cellScale, sameRect } from "./mode";
-import { pointOn, visibleCells, type CellRect, type Toy } from "./toy";
+import {
+  cellScale,
+  pointOn,
+  sameRect,
+  visibleCells,
+  type CellRect,
+  type Toy,
+} from "./toy";
 
 /**
  * The prototype tile was tuned at 48 cells across about 360 px. Radii and
