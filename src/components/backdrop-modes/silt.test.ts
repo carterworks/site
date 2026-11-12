@@ -22,6 +22,7 @@ const CAPACITY = SIZE * (BOTTOM_ROW - TOP_ROW + 1);
 
 let canvas: HTMLCanvasElement;
 let bitmap: () => SoftBitmap;
+let bitmaps: SoftBitmap[];
 let stop: () => void;
 let viewport: DOMRect;
 let draws = 0;
@@ -41,7 +42,7 @@ const visibleBetween = (top: number, bottom: number, right = SIZE) =>
 
 beforeEach(() => {
   useFakeFrames();
-  const { plain } = installSoftCanvas();
+  ({ plain: bitmaps } = installSoftCanvas());
   const seeded = mulberry32(1);
   draws = 0;
   // A spy would keep every call of the millions a long run makes.
@@ -61,7 +62,7 @@ beforeEach(() => {
   place(canvas, new DOMRect(0, 0, SIZE, SIZE));
   document.body.append(canvas);
   stop = silt.start(canvas);
-  bitmap = () => plain[0];
+  bitmap = () => bitmaps[0];
 });
 
 afterEach(() => {
@@ -133,7 +134,7 @@ test("dragging while held lays grains along the path", async () => {
   move(SIZE / 8, POUR_Y);
   await run(1);
   move(SIZE * 0.875, POUR_Y);
-  await run(1);
+  await run(2);
   release();
   await run(80);
 
@@ -315,7 +316,7 @@ test("a heap at rest costs no sweep, and still drains once released", async () =
     move(MID, -10);
     await run(seconds(12));
     const before = draws;
-    await run(60);
+    await run(75);
     return draws - before;
   };
   press(MID, POUR_Y);
@@ -380,4 +381,33 @@ test("stop cancels its frames and stops listening", async () => {
   press(MID, POUR_Y);
   window.dispatchEvent(new Event("resize"));
   expect(vi.getTimerCount()).toBe(0);
+});
+
+async function grainsAfter(frameMs: number) {
+  stop();
+  document.body.replaceChildren();
+  useFakeFrames(frameMs);
+  canvas = document.createElement("canvas");
+  Object.assign(canvas, { width: SIZE, height: SIZE });
+  place(canvas, new DOMRect(0, 0, SIZE, SIZE));
+  document.body.append(canvas);
+  vi.stubGlobal(
+    "Math",
+    Object.assign(Object.create(Math), { random: mulberry32(1) }),
+  );
+  bitmap = () => bitmaps[bitmaps.length - 1];
+  stop = silt.start(canvas);
+  await vi.advanceTimersByTimeAsync(frameMs);
+  press(MID, POUR_Y);
+  await vi.advanceTimersByTimeAsync(500);
+  release();
+  await vi.advanceTimersByTimeAsync(1500);
+  return cells();
+}
+
+test("the tray holds as many grains after the same time at 60 and 120 Hz", async () => {
+  const at60 = await grainsAfter(1000 / 60);
+  const at120 = await grainsAfter(1000 / 120);
+
+  expect(Math.abs(at120 - at60)).toBeLessThan(at60 * 0.05);
 });

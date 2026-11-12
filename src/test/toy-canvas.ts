@@ -180,12 +180,16 @@ export function installSoftCanvas() {
   return { offscreen, plain };
 }
 
-/** Fakes animation frames, timers and the clock, so a toy's loop runs on demand. */
-export function useFakeFrames() {
+/**
+ * Fakes animation frames, timers and the clock, so a toy's loop runs on demand.
+ * `frameMs` sets the display's frame gap, 16 ms by default.
+ */
+export function useFakeFrames(frameMs?: number) {
   vi.useFakeTimers({
     toFake: [
-      "requestAnimationFrame",
-      "cancelAnimationFrame",
+      ...(frameMs === undefined
+        ? (["requestAnimationFrame", "cancelAnimationFrame"] as const)
+        : []),
       "setTimeout",
       "clearTimeout",
       "setInterval",
@@ -193,6 +197,12 @@ export function useFakeFrames() {
       "performance",
     ],
   });
+  if (frameMs !== undefined) {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(performance.now()), frameMs),
+    );
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
+  }
 }
 
 /** Lays `canvas` out at `rect`, as happy-dom lays out nothing. */

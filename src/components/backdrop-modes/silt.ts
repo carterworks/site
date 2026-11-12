@@ -1,5 +1,12 @@
 import { line } from "./line";
-import { pointOn, TUNED_GRID, visibleCells, type Point, type Toy } from "./toy";
+import {
+  fixedStep,
+  pointOn,
+  TUNED_GRID,
+  visibleCells,
+  type Point,
+  type Toy,
+} from "./toy";
 
 /** White on transparent, so a faint grain lets any page show through. */
 const ALPHAS = [0, 140, 199, 255];
@@ -27,6 +34,9 @@ const TRICKLE_UNTIL_MS = 10_000;
 const TRICKLE_EVERY_STEPS = 2;
 /** Steps in the trickle window run at ~8 fps: nothing moves between grains. */
 const IDLE_FRAME_MS = 125;
+const STEP_MS = 1000 / 60;
+/** A frame after a long pause, like a hidden tab, replays this much, not the whole gap. */
+const MAX_CATCH_UP_MS = 100;
 
 /**
  * Grains the sieve lets through per step: a steady trickle plus a share of the
@@ -285,7 +295,10 @@ export const silt: Toy = {
       context.putImageData(image, 0, 0);
     };
 
-    const step = (now: number) => {
+    const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
+    let now = 0;
+
+    const step = () => {
       const moved = refit && fit();
       refit = false;
       if (pristine) {
@@ -372,14 +385,17 @@ export const silt: Toy = {
       }
     };
 
-    const tick = (now: number) => {
+    const tick = (time: number) => {
       frame = undefined;
-      step(now);
+      now = time;
+      pace.advance(now, step);
       render();
-      if (pristine) return;
-      if (count > 0 || pouring) {
+      if (!pristine && (count > 0 || pouring)) {
         wake();
-      } else if (quietSince < TRICKLE_UNTIL_MS) {
+        return;
+      }
+      pace.restart();
+      if (!pristine && quietSince < TRICKLE_UNTIL_MS) {
         timer = setTimeout(wake, IDLE_FRAME_MS);
       }
     };

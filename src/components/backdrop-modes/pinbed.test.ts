@@ -202,15 +202,15 @@ test("an untouched handprint follows the visible rect when it changes", async ()
 
 const GOLDEN: [number, boolean][] = [
   [4137705614, true],
-  [4272130193, false],
-  [1872246488, false],
-  [331512265, false],
-  [3417811005, false],
-  [3137965761, false],
+  [585404283, false],
+  [2247302774, false],
+  [2247302774, false],
+  [223029123, false],
+  [3926657721, false],
   [2315578821, false],
-  [554162531, false],
-  [2816725065, false],
-  [1292241666, false],
+  [3034458821, false],
+  [1625206154, false],
+  [2315578821, true],
   [2315578821, true],
   [2315578821, true],
   [2315578821, true],
@@ -252,4 +252,30 @@ test("a scripted session relaxes exactly as it did when every pin was scanned ea
   }
 
   expect(seen).toEqual(GOLDEN);
+});
+
+const inkAfter = async (frameMs: number, act: () => void, ms: number) => {
+  stop();
+  document.body.replaceChildren();
+  useFakeFrames(frameMs);
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
+  mount();
+  await vi.advanceTimersByTimeAsync(frameMs);
+  act();
+  await vi.advanceTimersByTimeAsync(ms);
+  const levels = field();
+  const ink = levels.reduce((sum, v) => sum + v, 0);
+  const centre = levels.reduce((sum, v, i) => sum + v * (i % size), 0) / ink;
+  return [ink, centre];
+};
+
+test.each([
+  ["a pin springing back", () => press(80, 80), 1300],
+  ["a pebble rolling", () => pointerAt(canvas, "pointermove", 80, 80), 7500],
+])("%s covers the same ground at 60 and 120 Hz", async (_, act, ms) => {
+  const [ink60, centre60] = await inkAfter(1000 / 60, act, ms);
+  const [ink120, centre120] = await inkAfter(1000 / 120, act, ms);
+
+  expect(ink120).toBeCloseTo(ink60, 0);
+  expect(centre120).toBeCloseTo(centre60, 0);
 });

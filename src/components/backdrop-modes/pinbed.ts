@@ -1,6 +1,7 @@
 import { clamp } from "../emulated-canvas-limits";
 import {
   cellScale,
+  fixedStep,
   pointOn,
   sameRect,
   visibleCells,
@@ -24,6 +25,9 @@ const GRAB = 0.3;
 const HOLD_MS = 700;
 const PEBBLE_DELAY_MS = 4000;
 const PEBBLE_JITTER_MS = 4000;
+const STEP_MS = 1000 / 60;
+/** A frame after a long pause, like a hidden tab, replays this much, not the whole gap. */
+const MAX_CATCH_UP_MS = 100;
 /**
  * Cells per step. Matching the tile in pixels would take over 20 s to cross a
  * 1440 px viewport, past the 30 s the contract allows the mode to settle in.
@@ -189,19 +193,9 @@ export const pinbed: Toy = {
       downCount = kept;
     };
 
-    const step = (time: number) => {
-      frame = undefined;
-      clearTimeout(timer);
-      timer = undefined;
-      now = time;
+    const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
 
-      if (pristine) {
-        if (printedIn === undefined || !sameRect(printedIn, visible)) {
-          imprintHand();
-        }
-        return;
-      }
-
+    const simulate = () => {
       if (tapPending) {
         tapPending = false;
         pressAt = now;
@@ -242,11 +236,31 @@ export const pinbed: Toy = {
       }
 
       relax();
+    };
+
+    const step = (time: number) => {
+      frame = undefined;
+      clearTimeout(timer);
+      timer = undefined;
+      now = time;
+
+      if (pristine) {
+        pace.restart();
+        if (printedIn === undefined || !sameRect(printedIn, visible)) {
+          imprintHand();
+        }
+        return;
+      }
+
+      pace.advance(now, simulate);
       if (downCount > 0 || lit) paint();
 
       if (held || downCount > 0 || pebble !== undefined) wake();
-      else if (pebbleAt !== undefined) {
-        timer = setTimeout(wake, Math.max(0, pebbleAt - now));
+      else {
+        pace.restart();
+        if (pebbleAt !== undefined) {
+          timer = setTimeout(wake, Math.max(0, pebbleAt - now));
+        }
       }
     };
 
