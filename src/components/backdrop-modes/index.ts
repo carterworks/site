@@ -1,3 +1,4 @@
+import { bubblewrap } from "./bubblewrap";
 import { culture } from "./culture";
 import { mote } from "./mote";
 import { pinbed } from "./pinbed";
@@ -10,4 +11,13 @@ import type { Toy } from "./toy";
 /**
  * Every backdrop toy, in menu order; the first is the default.
  */
-export const MODES: Toy[] = [shimmer, pond, pinbed, culture, wax, silt, mote];
+export const MODES: Toy[] = [
+  shimmer,
+  pond,
+  pinbed,
+  culture,
+  wax,
+  silt,
+  mote,
+  bubblewrap,
+];
