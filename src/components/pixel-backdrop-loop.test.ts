@@ -493,16 +493,6 @@ test.each([
     () => window.dispatchEvent(new PointerEvent("pointercancel")),
   ],
   ["window blur", () => window.dispatchEvent(new Event("blur"))],
-  [
-    "a selection appearing",
-    () => {
-      const paragraph = document.createElement("p");
-      paragraph.textContent = "words";
-      document.body.append(paragraph);
-      getSelection()!.selectAllChildren(paragraph);
-      document.dispatchEvent(new Event("selectionchange"));
-    },
-  ],
 ])("the hold ends on %s", async (_, end) => {
   mount();
   press(document.body);
@@ -513,14 +503,9 @@ test.each([
   expect((await latestInput()).press?.held).toBe(false);
 });
 
-test("a collapsed selection does not end the hold", async () => {
-  mount();
-  press(document.body);
-
-  document.dispatchEvent(new Event("selectionchange"));
-
-  expect((await latestInput()).press?.held).toBe(true);
-});
+const NO_SELECT = "data-backdrop-holding";
+const holding = () => document.documentElement.hasAttribute(NO_SELECT);
+const backdropElement = () => document.querySelector("pixel-backdrop")!;
 
 test("a touch tap is a press already released, so a toy sees one burst", async () => {
   mount();
@@ -528,14 +513,11 @@ test("a touch tap is a press already released, so a toy sees one burst", async (
   window.dispatchEvent(new PointerEvent("pointerup", { pointerType: "touch" }));
 
   expect((await latestInput()).press).toMatchObject({ held: false });
+  expect(holding()).toBe(false);
 });
 
-const NO_SELECT = "data-backdrop-holding";
-const holding = () => document.documentElement.hasAttribute(NO_SELECT);
-const backdropElement = () => document.querySelector("pixel-backdrop")!;
-
-test("a hold mode suppresses text selection from an accepted press", () => {
-  mount().setMode("silt");
+test("a press in empty space suppresses text selection", () => {
+  mount();
 
   press(document.body);
 
@@ -553,7 +535,7 @@ test.each([
   ["disconnect", () => backdropElement().remove()],
   ["disable", () => backdropElement().configure({ enabled: false })],
 ])("selection is restored on %s", (_, end) => {
-  mount().setMode("silt");
+  mount();
   press(document.body);
 
   end();
@@ -561,8 +543,8 @@ test.each([
   expect(holding()).toBe(false);
 });
 
-test("a hold mode's press clears a selection already begun", () => {
-  mount().setMode("silt");
+test("a press in empty space clears a selection already begun", () => {
+  mount();
   const paragraph = document.createElement("p");
   paragraph.textContent = "words";
   document.body.append(paragraph);
@@ -573,8 +555,8 @@ test("a hold mode's press clears a selection already begun", () => {
   expect(getSelection()!.isCollapsed).toBe(true);
 });
 
-test("a selection appearing does not end a hold mode's hold", async () => {
-  mount().setMode("silt");
+test("a selection appearing does not end the hold", async () => {
+  mount();
   press(document.body);
   const paragraph = document.createElement("p");
   paragraph.textContent = "words";
@@ -585,14 +567,8 @@ test("a selection appearing does not end a hold mode's hold", async () => {
   expect((await latestInput()).press?.held).toBe(true);
 });
 
-test("a non-hold mode never suppresses selection", () => {
-  mount();
-  press(document.body);
-  expect(holding()).toBe(false);
-});
-
 test("a press on a link never suppresses selection", () => {
-  mount().setMode("silt");
+  mount();
   const link = document.createElement("a");
   document.body.append(link);
 
@@ -627,8 +603,8 @@ function scrollBlocked() {
 const touchEnd = (type: string) =>
   document.body.dispatchEvent(new TouchEvent(type, { bubbles: true }));
 
-test("a touch in empty space grabs a hold mode at once: its first move is blocked and its drag reaches the mode as the pointer", async () => {
-  mount().setMode("silt");
+test("a touch in empty space grabs at once: its first move is blocked and its drag reaches the mode as the pointer", async () => {
+  mount();
   fingerDown();
 
   expect(scrollBlocked()).toBe(true);
@@ -643,17 +619,8 @@ test("a touch in empty space grabs a hold mode at once: its first move is blocke
   expect(holding()).toBe(true);
 });
 
-test("a touch tap on a hold mode is a press already released", async () => {
-  mount().setMode("silt");
-  fingerDown();
-  finger("pointerup");
-
-  expect((await latestInput()).press).toMatchObject({ held: false });
-  expect(holding()).toBe(false);
-});
-
 test("a grabbed touch blocks the page's scroll until it is released", () => {
-  mount().setMode("silt");
+  mount();
   fingerDown();
   expect(scrollBlocked()).toBe(true);
 
@@ -662,17 +629,8 @@ test("a grabbed touch blocks the page's scroll until it is released", () => {
   expect(scrollBlocked()).toBe(false);
 });
 
-test("a non-hold mode never grabs a touch", async () => {
-  mount();
-  fingerDown();
-  finger("pointermove", { clientX: 200 });
-
-  expect(scrollBlocked()).toBe(false);
-  expect((await latestInput()).pointer).toBeUndefined();
-});
-
 test("a touch on a link or on text never grabs, so the page scrolls", async () => {
-  mount().setMode("silt");
+  mount();
   const link = document.createElement("a");
   document.body.append(link);
   fingerDown(link);
@@ -709,7 +667,7 @@ const touchHoldEnds: [string, () => void][] = [
 ];
 
 test.each(touchHoldEnds)("%s lets go of a grabbed touch", async (_, end) => {
-  mount().setMode("silt");
+  mount();
   fingerDown();
   await latestInput();
 
@@ -728,7 +686,6 @@ test.each([
   ["under reduced motion", () => motion.set(true)],
 ])("a backdrop %s grabs nothing, so the page scrolls", async (_, stop) => {
   const backdrop = mount();
-  backdrop.setMode("silt");
   stop(backdrop);
 
   press(document.body);
@@ -739,7 +696,7 @@ test.each([
 });
 
 test("reduced motion turning on lets go of a grabbed touch", async () => {
-  mount().setMode("silt");
+  mount();
   fingerDown();
 
   motion.set(true);
@@ -749,7 +706,7 @@ test("reduced motion turning on lets go of a grabbed touch", async () => {
 });
 
 test("a second finger lifting does not let go of a grabbed touch", async () => {
-  mount().setMode("silt");
+  mount();
   fingerDown();
 
   document.body.dispatchEvent(

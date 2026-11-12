@@ -307,8 +307,9 @@ export class PixelBackdrop extends HTMLElement {
   #inputPending = false;
   #holdPointer?: number;
   /**
-   * A touch that has grabbed a hold mode: its moves drive the toy and never
-   * scroll. Any touch in the open grabs at once, as one that waited to tell a
+   * A touch that has grabbed the toy: its moves drive the mode and never
+   * scroll. Any touch in the open grabs at once, in every mode, so no mode can
+   * fall back to scrolling under the finger. One that waited to tell a
    * hold from a swipe lost every quick drag to the scroll; the page still
    * scrolls from its content, where a press is never the toy's.
    */
@@ -398,9 +399,6 @@ export class PixelBackdrop extends HTMLElement {
     window.addEventListener("touchmove", this.#onTouchMove, { passive: false });
     window.addEventListener("touchend", this.#onTouchEnd, { passive: true });
     window.addEventListener("touchcancel", this.#onTouchEnd, { passive: true });
-    document.addEventListener("selectionchange", this.#onSelectionChange, {
-      passive: true,
-    });
     window.addEventListener("resize", this.#onResize);
     document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
@@ -426,7 +424,6 @@ export class PixelBackdrop extends HTMLElement {
     window.removeEventListener("touchmove", this.#onTouchMove);
     window.removeEventListener("touchend", this.#onTouchEnd);
     window.removeEventListener("touchcancel", this.#onTouchEnd);
-    document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
@@ -855,11 +852,10 @@ export class PixelBackdrop extends HTMLElement {
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#holdPointer = event.pointerId;
-    this.#grabbed =
-      this.#chosen.holds === true && event.pointerType === "touch";
+    this.#grabbed = event.pointerType === "touch";
     // A new object per press, so a mode tells presses apart by identity.
     this.#input.press = { ...point, at: this.#time, held: true };
-    if (this.#chosen.holds) this.#suppressSelection();
+    this.#suppressSelection();
     this.#touched();
   };
 
@@ -911,18 +907,12 @@ export class PixelBackdrop extends HTMLElement {
   /**
    * Without `preventDefault`, which would break touch scrolling: the layer
    * ignores pointer events, so a drag from the margin starts a native text
-   * selection that would otherwise end the hold.
+   * selection across the page instead of dragging the toy.
    */
   #suppressSelection() {
     document.documentElement.setAttribute(HOLDING, "");
     getSelection()?.removeAllRanges();
   }
-
-  /** A drag that turned into a text selection is no longer a press. */
-  #onSelectionChange = () => {
-    if (this.#chosen.holds) return;
-    if (getSelection()?.isCollapsed === false) this.#endHold();
-  };
 
   #onMotionChange = () => {
     if (reducedMotion.matches) this.#stop();
