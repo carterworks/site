@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../../test/backdrop-defaults";
-import { mount, play } from "../../test/backdrop-play";
+import { mountWithShadow, play } from "../../test/backdrop-play";
 import {
   installSoftCanvas,
   type SoftBitmap,
@@ -13,11 +13,23 @@ import "../pixel-backdrop";
 import { MODES } from ".";
 
 /**
- * Golden digests of every pixel each toy puts on screen under each look, to
- * catch a refactor that changes what is shown. They sample the screen at fixed
- * simulated times, never the canvas calls that drew it, so a new way of
- * drawing the same pixels keeps them. After an intended change to what is
- * shown, update them with `vitest run -u` and review the entries that moved.
+ * Golden snapshots of what each toy shows under each look, to catch a refactor
+ * that changes it. Two entries per toy and look:
+ *
+ * - A SHA-256 digest of the display and its shadow's echo canvas, sampled at
+ *   every simulated frame, never the canvas calls that drew them, so a new way
+ *   of drawing the same pixels keeps it. A fully transparent pixel counts as
+ *   black, whatever RGB it keeps. Pixels are drawn by the software canvas in
+ *   `toy-canvas`, which composites as the spec says but is not a browser.
+ * - `markup`: what carries the rest of the look to CSS once play settles, the
+ *   canvas's and backdrop's `data-*` attributes and inline styles and the
+ *   stylesheet in the canvas's shadow root, as readable text.
+ *
+ * Not pinned: how a browser paints that CSS (cell scaling, `image-rendering`,
+ * the gap overlay, the echo's multiply blend and offset, the vignette), and
+ * page stylesheets such as global.css that read the backdrop's properties.
+ * After an intended change, update with `vitest run -u` and review the entries
+ * that moved.
  */
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
@@ -107,17 +119,47 @@ function recorder() {
   };
 }
 
+/** Read from the attributes, as spreading happy-dom's `dataset` missed `data-vignette`, set by `toggleAttribute`. */
+const data = (element: Element) =>
+  Object.fromEntries(
+    Array.from(element.attributes)
+      .filter(({ name }) => name.startsWith("data-"))
+      .map(({ name, value }) => [name, value]),
+  );
+
+const declarations = (style: CSSStyleDeclaration) =>
+  Object.fromEntries(
+    Array.from(style, (name) => [name, style.getPropertyValue(name)]),
+  );
+
+/** How the look reaches the screen through markup and CSS, which the pixels never show. */
+function markup(canvas: HTMLElement, shadow: ShadowRoot) {
+  const backdrop = canvas.parentElement!;
+  return {
+    canvasData: data(canvas),
+    canvasStyle: declarations(canvas.style),
+    backdropData: data(backdrop),
+    backdropStyle: declarations(backdrop.style),
+    stylesheet: Array.from(shadow.querySelectorAll("style"), (style) =>
+      style.textContent.split("\n").map((line) => line.trim()),
+    )
+      .flat()
+      .filter(Boolean),
+  };
+}
+
 for (const { id } of MODES) {
   for (const { name, display, scheme } of LOOKS) {
     test(`${id} on ${name}`, async () => {
       // As the theme toggle sets it; the stubbed OS scheme is light.
       document.documentElement.style.colorScheme = scheme;
-      mount(id, {}, display);
+      const { canvas, shadow } = mountWithShadow(id, {}, display);
       const recording = recorder();
       await play(recording.advance);
       await recording.advance(SETTLE_MS);
 
       expect(recording.result()).toMatchSnapshot();
+      expect(markup(canvas, shadow)).toMatchSnapshot("markup");
     });
   }
 }
