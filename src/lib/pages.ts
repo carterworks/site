@@ -10,9 +10,9 @@ export const pages: Record<string, PageMetadata> = {
   "/": {
     description: "A developer from Utah.",
     id: "index",
-    ogTitle: "A developer from Utah.",
+    ogTitle: "carter.works",
     ogType: "website",
-    title: "Carter | A developer from Utah.",
+    title: "Carter McBride",
   },
   "/blog/": {
     description: "A software engineer's blog? How original.",
@@ -22,6 +22,7 @@ export const pages: Record<string, PageMetadata> = {
     title: "All blog posts | carter.works",
   },
   "/play/": {
+    description: "The pixel backdrop, full-screen.",
     id: "play",
     ogTitle: "Playground",
     title: "Playground | carter.works",
