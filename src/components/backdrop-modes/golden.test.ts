@@ -27,7 +27,9 @@ import { MODES } from ".";
  *
  * Not pinned: how a browser paints that CSS (cell scaling, `image-rendering`,
  * the gap overlay, the echo's multiply blend and offset, the vignette), and
- * page stylesheets such as global.css that read the backdrop's properties.
+ * page styles such as PixelBackdrop.astro's, which turn the backdrop's
+ * properties into the screen colour, gap colour and vignette. Every look
+ * recolours, so a frame presented without a pass, by `drawImage`, never runs.
  * After an intended change, update with `vitest run -u` and review the entries
  * that moved.
  */
