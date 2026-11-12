@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { createBackdropDisplay } from "./backdrop-display-setting";
+import { DISPLAYS } from "./backdrop-displays";
 import { createBackdropMode } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 import "./play-toolbar";
@@ -13,6 +15,7 @@ const markup = `
   <play-toolbar role="group" aria-label="Playground">
     <button type="button" data-toy></button>
     <button type="button" data-theme></button>
+    <button type="button" data-display></button>
     <button type="button" data-image>Image…</button>
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
@@ -26,6 +29,7 @@ let mode = "";
 const setMode = vi.fn((id: string) => {
   mode = id;
 });
+const setDisplay = vi.fn();
 const play = vi.fn((toy: { id: string }) => {
   mode = toy.id;
 });
@@ -38,6 +42,7 @@ const get = <T extends Element>(selector: string) => {
 
 const toy = () => get<HTMLButtonElement>("[data-toy]");
 const theme = () => get<HTMLButtonElement>("[data-theme]");
+const display = () => get<HTMLButtonElement>("[data-display]");
 const status = () => get("[data-status]").textContent;
 const settle = () => new Promise((resolve) => setTimeout(resolve));
 
@@ -65,13 +70,14 @@ function mount() {
   Object.assign(settings, {
     theme: createThemeSetting(),
     backdrop: createBackdropMode(() => 0, new EventTarget()),
+    display: createBackdropDisplay(),
   });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
   Object.defineProperty(backdrop, "mode", { get: () => mode });
-  Object.assign(backdrop, { setMode, play });
+  Object.assign(backdrop, { setMode, setDisplay, play });
   document.body.append(backdrop);
 }
 
@@ -81,6 +87,7 @@ beforeEach(() => {
   mode = MODES[0].id;
   setMode.mockClear();
   play.mockClear();
+  setDisplay.mockClear();
   vi.stubGlobal("matchMedia", (query: string) => ({
     get matches() {
       return query.includes("dark") === (osScheme === "dark");
@@ -100,12 +107,13 @@ afterEach(() => {
 test("the buttons show the current values and nothing is stored on load", () => {
   expect(toy().textContent).toBe(`Toy: ${MODES[0].label}`);
   expect(theme().textContent).toBe("Theme: Light");
+  expect(display().textContent).toBe(`Display: ${DISPLAYS[0].label}`);
   expect(localStorage.length).toBe(0);
   expect(document.documentElement.style.colorScheme).toBe("");
 });
 
 test("each button's accessible name starts with its visible text", () => {
-  for (const button of [toy(), theme()]) {
+  for (const button of [toy(), theme(), display()]) {
     expect(button.getAttribute("aria-label")).toBe(
       `${button.textContent}. Activate to change.`,
     );
@@ -258,4 +266,11 @@ test("a page load re-renders, as the toy is chosen after the bar connects", () =
   document.dispatchEvent(new Event("astro:page-load"));
 
   expect(toy().textContent).toBe(`Toy: ${MODES[1].label}`);
+});
+
+test("the display button cycles the display and shows the new one", () => {
+  display().click();
+
+  expect(setDisplay).toHaveBeenCalledWith(DISPLAYS[1].id);
+  expect(display().textContent).toBe(`Display: ${DISPLAYS[1].label}`);
 });

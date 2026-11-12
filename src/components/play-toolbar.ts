@@ -11,10 +11,11 @@ class PlayToolbarElement extends HTMLElement {
   connectedCallback() {
     const toy = this.querySelector<HTMLButtonElement>("[data-toy]");
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
+    const display = this.querySelector<HTMLButtonElement>("[data-display]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
-    if (!toy || !theme || !pick || !input || !status) return;
+    if (!toy || !theme || !display || !pick || !input || !status) return;
 
     let playing: ImageBitmap | undefined;
     let request = 0;
@@ -37,6 +38,7 @@ class PlayToolbarElement extends HTMLElement {
       const picture = backdrop()?.mode === "image";
       describe(toy, "Toy", picture ? "Image" : settings.backdrop.label());
       describe(theme, "Theme", settings.theme.label());
+      describe(display, "Display", settings.display.label());
     };
 
     const release = () => {
@@ -53,6 +55,10 @@ class PlayToolbarElement extends HTMLElement {
     });
     theme.addEventListener("click", () => {
       settings.theme.cycle();
+      render();
+    });
+    display.addEventListener("click", () => {
+      settings.display.cycle();
       render();
     });
     pick.addEventListener("click", () => input.click());
