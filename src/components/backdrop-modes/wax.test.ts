@@ -353,3 +353,22 @@ test("a frame of the lamp allocates next to nothing beyond the canvas it draws o
 
   expect(await perFrame(500)).toBeLessThan(floor + 900);
 });
+
+test("shrinking the glass wipes the wax drawn where it used to be", async () => {
+  await run(2);
+  const smaller = new DOMRect(edge, edge, span / 2, span / 2);
+  expect(mass()).toBeGreaterThan(0);
+
+  view = smaller;
+  window.dispatchEvent(new Event("resize"));
+  await run(1);
+
+  const bands = field();
+  const outside = bands.filter(
+    (value, i) =>
+      value > 0 &&
+      (i % columns >= smaller.right ||
+        Math.floor(i / columns) >= smaller.bottom),
+  );
+  expect(outside).toHaveLength(0);
+});

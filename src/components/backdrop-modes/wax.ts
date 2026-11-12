@@ -47,6 +47,18 @@ const FAR_STRIDE = 4;
 export const farCells = (columns: number, rows: number) =>
   (Math.ceil(columns / FAR_STRIDE) + 2) * (Math.ceil(rows / FAR_STRIDE) + 2);
 
+/** The whole cells of `visible` that lie on the grid: the only ones the lamp draws. */
+const cellsInGrid = (
+  visible: CellRect,
+  columns: number,
+  rows: number,
+): CellRect => ({
+  left: Math.max(0, Math.floor(visible.left)),
+  top: Math.max(0, Math.floor(visible.top)),
+  right: Math.min(columns, Math.ceil(visible.right)),
+  bottom: Math.min(rows, Math.ceil(visible.bottom)),
+});
+
 export type BlobScratch = { near: Float64Array; far: Float64Array };
 
 type Grab = { blob: Blob; dx: number; dy: number };
@@ -86,6 +98,7 @@ export const wax: Toy = {
     let hovering = false;
     let held = false;
     let visible: CellRect = visibleCells(canvas);
+    let box = cellsInGrid(visible, columns, rows);
     let grab: Grab | undefined;
     let lastInputAt = performance.now();
     let settled = false;
@@ -226,10 +239,15 @@ export const wax: Toy = {
       frame = undefined;
       now = time;
       pace.advance(now, advance);
-      field.fill(0);
-      renderBlobs(blobs, visible, columns, scratch, field);
-      for (let i = 0; i < field.length; i += 1) {
-        pixels[i * 4 + 3] = field[i] * 255;
+      renderBlobs(blobs, box, columns, scratch, field);
+      for (let y = box.top; y < box.bottom; y += 1) {
+        for (
+          let i = y * columns + box.left;
+          i < y * columns + box.right;
+          i += 1
+        ) {
+          pixels[i * 4 + 3] = field[i] * 255;
+        }
       }
       context.putImageData(image, 0, 0);
       if (!settled) wake();
@@ -280,6 +298,9 @@ export const wax: Toy = {
 
     const onResize = () => {
       visible = visibleCells(canvas);
+      box = cellsInGrid(visible, columns, rows);
+      field.fill(0);
+      for (let i = 3; i < pixels.length; i += 4) pixels[i] = 0;
       wake();
     };
 
