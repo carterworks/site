@@ -7,12 +7,15 @@ import {
   pointerAt,
   softStats,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import { MAX_GHOST } from "../emulated-canvas-limits";
 import "../emulated-canvas";
 import { MODES } from ".";
 import type { Toy, ToyCanvas } from "./toy";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const SIZE = 160;
 

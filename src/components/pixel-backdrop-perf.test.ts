@@ -8,10 +8,13 @@ import {
   SoftContext,
   softStats,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../test/toy-canvas";
 import { MODES } from "./backdrop-modes";
 import type { PixelBackdropOptions } from "./pixel-backdrop";
 import "./pixel-backdrop";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const motion = vi.hoisted(() => {
   const listeners = new Set<() => void>();

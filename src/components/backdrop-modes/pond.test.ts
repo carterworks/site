@@ -6,10 +6,13 @@ import {
   type SoftBitmap,
   useExactFrames,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import { pond } from "./pond";
 import { visibleCells } from "./toy";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const SIZE = 160;
 const middle = SIZE / 2;

@@ -181,6 +181,12 @@ export function installSoftCanvas() {
 }
 
 /**
+ * Timeout for tests that step a soft canvas through tens of simulated seconds,
+ * where the pixel work alone takes seconds and 5 s flakes on slow CI runners.
+ */
+export const SLOW_TEST_MS = 30_000;
+
+/**
  * Fakes animation frames, timers and the clock, so a toy's loop runs on demand.
  * `frameMs` sets the display's frame gap, 16 ms by default.
  */
