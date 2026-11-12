@@ -30,6 +30,7 @@ test.each([
   "[contenteditable]",
   "[tabindex]",
   "command-bar",
+  "play-toolbar",
   "dialog",
   "main",
   "header",
