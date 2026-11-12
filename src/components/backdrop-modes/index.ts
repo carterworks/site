@@ -8,6 +8,7 @@ import { silt } from "./silt";
 import { wax } from "./wax";
 import { pendulums } from "./pendulums";
 import { curtain } from "./curtain";
+import { tray } from "./tray";
 import type { Toy } from "./toy";
 
 /**
@@ -24,4 +25,5 @@ export const MODES: Toy[] = [
   filings,
   pendulums,
   curtain,
+  tray,
 ];
