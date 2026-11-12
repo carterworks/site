@@ -4,12 +4,13 @@ import { dirname, join, matchesGlob } from "node:path";
 import { expect, test } from "vitest";
 
 /**
- * The pixel backdrop's layers. Every production file under these directories
- * must match a layer (first match wins), and may import only files in the
- * layers its `imports` names. Package imports are not checked.
+ * The site's layers, pixel backdrop first. Every production file must match a
+ * layer (first match wins), and may import only files in the layers its
+ * `imports` names. A bare import (package, builtin or virtual module) must be
+ * named there too, or `imports` must name "packages" to allow any.
  */
 const layers = {
-  lib: { files: ["src/lib/*.ts"], imports: ["lib"] },
+  lib: { files: ["src/lib/{clamp,cycle-setting}.ts"], imports: ["lib"] },
   canvas: {
     files: [
       "src/components/{emulated-canvas,emulated-canvas-limits,backdrop-noise}.ts",
@@ -47,12 +48,38 @@ const layers = {
     files: [
       "src/components/{site-settings,backdrop-mode-setting,backdrop-display-setting,theme-setting}.ts",
       "src/components/{play-toolbar,command-bar,frame-rate}.ts",
+      // The theme setting's storage, shared with the layout's inline script.
+      "src/lib/color-scheme.ts",
     ],
     imports: ["controls", "toy registry", "displays", "lib"],
   },
   "dev toolbar": {
     files: ["src/dev-toolbar/*.ts"],
-    imports: ["toy registry", "canvas"],
+    imports: ["toy registry", "canvas", "astro/toolbar"],
+  },
+  "site lib": {
+    files: ["src/lib/*.ts"],
+    imports: ["site lib", "lib", "packages"],
+  },
+  // Pages reach the backdrop only through its entry points, never a single
+  // toy, the toy kit or the dev toolbar.
+  site: {
+    files: [
+      "src/*.ts",
+      "src/{pages,layouts,integrations}/**",
+      "src/components/*.astro",
+    ],
+    imports: [
+      "site",
+      "site lib",
+      "lib",
+      "controls",
+      "backdrop",
+      "canvas",
+      "toy registry",
+      "displays",
+      "packages",
+    ],
   },
 };
 
@@ -74,30 +101,46 @@ const exceptions = [
   },
 ];
 
-const production = globSync(
-  ["src/lib/**/*.ts", "src/components/**/*.ts", "src/dev-toolbar/**/*.ts"],
-  { exclude: (path) => path.endsWith(".test.ts") },
-).sort();
+const production = globSync("src/**/*.{ts,js,mjs,astro}", {
+  exclude: ["**/*.test.ts", "src/test/**"],
+}).sort();
 
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, { files }]) =>
     files.some((glob) => matchesGlob(file, glob)),
   )?.[0];
 
+const isBare = (specifier: string) => !specifier.startsWith(".");
+
 const resolve = (from: string, specifier: string) => {
   const base = join(dirname(from), specifier);
   return [`${base}.ts`, join(base, "index.ts")].find(existsSync) ?? base;
 };
 
+// Strings are matched first so a `//` inside one (a URL) is kept.
+const withoutComments = (source: string) =>
+  source.replace(
+    /("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\/\/.*|\/\*[\s\S]*?\*\//g,
+    (_, string?: string) => string ?? "",
+  );
+
+const sources = new Map(
+  production.map((file) => [file, withoutComments(readFileSync(file, "utf8"))]),
+);
+
 const importsOf = (file: string) =>
   [
-    ...readFileSync(file, "utf8").matchAll(
-      /(?:\bfrom\s*|\bimport\s*\(?\s*)["'](\.[^"']*)["']/g,
-    ),
-  ].map(([, specifier]) => resolve(file, specifier));
+    ...sources
+      .get(file)!
+      .matchAll(/(?:\bfrom|\bimport)\s*\(?\s*(["'])([^"'\n]*)\1/g),
+  ].map(([, , specifier]) => specifier);
 
 const edges = production.flatMap((from) =>
-  importsOf(from).map((to) => ({ from, to })),
+  importsOf(from).map((specifier) =>
+    isBare(specifier)
+      ? { from, to: specifier, bare: true }
+      : { from, to: resolve(from, specifier), bare: false },
+  ),
 );
 
 const isException = ({ from, to }: { from: string; to: string }) =>
@@ -108,15 +151,26 @@ test("every production file belongs to a layer", () => {
   expect(unclassified, "add these files to a layer").toEqual([]);
 });
 
+test("every dynamic import names its file literally", () => {
+  const unchecked = production.filter((file) =>
+    /\bimport\s*\((?!\s*(["'])[^"'\n]*\1\s*\))/.test(sources.get(file)!),
+  );
+  expect(unchecked, 'write these imports as import("./file")').toEqual([]);
+});
+
 test("each file imports only what its layer allows", () => {
   const broken = edges
     .filter((edge) => !isException(edge))
-    .flatMap(({ from, to }) => {
+    .flatMap(({ from, to, bare }) => {
       const fromLayer = layerOf(from);
-      const toLayer = layerOf(to);
       if (!fromLayer) return [];
-      const allowed = layers[fromLayer as keyof typeof layers].imports;
-      return toLayer && allowed.includes(toLayer)
+      const allowed: string[] =
+        layers[fromLayer as keyof typeof layers].imports;
+      const toLayer = bare ? "package" : layerOf(to);
+      const ok = bare
+        ? allowed.includes(to) || allowed.includes("packages")
+        : toLayer !== undefined && allowed.includes(toLayer);
+      return ok
         ? []
         : [
             `${from} (${fromLayer}) imports ${to} (${toLayer ?? "no layer"}); ${fromLayer} may import only ${allowed.join(", ")}`,
