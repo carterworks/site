@@ -233,3 +233,13 @@ test("rapid treats and taps never stack hops into flight", () => {
   toy.run(60 * 4);
   expect(toy.bodyTop()).toBeGreaterThanOrEqual(STANDING_TOP);
 });
+
+test("on a grid twice as fine each sprite pixel is a 2x2 block of cells", () => {
+  const size = GRID_SIZE * 2;
+  const toy = setup({ left: 0, top: 70, right: size, bottom: 250 }, size);
+  toy.run(1);
+  toy.tap(toy.bodyX(), 2 * GROUND - 4);
+  toy.run(150);
+  expect(toy.bodyCells()).toBe(STAND_PIXELS * 4);
+  expect(toy.bodyWidth()).toBe(16);
+});

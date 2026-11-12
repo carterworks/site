@@ -1,5 +1,5 @@
 import { clamp } from "../emulated-canvas-limits";
-import type { CellRect, Mode, Point } from "./mode";
+import { cellScale, type CellRect, type Mode, type Point } from "./mode";
 
 const STAND = [
   "..#..#..",
@@ -21,7 +21,13 @@ const TUFT_PERIOD = 80;
 const SPRITE_HALF_WIDTH = 4;
 /** Keeps the sprite's whole body, not only its centre, inside the visible span. */
 const EDGE_MARGIN = SPRITE_HALF_WIDTH + 1;
-/** Rows between the ground line and the bottom of the viewport. */
+/**
+ * The pixel pitch the sprite was drawn for, from the gallery's ~9 px cells. A
+ * sprite pixel is a square of whole cells that wide, so the critter keeps its
+ * on-screen size on a denser grid; it is 1 cell per sprite pixel at 160 columns.
+ */
+const SPRITE_CELL_PX = 9;
+/** Sprite pixels between the ground line and the bottom of the viewport. */
 const GROUND_INSET = 7;
 
 const MAX_CRUMBS = 6;
@@ -67,6 +73,14 @@ export const mote: Mode = {
   label: "Mote",
   look: { ghost: 55, noise: 10 },
   create({ columns, rows }) {
+    const block = Math.max(1, Math.round(cellScale(SPRITE_CELL_PX, columns)));
+    // Everything but the field is simulated in sprite pixels, not cells.
+    const unitsAcross = Math.ceil(columns / block);
+    const toUnits = <T extends Point>(p: T): T => ({
+      ...p,
+      x: p.x / block,
+      y: p.y / block,
+    });
     const critter = {
       x: 0,
       hop: 0,
@@ -122,19 +136,34 @@ export const mote: Mode = {
       critter.breath = 0;
     };
 
-    const plot = (field: Float32Array, x: number, y: number, value: number) => {
-      const cx = Math.round(x);
-      const cy = Math.round(y);
-      if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
-      const i = cy * columns + cx;
-      if (field[i] < value) field[i] = value;
+    const paint = (
+      field: Float32Array,
+      x: number,
+      y: number,
+      value: number,
+      overwrite: boolean,
+    ) => {
+      const originX = Math.round(x) * block;
+      const originY = Math.round(y) * block;
+      for (
+        let cy = Math.max(0, originY);
+        cy < Math.min(rows, originY + block);
+        cy += 1
+      ) {
+        for (
+          let cx = Math.max(0, originX);
+          cx < Math.min(columns, originX + block);
+          cx += 1
+        ) {
+          const i = cy * columns + cx;
+          if (overwrite || field[i] < value) field[i] = value;
+        }
+      }
     };
-    const set = (field: Float32Array, x: number, y: number, value: number) => {
-      const cx = Math.round(x);
-      const cy = Math.round(y);
-      if (cx < 0 || cy < 0 || cx >= columns || cy >= rows) return;
-      field[cy * columns + cx] = value;
-    };
+    const plot = (field: Float32Array, x: number, y: number, value: number) =>
+      paint(field, x, y, value, false);
+    const set = (field: Float32Array, x: number, y: number, value: number) =>
+      paint(field, x, y, value, true);
     /** One row can be swapped for another so animation frames need no copy. */
     const sprite = (
       field: Float32Array,
@@ -163,9 +192,17 @@ export const mote: Mode = {
     };
 
     return {
-      step({ pointer: hover, press, lastInputAt, visible }, time) {
+      step(input, time) {
+        const { lastInputAt } = input;
+        const press = input.press && toUnits(input.press);
+        const visible = {
+          left: input.visible.left / block,
+          top: input.visible.top / block,
+          right: input.visible.right / block,
+          bottom: input.visible.bottom / block,
+        };
         now = time;
-        pointer = hover;
+        pointer = input.pointer && toUnits(input.pointer);
         ground = Math.floor(visible.bottom) - GROUND_INSET;
         const bounds = reach(visible);
         if (!placed) {
@@ -173,8 +210,8 @@ export const mote: Mode = {
           placed = true;
         }
 
-        if (press !== undefined && press !== seenPress) {
-          seenPress = press;
+        if (press !== undefined && input.press !== seenPress) {
+          seenPress = input.press;
           if (over(press)) {
             if (critter.asleep) wake();
             else {
@@ -295,8 +332,8 @@ export const mote: Mode = {
       },
 
       render(field) {
-        for (let x = 0; x < columns; x += 1) plot(field, x, ground, 0.5);
-        for (let x0 = 0; x0 < columns; x0 += TUFT_PERIOD) {
+        for (let x = 0; x < unitsAcross; x += 1) plot(field, x, ground, 0.5);
+        for (let x0 = 0; x0 < unitsAcross; x0 += TUFT_PERIOD) {
           for (let k = 0; k < TUFTS.length; k += 1) {
             plot(field, x0 + TUFTS[k], ground - 1, 0.35);
             if (k % 3 === 0) plot(field, x0 + TUFTS[k], ground - 2, 0.35);
