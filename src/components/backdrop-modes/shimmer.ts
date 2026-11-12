@@ -26,8 +26,9 @@ function knob(canvas: Element, name: string, parse: typeof duration) {
  * segment is drawn only on the frame after a move, so on the backdrop the
  * canvas's ghost alone fades it into a trail.
  *
- * It draws grey on transparent, into its own image data put whole each frame,
- * so presenting it on an emulated canvas needs no read-back. A ring's size
+ * It draws white on transparent, fading by alpha so any page shows through a
+ * faint pixel, into its own image data put whole each frame, so presenting it
+ * on an emulated canvas needs no read-back. A ring's size
  * and lifetime come from `--backdrop-ripple-size` (in pixels of the tuned
  * width) and `--backdrop-ripple-speed`, read at each press.
  */
@@ -52,11 +53,11 @@ export const shimmer: Toy = {
     let lit = true;
     let frame: number | undefined;
 
-    const plot = (x: number, y: number, level: number) => {
+    const plot = (x: number, y: number, opacity: number) => {
       const i = (y * width + x) * 4;
-      if (level <= pixels[i]) return;
-      pixels[i] = pixels[i + 1] = pixels[i + 2] = level;
-      pixels[i + 3] = 255;
+      if (opacity <= pixels[i + 3]) return;
+      pixels[i] = pixels[i + 1] = pixels[i + 2] = 255;
+      pixels[i + 3] = opacity;
     };
 
     const stamp = (x: number, y: number) => {

@@ -128,3 +128,16 @@ test("stop cancels its frame and ignores the pointer from then on", async () => 
   pointerAt(canvas, "pointerdown", 10, 10);
   expect(vi.getTimerCount()).toBe(0);
 });
+
+test("draws white, fading by alpha, so a faint pixel shows the page through it rather than black", async () => {
+  pointerAt(canvas, "pointerdown", 40.5, 40.5);
+  await vi.advanceTimersByTimeAsync(400);
+
+  const { pixels } = bitmap();
+  const drawn = [];
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] > 0) drawn.push([...pixels.subarray(i, i + 3)]);
+  }
+  expect(drawn.length).toBeGreaterThan(0);
+  expect(drawn.flat().every((channel) => channel === 255)).toBe(true);
+});
