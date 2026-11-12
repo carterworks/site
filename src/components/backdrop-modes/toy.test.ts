@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { cellScale, pointOn, sameRect, visibleCells } from "./toy";
+import { cellScale, fixedStep, pointOn, sameRect, visibleCells } from "./toy";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -92,4 +92,36 @@ test("sameRect compares every edge", () => {
   const rect = { left: 0, top: 1, right: 2, bottom: 3 };
   expect(sameRect(rect, { ...rect })).toBe(true);
   expect(sameRect(rect, { ...rect, bottom: 4 })).toBe(false);
+});
+
+function stepsOver(pace: ReturnType<typeof fixedStep>, frames: number[]) {
+  let steps = 0;
+  const count = () => (steps += 1);
+  for (const now of frames) pace.advance(now, count);
+  return steps;
+}
+
+test("a fixed step runs the same steps whatever the frame rate", () => {
+  const frames = (gap: number) =>
+    Array.from({ length: Math.round(1000 / gap) + 1 }, (_, i) => i * gap);
+
+  const at60 = stepsOver(fixedStep(10, 100), frames(20));
+  const at120 = stepsOver(fixedStep(10, 100), frames(5));
+
+  expect(at60).toBe(at120);
+});
+
+test("a fixed step runs one step on its first frame and after a restart", () => {
+  const pace = fixedStep(10, 100);
+
+  expect(stepsOver(pace, [5000])).toBe(1);
+  pace.restart();
+  expect(stepsOver(pace, [9000])).toBe(1);
+});
+
+test("a fixed step catches up no more than its cap after a long pause", () => {
+  const pace = fixedStep(10, 100);
+  pace.advance(0, () => {});
+
+  expect(stepsOver(pace, [60_000])).toBe(10);
 });

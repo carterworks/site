@@ -55,6 +55,34 @@ const REFERENCE_WIDTH_PX = 1440;
 export const cellScale = (designCellPx: number, width: number) =>
   (designCellPx * width) / REFERENCE_WIDTH_PX;
 
+/**
+ * Paces a toy's simulation in whole steps of `stepMs` however often frames
+ * arrive, so a 120 Hz display does not run it twice as fast. A pause longer
+ * than `maxCatchUpMs`, like a hidden tab, is not replayed. The first frame
+ * after `restart`, which a toy calls whenever its loop stops, runs one step
+ * instead of replaying the idle gap.
+ */
+export function fixedStep(stepMs: number, maxCatchUpMs: number) {
+  let last: number | undefined;
+  let owed = 0;
+  return {
+    advance(now: number, step: () => void) {
+      owed = Math.min(
+        owed + (last === undefined ? stepMs : now - last),
+        maxCatchUpMs,
+      );
+      last = now;
+      while (owed >= stepMs) {
+        owed -= stepMs;
+        step();
+      }
+    },
+    restart() {
+      last = undefined;
+    },
+  };
+}
+
 export type Point = { x: number; y: number };
 
 /** A span of the canvas in pixels; `right` and `bottom` are exclusive. */
