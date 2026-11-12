@@ -329,30 +329,30 @@ test("the frame rate is shown each half second, from the frames between", () => 
 
   frame(...repeat(25, 20));
   expect(get<HTMLElement>("[data-fps]").hidden).toBe(false);
-  expect(rate()).toBe("50 fps");
+  expect(rate()).toBe("FPS: 050");
 
   frame(...repeat(20, 25));
-  expect(rate()).toBe("40 fps");
+  expect(rate()).toBe("FPS: 040");
 });
 
 test("the 1% low averages the slowest hundredth of recent frames", () => {
   const frame = runFrames();
 
   frame(...repeat(25, 20));
-  expect(low()).toBe("1% low 50");
+  expect(low()).toBe("1% low: 050");
 
   frame(100, ...repeat(20, 20));
-  expect(low()).toBe("1% low 10");
+  expect(low()).toBe("1% low: 010");
 });
 
 test("the 1% low forgets frames older than 30s", () => {
   const frame = runFrames();
 
   frame(1000, ...repeat(58, 500), 500);
-  expect(low()).toBe("1% low 1");
+  expect(low()).toBe("1% low: 001");
 
   frame(500);
-  expect(low()).toBe("1% low 2");
+  expect(low()).toBe("1% low: 002");
 });
 
 test("the sparkline steps through each half second's rate, scaled to the peak", () => {

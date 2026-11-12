@@ -13,6 +13,8 @@ const SAMPLE_MS = 500;
 const HISTORY_MS = 30_000;
 const SLOTS = HISTORY_MS / SAMPLE_MS;
 
+const pad = (rate: number) => String(Math.round(rate)).padStart(3, "0");
+
 /**
  * Shows the frame rate each half second, with the 1% low and a sparkline of
  * the last 30s. Returns a function that stops it.
@@ -41,8 +43,8 @@ const meterFrames = (meter: HTMLElement) => {
     const slowestTotal = slowest.reduce((sum, ms) => sum + ms, 0);
     const peak = Math.max(...rates);
 
-    rate.textContent = `${Math.round(rates.at(-1) ?? 0)} fps`;
-    low.textContent = `1% low ${Math.round((slowest.length * 1000) / slowestTotal)}`;
+    rate.textContent = `FPS: ${pad(rates.at(-1) ?? 0)}`;
+    low.textContent = `1% low: ${pad((slowest.length * 1000) / slowestTotal)}`;
     history.setAttribute(
       "points",
       rates
