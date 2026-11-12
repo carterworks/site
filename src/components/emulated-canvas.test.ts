@@ -629,6 +629,17 @@ describe("presenting on its own", () => {
     expect(reads).toBe(0);
   });
 
+  test("a toy editing its image after putImageData, in the same task, does not change what is shown", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const image = pixels(100);
+
+    canvas.getContext("2d")!.putImageData(image, 0, 0);
+    image.data.fill(200);
+    await Promise.resolve();
+
+    expect(shown()[0]).toBe(100);
+  });
+
   test("other drawing is read back once on the present after it, and a present with nothing new drawn reads nothing", async () => {
     const canvas = mountLive({ ghost: "70" });
     const context = canvas.getContext("2d")!;

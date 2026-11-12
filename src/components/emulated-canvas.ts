@@ -446,8 +446,6 @@ export class EmulatedCanvas extends HTMLElement {
   #output?: ImageData;
   /** Drawn on since the last present, so `#source` is out of date. */
   #drawn = false;
-  /** The image a whole-bitmap `putImageData` drew, if nothing was drawn after it. */
-  #handed?: ImageData;
   #presentQueued = false;
   #drewAt = -Infinity;
   #passes = SHADERS.map((shader) => shader());
@@ -591,8 +589,11 @@ export class EmulatedCanvas extends HTMLElement {
       args[2] === 0 &&
       image.width === this.width &&
       image.height === this.height;
-    this.#handed = whole ? image : undefined;
-    this.#drawn = true;
+    if (whole) {
+      this.#source = this.#fit(this.#source, image);
+      this.#source.data.set(image.data);
+    }
+    this.#drawn = !whole;
     this.#drewAt = performance.now();
     this.#requestPresent();
   };
@@ -704,8 +705,6 @@ export class EmulatedCanvas extends HTMLElement {
     frame.elapsedMs = now - (this.#presentedAt ?? now);
     this.#presentedAt = now;
 
-    const handed = this.#handed;
-    this.#handed = undefined;
     let image: ImageData | undefined;
     let active = false;
     let idle = false;
@@ -717,7 +716,7 @@ export class EmulatedCanvas extends HTMLElement {
         continue;
       }
       this.#wasActive.add(pass);
-      image ??= this.#pixels(innerCanvas, handed);
+      image ??= this.#pixels(innerCanvas);
       if (image === undefined) break;
       const pace = pass.apply(image.data, frame);
       active ||= pace === "active";
@@ -726,7 +725,7 @@ export class EmulatedCanvas extends HTMLElement {
 
     const dissolving =
       this.#dissolving &&
-      (image ??= this.#pixels(innerCanvas, handed)) !== undefined &&
+      (image ??= this.#pixels(innerCanvas)) !== undefined &&
       this.#dissolve(image.data, now);
 
     this.#shownImage = image !== undefined;
@@ -766,15 +765,10 @@ export class EmulatedCanvas extends HTMLElement {
    * A copy of the consumer's pixels for the passes to edit: they must stay the
    * consumer's to draw over, and the next present starts from them again.
    */
-  #pixels(innerCanvas: OffscreenCanvas, handed?: ImageData) {
+  #pixels(innerCanvas: OffscreenCanvas) {
     if (this.#drawn || this.#source === undefined) {
       this.#drawn = false;
-      if (handed === undefined) {
-        this.#source = this.#read(innerCanvas);
-      } else {
-        this.#source = this.#fit(this.#source, handed);
-        this.#source.data.set(handed.data);
-      }
+      this.#source = this.#read(innerCanvas);
     }
     const source = this.#source;
     if (source === undefined) return undefined;
