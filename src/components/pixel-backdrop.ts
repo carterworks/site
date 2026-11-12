@@ -357,7 +357,7 @@ export class PixelBackdrop extends HTMLElement {
       right: this.#columns,
       bottom: this.#rows,
     };
-    this.#options ??= this.#loadDefaults();
+    this.#options ??= readDefaults();
     this.#mode ??= this.#createMode();
     this.#apply();
 
@@ -409,10 +409,7 @@ export class PixelBackdrop extends HTMLElement {
   configure(partial: Partial<PixelBackdropOptions>) {
     for (const key of Object.keys(partial)) this.#tweaked.add(key);
     // In place, as the mode holds this object to read its knobs live.
-    this.#options = Object.assign(
-      this.#options ?? this.#loadDefaults(),
-      partial,
-    );
+    this.#options = Object.assign(this.#options ?? readDefaults(), partial);
     this.#apply();
     if (this.#options.enabled) {
       this.#start();
@@ -425,12 +422,8 @@ export class PixelBackdrop extends HTMLElement {
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
-    this.configure(this.#loadDefaults());
+    this.configure(readDefaults());
     this.#tweaked.clear();
-  }
-
-  #loadDefaults() {
-    return readDefaults();
   }
 
   #lookOf(mode: Mode, key: keyof Look) {
