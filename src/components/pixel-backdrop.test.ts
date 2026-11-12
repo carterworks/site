@@ -362,6 +362,19 @@ test("a toy chosen while none runs starts once one can, with no dissolve", async
   expect(transition).not.toHaveBeenCalled();
 });
 
+test("a toy chosen under reduced motion shows its own look once motion resumes", () => {
+  motion.set(true);
+  const backdrop = mount();
+  backdrop.setMode("tuned");
+
+  motion.set(false);
+
+  expect(canvasOf(backdrop).dataset).toMatchObject({
+    ghost: "55",
+    noise: "12",
+  });
+});
+
 test("a stopped backdrop leaves its canvas manual, so no fade or drift keeps presenting", () => {
   const backdrop = mount();
   const canvas = canvasOf(backdrop);

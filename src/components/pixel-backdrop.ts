@@ -285,6 +285,7 @@ export class PixelBackdrop extends HTMLElement {
     const canvas = this.#canvas;
     if (canvas === undefined || this.#stopToy !== undefined) return;
     if (reducedMotion.matches || !this.#options.enabled) return;
+    this.#applyLook(canvas);
     delete canvas.dataset.manual;
     this.#stopToy = this.#chosen.start(canvas);
   }
