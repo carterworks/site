@@ -1,15 +1,8 @@
-import { nextInRotation } from "../lib/cycle-setting";
+import { nextInRotation, storeChoice } from "../lib/cycle-setting";
 import { DISPLAYS, DISPLAY_KEY, storedDisplay } from "./backdrop-displays";
 
 const [SITE, ...THEMED] = DISPLAYS;
 const THEMED_IDS = THEMED.map((display) => display.id);
-
-const store = (id?: string) => {
-  try {
-    if (id) localStorage.setItem(DISPLAY_KEY, id);
-    else localStorage.removeItem(DISPLAY_KEY);
-  } catch {}
-};
 
 /**
  * The backdrop applies a stored display itself when it attaches. Nothing
@@ -32,7 +25,7 @@ export function createBackdropDisplay() {
         current(),
         offerSite ? SITE.id : undefined,
       );
-      store(next === SITE.id ? undefined : next);
+      storeChoice(DISPLAY_KEY, next === SITE.id ? undefined : next);
       offerSite = true;
       last = next;
       document.querySelector("pixel-backdrop")?.setDisplay(next);

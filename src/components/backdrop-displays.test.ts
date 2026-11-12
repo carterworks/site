@@ -23,21 +23,3 @@ test.each(DISPLAYS.filter(({ look }) => look))(
     }
   },
 );
-
-test("a stored display is returned only while it is a known one", () => {
-  expect(storedDisplay()).toBeUndefined();
-
-  localStorage.setItem(DISPLAY_KEY, "pocket-lcd");
-  expect(storedDisplay()).toBe("pocket-lcd");
-
-  localStorage.setItem(DISPLAY_KEY, "missing");
-  expect(storedDisplay()).toBeUndefined();
-});
-
-test("unreadable storage means no stored display", () => {
-  vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-    throw new Error("blocked");
-  });
-
-  expect(storedDisplay()).toBeUndefined();
-});

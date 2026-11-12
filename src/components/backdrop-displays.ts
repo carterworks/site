@@ -1,3 +1,5 @@
+import { storedChoice } from "../lib/cycle-setting";
+
 /**
  * The screen a display theme gives the backdrop, as the canvas knobs that
  * draw it. Colours are hex only: any other form makes the palette pass parse
@@ -89,11 +91,4 @@ export const DISPLAY_KEY = "backdrop-display";
 
 const IDS = DISPLAYS.map((display) => display.id);
 
-export function storedDisplay() {
-  try {
-    const id = localStorage.getItem(DISPLAY_KEY);
-    return id !== null && IDS.includes(id) ? id : undefined;
-  } catch {
-    return undefined;
-  }
-}
+export const storedDisplay = () => storedChoice(DISPLAY_KEY, IDS);

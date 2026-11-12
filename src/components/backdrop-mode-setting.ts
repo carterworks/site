@@ -1,4 +1,8 @@
-import { nextInRotation } from "../lib/cycle-setting";
+import {
+  nextInRotation,
+  storedChoice,
+  storeChoice,
+} from "../lib/cycle-setting";
 import { MODES } from "./backdrop-modes";
 
 export const MODE_KEY = "backdrop-mode";
@@ -6,21 +10,7 @@ export const MODE_KEY = "backdrop-mode";
 const RANDOM = "random";
 const IDS = MODES.map((mode) => mode.id);
 
-const stored = () => {
-  try {
-    const id = localStorage.getItem(MODE_KEY);
-    return id !== null && IDS.includes(id) ? id : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
-const store = (id?: string) => {
-  try {
-    if (id) localStorage.setItem(MODE_KEY, id);
-    else localStorage.removeItem(MODE_KEY);
-  } catch {}
-};
+const stored = () => storedChoice(MODE_KEY, IDS);
 
 /**
  * Picks a random mode on every page load and navigation unless one is stored.
@@ -66,11 +56,11 @@ export function createBackdropMode(
         offerRandom ? RANDOM : undefined,
       );
       if (next === RANDOM) {
-        store();
+        storeChoice(MODE_KEY);
         showRandom();
         return;
       }
-      store(next);
+      storeChoice(MODE_KEY, next);
       offerRandom = true;
       show(next);
     },
