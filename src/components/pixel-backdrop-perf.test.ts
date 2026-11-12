@@ -3,6 +3,7 @@ import { installBackdropDefaults } from "../test/backdrop-defaults";
 import {
   countAllocations,
   installSoftCanvas,
+  litPixels,
   place,
   SoftContext,
   softStats,
@@ -154,6 +155,19 @@ describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
 
     expect(presents()).toBeGreaterThan(100);
     expect(presents()).toBeLessThanOrEqual(animationFrames.size + 1);
+  });
+
+  test("lights visible pixels while played", async () => {
+    mount(id);
+    let peak = 0;
+    const sample = setInterval(
+      () => (peak = Math.max(peak, litPixels(bitmaps.offscreen[0]))),
+      16,
+    );
+    await play();
+    clearInterval(sample);
+
+    expect(peak).toBeGreaterThanOrEqual(100);
   });
 
   test("idles at about eight presents a second over drifting noise once input settles", async () => {

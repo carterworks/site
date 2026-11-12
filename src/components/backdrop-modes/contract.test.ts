@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   countAllocations,
   installSoftCanvas,
+  litPixels,
   place,
   pointerAt,
-  type SoftBitmap,
   softStats,
   useFakeFrames,
 } from "../../test/toy-canvas";
@@ -41,6 +41,9 @@ const SLOW_DRAIN: Record<
 
 /** How long after the last input a toy may keep animating. */
 const SETTLE_MS = 30_000;
+
+/** Few enough that a toy drawing a handful of stray pixels fails; a visible scene lights far more. */
+const MIN_LIT = 100;
 
 /** The canvases a toy must run on unchanged, each with the bitmap it draws on. */
 const KINDS = {
@@ -112,8 +115,6 @@ async function play(canvas: ToyCanvas) {
   await vi.advanceTimersByTimeAsync(700);
 }
 
-const lit = (bitmap: SoftBitmap) => bitmap.pixels.some((value) => value > 0);
-
 test("the allocation count catches a toy that copies a buffer every frame", async () => {
   const leaky: Toy = {
     id: "leaky",
@@ -159,12 +160,27 @@ describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
     expect(noise).toBeLessThanOrEqual(100);
   });
 
+  test(`lights at least ${MIN_LIT} pixels during a session`, async () => {
+    const { canvas, bitmap, stop } = run(toy, "plain");
+    await vi.advanceTimersByTimeAsync(16);
+    let peak = 0;
+    const sample = setInterval(
+      () => (peak = Math.max(peak, litPixels(bitmap()))),
+      16,
+    );
+    await play(canvas);
+    clearInterval(sample);
+    expect(peak).toBeGreaterThanOrEqual(MIN_LIT);
+    stop();
+  });
+
   test("draws the same pixels on a plain canvas as on an emulated one", async () => {
     const shown: Record<string, Uint8ClampedArray> = {};
     for (const kind of ["plain", "emulated"] as const) {
       vi.spyOn(Math, "random").mockImplementation(mulberry32(1));
       const { canvas, bitmap, stop } = run(toy, kind);
-      let drew = false;
+      let drew = 0;
+      await vi.advanceTimersByTimeAsync(16);
       for (let ms = 0; ms < 500; ms += 16) {
         pointerAt(
           canvas,
@@ -172,9 +188,9 @@ describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
           ...(across(ms / 500) as [number, number]),
         );
         await vi.advanceTimersByTimeAsync(16);
-        drew ||= lit(bitmap());
+        drew = Math.max(drew, litPixels(bitmap()));
       }
-      expect(drew).toBe(true);
+      expect(drew).toBeGreaterThan(0);
       shown[kind] = bitmap().pixels.slice();
       stop();
       canvas.remove();

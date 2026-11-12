@@ -239,6 +239,15 @@ export function levelAt(bitmap: SoftBitmap, x: number, y: number) {
   return bitmap.pixels[(y * bitmap.width + x) * 4];
 }
 
+/** How many pixels are visible: opaque enough to show, whatever their colour. */
+export function litPixels(bitmap: SoftBitmap) {
+  let count = 0;
+  for (let at = 3; at < bitmap.pixels.length; at += 4) {
+    if (bitmap.pixels[at] > 0) count += 1;
+  }
+  return count;
+}
+
 const BUFFERS = [
   "ArrayBuffer",
   "Int8Array",
