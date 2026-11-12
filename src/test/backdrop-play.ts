@@ -55,6 +55,17 @@ export function mount(
   return canvas;
 }
 
+/**
+ * Mounts as `mount` does, also returning the canvas's closed shadow root,
+ * caught as it is attached because nothing can reach it afterwards.
+ */
+export function mountWithShadow(...args: Parameters<typeof mount>) {
+  const attachShadow = vi.spyOn(Element.prototype, "attachShadow");
+  const canvas = mount(...args);
+  const shadow: ShadowRoot = attachShadow.mock.results.at(-1)!.value;
+  return { canvas, shadow };
+}
+
 export const pointer = (
   type: string,
   share: number,

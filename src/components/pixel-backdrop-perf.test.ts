@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
-import { motion, mount, play, pointer } from "../test/backdrop-play";
+import {
+  motion,
+  mount,
+  mountWithShadow,
+  play,
+  pointer,
+} from "../test/backdrop-play";
 import {
   countAllocations,
   installSoftCanvas,
@@ -182,10 +188,8 @@ describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
   test.each(DISPLAYS.map((display) => [display.id]))(
     "on the %s display, writes nothing to the DOM but a press's hold, and reads computed style only on a press, once warmed up",
     async (display) => {
-      // A document observer can't see into the canvas's closed shadow root, so it is caught as it is attached.
-      const attachShadow = vi.spyOn(Element.prototype, "attachShadow");
-      mount(id, {}, display);
-      const [{ value: shadow }] = attachShadow.mock.results;
+      // A document observer can't see into the canvas's closed shadow root.
+      const { shadow } = mountWithShadow(id, {}, display);
       await play();
       const writes: string[] = [];
       const note = (records: MutationRecord[]) => {
