@@ -4,6 +4,7 @@ import {
   place,
   pointerAt,
   type SoftBitmap,
+  useExactFrames,
   useFakeFrames,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
@@ -164,6 +165,7 @@ const DRAG_FRAMES = 100;
 
 async function dragIn(events: number, distance: number) {
   stop();
+  useExactFrames(STEP);
   mount();
   const startX = SIZE / 4;
   pointerAt(canvas, "pointermove", startX, middle);
@@ -199,7 +201,7 @@ test("a drag injects the same energy however many events deliver it", async () =
 });
 
 test("a long drag never piles the water up to full strength", async () => {
-  expect((await dragIn(100, 100)).peak).toBeLessThan(0.9);
+  expect((await dragIn(100, 100)).peak).toBeLessThan(0.75);
 });
 
 test("idle rain lands inside the visible rect", async () => {

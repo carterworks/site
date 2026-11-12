@@ -205,6 +205,23 @@ export function useFakeFrames(frameMs?: number) {
   }
 }
 
+/**
+ * Puts the fake frames on the display's exact grid, for a gap that is not a
+ * whole number of ms. Fake timers drop the fraction of a delay, so
+ * `useFakeFrames(1000 / 60)` really ticks every 16 ms; here each frame
+ * carries its grid time instead. Call it after `useFakeFrames`.
+ */
+export function useExactFrames(frameMs: number) {
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    const vsync = (Math.floor(performance.now() / frameMs) + 1) * frameMs;
+    return setTimeout(
+      () => callback(vsync),
+      Math.ceil(vsync - performance.now()),
+    );
+  });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
+}
+
 /** Lays `canvas` out at `rect`, as happy-dom lays out nothing. */
 export function place(canvas: HTMLElement, rect: DOMRect) {
   canvas.getBoundingClientRect = () => rect;
