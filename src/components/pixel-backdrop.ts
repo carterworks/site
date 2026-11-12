@@ -1,12 +1,13 @@
 import { type EmulatedCanvas } from "./emulated-canvas";
 import "./emulated-canvas";
 import { MODES } from "./backdrop-modes";
-import type {
-  BackdropInput,
-  CellRect,
-  Look,
-  Mode,
-  ModeInstance,
+import {
+  TUNED_GRID,
+  type BackdropInput,
+  type CellRect,
+  type Look,
+  type Mode,
+  type ModeInstance,
 } from "./backdrop-modes/mode";
 import { isToyPress } from "./backdrop-press";
 import { makeCoarseNoise, makeNoise2D, mulberry32 } from "./backdrop-noise";
@@ -123,12 +124,6 @@ const DRIFTING_FADE_WINDOW = 1000;
 
 /** How long a mode change dissolves, in milliseconds. */
 const DISSOLVE_MS = 800;
-
-/**
- * The grid the host's feature sizes are given for. They scale with the real
- * grid, so a finer grid keeps them the same size on screen.
- */
-const TUNED_GRID = 80;
 
 /** Feature size of the dissolve's blobs, in cells of the tuned grid. */
 const DISSOLVE_SCALE = 10;

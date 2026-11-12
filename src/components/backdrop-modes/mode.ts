@@ -3,6 +3,23 @@ import type { PixelBackdropOptions } from "../pixel-backdrop";
 /** Cells along each side of the square grid every mode runs on. */
 export const GRID_SIZE = 160;
 
+/**
+ * The grid the modes' and the host's feature sizes were tuned on. Sizes in
+ * cells scale by `columns / TUNED_GRID`, so a finer grid keeps them the same
+ * size on screen.
+ */
+export const TUNED_GRID = 80;
+
+const REFERENCE_WIDTH_PX = 1440;
+
+/**
+ * How many site cells span one design cell of `designCellPx` pixels, with the
+ * grid's `columns` drawn across the reference viewport. Multiply a size
+ * authored in design cells by it to keep the same size on screen.
+ */
+export const cellScale = (designCellPx: number, columns: number) =>
+  (designCellPx * columns) / REFERENCE_WIDTH_PX;
+
 export type Point = { x: number; y: number };
 
 /** A span of the grid in logical cells; `right` and `bottom` are exclusive. */
