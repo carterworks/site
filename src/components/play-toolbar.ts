@@ -23,7 +23,10 @@ class PlayToolbarElement extends HTMLElement {
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
-    if (!toy || !theme || !display || !pick || !input || !status) return;
+    const fps = this.querySelector<HTMLElement>("[data-fps]");
+    if (!toy || !theme || !display || !pick || !input || !status || !fps) {
+      return;
+    }
 
     toy.replaceChildren(
       ...[...MODES, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
@@ -99,12 +102,28 @@ class PlayToolbarElement extends HTMLElement {
       render();
     });
 
+    let frames = 0;
+    let since: number | undefined;
+    let frame = 0;
+    const count = (now: number) => {
+      since ??= now;
+      if (now > since) frames += 1;
+      if (now - since >= 500) {
+        fps.textContent = `${Math.round((frames * 1000) / (now - since))} fps`;
+        frames = 0;
+        since = now;
+      }
+      frame = requestAnimationFrame(count);
+    };
+    frame = requestAnimationFrame(count);
+
     // The label alone follows the OS; storage is never touched by it. The
     // toy is chosen on page load, after this connects.
     const osScheme = matchMedia("(prefers-color-scheme: dark)");
     osScheme.addEventListener("change", render);
     document.addEventListener("astro:page-load", render);
     this.cleanup = () => {
+      cancelAnimationFrame(frame);
       osScheme.removeEventListener("change", render);
       document.removeEventListener("astro:page-load", render);
       // The backdrop keeps redrawing the picture on resize until the next

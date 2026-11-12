@@ -20,6 +20,7 @@ const markup = `
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
     <p role="status" data-status></p>
+    <p data-fps></p>
   </play-toolbar>
 `;
 
@@ -298,4 +299,34 @@ test("the display button cycles the display and shows the new one", () => {
 
   expect(setDisplay).toHaveBeenCalledWith(DISPLAYS[1].id);
   expect(display().textContent).toBe(`Display: ${DISPLAYS[1].label}`);
+});
+
+test("the frame rate is shown each half second, from the frames between", () => {
+  const frames: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
+    frames.push(callback),
+  );
+  vi.stubGlobal("cancelAnimationFrame", () => frames.splice(0));
+  mount();
+  const fps = get("[data-fps]");
+
+  for (let at = 0; at <= 500; at += 20) frames.shift()?.(at);
+  expect(fps.textContent).toBe("50 fps");
+
+  for (let at = 525; at <= 1000; at += 25) frames.shift()?.(at);
+  expect(fps.textContent).toBe("40 fps");
+});
+
+test("the frame counter stops when the toolbar leaves", () => {
+  const frames: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
+    frames.push(callback),
+  );
+  const cancel = vi.fn();
+  vi.stubGlobal("cancelAnimationFrame", cancel);
+  mount();
+
+  get("play-toolbar").remove();
+
+  expect(cancel).toHaveBeenCalledWith(frames.length);
 });

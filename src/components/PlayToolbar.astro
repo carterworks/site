@@ -9,6 +9,7 @@
     <p class="paused-notice">Toys are paused for reduced motion.</p>
     <p role="status" data-status></p>
   </div>
+  <p class="fps" data-fps></p>
 </play-toolbar>
 
 <script>
@@ -79,6 +80,21 @@
     min-inline-size: 0;
     outline: none;
     text-overflow: ellipsis;
+  }
+
+  .fps {
+    background: var(--color-bg);
+    border-radius: var(--size-xs);
+    font-variant-numeric: tabular-nums;
+    inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto
+      auto;
+    margin: 0;
+    padding: var(--size-2xs) var(--size-xs);
+    position: fixed;
+  }
+
+  .fps:empty {
+    display: none;
   }
 
   :is(button, a):focus-visible,
