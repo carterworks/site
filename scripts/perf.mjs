@@ -28,6 +28,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { Worker } from "node:worker_threads";
 import { chromium } from "playwright";
 import { onePercentLow } from "../src/components/frame-rate.ts";
 
@@ -53,6 +54,11 @@ for (const [host, path] of Object.entries(builds)) {
     throw new Error(`No /play page in ${path}: run \`pnpm build\` first.`);
   }
 }
+
+// A powersave governor clocks the CPU by load, and the displays load it
+// differently, so the same script looked 2.5 times slower on one display than
+// another. A spinning core holds the clock high for every combination.
+new Worker("for (;;);", { eval: true }).unref();
 
 const browser = await chromium.launch({ channel: "chromium" });
 const context = await browser.newContext({
