@@ -41,7 +41,8 @@ export function createBackdropMode(
   };
 
   const showRandom = () => {
-    const options = IDS.filter((id) => id !== last);
+    const others = IDS.filter((id) => id !== last);
+    const options = others.length > 0 ? others : IDS;
     show(options[Math.floor(random() * options.length)]);
   };
 

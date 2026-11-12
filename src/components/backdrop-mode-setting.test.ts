@@ -109,3 +109,19 @@ test("ignores a stored id that is no longer a mode", () => {
 
   expect(setMode).toHaveBeenLastCalledWith(MODES[0].id);
 });
+
+test("with a single mode, every navigation shows it", async () => {
+  vi.resetModules();
+  vi.doMock("./backdrop-modes", () => ({
+    MODES: [{ id: "only", label: "Only" }],
+  }));
+  const { createBackdropMode } = await import("./backdrop-mode-setting");
+  const events = new EventTarget();
+  createBackdropMode(fixedRandom(0, 0), events);
+
+  events.dispatchEvent(new Event("astro:page-load"));
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  expect(setMode.mock.calls.map(([id]) => id)).toEqual(["only", "only"]);
+  vi.doUnmock("./backdrop-modes");
+});
