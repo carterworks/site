@@ -1,9 +1,10 @@
 import { shimmer } from "./shimmer";
+import { wax } from "./wax";
 import type { Toy } from "./toy";
 
 /**
  * Every backdrop toy, in menu order; the first is the default. Pond, Pinbed,
- * Culture, Wax, Silt and Mote still use the old mode API (see `./mode`) and
+ * Culture, Silt and Mote still use the old mode API (see `./mode`) and
  * rejoin as each is ported to `Toy`.
  */
-export const MODES: Toy[] = [shimmer];
+export const MODES: Toy[] = [shimmer, wax];

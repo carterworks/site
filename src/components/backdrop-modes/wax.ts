@@ -1,9 +1,11 @@
+import { cellScale } from "./mode";
 import {
-  cellScale,
-  type BackdropInput,
+  pointOn,
+  visibleCells,
   type CellRect,
-  type Mode,
-} from "./mode";
+  type Point,
+  type Toy,
+} from "./toy";
 
 /**
  * The gallery tile is 48 cells across at about 8 px a cell with 6 blobs. On the
@@ -20,6 +22,10 @@ const BLOBS = 7;
 const COOL_MS = 12_000;
 const COOLING_DRAG = 0.96;
 const STOPPED_SPEED = 0.002;
+/** The physics is tuned per 60 Hz frame, so a faster display steps it in fixed slices. */
+const STEP_MS = 1000 / 60;
+/** A tab returning from the background steps this much at most, not the whole gap. */
+const MAX_CATCH_UP_MS = 100;
 
 type Blob = {
   x: number;
@@ -41,20 +47,25 @@ export const farCells = (columns: number, rows: number) =>
 
 export type BlobScratch = { near: Float64Array; far: Float64Array };
 
-type Press = NonNullable<BackdropInput["press"]>;
-type Grab = { blob: Blob; dx: number; dy: number; press: Press };
+type Grab = { blob: Blob; dx: number; dy: number };
 
 /**
  * A lava lamp: blobs warm near the bottom, rise, cool near the top and sink.
  * Press a blob to hold and drag it, let go to fling it; tapping empty glass
  * shoves the wax away and hovering nudges it. Left alone the lamp cools to a
  * stop, so an untouched tab costs nothing, and any input warms it again.
+ *
+ * It draws white, each band of wax a different alpha, for the backdrop to
+ * recolour.
  */
-export const wax: Mode = {
+export const wax: Toy = {
   id: "wax",
   label: "Lamp Wax",
   look: { ghost: 75, noise: 8 },
-  create({ columns, rows, random }) {
+  start(canvas) {
+    const context = canvas.getContext("2d");
+    if (context === null) return () => {};
+    const { width: columns, height: rows } = canvas;
     const scale = cellScale(PROTOTYPE_CELL_PX, columns);
     const reach = 18 * scale;
     const blobs: Blob[] = [];
@@ -62,11 +73,23 @@ export const wax: Mode = {
       near: new Float64Array(columns * rows),
       far: new Float64Array(farCells(columns, rows)),
     };
-    let visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 };
+    const field = new Float32Array(columns * rows);
+    const image = context.createImageData(columns, rows);
+    const pixels = image.data;
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = pixels[i + 1] = pixels[i + 2] = 255;
+    }
+    const pointer: Point = { x: 0, y: 0 };
+    const pressAt: Point = { x: 0, y: 0 };
+    let hovering = false;
+    let held = false;
+    let visible: CellRect = visibleCells(canvas);
     let grab: Grab | undefined;
-    let seenPress: Press | undefined;
-    let startedAt = 0;
+    let lastInputAt = performance.now();
     let settled = false;
+    let frame: number | undefined;
+    let last = 0;
+    let owed = 0;
 
     const spawn = () => {
       const width = visible.right - visible.left;
@@ -74,11 +97,11 @@ export const wax: Mode = {
       for (let k = 0; k < BLOBS; k += 1) {
         const share = k / (BLOBS - 1);
         blobs.push({
-          x: visible.left + width * (0.1 + 0.8 * random()),
+          x: visible.left + width * (0.1 + 0.8 * Math.random()),
           y: visible.top + height * (0.125 + 0.75 * share),
           vx: 0,
           vy: 0,
-          r: (3 + random() * 2.2) * scale,
+          r: (3 + Math.random() * 2.2) * scale,
           heat: share > 0.5 ? 0.8 : 0.2,
         });
       }
@@ -97,7 +120,7 @@ export const wax: Mode = {
       }
     };
 
-    const grabNearest = (x: number, y: number, press: Press) => {
+    const grabNearest = (x: number, y: number) => {
       let nearest: Blob | undefined;
       let gap = 3 * scale;
       for (const blob of blobs) {
@@ -108,111 +131,172 @@ export const wax: Mode = {
         }
       }
       if (nearest === undefined) return undefined;
-      return { blob: nearest, dx: nearest.x - x, dy: nearest.y - y, press };
+      return { blob: nearest, dx: nearest.x - x, dy: nearest.y - y };
     };
 
-    return {
-      step({ pointer, press, lastInputAt, visible: seen }, now) {
-        visible = seen;
-        if (blobs.length === 0) {
-          startedAt = now;
-          spawn();
-        }
-        if (grab !== undefined && (press !== grab.press || !press.held)) {
-          grab = undefined;
-        }
-        if (press !== undefined && press !== seenPress) {
-          seenPress = press;
-          if (press.held) grab = grabNearest(press.x, press.y, press);
-          if (grab === undefined) shove(press.x, press.y, 0.9 * scale);
-        }
+    const advance = (now: number) => {
+      const awake = grab !== undefined || now - lastInputAt < COOL_MS;
+      const height = visible.bottom - visible.top;
 
-        const awake =
-          grab !== undefined ||
-          now - Math.max(lastInputAt, startedAt) < COOL_MS;
-        const height = visible.bottom - visible.top;
+      if (grab !== undefined) {
+        const target = hovering ? pointer : pressAt;
+        const { blob } = grab;
+        blob.vx = (blob.vx + (target.x + grab.dx - blob.x) * 0.14) * 0.72;
+        blob.vy = (blob.vy + (target.y + grab.dy - blob.y) * 0.14) * 0.72;
+        blob.heat = 0.5;
+      }
 
-        if (grab !== undefined) {
-          const target = pointer ?? grab.press;
-          const { blob } = grab;
-          blob.vx = (blob.vx + (target.x + grab.dx - blob.x) * 0.14) * 0.72;
-          blob.vy = (blob.vy + (target.y + grab.dy - blob.y) * 0.14) * 0.72;
-          blob.heat = 0.5;
-        }
-
-        let fastest = 0;
-        for (const blob of blobs) {
-          if (blob !== grab?.blob) {
-            if (!awake) {
-              blob.vx *= COOLING_DRAG;
-              blob.vy *= COOLING_DRAG;
-            } else {
-              if (pointer !== undefined) {
-                const dx = blob.x - pointer.x;
-                const dy = blob.y - pointer.y;
-                const distance = Math.hypot(dx, dy) || 1;
-                if (distance < blob.r + 4 * scale) {
-                  blob.vx += (dx / distance) * 0.02 * scale;
-                  blob.vy += (dy / distance) * 0.02 * scale;
-                }
-              }
-              if (blob.y > visible.top + height * 0.8) {
-                blob.heat = Math.min(1, blob.heat + 0.004);
-              } else if (blob.y < visible.top + height * 0.2) {
-                blob.heat = Math.max(0, blob.heat - 0.004);
-              }
-              blob.vy -= (blob.heat - 0.5) * 0.003 * scale;
-              blob.vx += (random() - 0.5) * 0.004 * scale;
-              blob.vx *= 0.985;
-              blob.vy *= 0.985;
-              if (Math.hypot(blob.vx, blob.vy) > 0.16 * scale) {
-                blob.vx *= 0.95;
-                blob.vy *= 0.95;
+      let fastest = 0;
+      for (const blob of blobs) {
+        if (blob !== grab?.blob) {
+          if (!awake) {
+            blob.vx *= COOLING_DRAG;
+            blob.vy *= COOLING_DRAG;
+          } else {
+            if (hovering) {
+              const dx = blob.x - pointer.x;
+              const dy = blob.y - pointer.y;
+              const distance = Math.hypot(dx, dy) || 1;
+              if (distance < blob.r + 4 * scale) {
+                blob.vx += (dx / distance) * 0.02 * scale;
+                blob.vy += (dy / distance) * 0.02 * scale;
               }
             }
-          }
-          blob.x += blob.vx;
-          blob.y += blob.vy;
-
-          const margin = blob.r * 0.6;
-          const left = visible.left + margin;
-          const right = visible.right - margin;
-          const top = visible.top + margin;
-          const bottom = visible.bottom - margin;
-          if (blob.x < left) {
-            blob.x = left;
-            blob.vx = Math.abs(blob.vx) * 0.4;
-          }
-          if (blob.x > right) {
-            blob.x = right;
-            blob.vx = -Math.abs(blob.vx) * 0.4;
-          }
-          if (blob.y < top) {
-            blob.y = top;
-            blob.vy = Math.abs(blob.vy) * 0.4;
-          }
-          if (blob.y > bottom) {
-            blob.y = bottom;
-            blob.vy = -Math.abs(blob.vy) * 0.4;
-          }
-          fastest = Math.max(fastest, Math.abs(blob.vx), Math.abs(blob.vy));
-        }
-
-        settled = !awake && fastest < STOPPED_SPEED;
-        if (settled) {
-          for (const blob of blobs) {
-            blob.vx = 0;
-            blob.vy = 0;
+            if (blob.y > visible.top + height * 0.8) {
+              blob.heat = Math.min(1, blob.heat + 0.004);
+            } else if (blob.y < visible.top + height * 0.2) {
+              blob.heat = Math.max(0, blob.heat - 0.004);
+            }
+            blob.vy -= (blob.heat - 0.5) * 0.003 * scale;
+            blob.vx += (Math.random() - 0.5) * 0.004 * scale;
+            blob.vx *= 0.985;
+            blob.vy *= 0.985;
+            if (Math.hypot(blob.vx, blob.vy) > 0.16 * scale) {
+              blob.vx *= 0.95;
+              blob.vy *= 0.95;
+            }
           }
         }
-      },
+        blob.x += blob.vx;
+        blob.y += blob.vy;
 
-      // Per-cell work stays plain arithmetic, clear of the work budget's Math calls.
-      render(field) {
-        renderBlobs(blobs, visible, columns, scratch, field);
-      },
+        const margin = blob.r * 0.6;
+        const left = visible.left + margin;
+        const right = visible.right - margin;
+        const top = visible.top + margin;
+        const bottom = visible.bottom - margin;
+        if (blob.x < left) {
+          blob.x = left;
+          blob.vx = Math.abs(blob.vx) * 0.4;
+        }
+        if (blob.x > right) {
+          blob.x = right;
+          blob.vx = -Math.abs(blob.vx) * 0.4;
+        }
+        if (blob.y < top) {
+          blob.y = top;
+          blob.vy = Math.abs(blob.vy) * 0.4;
+        }
+        if (blob.y > bottom) {
+          blob.y = bottom;
+          blob.vy = -Math.abs(blob.vy) * 0.4;
+        }
+        fastest = Math.max(fastest, Math.abs(blob.vx), Math.abs(blob.vy));
+      }
 
-      pace: () => (settled ? "still" : "active"),
+      settled = !awake && fastest < STOPPED_SPEED;
+      if (settled) {
+        for (const blob of blobs) {
+          blob.vx = 0;
+          blob.vy = 0;
+        }
+      }
+    };
+
+    const draw = (now: number) => {
+      frame = undefined;
+      owed = Math.min(owed + now - last, MAX_CATCH_UP_MS);
+      last = now;
+      while (owed >= STEP_MS) {
+        owed -= STEP_MS;
+        advance(now);
+      }
+      field.fill(0);
+      renderBlobs(blobs, visible, columns, scratch, field);
+      for (let i = 0; i < field.length; i += 1) {
+        pixels[i * 4 + 3] = field[i] * 255;
+      }
+      context.putImageData(image, 0, 0);
+      if (!settled) wake();
+    };
+
+    const wake = () => {
+      if (frame !== undefined) return;
+      if (settled) {
+        settled = false;
+        owed = 0;
+        last = performance.now();
+      }
+      frame = requestAnimationFrame(draw);
+    };
+
+    const touch = () => {
+      lastInputAt = performance.now();
+      wake();
+    };
+
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch" && !held) return;
+      Object.assign(pointer, pointOn(canvas, event));
+      hovering = true;
+      touch();
+    };
+
+    const onDown = (event: PointerEvent) => {
+      const point = pointOn(canvas, event);
+      Object.assign(pressAt, point);
+      Object.assign(pointer, point);
+      hovering = true;
+      held = true;
+      grab = grabNearest(point.x, point.y);
+      if (grab === undefined) shove(point.x, point.y, 0.9 * scale);
+      touch();
+    };
+
+    const onLift = (event: PointerEvent) => {
+      held = false;
+      grab = undefined;
+      if (event.pointerType === "touch") hovering = false;
+      touch();
+    };
+
+    const onLeave = () => {
+      hovering = false;
+    };
+
+    const onResize = () => {
+      visible = visibleCells(canvas);
+      wake();
+    };
+
+    spawn();
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointerup", onLift);
+    canvas.addEventListener("pointercancel", onLift);
+    canvas.addEventListener("pointerleave", onLeave);
+    window.addEventListener("resize", onResize);
+    last = performance.now();
+    wake();
+
+    return () => {
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointerup", onLift);
+      canvas.removeEventListener("pointercancel", onLift);
+      canvas.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(frame ?? 0);
     };
   },
 };
