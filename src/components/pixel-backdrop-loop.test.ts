@@ -702,6 +702,10 @@ const touchHoldEnds: [string, () => void][] = [
   ["a mode switch", () => backdropElement().setMode("pond")],
   ["disconnect", () => backdropElement().remove()],
   ["disable", () => backdropElement().configure({ enabled: false })],
+  [
+    "a navigation",
+    () => document.dispatchEvent(new Event("astro:before-swap")),
+  ],
 ];
 
 test.each(touchHoldEnds)("%s lets go of a grabbed touch", async (_, end) => {

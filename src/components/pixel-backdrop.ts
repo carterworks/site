@@ -411,6 +411,9 @@ export class PixelBackdrop extends HTMLElement {
       passive: true,
     });
     window.addEventListener("blur", this.#endHold, { passive: true });
+    // The swap replaces <html>'s attributes, so a hold must not outlive its
+    // `HOLDING` styles into the next page.
+    document.addEventListener("astro:before-swap", this.#endHold);
     // Not passive, as blocking a scroll is its job. Registered up front:
     // browsers decide whether a touch may block scrolling as it begins.
     window.addEventListener("touchmove", this.#onTouchMove, { passive: false });
@@ -446,6 +449,7 @@ export class PixelBackdrop extends HTMLElement {
     window.removeEventListener("pointerup", this.#onPointerEnd);
     window.removeEventListener("pointercancel", this.#onPointerEnd);
     window.removeEventListener("blur", this.#endHold);
+    document.removeEventListener("astro:before-swap", this.#endHold);
     window.removeEventListener("touchmove", this.#onTouchMove);
     window.removeEventListener("touchend", this.#onTouchEnd);
     window.removeEventListener("touchcancel", this.#onTouchEnd);
