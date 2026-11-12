@@ -602,7 +602,6 @@ test("a press on a link never suppresses selection", () => {
 });
 
 const FINGER = 7;
-const LONG_PRESS = 300;
 
 const fingerDown = (target: EventTarget = document.body) =>
   press(target, { pointerType: "touch", pointerId: FINGER });
@@ -628,11 +627,11 @@ function scrollBlocked() {
 const touchEnd = (type: string) =>
   document.body.dispatchEvent(new TouchEvent(type, { bubbles: true }));
 
-test("a still long-press in empty space grabs a hold mode, and its drag reaches the mode as the pointer", async () => {
+test("a touch in empty space grabs a hold mode at once: its first move is blocked and its drag reaches the mode as the pointer", async () => {
   mount().setMode("silt");
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
 
+  expect(scrollBlocked()).toBe(true);
   finger("pointermove", { clientX: 200, clientY: 300 });
 
   const input = await latestInput();
@@ -644,33 +643,18 @@ test("a still long-press in empty space grabs a hold mode, and its drag reaches 
   expect(holding()).toBe(true);
 });
 
-test("a touch on a hold mode reaches it only once it is a long-press or a tap", async () => {
+test("a touch tap on a hold mode is a press already released", async () => {
   mount().setMode("silt");
   fingerDown();
-  await vi.advanceTimersByTimeAsync(100);
-  expect(probe.input!.press).toBeUndefined();
-
   finger("pointerup");
 
   expect((await latestInput()).press).toMatchObject({ held: false });
   expect(holding()).toBe(false);
 });
 
-test("a touch that moves before the long-press is a scroll: it never grabs nor blocks it", async () => {
+test("a grabbed touch blocks the page's scroll until it is released", () => {
   mount().setMode("silt");
   fingerDown();
-  finger("pointermove", { clientY: 115 });
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
-
-  expect(scrollBlocked()).toBe(false);
-  expect((await latestInput()).press).toBeUndefined();
-  expect(holding()).toBe(false);
-});
-
-test("a grabbed touch blocks the page's scroll until it is released", async () => {
-  mount().setMode("silt");
-  fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
   expect(scrollBlocked()).toBe(true);
 
   finger("pointerup");
@@ -681,19 +665,17 @@ test("a grabbed touch blocks the page's scroll until it is released", async () =
 test("a non-hold mode never grabs a touch", async () => {
   mount();
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
   finger("pointermove", { clientX: 200 });
 
   expect(scrollBlocked()).toBe(false);
   expect((await latestInput()).pointer).toBeUndefined();
 });
 
-test("a long-press on a link or on text never grabs", async () => {
+test("a touch on a link or on text never grabs, so the page scrolls", async () => {
   mount().setMode("silt");
   const link = document.createElement("a");
   document.body.append(link);
   fingerDown(link);
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
   expect(scrollBlocked()).toBe(false);
   finger("pointerup");
 
@@ -706,7 +688,6 @@ test("a long-press on a link or on text never grabs", async () => {
     new DOMRect(0, 0, 200, 200),
   ] as unknown as DOMRectList);
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
 
   expect(scrollBlocked()).toBe(false);
   expect((await latestInput()).press).toBeUndefined();
@@ -726,7 +707,7 @@ const touchHoldEnds: [string, () => void][] = [
 test.each(touchHoldEnds)("%s lets go of a grabbed touch", async (_, end) => {
   mount().setMode("silt");
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+  await latestInput();
 
   end();
 
@@ -734,20 +715,6 @@ test.each(touchHoldEnds)("%s lets go of a grabbed touch", async (_, end) => {
   expect(holding()).toBe(false);
   expect(probe.input!.press?.held).not.toBe(true);
 });
-
-test.each(touchHoldEnds)(
-  "%s stops a touch from grabbing later",
-  async (_, end) => {
-    mount().setMode("silt");
-    fingerDown();
-
-    end();
-    await vi.advanceTimersByTimeAsync(LONG_PRESS);
-
-    expect(scrollBlocked()).toBe(false);
-    expect(holding()).toBe(false);
-  },
-);
 
 test.each([
   [
@@ -762,7 +729,6 @@ test.each([
 
   press(document.body);
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
 
   expect(scrollBlocked()).toBe(false);
   expect(holding()).toBe(false);
@@ -771,7 +737,6 @@ test.each([
 test("reduced motion turning on lets go of a grabbed touch", async () => {
   mount().setMode("silt");
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
 
   motion.set(true);
 
@@ -782,7 +747,6 @@ test("reduced motion turning on lets go of a grabbed touch", async () => {
 test("a second finger lifting does not let go of a grabbed touch", async () => {
   mount().setMode("silt");
   fingerDown();
-  await vi.advanceTimersByTimeAsync(LONG_PRESS);
 
   document.body.dispatchEvent(
     new TouchEvent("touchend", {
