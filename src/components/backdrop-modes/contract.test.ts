@@ -23,6 +23,22 @@ const SIZE = 160;
  */
 const RESTING_IDLE: Record<string, string> = {};
 
+/**
+ * Toys allowed to outlive SETTLE_MS while they animate in short bursts, each
+ * with the reason beside it. They must average at most `maxPerSecond` presents
+ * past SETTLE_MS and fully stop within `stopMs` of the last input.
+ */
+const SLOW_DRAIN: Record<
+  string,
+  { maxPerSecond: number; stopMs: number; reason: string }
+> = {
+  silt: {
+    maxPerSecond: 8,
+    stopMs: 180_000,
+    reason: "the sieve drips once a second so a full tray empties over minutes",
+  },
+};
+
 /** How long after the last input a toy may keep animating. */
 const SETTLE_MS = 30_000;
 
@@ -126,7 +142,12 @@ test("the allocation count catches a toy that copies a buffer every frame", asyn
 
 test("only registered toys are allowed to rest idle", () => {
   const ids = MODES.map((toy) => toy.id);
-  expect(ids).toEqual(expect.arrayContaining(Object.keys(RESTING_IDLE)));
+  expect(ids).toEqual(
+    expect.arrayContaining([
+      ...Object.keys(RESTING_IDLE),
+      ...Object.keys(SLOW_DRAIN),
+    ]),
+  );
 });
 
 describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
@@ -178,7 +199,15 @@ describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
         await play(canvas);
         await vi.advanceTimersByTimeAsync(SETTLE_MS);
 
-        if (id in RESTING_IDLE) {
+        if (id in SLOW_DRAIN) {
+          const { maxPerSecond, stopMs } = SLOW_DRAIN[id];
+          const frames = vi.spyOn(window, "requestAnimationFrame");
+          await vi.advanceTimersByTimeAsync(stopMs - SETTLE_MS);
+          expect(frames.mock.calls.length).toBeLessThanOrEqual(
+            (maxPerSecond * (stopMs - SETTLE_MS)) / 1000,
+          );
+          expect(vi.getTimerCount()).toBe(0);
+        } else if (id in RESTING_IDLE) {
           const frames = vi.spyOn(window, "requestAnimationFrame");
           await vi.advanceTimersByTimeAsync(1000);
           expect(frames.mock.calls.length).toBeLessThanOrEqual(8);
