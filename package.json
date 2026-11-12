@@ -28,6 +28,7 @@
     "format": "oxfmt --write .",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
+    "perf": "astro build && node scripts/perf.mjs",
     "verify": "oxfmt --check . && pnpm check && pnpm test",
     "deploy": "alchemy deploy"
   },
@@ -41,6 +42,7 @@
     "effect": "4.0.3",
     "happy-dom": "20.14.0",
     "oxfmt": "0.67.0",
+    "playwright": "1.65.0",
     "sharp": "0.35.4",
     "takumi-js": "2.13.7",
     "typescript": "6.0.3",
