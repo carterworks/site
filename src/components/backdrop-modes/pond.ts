@@ -32,7 +32,6 @@ export const pond: Mode = {
   id: "pond",
   label: "Still Pond",
   look: { ghost: 50, noise: 10 },
-  holds: true,
   create({ columns: size, random }) {
     // A bigger grid has more cells across the same screen: sizes grow with it,
     // and the wave takes extra sub-steps per frame so it crosses the screen in

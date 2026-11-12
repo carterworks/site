@@ -47,7 +47,6 @@ export const silt: Mode = {
   id: "silt",
   label: "Silt",
   look: { ghost: 55, noise: 12 },
-  holds: true,
   create({ columns, rows, random }) {
     const scale = columns / TUNED_GRID;
     const pourGrains = Math.round(POUR_GRAINS * scale);

@@ -48,7 +48,6 @@ export const pinbed: Mode = {
   id: "pinbed",
   label: "Pinbed",
   look: { ghost: 40, noise: 8 },
-  holds: true,
   create({ columns, rows, random }) {
     const scale = cellScale(PROTOTYPE_CELL_PX, columns);
     const hoverRadius = 3.4 * scale;

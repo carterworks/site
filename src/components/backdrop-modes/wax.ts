@@ -54,7 +54,6 @@ export const wax: Mode = {
   id: "wax",
   label: "Lamp Wax",
   look: { ghost: 75, noise: 8 },
-  holds: true,
   create({ columns, rows, random }) {
     const scale = cellScale(PROTOTYPE_CELL_PX, columns);
     const reach = 18 * scale;

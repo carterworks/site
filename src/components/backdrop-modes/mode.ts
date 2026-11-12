@@ -79,12 +79,6 @@ export type Mode = {
   id: string;
   label: string;
   /**
-   * Whether the mode uses press-and-hold. The host then blocks text selection
-   * for the hold, as a drag from the page margin would otherwise select text
-   * and cut the hold short.
-   */
-  holds?: boolean;
-  /**
    * The canvas ghost and the background noise's intensity that suit the mode,
    * both 0–100, as tuned in the prototype gallery. Without one the mode shows
    * the host's `ghost` and `noise`.

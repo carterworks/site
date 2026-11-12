@@ -55,7 +55,6 @@ export const culture: Mode = {
   id: "culture",
   label: "Culture",
   look: { ghost: 70, noise: 0 },
-  holds: true,
   create({ columns, rows, random }) {
     const size = columns * rows;
     const scale = cellScale(GALLERY_CELL_PX, columns);
