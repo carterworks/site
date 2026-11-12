@@ -269,17 +269,16 @@ beforeEach(() => {
     new DOMRect(0, (innerHeight - innerWidth) / 2, innerWidth, innerWidth),
   );
   const present = EmulatedCanvas.prototype.present;
-  vi.spyOn(EmulatedCanvas.prototype, "present").mockImplementation(function (
-    this: EmulatedCanvas,
-    pixels?: ImageData,
-  ) {
-    const changing = present.call(this, pixels);
-    ledger.hostNoise = hostSamplers.reduce((sum, s) => sum + s.samples, 0);
-    for (const sampler of hostSamplers) sampler.samples = 0;
-    frames.push(ledger);
-    ledger = emptyLedger();
-    return changing;
-  });
+  vi.spyOn(EmulatedCanvas.prototype, "present").mockImplementation(
+    function (this: EmulatedCanvas) {
+      const changing = present.call(this);
+      ledger.hostNoise = hostSamplers.reduce((sum, s) => sum + s.samples, 0);
+      for (const sampler of hostSamplers) sampler.samples = 0;
+      frames.push(ledger);
+      ledger = emptyLedger();
+      return changing;
+    },
+  );
   installBackdropDefaults();
   ledger = emptyLedger();
   frames = [];

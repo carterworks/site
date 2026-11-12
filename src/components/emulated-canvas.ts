@@ -239,12 +239,18 @@ export type EmulatedCanvasProps = {
  * that run on the logical bitmap, never at display resolution, so each costs
  * the same however large the cells are drawn.
  *
- * By default the bitmap is mirrored every animation frame. `data-manual` opts
- * out: the consumer already runs its own loop, so a second one would only
- * present the previous draw. It calls `present()` after drawing instead.
+ * The canvas presents on its own, the way a plain `<canvas>` shows what is
+ * drawn on it: drawing through the 2D context queues a present for when the
+ * drawing code returns, so a frame drawn in an animation frame shows in that
+ * same frame, and several calls cost one present. While a pass is still
+ * changing the display, the canvas keeps presenting every animation frame,
+ * then stops. `data-manual` opts out: the owner calls `present()` itself.
  *
- * The consumer's context is returned untouched — no proxying or replaying — so
- * mirroring is just a copy of the finished pixels each frame.
+ * The context is the inner canvas's own, with only its pixel-writing methods
+ * wrapped to note that the bitmap changed: nothing is proxied or replayed, so
+ * drawing costs what it costs on any canvas. A `putImageData` of the whole
+ * bitmap hands the passes those pixels, sparing them a read-back; any other
+ * drawing is read back once, on the present after it.
  */
 export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_WIDTH = 64;
@@ -252,13 +258,28 @@ export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_SCALE = 1;
   static DEFAULT_GAP = 0;
   static DEFAULT_SHAPE: PixelShape = "square";
-  static observedAttributes = ["data-scale", "data-gap", "data-shape"];
+  static observedAttributes = [
+    "data-scale",
+    "data-gap",
+    "data-shape",
+    "data-ghost",
+    "data-manual",
+  ];
 
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
   #readback?: OffscreenCanvasRenderingContext2D | null;
-  #scratch?: ImageData;
+  #watched?: OffscreenCanvasRenderingContext2D;
+  /** The consumer's pixels as last drawn, kept for presents with nothing new drawn. */
+  #source?: ImageData;
+  /** What the passes edit and the display shows. */
+  #output?: ImageData;
+  /** Drawn on since the last present, so `#source` is out of date. */
+  #drawn = false;
+  /** The image a whole-bitmap `putImageData` drew, if nothing was drawn after it. */
+  #handed?: ImageData;
+  #presentQueued = false;
   #passes = SHADERS.map((shader) => shader());
   #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
@@ -269,20 +290,21 @@ export class EmulatedCanvas extends HTMLElement {
   };
   #presentedAt?: number;
   #style?: HTMLStyleElement;
-  #mirrorFrame?: number;
-  #mirrorRequested = false;
+  #nextFrame?: number;
 
   connectedCallback() {
     this.#initialize();
-    if (this.#mirrorRequested) this.#startMirroring();
+    this.#requestPresent();
   }
 
-  attributeChangedCallback() {
-    this.#configure();
+  attributeChangedCallback(name: string) {
+    if (name === "data-manual") this.#cancelNext();
+    else this.#configure();
+    this.#requestPresent();
   }
 
   disconnectedCallback() {
-    this.#stopMirroring();
+    this.#cancelNext();
   }
 
   getContext(contextId: "2d"): OffscreenCanvasRenderingContext2D | null;
@@ -291,14 +313,11 @@ export class EmulatedCanvas extends HTMLElement {
     options?: unknown,
   ): object | null;
   getContext(contextId: OffscreenRenderingContextId, options?: unknown) {
-    const innerCanvas = this.#bitmap();
-
-    if (this.dataset.manual === undefined) {
-      this.#mirrorRequested = true;
-      if (this.isConnected) this.#startMirroring();
+    const context = getInnerContext(this.#bitmap(), contextId, options);
+    if (contextId === "2d" && context !== null) {
+      this.#watch(context as OffscreenCanvasRenderingContext2D);
     }
-
-    return getInnerContext(innerCanvas, contextId, options);
+    return context;
   }
 
   /** The bitmap's real width, readable before the element is connected. */
@@ -320,12 +339,9 @@ export class EmulatedCanvas extends HTMLElement {
    * Paints the current bitmap now; the owner of a `data-manual` canvas calls
    * this. Returns whether the shaders are still changing the display, so an
    * owner whose bitmap is static knows when it can stop presenting.
-   *
-   * An owner that still holds the pixels it just drew can pass them, sparing
-   * the shaders a read-back of the bitmap.
    */
-  present(pixels?: ImageData) {
-    return this.#blit(pixels);
+  present() {
+    return this.#blit();
   }
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
@@ -337,6 +353,83 @@ export class EmulatedCanvas extends HTMLElement {
   /** Created on demand: a consumer may ask for the context before connection. */
   #bitmap() {
     return (this.#innerCanvas ??= new OffscreenCanvas(this.width, this.height));
+  }
+
+  /**
+   * Wraps the methods that write pixels as own properties of the context, so
+   * the context stays the native object, with its prototype, getters and
+   * setters intact. `arguments` keeps each call's arity, which `drawImage`
+   * and `putImageData` overload on.
+   */
+  #watch(context: OffscreenCanvasRenderingContext2D) {
+    if (this.#watched === context) return;
+    this.#watched = context;
+    const owner = context as unknown as Record<string, unknown>;
+    const changed = this.#changed;
+    for (const name of PIXEL_WRITERS) {
+      const write = owner[name];
+      if (typeof write !== "function") continue;
+      Object.defineProperty(owner, name, {
+        configurable: true,
+        value: function (this: unknown) {
+          const result = write.apply(context, arguments);
+          changed(name, arguments);
+          return result;
+        },
+      });
+    }
+  }
+
+  #changed = (name: string, args: IArguments) => {
+    const image = args[0] as ImageData;
+    const whole =
+      name === "putImageData" &&
+      args.length === 3 &&
+      args[1] === 0 &&
+      args[2] === 0 &&
+      image.width === this.width &&
+      image.height === this.height;
+    this.#handed = whole ? image : undefined;
+    this.#drawn = true;
+    this.#requestPresent();
+  };
+
+  /** Presents once the code drawing now returns, however many calls it makes. */
+  #requestPresent() {
+    if (this.#presentQueued || !this.#presents()) return;
+    this.#presentQueued = true;
+    queueMicrotask(() => {
+      this.#presentQueued = false;
+      if (this.#presents()) this.#follow(this.#blit());
+    });
+  }
+
+  /** Only once a consumer draws, and never for a manual or detached canvas. */
+  #presents() {
+    return (
+      this.#watched !== undefined &&
+      this.isConnected &&
+      this.dataset.manual === undefined
+    );
+  }
+
+  /**
+   * A present cancels the one scheduled before it, so a consumer drawing every
+   * frame never gets a second present in the same frame.
+   */
+  #follow(changing: boolean) {
+    this.#cancelNext();
+    if (!changing) return;
+    this.#nextFrame = requestAnimationFrame(() => {
+      this.#nextFrame = undefined;
+      this.#follow(this.#blit());
+    });
+  }
+
+  #cancelNext() {
+    if (this.#nextFrame === undefined) return;
+    cancelAnimationFrame(this.#nextFrame);
+    this.#nextFrame = undefined;
   }
 
   #initialize() {
@@ -382,22 +475,7 @@ export class EmulatedCanvas extends HTMLElement {
     return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
   }
 
-  #startMirroring() {
-    if (this.#mirrorFrame !== undefined) return;
-    const step = () => {
-      this.#blit();
-      this.#mirrorFrame = requestAnimationFrame(step);
-    };
-    this.#mirrorFrame = requestAnimationFrame(step);
-  }
-
-  #stopMirroring() {
-    if (this.#mirrorFrame === undefined) return;
-    cancelAnimationFrame(this.#mirrorFrame);
-    this.#mirrorFrame = undefined;
-  }
-
-  #blit(pixels?: ImageData) {
+  #blit() {
     const outerCanvas = this.#outerCanvas;
     if (outerCanvas === undefined) return false;
     const innerCanvas = this.#bitmap();
@@ -418,6 +496,8 @@ export class EmulatedCanvas extends HTMLElement {
     frame.elapsedMs = now - (this.#presentedAt ?? now);
     this.#presentedAt = now;
 
+    const handed = this.#handed;
+    this.#handed = undefined;
     let image: ImageData | undefined;
     let changing = false;
     for (let index = 0; index < this.#passes.length; index += 1) {
@@ -428,8 +508,7 @@ export class EmulatedCanvas extends HTMLElement {
         continue;
       }
       this.#wasActive.add(pass);
-      image ??=
-        pixels === undefined ? this.#read(innerCanvas) : this.#copy(pixels);
+      image ??= this.#pixels(innerCanvas, handed);
       if (image === undefined) break;
       changing = pass.apply(image.data, frame) || changing;
     }
@@ -439,14 +518,31 @@ export class EmulatedCanvas extends HTMLElement {
     return changing;
   }
 
-  /** Shaders rewrite their pixels, which must stay the owner's to draw over. */
-  #copy(pixels: ImageData) {
-    let scratch = this.#scratch;
-    if (scratch?.width !== pixels.width || scratch.height !== pixels.height) {
-      scratch = this.#scratch = new ImageData(pixels.width, pixels.height);
+  /**
+   * A copy of the consumer's pixels for the passes to edit: they must stay the
+   * consumer's to draw over, and the next present starts from them again.
+   */
+  #pixels(innerCanvas: OffscreenCanvas, handed?: ImageData) {
+    if (this.#drawn || this.#source === undefined) {
+      this.#drawn = false;
+      if (handed === undefined) {
+        this.#source = this.#read(innerCanvas);
+      } else {
+        this.#source = this.#fit(this.#source, handed);
+        this.#source.data.set(handed.data);
+      }
     }
-    scratch.data.set(pixels.data);
-    return scratch;
+    const source = this.#source;
+    if (source === undefined) return undefined;
+    const output = (this.#output = this.#fit(this.#output, source));
+    output.data.set(source.data);
+    return output;
+  }
+
+  #fit(image: ImageData | undefined, like: ImageData) {
+    return image?.width === like.width && image.height === like.height
+      ? image
+      : new ImageData(like.width, like.height);
   }
 
   /**
@@ -470,6 +566,20 @@ export class EmulatedCanvas extends HTMLElement {
     return readback.getImageData(0, 0, source.width, source.height);
   }
 }
+
+/** The 2D context's methods that change pixels; every other call leaves them be. */
+const PIXEL_WRITERS = [
+  "clearRect",
+  "fillRect",
+  "strokeRect",
+  "fill",
+  "stroke",
+  "fillText",
+  "strokeText",
+  "drawImage",
+  "putImageData",
+  "reset",
+];
 
 if (!customElements.get("emulated-canvas")) {
   customElements.define("emulated-canvas", EmulatedCanvas);

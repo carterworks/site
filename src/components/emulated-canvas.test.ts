@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   type EmulatedCanvas,
   SHADERS,
@@ -12,9 +12,13 @@ const display = {
   imageSmoothingEnabled: true,
 };
 
+/** The grey `fillRect` paints, as the fake has no fill style. */
+const FILLED = 77;
+
 /** Just enough of a 2D bitmap for pixels to flow from the consumer to the display. */
 class FakeBitmap {
   pixels: Uint8ClampedArray;
+  #context?: object;
   constructor(
     public width: number,
     public height: number,
@@ -23,15 +27,26 @@ class FakeBitmap {
   }
   getContext() {
     const { pixels, width, height } = this;
-    return {
+    return (this.#context ??= {
       drawImage: (source: FakeBitmap) => pixels.set(source.pixels),
+      fillRect: () => {
+        for (let i = 0; i < pixels.length; i += 4) {
+          pixels.set([FILLED, FILLED, FILLED, 255], i);
+        }
+      },
       getImageData: () => {
         reads += 1;
         return { width, height, data: pixels.slice() };
       },
       putImageData: (image: ImageData) => pixels.set(image.data),
-    };
+    });
   }
+}
+
+/** A 1 x 1 opaque grey of `level`, as whole-bitmap image data. */
+function pixels(level: number) {
+  const data = Uint8ClampedArray.of(level, level, level, 255);
+  return { width: 1, height: 1, data } as ImageData;
 }
 
 let clock = 0;
@@ -235,15 +250,6 @@ test("turning the ghost off and on again starts the panel from the current frame
   expect([...shown()]).toEqual([0, 0, 0, 255]);
 });
 
-test("without data-manual, getContext starts mirroring on its own", () => {
-  const canvas = document.createElement("emulated-canvas");
-  document.body.replaceChildren(canvas);
-  const request = vi.spyOn(globalThis, "requestAnimationFrame");
-
-  canvas.getContext("2d");
-  expect(request).toHaveBeenCalledTimes(1);
-});
-
 test.each([
   ["scale", "x", "var(--emulated-canvas-scale, 1px)"],
   ["scale", "0", "var(--emulated-canvas-scale, 1px)"],
@@ -347,29 +353,153 @@ test("a one-level step settles at once, so a slowly drifting frame lets its owne
   expect(shown()[0]).toBe(101);
 });
 
-test("presenting the pixels the consumer just drew shows what reading the bitmap back shows, without reading it back", () => {
-  const read = mountCanvas({ ghost: "70" });
-  const handed = mountCanvas({ ghost: "70" });
-  const pixels = (level: number) => {
-    const data = new Uint8ClampedArray(4);
-    data.set([level, level, level, 255]);
-    return { width: 1, height: 1, data } as ImageData;
-  };
+describe("presenting on its own", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: [
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+        "setTimeout",
+        "clearTimeout",
+        "performance",
+      ],
+    });
+  });
 
-  const shownAfter = (canvas: EmulatedCanvas, level: number, hand: boolean) => {
-    canvas.getContext("2d")?.putImageData(pixels(level), 0, 0);
-    clock += 1000 / 60;
-    canvas.present(hand ? pixels(level) : undefined);
-    return [...shown()];
-  };
+  afterEach(() => vi.useRealTimers());
 
-  const levels = [255, 0, 0, 128];
-  const expected = levels.map((level) => shownAfter(read, level, false));
-  expect(reads).toBeGreaterThan(0);
+  function mountLive(data: Record<string, string> = {}) {
+    const canvas = document.createElement("emulated-canvas");
+    Object.assign(canvas.dataset, { width: "1", height: "1" }, data);
+    document.body.replaceChildren(canvas);
+    return canvas;
+  }
 
-  reads = 0;
-  expect(levels.map((level) => shownAfter(handed, level, true))).toEqual(
-    expected,
-  );
-  expect(reads).toBe(0);
+  const presents = () =>
+    display.drawImage.mock.calls.length +
+    display.putImageData.mock.calls.length;
+
+  test("drawing presents once, as soon as the drawing code returns", async () => {
+    const canvas = mountLive();
+    const context = canvas.getContext("2d")!;
+
+    context.putImageData(pixels(10), 0, 0);
+    context.putImageData(pixels(20), 0, 0);
+    expect(presents()).toBe(0);
+
+    await Promise.resolve();
+    expect(presents()).toBe(1);
+  });
+
+  test("with nothing drawn and nothing changing, it schedules nothing", async () => {
+    const canvas = mountLive();
+    canvas.getContext("2d")!.putImageData(pixels(10), 0, 0);
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(presents()).toBe(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("a ghost fade keeps presenting every frame until it lands, then stops", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+    context.putImageData(pixels(0), 0, 0);
+
+    await vi.advanceTimersByTimeAsync(200);
+    expect(presents()).toBeGreaterThan(10);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(shown()[0]).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("a consumer drawing every frame through a fade gets one present per frame", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    let frames = 0;
+    const draw = () => {
+      frames += 1;
+      context.putImageData(pixels(frames % 2 === 0 ? 0 : 255), 0, 0);
+      if (frames < 60) requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+
+    await vi.advanceTimersByTimeAsync(3000);
+    display.putImageData.mockClear();
+    frames = 0;
+    requestAnimationFrame(draw);
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(presents()).toBe(frames);
+  });
+
+  test("a whole-bitmap putImageData is presented from the consumer's pixels, without reading the bitmap back", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    for (const level of [255, 0, 128]) {
+      context.putImageData(pixels(level), 0, 0);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(shown()[0]).toBe(level);
+    }
+
+    expect(reads).toBe(0);
+  });
+
+  test("other drawing is read back once on the present after it, and a present with nothing new drawn reads nothing", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+
+    context.fillRect(0, 0, 1, 1);
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(reads).toBe(1);
+    expect(presents()).toBeGreaterThan(10);
+    expect(shown()[0]).toBe(FILLED);
+  });
+
+  test("a knob change re-presents a static frame", async () => {
+    const canvas = mountLive();
+    canvas.getContext("2d")!.putImageData(pixels(10), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+
+    canvas.dataset.ghost = "50";
+    await Promise.resolve();
+
+    expect(presents()).toBe(2);
+  });
+
+  test("a data-manual canvas schedules nothing, even mid-fade, and presents again once it is cleared", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+    context.putImageData(pixels(0), 0, 0);
+    await Promise.resolve();
+
+    canvas.dataset.manual = "";
+    context.putImageData(pixels(10), 0, 0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(vi.getTimerCount()).toBe(0);
+
+    delete canvas.dataset.manual;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(shown()[0]).toBe(10);
+  });
+
+  test("a detached canvas schedules nothing", async () => {
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+    context.putImageData(pixels(0), 0, 0);
+    await Promise.resolve();
+
+    canvas.remove();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
