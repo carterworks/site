@@ -335,6 +335,30 @@ describe("command bar dialog", () => {
     );
   });
 
+  test("Escape closes the dialog but leaves focus on the field without reopening", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    const show = vi.spyOn(dialog, "showPopover");
+
+    pressKey(trigger, "Escape");
+
+    expect(dialog.matches(":popover-open")).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  test("Alt+K on the field that kept focus after Escape reopens the dialog", () => {
+    const trigger = getElement<HTMLInputElement>(".command-trigger");
+    const dialog = getElement<HTMLDialogElement>("dialog");
+    trigger.click();
+    pressKey(trigger, "Escape");
+
+    pressKey(trigger, "k", { altKey: true });
+
+    expect(dialog.matches(":popover-open")).toBe(true);
+  });
+
   test("Shift+Enter advances the theme without closing the dialog", () => {
     osPrefers("dark");
     openSettings();

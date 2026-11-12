@@ -222,17 +222,21 @@ class CommandBarElement extends HTMLElement {
       trigger.focus();
     });
     back.addEventListener("click", () => showPanel("root"));
+    let keepFocus = false;
     trigger.addEventListener("input", filter);
     trigger.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         if (activePanel === "settings") {
           event.preventDefault();
           showPanel("root");
-        } else {
+        } else if (dialog.matches(":popover-open")) {
+          keepFocus = true;
           dialog.hidePopover();
         }
         return;
       }
+      // Escape leaves focus here, so a later Alt+K raises no focus event.
+      if (event.key.length === 1) prepare();
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         move(event.key === "ArrowDown" ? 1 : -1);
@@ -265,7 +269,9 @@ class CommandBarElement extends HTMLElement {
       }
     });
     dialog.addEventListener("toggle", (event) => {
-      if (event.newState === "closed") trigger.blur();
+      if (event.newState !== "closed") return;
+      if (!keepFocus) trigger.blur();
+      keepFocus = false;
     });
     this.addEventListener("pointermove", (event) => {
       const command = commandFrom(event.target);
