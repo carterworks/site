@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
-import type { Toy } from "./backdrop-modes/toy";
+import type { Toy } from "./backdrop-toys/toy";
 import { EmulatedCanvas } from "./emulated-canvas";
 import { DISPLAYS } from "./backdrop-displays";
 import { readDefaults, type PixelBackdrop } from "./pixel-backdrop";
@@ -34,7 +34,7 @@ const seen = vi.hoisted(() => ({
   log: [] as string[],
 }));
 
-vi.mock("./backdrop-modes", () => {
+vi.mock("./backdrop-toys", () => {
   const probe = (id: string, look?: Toy["look"]): Toy => ({
     id,
     label: id,

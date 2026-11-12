@@ -1,8 +1,8 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import { createBackdropMode, RANDOM } from "./backdrop-mode-setting";
-import { MODES } from "./backdrop-modes";
+import { createBackdropMode, RANDOM } from "./backdrop-toy-setting";
+import { MODES } from "./backdrop-toys";
 
-vi.mock("./backdrop-modes", () => ({
+vi.mock("./backdrop-toys", () => ({
   MODES: ["one", "two", "three"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
@@ -112,10 +112,10 @@ test("ignores a stored id that is no longer a mode", () => {
 
 test("with a single mode, every navigation shows it", async () => {
   vi.resetModules();
-  vi.doMock("./backdrop-modes", () => ({
+  vi.doMock("./backdrop-toys", () => ({
     MODES: [{ id: "only", label: "Only" }],
   }));
-  const { createBackdropMode } = await import("./backdrop-mode-setting");
+  const { createBackdropMode } = await import("./backdrop-toy-setting");
   const events = new EventTarget();
   createBackdropMode(fixedRandom(0, 0), events);
 
@@ -123,7 +123,7 @@ test("with a single mode, every navigation shows it", async () => {
   events.dispatchEvent(new Event("astro:page-load"));
 
   expect(setMode.mock.calls.map(([id]) => id)).toEqual(["only", "only"]);
-  vi.doUnmock("./backdrop-modes");
+  vi.doUnmock("./backdrop-toys");
 });
 
 test("choosing a mode stores and applies it", () => {

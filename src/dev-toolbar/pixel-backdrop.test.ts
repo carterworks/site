@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readDefaults } from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
-import { MODES } from "../components/backdrop-modes";
-import { MODE_KEY } from "../components/backdrop-mode-setting";
+import { MODES } from "../components/backdrop-toys";
+import { MODE_KEY } from "../components/backdrop-toy-setting";
 import {
   CONTROLS,
   STORAGE_KEY,
@@ -11,7 +11,7 @@ import {
   default as app,
 } from "./pixel-backdrop";
 
-vi.mock("../components/backdrop-modes", () => {
+vi.mock("../components/backdrop-toys", () => {
   const toy = (id: string, look?: { ghost: number; noise: number }) => ({
     id,
     label: id.toUpperCase(),

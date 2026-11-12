@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
 import { DISPLAYS } from "./backdrop-displays";
-import { createBackdropMode, RANDOM } from "./backdrop-mode-setting";
-import { MODES } from "./backdrop-modes";
+import { createBackdropMode, RANDOM } from "./backdrop-toy-setting";
+import { MODES } from "./backdrop-toys";
 import "./play-toolbar";
 import { settings } from "./site-settings";
 import { createThemeSetting } from "./theme-setting";
 
-vi.mock("./backdrop-modes", () => ({
+vi.mock("./backdrop-toys", () => ({
   MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 

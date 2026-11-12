@@ -1,6 +1,6 @@
-import { RANDOM } from "./backdrop-mode-setting";
-import { MODES } from "./backdrop-modes";
-import { imageToy } from "./backdrop-modes/image";
+import { RANDOM } from "./backdrop-toy-setting";
+import { MODES } from "./backdrop-toys";
+import { imageToy } from "./backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "./site-settings";
 

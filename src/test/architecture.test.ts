@@ -18,15 +18,15 @@ const layers = {
     imports: ["canvas", "lib"],
   },
   "toy kit": {
-    files: ["src/components/backdrop-modes/{toy,line}.ts"],
+    files: ["src/components/backdrop-toys/{toy,line}.ts"],
     imports: ["toy kit", "lib"],
   },
   "toy registry": {
-    files: ["src/components/backdrop-modes/index.ts"],
+    files: ["src/components/backdrop-toys/index.ts"],
     imports: ["toys", "toy kit"],
   },
   toys: {
-    files: ["src/components/backdrop-modes/*.ts"],
+    files: ["src/components/backdrop-toys/*.ts"],
     imports: ["toy kit", "lib"],
   },
   displays: {
@@ -46,7 +46,7 @@ const layers = {
   },
   controls: {
     files: [
-      "src/components/{site-settings,backdrop-mode-setting,backdrop-display-setting,theme-setting}.ts",
+      "src/components/{site-settings,backdrop-toy-setting,backdrop-display-setting,theme-setting}.ts",
       "src/components/{play-toolbar,command-bar,frame-rate}.ts",
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
@@ -91,7 +91,7 @@ const exceptions = [
   },
   {
     from: "src/components/play-toolbar.ts",
-    to: "src/components/backdrop-modes/image.ts",
+    to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
   },
   {

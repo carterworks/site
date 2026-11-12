@@ -3,7 +3,7 @@ import {
   storedChoice,
   storeChoice,
 } from "../lib/cycle-setting";
-import { MODES } from "./backdrop-modes";
+import { MODES } from "./backdrop-toys";
 
 export const MODE_KEY = "backdrop-mode";
 

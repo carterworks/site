@@ -1,5 +1,5 @@
 import { defineToolbarApp } from "astro/toolbar";
-import { MODES } from "../components/backdrop-modes";
+import { MODES } from "../components/backdrop-toys";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   readDefaults,

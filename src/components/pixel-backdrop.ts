@@ -1,13 +1,8 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
-import { MODES } from "./backdrop-modes";
-import {
-  duration,
-  TUNED_GRID,
-  type Look,
-  type Toy,
-} from "./backdrop-modes/toy";
+import { MODES } from "./backdrop-toys";
+import { duration, TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
 import { isToyPress } from "./backdrop-press";
 
 /**

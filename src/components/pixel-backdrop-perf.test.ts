@@ -17,7 +17,7 @@ import {
   SLOW_TEST_MS,
 } from "../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
-import { MODES } from "./backdrop-modes";
+import { MODES } from "./backdrop-toys";
 import "./pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
