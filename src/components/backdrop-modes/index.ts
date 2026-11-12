@@ -14,6 +14,7 @@ import { fireflies } from "./fireflies";
 import { dominoes } from "./dominoes";
 import { rake } from "./rake";
 import { flipdots } from "./flipdots";
+import { cradle } from "./cradle";
 import type { Toy } from "./toy";
 
 /**
@@ -36,4 +37,5 @@ export const MODES: Toy[] = [
   dominoes,
   rake,
   flipdots,
+  cradle,
 ];
