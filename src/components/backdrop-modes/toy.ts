@@ -10,8 +10,8 @@ export type ToyContext = Omit<OffscreenCanvasRenderingContext2D, "canvas">;
  * the bitmap's, in pixels.
  */
 export type ToyCanvas = HTMLElement & {
-  width: number;
-  height: number;
+  readonly width: number;
+  readonly height: number;
   getContext(contextId: "2d"): ToyContext | null;
 };
 
