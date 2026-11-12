@@ -32,13 +32,9 @@
  * runs hits both alike. Pages render at a device pixel ratio of 1: the numbers
  * rank changes on one machine, and are not what a real screen costs.
  */
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import { Worker } from "node:worker_threads";
-import { chromium } from "playwright";
 import { onePercentLow } from "../src/components/frame-rate.ts";
+import { holdClockHigh, launch, play, playControls } from "./play-page.mjs";
 
 const { values: options } = parseArgs({
   options: {
@@ -54,117 +50,29 @@ const { values: options } = parseArgs({
 
 const WARM_UP_MS = 500;
 
-/** Each build is served at its own host, so neither sees the other's storage. */
 const builds = { head: options.dist };
 if (options.against) builds.base = options.against;
-for (const [host, path] of Object.entries(builds)) {
-  builds[host] = pathToFileURL(`${resolve(path)}/`);
-  if (!existsSync(new URL("play/index.html", builds[host]))) {
-    throw new Error(`No /play page in ${path}: run \`pnpm build\` first.`);
-  }
-}
 
 // A powersave governor clocks the CPU by load, and the displays load it
 // differently, so the same script looked 2.5 times slower on one display than
 // another. A spinning core holds the clock high for every combination.
-new Worker("for (;;);", { eval: true }).unref();
+await holdClockHigh();
 
-const browser = await chromium.launch({
-  channel: "chromium",
-  args: options.gpu ? ["--enable-gpu", "--ignore-gpu-blocklist"] : [],
+const { browser, system, renderer, page, devtools } = await launch(builds, {
+  gpu: options.gpu,
 });
-const system = await browser.newBrowserCDPSession();
-const { gpu } = await system.send("SystemInfo.getInfo");
-const renderer =
-  gpu.featureStatus.gpu_compositing === "enabled"
-    ? gpu.devices[0].deviceString
-    : undefined;
-if (options.gpu && !renderer) {
-  throw new Error(
-    "--gpu found no usable GPU driver, so Chromium composites in software. On NixOS, run it with `nix-shell --run`.",
-  );
-}
 console.log(`Rendering: ${renderer ?? "software"}`);
-const context = await browser.newContext({
-  viewport: { width: 1280, height: 800 },
-});
-await context.route("**/*", (route) => {
-  const { hostname, pathname } = new URL(route.request().url());
-  const file = new URL(
-    `.${pathname.endsWith("/") ? `${pathname}index.html` : pathname}`,
-    builds[hostname.split(".")[0]],
-  );
-  return existsSync(file)
-    ? route.fulfill({ path: file.pathname })
-    : route.fulfill({ status: 404 });
-});
-const page = await context.newPage();
-const devtools = await context.newCDPSession(page);
-await devtools.send("Performance.enable");
 await devtools.send("Emulation.setCPUThrottlingRate", {
   rate: Number(options.throttle),
 });
+const controls = playControls(page);
 
-const open = (host) => page.goto(`http://${host}.localhost/play/`);
-const toyOptions = page.locator("[data-toy] option:not([hidden])");
-const displayButton = page.locator("[data-display]");
-const shownDisplay = async () =>
-  (await displayButton.textContent()).replace("Display: ", "");
-
-await open("head");
-const toys = await toyOptions.evaluateAll((all) =>
-  all.map((option) => option.value).filter((id) => id !== "random"),
-);
+await controls.open("head");
+const toys = await controls.toys();
 if (toys.length === 0) {
   throw new Error(`The /play page in ${options.dist} has no toy menu.`);
 }
-const displays = [];
-while (!displays.includes(await shownDisplay())) {
-  displays.push(await shownDisplay());
-  await displayButton.click();
-}
-
-/**
- * Runs in the page. Sweeps the pointer down the viewport's diagonal, then
- * drags it back up, placing it by the clock so a slow frame samples the same
- * path more coarsely. Resolves with the ms between frames.
- */
-const play = (ms) =>
-  new Promise((resolve) => {
-    const gaps = [];
-    let start;
-    let last;
-    let held = false;
-    const point = (type, share, buttons) =>
-      window.dispatchEvent(
-        new PointerEvent(type, {
-          clientX: share * innerWidth,
-          clientY: share * innerHeight,
-          pointerType: "mouse",
-          pointerId: 1,
-          isPrimary: true,
-          buttons,
-        }),
-      );
-    const frame = (now) => {
-      start ??= now;
-      if (last !== undefined) gaps.push(now - last);
-      last = now;
-      const share = (now - start) / ms;
-      if (share >= 1) {
-        point("pointerup", 0, 0);
-        resolve(gaps);
-        return;
-      }
-      if (share >= 0.5 && !held) {
-        point("pointerdown", 1, 1);
-        held = true;
-      }
-      point("pointermove", held ? 2 - share * 2 : share * 2, held ? 1 : 0);
-      requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  });
+const displays = await controls.displays();
 
 /** Cumulative ms: CPU across each kind of process, and the page's time in script. */
 const spent = async () => {
@@ -185,18 +93,17 @@ const spent = async () => {
 
 /** A fresh page load per measurement, so one toy's leftovers never cost the next. */
 const measure = async (host, toy, display) => {
-  await open(host);
-  if ((await toyOptions.and(page.locator(`[value="${toy}"]`)).count()) === 0) {
+  await controls.open(host);
+  if (!(await controls.hasToy(toy))) return undefined;
+  if (!(await controls.chooseDisplay(display, displays.length))) {
     return undefined;
   }
-  for (let presses = 0; (await shownDisplay()) !== display; presses += 1) {
-    if (presses === displays.length) return undefined;
-    await displayButton.click();
-  }
-  await page.selectOption("[data-toy]", toy);
-  await page.evaluate(play, WARM_UP_MS);
+  await controls.chooseToy(toy);
+  await page.evaluate(play, { ms: WARM_UP_MS });
   const before = await spent();
-  const gaps = await page.evaluate(play, Number(options.seconds) * 1000);
+  const gaps = await page.evaluate(play, {
+    ms: Number(options.seconds) * 1000,
+  });
   const after = await spent();
   const perFrame = (key) => (after[key] - before[key]) / gaps.length;
   return {
