@@ -234,6 +234,15 @@ test("idle rain lands inside the visible rect", async () => {
   expect(drops).toBeGreaterThanOrEqual(3);
 });
 
+test("it clears the previous toy's frame on its first frame", async () => {
+  stop();
+  bitmap().pixels.fill(255);
+  stop = pond.start(canvas);
+  await frames(1);
+
+  expect(energy()).toBe(0);
+});
+
 test("no rain falls before 2.5 s of quiet", async () => {
   await vi.advanceTimersByTimeAsync(2400);
 

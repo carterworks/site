@@ -71,7 +71,7 @@ export const pond: Toy = {
     const arrivedAt = performance.now();
     let lastInputAt = arrivedAt;
     let flat = true;
-    let lit = false;
+    let lit = true;
     let visible = visibleCells(canvas);
     let frame: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
