@@ -126,7 +126,9 @@ export class SoftContext {
   drawImage(source: SoftBitmap | HTMLCanvasElement, dx: number, dy: number) {
     const bitmap =
       source instanceof SoftBitmap ? source : softCanvases.get(source);
-    if (bitmap === undefined) return;
+    if (bitmap === undefined || arguments.length !== 3) {
+      throw new Error("SoftContext draws only a whole soft canvas, unscaled");
+    }
     const blend = this.#blend();
     this.#each(dx, dy, bitmap.width, bitmap.height, (i, x, y) =>
       this.#composite(
