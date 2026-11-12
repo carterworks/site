@@ -50,8 +50,8 @@ const DROWSY_STEPS = 120;
 const STEP_MS = 1000 / 60;
 /** A tab that was hidden resumes with a few steps, not the whole gap. */
 const MAX_OWED_MS = 5 * STEP_MS;
-/** A multiple of the 140-step breath, so the sleeper freezes inhaled. */
-const NAP_BREATH_STEPS = 420;
+/** One 140-step breath: the sleeper freezes inhaled, and a toy switch settles in about 4 s. */
+const NAP_BREATH_STEPS = 140;
 const BLINK_PERIOD_MS = 3400;
 const BLINK_MS = 130;
 

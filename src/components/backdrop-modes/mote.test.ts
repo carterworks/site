@@ -227,6 +227,11 @@ test("it naps again after being alone a while", async () => {
   expect(toy.bodyTop()).toBe(SLEEPING_TOP);
 });
 
+test("untouched on start it settles within 5 s", async () => {
+  const toy = setup();
+  expect(await toy.run(60 * 5)).toBe("still");
+});
+
 test("asleep it breathes for a while, then stops asking for frames", async () => {
   const toy = setup();
   expect(await toy.run(60)).toBe("active");
