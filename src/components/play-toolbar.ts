@@ -1,6 +1,7 @@
 import { RANDOM } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 import { imageToy } from "./backdrop-modes/image";
+import { onePercentLow } from "./frame-rate";
 import { settings } from "./site-settings";
 
 const option = (label: string, value: string) =>
@@ -37,15 +38,11 @@ const meterFrames = (meter: HTMLElement) => {
     rates.push((counted * 1000) / elapsed);
     if (rates.length > SLOTS) rates.shift();
 
-    const slowest = recent
-      .map(({ ms }) => ms)
-      .sort((a, b) => b - a)
-      .slice(0, Math.ceil(recent.length / 100));
-    const slowestTotal = slowest.reduce((sum, ms) => sum + ms, 0);
+    const slowest = onePercentLow(recent.map(({ ms }) => ms));
     const peak = Math.max(...rates);
 
     rate.textContent = `FPS: ${pad(rates.at(-1) ?? 0)}`;
-    low.textContent = `1% low: ${pad((slowest.length * 1000) / slowestTotal)}`;
+    low.textContent = `1% low: ${pad(slowest)}`;
     history.setAttribute(
       "points",
       rates
