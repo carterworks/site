@@ -37,7 +37,17 @@ const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#f1f1f1" />
+    <!-- --color-bg in each scheme; keep in step with global.css. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f8f8f8"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#121212"
+    />
     <script is:inline define:vars={{ key: SCHEME_KEY }}>
       // Runs before first paint, which a bundled module can't; the key is
       // injected so it can't drift from the one saveScheme writes.
