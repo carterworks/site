@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { MODES } from "./backdrop-modes";
 import type { BackdropInput, Mode, Pace } from "./backdrop-modes/mode";
 import type { PixelBackdrop } from "./pixel-backdrop";
 import "./pixel-backdrop";
@@ -47,7 +48,7 @@ vi.mock("./backdrop-modes", async (importOriginal) => {
       pace: () => "still",
     }),
   };
-  const watched = MODES.map((mode): Mode => ({
+  const watched = [...MODES, solid].map((mode): Mode => ({
     ...mode,
     create(setup) {
       const instance = mode.create(setup);
@@ -61,7 +62,7 @@ vi.mock("./backdrop-modes", async (importOriginal) => {
       };
     },
   }));
-  return { MODES: [...watched, solid] };
+  return { MODES: watched };
 });
 
 const context = {
@@ -603,21 +604,24 @@ function scrollBlocked() {
 const touchEnd = (type: string) =>
   document.body.dispatchEvent(new TouchEvent(type, { bubbles: true }));
 
-test("a touch in empty space grabs at once: its first move is blocked and its drag reaches the mode as the pointer", async () => {
-  mount();
-  fingerDown();
+test.each(MODES.map(({ id }) => id))(
+  "%s grabs a touch in empty space at once: its first move is blocked and its drag reaches the mode as the pointer",
+  async (id) => {
+    mount().setMode(id);
+    fingerDown();
 
-  expect(scrollBlocked()).toBe(true);
-  finger("pointermove", { clientX: 200, clientY: 300 });
+    expect(scrollBlocked()).toBe(true);
+    finger("pointermove", { clientX: 200, clientY: 300 });
 
-  const input = await latestInput();
-  expect(input.press).toMatchObject({ held: true });
-  expect(input.pointer).toEqual({
-    x: expect.closeTo(20, 0),
-    y: expect.closeTo(30, 0),
-  });
-  expect(holding()).toBe(true);
-});
+    const input = await latestInput();
+    expect(input.press).toMatchObject({ held: true });
+    expect(input.pointer).toEqual({
+      x: expect.closeTo(20, 0),
+      y: expect.closeTo(30, 0),
+    });
+    expect(holding()).toBe(true);
+  },
+);
 
 test("a grabbed touch blocks the page's scroll until it is released", () => {
   mount();
