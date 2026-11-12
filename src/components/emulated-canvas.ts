@@ -21,7 +21,33 @@ type Geometry = {
   scale: number;
   gap: number;
   shape: PixelShape;
+  /** The echo's opacity (0–100, 0 for none) and its offset in CSS pixels. */
+  shadow: { opacity: number; x: number; y: number };
 };
+
+/**
+ * The echo is a copy of the display, offset and multiplied over it, like the
+ * shadow each lit pixel casts on an LCD's backplate. It sits above the gap
+ * overlay so the shadow falls across the gaps too, and the host isolates the
+ * blend so it darkens only the display, never the page behind it.
+ */
+function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
+  if (opacity === 0) return "";
+  return `
+    :host {
+      isolation: isolate;
+    }
+    .echo {
+      inset: 0 auto auto 0;
+      mix-blend-mode: multiply;
+      opacity: ${opacity / 100};
+      pointer-events: none;
+      position: absolute;
+      translate: ${x}px ${y}px;
+      z-index: 1;
+    }
+  `;
+}
 
 /**
  * Cells are enlarged and cut out in CSS, so the display's backing store stays
@@ -42,7 +68,7 @@ type Geometry = {
  * The canvas is inline rather than block so those negative margins can't
  * collapse through a block-level host and change its height.
  */
-function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
+function displayStyle({ columns, rows, scale, gap, shape, shadow }: Geometry) {
   const lead = Math.floor(gap / 2);
   const overhang = `${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px`;
   const cell = "var(--scale)";
@@ -83,7 +109,7 @@ function displayStyle({ columns, rows, scale, gap, shape }: Geometry) {
       pointer-events: none;
       position: absolute;
     }
-  `;
+    ${echoStyle(shadow)}`;
 }
 
 /** What every shader is told about the frame it is processing. */
@@ -458,6 +484,12 @@ export type EmulatedCanvasProps = {
  * `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting to
  * `data-ghost`) set it apart for pixels getting brighter and darker.
  *
+ * `data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's
+ * segments over their backplate: a copy of the display at that opacity,
+ * multiplied over it and offset by `data-shadow-x` and `data-shadow-y` (whole
+ * CSS pixels, default 0). It is copied on the GPU on each present. With a
+ * palette, only pixels darker than the base cast a shadow.
+ *
  * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
  * recolour the frame in two colours, by each pixel's luma: black shows as the
  * base and white as the ink. `data-palette-levels` (2 or more, default
@@ -498,6 +530,9 @@ export class EmulatedCanvas extends HTMLElement {
     "data-ghost",
     "data-ghost-rise",
     "data-ghost-fall",
+    "data-shadow",
+    "data-shadow-x",
+    "data-shadow-y",
     "data-palette-base",
     "data-palette-ink",
     "data-palette-levels",
@@ -510,6 +545,8 @@ export class EmulatedCanvas extends HTMLElement {
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
   #outerContext?: CanvasRenderingContext2D;
+  #echoContext?: CanvasRenderingContext2D;
+  #echoDodge?: string;
   #readback?: OffscreenCanvasRenderingContext2D | null;
   #watched?: OffscreenCanvasRenderingContext2D;
   /** The consumer's pixels as last drawn, kept for presents with nothing new drawn. */
@@ -751,16 +788,20 @@ export class EmulatedCanvas extends HTMLElement {
     this.#outerCanvas = outerCanvas;
 
     this.#style = document.createElement("style");
+    this.attachShadow({ mode: "closed" }).append(this.#style, outerCanvas);
     this.#configure();
-
-    const shadow = this.attachShadow({ mode: "closed" });
-    shadow.append(this.#style, outerCanvas);
   }
 
   #configure() {
     const style = this.#style;
     if (style === undefined) return;
     const innerCanvas = this.#bitmap();
+    const shadow = {
+      opacity: Math.min(this.#integer("shadow", 0, 0), 100),
+      x: this.#integer("shadowX", 0, -Infinity),
+      y: this.#integer("shadowY", 0, -Infinity),
+    };
+    this.#showEcho(shadow.opacity > 0);
 
     style.textContent = displayStyle({
       columns: innerCanvas.width,
@@ -771,11 +812,74 @@ export class EmulatedCanvas extends HTMLElement {
         this.dataset.shape === "circle"
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
+      shadow,
     });
   }
 
+  /**
+   * A colour-dodge by the base's inverse divides the echo by the base, so an
+   * off pixel multiplies by white and casts nothing. Without a palette the off
+   * colour is unknown, and a plain multiply is the same rule with white as off.
+   */
+  #dodgeColour() {
+    const { paletteBase, paletteInk } = this.dataset;
+    if (paletteBase === undefined || paletteInk === undefined) return undefined;
+    const [r, g, b] = colourRgb(paletteBase);
+    return `rgb(${255 - r} ${255 - g} ${255 - b})`;
+  }
+
+  /** Created only once a shadow is wanted, so a canvas without one pays nothing. */
+  #showEcho(shown: boolean) {
+    if (!shown) {
+      this.#echoContext?.canvas.remove();
+      this.#echoContext = undefined;
+      return;
+    }
+    const outerCanvas = this.#outerCanvas;
+    if (outerCanvas === undefined) return;
+    const created = this.#echoContext === undefined;
+    const context = (this.#echoContext ??= this.#createEcho(outerCanvas));
+    if (context === undefined) return;
+    this.#echoDodge = this.#dodgeColour();
+    if (this.#echoDodge !== undefined) context.fillStyle = this.#echoDodge;
+    if (created && this.#outerContext !== undefined) {
+      this.#copyToEcho(outerCanvas);
+    }
+  }
+
+  #createEcho(outerCanvas: HTMLCanvasElement) {
+    const echo = document.createElement("canvas");
+    echo.className = "echo";
+    echo.width = this.width;
+    echo.height = this.height;
+    const context = echo.getContext("2d");
+    if (context !== null) outerCanvas.after(echo);
+    return context ?? undefined;
+  }
+
+  /**
+   * One GPU-side copy of what the display just showed, with no read-back. The
+   * multiply blend composites at display resolution, but only when this runs.
+   */
+  #copyToEcho(outerCanvas: HTMLCanvasElement) {
+    const echo = this.#echoContext;
+    if (echo === undefined) return;
+    echo.globalCompositeOperation = "copy";
+    echo.drawImage(outerCanvas, 0, 0);
+    if (this.#echoDodge === undefined) return;
+    echo.globalCompositeOperation = "color-dodge";
+    echo.fillRect(0, 0, outerCanvas.width, outerCanvas.height);
+  }
+
   #integer(
-    name: "width" | "height" | "scale" | "gap",
+    name:
+      | "width"
+      | "height"
+      | "scale"
+      | "gap"
+      | "shadow"
+      | "shadowX"
+      | "shadowY",
     fallback: number,
     min: number,
   ) {
@@ -830,6 +934,7 @@ export class EmulatedCanvas extends HTMLElement {
     this.#shownImage = image !== undefined;
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
+    this.#copyToEcho(outerCanvas);
     if (dissolving) return "active";
     // A drifting frame can keep a fade more than a level behind on every
     // present, so it never reports settled and would hold full rate for good.

@@ -49,12 +49,16 @@ let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
 let animationFrames: Set<number>;
 
-/** Copies onto the display: the canvas inside the closed shadow root is the only plain one. */
+const isEcho = (context: unknown) =>
+  (context as SoftContext).canvas?.classList.contains("echo");
+
+/** Copies onto the display: the plain canvas inside the closed shadow root that is not the echo. */
 function presents() {
-  const display = bitmaps.plain[0];
   const onDisplay = (spy: { mock: { contexts: unknown[] } }) =>
     spy.mock.contexts.filter(
-      (context) => (context as SoftContext).bitmap === display,
+      (context) =>
+        bitmaps.plain.includes((context as SoftContext).bitmap) &&
+        !isEcho(context),
     ).length;
   return (
     onDisplay(vi.mocked(SoftContext.prototype.putImageData)) +
@@ -224,6 +228,30 @@ describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
     }
 
     expect(presents() - before).toBeGreaterThan(100);
+    expect(softStats.reads).toBe(0);
+    expect(allocations.count()).toBe(0);
+  });
+
+  test("with a pixel shadow, copies each present to the echo once, reading and allocating nothing", async () => {
+    const canvas = mount(id);
+    canvas.dataset.shadow = "40";
+    await play();
+    softStats.reads = 0;
+    const before = presents();
+    const echoCopies = () =>
+      vi.mocked(SoftContext.prototype.drawImage).mock.contexts.filter(isEcho)
+        .length;
+    const echoedBefore = echoCopies();
+
+    const allocations = countAllocations();
+    try {
+      await play();
+    } finally {
+      allocations.restore();
+    }
+
+    expect(presents() - before).toBeGreaterThan(100);
+    expect(echoCopies() - echoedBefore).toBe(presents() - before);
     expect(softStats.reads).toBe(0);
     expect(allocations.count()).toBe(0);
   });
