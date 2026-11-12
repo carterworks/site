@@ -24,6 +24,11 @@ const pages: Record<string, PageMetadata> = {
     ogType: "website",
     title: "All blog posts | carter.works",
   },
+  "/play/": {
+    id: "play",
+    ogTitle: "Playground",
+    title: "Playground | carter.works",
+  },
 };
 
 export function getPageMetadata(path: string): PageMetadata | undefined {
