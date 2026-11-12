@@ -11,19 +11,13 @@ export type DisplayLook = {
    * pixel show through, so dark neighbours merge and the grid stays faint.
    */
   grid?: string;
-  /** A backlight's fall-off, as an image multiplied over the whole screen. */
   vignette?: string;
-  /** The off pixels, which `data-palette-base` takes. */
   base: string;
-  /** The lit pixels, which `data-palette-ink` takes. */
   ink: string;
   levels: number;
-  /** Space between cells, in whole CSS pixels. */
   gap: number;
-  /** Ghost, 0–100, for pixels getting brighter and darker. */
   ghostRise: number;
   ghostFall: number;
-  /** Opacity 0–100 and offset in whole CSS pixels. */
   shadow?: { opacity: number; x: number; y: number };
 };
 
