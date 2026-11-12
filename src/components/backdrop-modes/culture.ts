@@ -83,8 +83,10 @@ export const culture: Mode = {
     let unchanged = 0;
     let sporedAt = -Infinity;
     let seenPress: object | undefined;
-    let last: Point | undefined;
-    let hover: Point | undefined;
+    const cell: Point = { x: 0, y: 0 };
+    const last: Point = { x: 0, y: 0 };
+    let hasLast = false;
+    let hovering = false;
     let fading = false;
     let awake = true;
     let arrivedAt: number | undefined;
@@ -200,11 +202,6 @@ export const culture: Mode = {
       previousPopulation = population;
     };
 
-    const cellOf = ({ x, y }: Point) => ({
-      x: Math.floor(x),
-      y: Math.floor(y),
-    });
-
     const scatterReach = Math.max(MIN_SCATTER, scale);
     const scatter = (x: number, y: number) => {
       seed(x, y);
@@ -224,7 +221,10 @@ export const culture: Mode = {
         const lastActive = Math.max(lastInputAt, arrivedAt);
         awake = now - lastActive < AWAKE_MS;
 
-        const cell = pointer && cellOf(pointer);
+        if (pointer !== undefined) {
+          cell.x = Math.floor(pointer.x);
+          cell.y = Math.floor(pointer.y);
+        }
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
           const x = Math.floor(press.x);
@@ -233,11 +233,15 @@ export const culture: Mode = {
           seed(x + 1, y);
           seed(x, y + 1);
         }
-        if (press?.held && cell !== undefined) {
-          line(last ?? cell, cell, scatter);
+        if (press?.held && pointer !== undefined) {
+          line(hasLast ? last : cell, cell, scatter);
         }
-        last = cell;
-        hover = press?.held ? undefined : cell;
+        hasLast = pointer !== undefined;
+        if (hasLast) {
+          last.x = cell.x;
+          last.y = cell.y;
+        }
+        hovering = hasLast && !press?.held;
 
         if (awake) {
           clock += 1;
@@ -293,13 +297,13 @@ export const culture: Mode = {
           }
         }
         if (
-          hover !== undefined &&
-          hover.x >= 0 &&
-          hover.y >= 0 &&
-          hover.x < columns &&
-          hover.y < rows
+          hovering &&
+          last.x >= 0 &&
+          last.y >= 0 &&
+          last.x < columns &&
+          last.y < rows
         ) {
-          const i = hover.y * columns + hover.x;
+          const i = last.y * columns + last.x;
           if (dish[i] && !cells[i]) field[i] = 0.6;
         }
       },

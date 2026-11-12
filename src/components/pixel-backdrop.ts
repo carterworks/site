@@ -303,7 +303,7 @@ export class PixelBackdrop extends HTMLElement {
   #noiseLayer?: ReturnType<typeof makeCoarseNoise>;
   #field = new Float32Array(0);
   #image?: ImageData;
-  #shades?: { key: string; table: Uint8ClampedArray };
+  #shades?: { base: string; ink: string; table: Uint8ClampedArray };
   #rect?: DOMRect;
 
   /** The id of the chosen mode, which is the incoming one mid-dissolve. */
@@ -716,10 +716,10 @@ export class PixelBackdrop extends HTMLElement {
       image = context.createImageData(columns, rows);
       this.#image = image;
     }
-    const key = `${base} ${ink}`;
-    if (this.#shades?.key !== key) {
+    if (this.#shades?.base !== base || this.#shades.ink !== ink) {
       this.#shades = {
-        key,
+        base,
+        ink,
         table: shadeTable(colourRgb(base), colourRgb(ink)),
       };
     }

@@ -67,7 +67,10 @@ export const silt: Mode = {
     let sweep = 0;
     let seenPress: object | undefined;
     let lastTap = { at: -Infinity, x: 0, y: 0 };
-    let pourAt: Point | undefined;
+    const pourAt: Point = { x: 0, y: 0 };
+    let pourTrail = false;
+    const lineFrom: Point = { x: 0, y: 0 };
+    const lineTo: Point = { x: 0, y: 0 };
     let pouring = false;
     let quietSince = Infinity;
     let pristine = true;
@@ -253,24 +256,24 @@ export const silt: Mode = {
 
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
-          pourAt = undefined;
+          pourTrail = false;
           tap(press);
         }
         pouring = press?.held === true;
         if (pouring && press !== undefined) {
           const here = pointer ?? press;
-          line(
-            {
-              x: Math.floor(pourAt?.x ?? press.x),
-              y: Math.floor(pourAt?.y ?? press.y),
-            },
-            { x: Math.floor(here.x), y: Math.floor(here.y) },
-            put,
-          );
-          pourAt = { x: here.x, y: here.y };
+          const origin = pourTrail ? pourAt : press;
+          lineFrom.x = Math.floor(origin.x);
+          lineFrom.y = Math.floor(origin.y);
+          lineTo.x = Math.floor(here.x);
+          lineTo.y = Math.floor(here.y);
+          line(lineFrom, lineTo, put);
+          pourAt.x = here.x;
+          pourAt.y = here.y;
+          pourTrail = true;
           pour(here.x, here.y);
         } else {
-          pourAt = undefined;
+          pourTrail = false;
         }
 
         quietSince = now - lastInputAt;

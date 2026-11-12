@@ -99,7 +99,10 @@ export const wax: Mode = {
       let gap = 3 * scale;
       for (const blob of blobs) {
         const away = Math.hypot(blob.x - x, blob.y - y) - blob.r;
-        if (away < gap) [gap, nearest] = [away, blob];
+        if (away < gap) {
+          gap = away;
+          nearest = blob;
+        }
       }
       if (nearest === undefined) return undefined;
       return { blob: nearest, dx: nearest.x - x, dy: nearest.y - y, press };
@@ -173,19 +176,31 @@ export const wax: Mode = {
           const right = visible.right - margin;
           const top = visible.top + margin;
           const bottom = visible.bottom - margin;
-          if (blob.x < left)
-            [blob.x, blob.vx] = [left, Math.abs(blob.vx) * 0.4];
-          if (blob.x > right)
-            [blob.x, blob.vx] = [right, -Math.abs(blob.vx) * 0.4];
-          if (blob.y < top) [blob.y, blob.vy] = [top, Math.abs(blob.vy) * 0.4];
-          if (blob.y > bottom)
-            [blob.y, blob.vy] = [bottom, -Math.abs(blob.vy) * 0.4];
+          if (blob.x < left) {
+            blob.x = left;
+            blob.vx = Math.abs(blob.vx) * 0.4;
+          }
+          if (blob.x > right) {
+            blob.x = right;
+            blob.vx = -Math.abs(blob.vx) * 0.4;
+          }
+          if (blob.y < top) {
+            blob.y = top;
+            blob.vy = Math.abs(blob.vy) * 0.4;
+          }
+          if (blob.y > bottom) {
+            blob.y = bottom;
+            blob.vy = -Math.abs(blob.vy) * 0.4;
+          }
           fastest = Math.max(fastest, Math.abs(blob.vx), Math.abs(blob.vy));
         }
 
         settled = !awake && fastest < STOPPED_SPEED;
         if (settled) {
-          for (const blob of blobs) [blob.vx, blob.vy] = [0, 0];
+          for (const blob of blobs) {
+            blob.vx = 0;
+            blob.vy = 0;
+          }
         }
       },
 

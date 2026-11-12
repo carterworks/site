@@ -15,19 +15,15 @@ export const shimmer: Mode = {
   label: "Shimmer",
   create({ columns, rows, options }) {
     // rippleSize is authored in cells of the tuned grid.
-    const rippleSizeScale = columns / TUNED_GRID;
+    const gridScale = columns / TUNED_GRID;
     const ripples: { x: number; y: number; born: number }[] = [];
     let seenPointer: Point | undefined;
     let seenPress: object | undefined;
-    let hovered: Point | undefined;
-    let from: Point = { x: 0, y: 0 };
+    const hovered: Point = { x: 0, y: 0 };
+    let hovering = false;
+    const from: Point = { x: 0, y: 0 };
     let moved = false;
     let now = 0;
-
-    const cellOf = ({ x, y }: Point) => ({
-      x: clamp(Math.floor(x), 0, columns - 1),
-      y: clamp(Math.floor(y), 0, rows - 1),
-    });
 
     // Two cells thick keeps the segment as heavy on screen as one cell was at 80.
     let target: Float32Array = new Float32Array(0);
@@ -43,16 +39,24 @@ export const shimmer: Mode = {
       step({ pointer, press }, time) {
         now = time;
         if (pointer === undefined) {
-          hovered = undefined;
+          hovering = false;
           moved = false;
         } else if (
           pointer.x !== seenPointer?.x ||
           pointer.y !== seenPointer?.y
         ) {
-          const cell = cellOf(pointer);
-          if (hovered === undefined) from = cell;
-          else if (cell.x !== hovered.x || cell.y !== hovered.y) from = hovered;
-          hovered = cell;
+          const x = clamp(Math.floor(pointer.x), 0, columns - 1);
+          const y = clamp(Math.floor(pointer.y), 0, rows - 1);
+          if (!hovering) {
+            from.x = x;
+            from.y = y;
+          } else if (x !== hovered.x || y !== hovered.y) {
+            from.x = hovered.x;
+            from.y = hovered.y;
+          }
+          hovered.x = x;
+          hovered.y = y;
+          hovering = true;
           moved = true;
         }
         seenPointer = pointer;
@@ -70,14 +74,14 @@ export const shimmer: Mode = {
 
       render(field) {
         target = field;
-        if (moved && hovered !== undefined) {
+        if (moved && hovering) {
           line(from, hovered, stamp);
           moved = false;
         }
 
         for (const ripple of ripples) {
           const progress = (now - ripple.born) / options.rippleSpeed;
-          const radius = progress * options.rippleSize * rippleSizeScale;
+          const radius = progress * options.rippleSize * gridScale;
           const strength = 1 - progress;
           const reach = Math.ceil(radius + 1);
           const top = Math.max(0, Math.floor(ripple.y) - reach);

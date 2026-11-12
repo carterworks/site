@@ -48,9 +48,9 @@ const BLINK_MS = 130;
  * Where the critter can stand. Crumbs land inside it too, so a crumb can never
  * be somewhere the critter cannot walk.
  */
-function reach({ left, right }: CellRect) {
-  const min = left + EDGE_MARGIN;
-  return { min, max: Math.max(min, right - EDGE_MARGIN) };
+function reach({ left, right }: CellRect, into: { min: number; max: number }) {
+  into.min = left + EDGE_MARGIN;
+  into.max = Math.max(into.min, right - EDGE_MARGIN);
 }
 
 type Crumb = {
@@ -97,6 +97,7 @@ export const mote: Mode = {
       rubSlot: 0,
     };
     const crumbs: Crumb[] = [];
+    const bounds = { min: 0, max: 0 };
     const floaters: Floater[] = [];
     let pointer: Point | undefined;
     let seenPress: object | undefined;
@@ -204,7 +205,7 @@ export const mote: Mode = {
         now = time;
         pointer = input.pointer && toUnits(input.pointer);
         ground = Math.floor(visible.bottom) - GROUND_INSET;
-        const bounds = reach(visible);
+        reach(visible, bounds);
         if (!placed) {
           critter.x = bounds.min + 0.62 * (bounds.max - bounds.min);
           placed = true;
