@@ -11,6 +11,7 @@ import { curtain } from "./curtain";
 import { tray } from "./tray";
 import { bubblewrap } from "./bubblewrap";
 import { fireflies } from "./fireflies";
+import { dominoes } from "./dominoes";
 import type { Toy } from "./toy";
 
 /**
@@ -30,4 +31,5 @@ export const MODES: Toy[] = [
   tray,
   bubblewrap,
   fireflies,
+  dominoes,
 ];
