@@ -39,18 +39,23 @@ const STEP_MS = 1000 / 60;
 const MAX_CATCH_UP_MS = 100;
 
 /**
- * Grains the sieve lets through per step: a steady trickle plus a share of the
- * heap, so a full tray empties in about 20 s yet a small pile lingers.
+ * Once the heap rests, the sieve opens for a short drip and then the loop
+ * sleeps until the next one. A full tray (~3.5k grains at the tuned grid) takes
+ * about two minutes to empty at this pace, and frames only run during a drip.
  */
-const DRAIN_BASE = 0.5;
-const DRAIN_PER_GRAIN = 1 / 450;
+const DRIP_EVERY_MS = 1000;
+const DRIP_STEPS = 6;
+const DRIP_GRAINS = 30;
+/** Sweeps a drip may fast-forward to rest the heap, instead of animating them. */
+const MAX_SETTLE_SWEEPS = 200;
 const TIPPED_DRAIN = 12;
 
 /**
  * Falling sand in a tray the size of the visible screen. Grains pile on its
- * bottom edge and slip down dunes; the sieve floor always drains, so an
- * untouched tab empties and the loop can stop. A double-tap tips the tray out:
- * gravity reverses and the new floor is wide open until the sand is gone.
+ * bottom edge and slip down dunes; the sieve floor drips grains through, so an
+ * untouched tab slowly empties and the loop can stop. A double-tap tips the
+ * tray out: gravity reverses and the new floor is wide open until the sand is
+ * gone.
  *
  * Until the first input a small settled dune rests on the floor as a hint that
  * the tray is live. It is frozen and costs nothing; the first input hands it
@@ -71,9 +76,9 @@ export const silt: Toy = {
     // A grain falls one cell per sweep, so sweeping once per cell-size ratio
     // keeps its speed in px/s.
     const sweepsPerStep = Math.max(1, Math.round(scale));
-    const drainBase = DRAIN_BASE * scale;
     // The tray holds scale² as many grains, so a tip-out needs scale² the rate.
     const tippedDrain = Math.round(TIPPED_DRAIN * scale * scale);
+    const dripPerStep = Math.round((DRIP_GRAINS * scale * scale) / DRIP_STEPS);
     const grains = new Uint8Array(columns * rows);
     const image = context.createImageData(columns, rows);
     const pixels = image.data;
@@ -83,7 +88,8 @@ export const silt: Toy = {
     let count = 0;
     let gravity = 1;
     let tipped = false;
-    let owed = 0;
+    let dripLeft = 0;
+    let nextDripAt = Infinity;
     let sweep = 0;
     let lastTapAt = -Infinity;
     const lastTap: Point = { x: 0, y: 0 };
@@ -97,7 +103,6 @@ export const silt: Toy = {
     const lineTo: Point = { x: 0, y: 0 };
     let pouring = false;
     let lastInputAt = -Infinity;
-    let quietSince = Infinity;
     let pristine = true;
     let seeded = false;
     let left = 0;
@@ -295,6 +300,30 @@ export const silt: Toy = {
       context.putImageData(image, 0, 0);
     };
 
+    const sweepOnce = (phase: number) => {
+      const floorRow = gravity > 0 ? bottom : top;
+      const farRow =
+        gravity > 0
+          ? Math.min(bottom, Math.max(top, minRow))
+          : Math.max(top, Math.min(bottom, maxRow));
+      let farthest = floorRow;
+      let shifted = false;
+      for (let y = floorRow - gravity; y !== farRow - gravity; y -= gravity) {
+        const row = y * columns;
+        const next = (y + gravity) * columns;
+        const forward = (y + phase) & 1;
+        for (let k = 0; k < right - left + 1; k += 1) {
+          const x = forward ? left + k : right - k;
+          if (grains[row + x] === 0) continue;
+          farthest = y;
+          if (fall(x, row, next)) shifted = true;
+        }
+      }
+      settled = !shifted;
+      minRow = Math.min(farthest, floorRow);
+      maxRow = Math.max(farthest, floorRow);
+    };
+
     const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
     let now = 0;
 
@@ -325,7 +354,7 @@ export const silt: Toy = {
         pourTrail = false;
       }
 
-      quietSince = now - lastInputAt;
+      const quietSince = now - lastInputAt;
       sweep += 1;
       if (
         !tipped &&
@@ -343,32 +372,8 @@ export const silt: Toy = {
       }
 
       const floorRow = gravity > 0 ? bottom : top;
-      let farthest = floorRow;
-      let swept = false;
       for (let s = 0; !settled && s < sweepsPerStep; s += 1) {
-        const farRow =
-          gravity > 0
-            ? Math.min(bottom, Math.max(top, minRow))
-            : Math.max(top, Math.min(bottom, maxRow));
-        farthest = floorRow;
-        swept = true;
-        let shifted = false;
-        for (let y = floorRow - gravity; y !== farRow - gravity; y -= gravity) {
-          const row = y * columns;
-          const next = (y + gravity) * columns;
-          const forward = (y + sweep + s) & 1;
-          for (let k = 0; k < right - left + 1; k += 1) {
-            const x = forward ? left + k : right - k;
-            if (grains[row + x] === 0) continue;
-            farthest = y;
-            if (fall(x, row, next)) shifted = true;
-          }
-        }
-        settled = !shifted;
-      }
-      if (swept) {
-        minRow = Math.min(farthest, floorRow);
-        maxRow = Math.max(farthest, floorRow);
+        sweepOnce(sweep + s);
       }
 
       if (tipped) {
@@ -377,11 +382,18 @@ export const silt: Toy = {
           gravity = 1;
           tipped = false;
         }
-      } else if (!pouring) {
-        owed += drainBase + count * DRAIN_PER_GRAIN;
-        const whole = Math.floor(owed);
-        owed -= whole;
-        sieve(floorRow * columns, whole);
+      } else if (pouring) {
+        dripLeft = 0;
+      } else if (dripLeft > 0 || (settled && count > 0 && now >= nextDripAt)) {
+        if (dripLeft === 0) dripLeft = DRIP_STEPS;
+        sieve(floorRow * columns, dripPerStep);
+        dripLeft -= 1;
+        if (dripLeft === 0) {
+          for (let n = 0; !settled && n < MAX_SETTLE_SWEEPS; n += 1) {
+            sweepOnce(sweep + n);
+          }
+          nextDripAt = now + DRIP_EVERY_MS;
+        }
       }
     };
 
@@ -390,13 +402,16 @@ export const silt: Toy = {
       now = time;
       pace.advance(now, step);
       render();
-      if (!pristine && (count > 0 || pouring)) {
+      if (!pristine && (!settled || pouring || tipped || dripLeft > 0)) {
         wake();
         return;
       }
       pace.restart();
-      if (!pristine && quietSince < TRICKLE_UNTIL_MS) {
+      if (pristine) return;
+      if (now - lastInputAt < TRICKLE_UNTIL_MS) {
         timer = setTimeout(wake, IDLE_FRAME_MS);
+      } else if (count > 0) {
+        timer = setTimeout(wake, Math.max(0, nextDripAt - now));
       }
     };
 
@@ -409,6 +424,7 @@ export const silt: Toy = {
     const touched = () => {
       pristine = false;
       lastInputAt = performance.now();
+      nextDripAt = lastInputAt + DRIP_EVERY_MS;
       wake();
     };
 
@@ -433,6 +449,7 @@ export const silt: Toy = {
 
     const onLift = (event: PointerEvent) => {
       held = false;
+      nextDripAt = performance.now() + DRIP_EVERY_MS;
       if (event.pointerType === "touch") hasPointer = false;
       wake();
     };

@@ -136,9 +136,13 @@ test("dragging while held lays grains along the path", async () => {
   move(SIZE * 0.875, POUR_Y);
   await run(2);
   release();
-  await run(80);
+  let widest = 0;
+  for (let i = 0; i < 80; i += 1) {
+    await run(1);
+    widest = Math.max(widest, rowCells(BOTTOM_ROW));
+  }
 
-  expect(rowCells(BOTTOM_ROW)).toBeGreaterThan(SIZE * 0.4);
+  expect(widest).toBeGreaterThan(SIZE * 0.4);
 });
 
 test("a double-tap turns the tray over so grains fall to the top", async () => {
@@ -175,14 +179,46 @@ test("two taps too far apart do not flip", async () => {
   expect(meanRow()).toBeGreaterThanOrEqual(before - 1);
 });
 
-test("a full tray drains to empty on its own within 30 s", async () => {
+test("a full tray takes over a minute to drain, but drains completely within three minutes", async () => {
   await fillTray();
   expect(cells()).toBeGreaterThan(CAPACITY * 0.8);
 
-  await run(seconds(30));
+  await run(seconds(60));
+  expect(cells()).toBeGreaterThan(0);
 
+  await run(seconds(120));
   expect(cells()).toBe(0);
   expect(vi.getTimerCount()).toBe(0);
+});
+
+test("a settled heap asks for no frames between drips, and drips about once a second", async () => {
+  await fillTray();
+  await run(seconds(15));
+  const frames = vi.spyOn(window, "requestAnimationFrame");
+  const heights: number[] = [];
+  let quiet = 0;
+  let longestQuiet = 0;
+  for (let ms = 0; ms < 10_000; ms += FRAME) {
+    const before = frames.mock.calls.length;
+    await run(1);
+    quiet = frames.mock.calls.length === before ? quiet + FRAME : 0;
+    longestQuiet = Math.max(longestQuiet, quiet);
+    if (ms % 500 < FRAME) heights.push(cells());
+  }
+
+  expect(longestQuiet).toBeGreaterThanOrEqual(500);
+  expect(new Set(heights).size).toBeGreaterThanOrEqual(8);
+});
+
+test("after 30 s a draining tray averages at most 8 presents a second", async () => {
+  await fillTray();
+  await run(seconds(30));
+  const frames = vi.spyOn(window, "requestAnimationFrame");
+
+  await run(seconds(30));
+
+  expect(cells()).toBeGreaterThan(0);
+  expect(frames.mock.calls.length / 30).toBeLessThanOrEqual(8);
 });
 
 test("a double-tap tips a full tray out within a few seconds", async () => {
@@ -265,7 +301,7 @@ test("the first interaction ends the dune's protection and everything drains", a
 
   press(MID, POUR_Y);
   release();
-  await run(seconds(30));
+  await run(seconds(40));
 
   expect(cells()).toBe(0);
   expect(vi.getTimerCount()).toBe(0);
@@ -304,7 +340,7 @@ test.each([
 
     viewport = shrunk();
     window.dispatchEvent(new Event("resize"));
-    await run(seconds(30));
+    await run(seconds(150));
 
     expect(cells()).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
