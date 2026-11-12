@@ -12,7 +12,6 @@ import { culture } from "./culture";
 const SIZE = 160;
 const STEP = 1000 / 60;
 const NO_JITTER = () => 0.99;
-const RIM = Math.round(0.4 * 255);
 const CURSOR = Math.round(0.6 * 255);
 
 let canvas: HTMLCanvasElement;
@@ -79,16 +78,7 @@ function population() {
   for (let i = 3; i < pixels.length; i += 4) if (pixels[i] === 255) count += 1;
   return count;
 }
-const rimCells = () => {
-  const found = new Set<number>();
-  const { pixels } = bitmap();
-  for (let i = 0; i < pixels.length / 4; i += 1) {
-    if (pixels[i * 4 + 3] === RIM) found.add(i);
-  }
-  return found;
-};
-
-/** Presses off the dish, so only the path that follows seeds cells. */
+/** Presses in the far corner, so the stamp stays clear of the stroke. */
 async function drawAcross(y: number, from: number, to: number) {
   pointerAt(canvas, "pointermove", from + 0.5, y + 0.5);
   await settle();
@@ -127,15 +117,29 @@ test("generations crawl while a press is held", async () => {
   expect(alive(39, 40)).toBe(false);
 });
 
-test("drawing seeds only cells inside the dish", async () => {
+test("drawing seeds right up to the corners of the visible region", async () => {
   begin();
-  await drawAcross(1, 0, SIZE - 1);
-  expect(population()).toBe(0);
+  await drawAcross(1, 2, SIZE - 1);
+  expect([alive(3, 1), alive(SIZE - 1, 1)]).toEqual([true, true]);
+});
 
-  await drawAcross(40, 0, SIZE - 1);
-  expect(alive(40, 40)).toBe(true);
-  expect(alive(0, 40)).toBe(false);
-  expect(alive(SIZE - 1, 40)).toBe(false);
+test("a colony at the edge dies there instead of wrapping round", async () => {
+  begin();
+  pointerAt(canvas, "pointermove", 0.5, 40.5);
+  await settle();
+  pointerAt(canvas, "pointerdown", 0.5, 0.5, { buttons: 1 });
+  pointerAt(canvas, "pointermove", 0.5, 42.5, { buttons: 1 });
+  await settle();
+  release();
+  expect([40, 41, 42].map((y) => alive(0, y))).toEqual([true, true, true]);
+
+  await frames(10);
+  expect(alive(SIZE - 1, 41)).toBe(false);
+  expect([alive(0, 41), alive(1, 41)]).toEqual([true, true]);
+
+  await frames(20);
+  expect(alive(SIZE - 1, 41)).toBe(false);
+  expect(alive(0, 41)).toBe(false);
 });
 
 test("a tap seeds a small cluster", async () => {
@@ -161,6 +165,19 @@ test("a spore lands once the colony has died and the visitor has been idle", asy
   expect(population()).toBeGreaterThan(0);
 });
 
+test.each([
+  ["top-left", 0.001, 0],
+  ["bottom-right", 0.999, SIZE - 5],
+])("a spore can land in the %s corner of the region", async (_, at, from) => {
+  const picks = [at, at];
+  begin(() => picks.shift() ?? 0.1);
+  await frames(Math.ceil(2700 / 16));
+  const corner = [0, 1, 2, 3, 4].flatMap((y) =>
+    [0, 1, 2, 3, 4].map((x) => alive(from + x, from + y)),
+  );
+  expect(corner).toContain(true);
+});
+
 test("an untouched tab freezes and stops asking for frames", async () => {
   begin(mulberry32(1));
   await vi.advanceTimersByTimeAsync(40_000);
@@ -174,40 +191,28 @@ test("an untouched tab freezes and stops asking for frames", async () => {
   expect(vi.getTimerCount()).toBe(1);
 });
 
-test("the dish follows the visible rect when the window resizes", async () => {
+test("nothing is drawn on an empty colony", async () => {
   begin();
   await frames(2);
-  expect(alphaAt(40, 5)).toBe(RIM * 0);
-  const before = rimCells().size;
-  expect(before).toBeGreaterThan(0);
-
-  viewport = new DOMRect(0, 4 * 17.5, SIZE * 4, 4 * (SIZE - 35));
-  window.dispatchEvent(new Event("resize"));
-  await frames(2);
-
-  expect(rimCells().size).toBeGreaterThan(0);
-  expect(rimCells().has(5 * SIZE + 40)).toBe(false);
-  expect(alphaAt(40, 5)).toBe(0);
-  expect(alphaAt(40, 17)).toBe(0);
+  expect(bitmap().pixels.every((value, i) => i % 4 !== 3 || value === 0)).toBe(
+    true,
+  );
 });
 
-test("the rim is one solid ring of edge-connected cells", async () => {
+test("cells outside the visible region are ignored and cleared on resize", async () => {
   begin();
-  await frames(2);
-  const rim = rimCells();
-  const [start] = rim;
-  const seen = new Set([start]);
-  const queue = [start];
-  for (const i of queue) {
-    for (const j of [i - 1, i + 1, i - SIZE, i + SIZE]) {
-      if (rim.has(j) && !seen.has(j)) {
-        seen.add(j);
-        queue.push(j);
-      }
-    }
-  }
-  expect(rim.size).toBeGreaterThan(0);
-  expect(seen.size).toBe(rim.size);
+  viewport = new DOMRect(4 * 20, 4 * 20, 4 * (SIZE - 40), 4 * (SIZE - 40));
+  window.dispatchEvent(new Event("resize"));
+  await drawAcross(10, 2, 8);
+  expect(population()).toBe(0);
+
+  await drawAcross(40, 30, 36);
+  expect(alive(33, 40)).toBe(true);
+
+  viewport = new DOMRect(4 * 50, 4 * 20, 4 * (SIZE - 70), 4 * (SIZE - 40));
+  window.dispatchEvent(new Event("resize"));
+  await settle();
+  expect(alive(33, 40)).toBe(false);
 });
 
 test("a held drag lays a stroke bolder than one cell", async () => {
@@ -260,7 +265,7 @@ test("a dead cell leaves a trail that fades out", async () => {
   expect(alphaAt(40, 40)).toBe(0);
 });
 
-test("a dish started a minute into the clock is not frozen empty", async () => {
+test("a colony started a minute into the clock is not frozen empty", async () => {
   await vi.advanceTimersByTimeAsync(60_000);
   begin(mulberry32(1));
   await vi.advanceTimersByTimeAsync(10_000);
@@ -279,7 +284,7 @@ test("stop cancels its frame and ignores the pointer from then on", async () => 
   expect(vi.getTimerCount()).toBe(0);
 });
 
-const GOLDEN = 697224690;
+const GOLDEN = -1673793001;
 
 test("a scripted session renders exactly as the full-grid passes would", async () => {
   const size = 240;
