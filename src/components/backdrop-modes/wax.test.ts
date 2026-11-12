@@ -1,10 +1,17 @@
-import { expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { mulberry32 } from "../backdrop-noise";
-import { GRID_SIZE, type BackdropInput, type Point } from "./mode";
+import {
+  installSoftCanvas,
+  place,
+  pointerAt,
+  type SoftBitmap,
+  useFakeFrames,
+} from "../../test/toy-canvas";
+import type { Point } from "./toy";
 import { farCells, renderBlobs, wax } from "./wax";
 
-const columns = GRID_SIZE;
-const rows = GRID_SIZE;
+const columns = 160;
+const rows = 160;
 /** About one gallery tile of glass, so the lamp is as sparse as the prototype's. */
 const span = 54;
 const edge = (columns - span) / 2;
@@ -14,39 +21,68 @@ const visible = {
   right: edge + span,
   bottom: edge + span,
 };
-const STEP = 1000 / 60;
 
-function setup() {
-  const mode = wax.create({
-    columns,
-    rows,
-    random: mulberry32(3),
-    options: {} as never,
-  });
-  const input: BackdropInput = { lastInputAt: 0, visible };
-  const field = new Float32Array(columns * rows);
-  let now = 0;
-  const frame = () => {
-    now += STEP;
-    mode.step(input, now);
-    field.fill(0);
-    mode.render(field);
-    return mode.pace();
-  };
-  const run = (steps: number) => {
-    for (let i = 0; i < steps; i += 1) {
-      input.lastInputAt = now;
-      frame();
-    }
-  };
-  return { mode, input, field, frame, run, jump: (ms: number) => (now += ms) };
+let canvas: HTMLCanvasElement;
+let bitmap: () => SoftBitmap;
+let stop: () => void;
+let view: DOMRect;
+
+/** Measures the small viewport probe as `view`, which `visibleCells` fits the lamp to. */
+function measureViewAs(rect: DOMRect) {
+  view = rect;
+  const measure = HTMLElement.prototype.getBoundingClientRect;
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+    function (this: HTMLElement) {
+      return this instanceof HTMLDivElement ? view : measure.call(this);
+    },
+  );
 }
 
+function mount() {
+  const { plain } = installSoftCanvas();
+  canvas = document.createElement("canvas");
+  Object.assign(canvas, { width: columns, height: rows });
+  place(canvas, new DOMRect(0, 0, columns, rows));
+  document.body.append(canvas);
+  stop = wax.start(canvas);
+  bitmap = () => plain[0];
+}
+
+beforeEach(() => {
+  useFakeFrames();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(3));
+  measureViewAs(new DOMRect(edge, edge, span, span));
+  mount();
+});
+
+afterEach(() => {
+  stop();
+  document.body.replaceChildren();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const run = async (frames: number) => {
+  for (let i = 0; i < frames; i += 1) await vi.advanceTimersByTimeAsync(16);
+};
+
+/** What the lamp has drawn, as the band (alpha over 255) of each cell. */
+function field() {
+  const { pixels } = bitmap();
+  const bands = new Float32Array(columns * rows);
+  for (let i = 0; i < bands.length; i += 1) bands[i] = pixels[i * 4 + 3] / 255;
+  return bands;
+}
+
+const mass = () => field().reduce((sum, value) => sum + value, 0);
+
 /** Centre of the solid wax connected to the solid cell nearest `near`. */
-function blobNear(field: Float32Array, near: Point): Point {
+function blobNear(near: Point): Point {
+  const bands = field();
   let seed = -1;
   let best = Infinity;
-  field.forEach((value, i) => {
+  bands.forEach((value, i) => {
     if (value < 1) return;
     const distance = Math.hypot(
       (i % columns) - near.x,
@@ -69,7 +105,7 @@ function blobNear(field: Float32Array, near: Point): Point {
       queue[i] - columns,
       queue[i] + columns,
     ]) {
-      if (field[next] === 1 && !seen.has(next)) {
+      if (bands[next] === 1 && !seen.has(next)) {
         seen.add(next);
         queue.push(next);
       }
@@ -78,110 +114,138 @@ function blobNear(field: Float32Array, near: Point): Point {
   return { x: sx / queue.length, y: sy / queue.length };
 }
 
-function centroidY(field: Float32Array, from: number, to: number) {
+function centroidY(from: number, to: number) {
+  const bands = field();
   let sum = 0;
-  let mass = 0;
+  let total = 0;
   for (let y = from; y < to; y += 1) {
     for (let x = 0; x < columns; x += 1) {
-      sum += field[y * columns + x] * y;
-      mass += field[y * columns + x];
+      sum += bands[y * columns + x] * y;
+      total += bands[y * columns + x];
     }
   }
-  return sum / mass;
+  return sum / total;
 }
 
 const centre = { x: columns / 2, y: columns / 2 };
 const middle = (visible.top + visible.bottom) / 2;
 
-test("hot wax at the bottom rises while cool wax at the top sinks", () => {
-  const { field, run } = setup();
-  run(1);
-  const bottom = centroidY(field, middle, visible.bottom);
-  const top = centroidY(field, visible.top, middle);
-  run(40);
+test("hot wax at the bottom rises while cool wax at the top sinks", async () => {
+  await run(1);
+  const bottom = centroidY(middle, visible.bottom);
+  const top = centroidY(visible.top, middle);
+  await run(40);
 
-  expect(centroidY(field, middle, visible.bottom)).toBeLessThan(bottom);
-  expect(centroidY(field, visible.top, middle)).toBeGreaterThan(top);
+  expect(centroidY(middle, visible.bottom)).toBeLessThan(bottom);
+  expect(centroidY(visible.top, middle)).toBeGreaterThan(top);
 });
 
-const lit = (field: Float32Array, { x, y }: Point) =>
-  field[Math.floor(y) * columns + Math.floor(x)] === 1;
+const lit = ({ x, y }: Point) =>
+  field()[Math.floor(y) * columns + Math.floor(x)] === 1;
 
 /** Drags the blob nearest the middle across the glass, or just hovers there. */
-function sweep(held: boolean) {
-  const { input, field, run } = setup();
-  run(1);
-  const start = blobNear(field, centre);
+async function sweep(held: boolean) {
+  await run(1);
+  const start = blobNear(centre);
   const direction = start.x < centre.x ? 1 : -1;
-  if (held) input.press = { ...start, at: 0, held: true };
+  if (held) pointerAt(canvas, "pointerdown", start.x, start.y);
+  let pointer = start;
   for (let step = 1; step <= 60; step += 1) {
-    input.pointer = { x: start.x + direction * 0.25 * step, y: start.y };
-    run(1);
+    pointer = { x: start.x + direction * 0.25 * step, y: start.y };
+    pointerAt(canvas, "pointermove", pointer.x, pointer.y);
+    await run(1);
   }
-  return { input, field, run, direction };
+  return { pointer, direction };
 }
 
-test("a press near a blob grabs it and the blob follows the pointer while held", () => {
-  const dragged = sweep(true);
-  expect(lit(dragged.field, dragged.input.pointer!)).toBe(true);
+test("a press near a blob grabs it and the blob follows the pointer while held", async () => {
+  const dragged = await sweep(true);
+  expect(lit(dragged.pointer)).toBe(true);
+  stop();
+  canvas.remove();
 
-  const hovered = sweep(false);
-  expect(lit(hovered.field, hovered.input.pointer!)).toBe(false);
+  mount();
+  const hovered = await sweep(false);
+  expect(lit(hovered.pointer)).toBe(false);
 });
 
-test("letting go mid-drag flings the blob on with its momentum", () => {
-  const flung = (pause: boolean) => {
-    const { input, field, run, direction } = sweep(true);
-    if (pause) run(30);
-    const ahead = {
-      x: input.pointer!.x + direction * 6,
-      y: input.pointer!.y,
-    };
-    input.press!.held = false;
-    input.pointer = undefined;
+test("letting go mid-drag flings the blob on with its momentum", async () => {
+  const flung = async (pause: boolean) => {
+    const { pointer, direction } = await sweep(true);
+    if (pause) await run(30);
+    const ahead = { x: pointer.x + direction * 6, y: pointer.y };
+    pointerAt(canvas, "pointerup", pointer.x, pointer.y);
+    canvas.dispatchEvent(new PointerEvent("pointerleave"));
     let reached = false;
     for (let step = 0; step < 60; step += 1) {
-      run(1);
-      reached ||= lit(field, ahead);
+      await run(1);
+      reached ||= lit(ahead);
     }
     return reached;
   };
 
-  expect(flung(false)).toBe(true);
-  expect(flung(true)).toBe(false);
+  expect(await flung(false)).toBe(true);
+  stop();
+  canvas.remove();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(3));
+  mount();
+  expect(await flung(true)).toBe(false);
 });
 
-test("a tap on empty glass pushes the nearby wax away", () => {
-  const { input, field, run } = setup();
-  run(1);
-  const before = blobNear(field, centre);
+test("a tap on empty glass pushes the nearby wax away", async () => {
+  await run(1);
+  const before = blobNear(centre);
   const tap = { x: before.x + (before.x < centre.x ? -12 : 12), y: before.y };
-  input.press = { ...tap, at: 0, held: false };
-  run(30);
+  pointerAt(canvas, "pointerdown", tap.x, tap.y);
+  pointerAt(canvas, "pointerup", tap.x, tap.y);
+  await run(30);
 
-  const after = blobNear(field, before);
+  const after = blobNear(before);
   expect(Math.hypot(after.x - tap.x, after.y - tap.y)).toBeGreaterThan(
     Math.hypot(before.x - tap.x, before.y - tap.y) + 2,
   );
 });
 
-test("an untouched lamp cools to a stop and a touch warms it again", () => {
-  const { input, field, frame, jump } = setup();
-  for (let i = 0; i < 60; i += 1) frame();
-  expect(frame()).toBe("active");
+test("a finger that has not pressed leaves the wax alone", async () => {
+  await run(1);
+  const before = blobNear(centre);
+  pointerAt(canvas, "pointermove", before.x, before.y, {
+    pointerType: "touch",
+  });
+  await run(1);
 
-  const idle = 60 * 60 * 1000;
-  jump(idle);
-  let pace = frame();
-  for (let i = 0; i < 600 && pace !== "still"; i += 1) pace = frame();
-  expect(pace).toBe("still");
+  expect(vi.getTimerCount()).toBe(1);
+  await vi.advanceTimersByTimeAsync(20_000);
+  expect(vi.getTimerCount()).toBe(0);
+});
 
-  const resting = field.slice();
-  frame();
-  expect(field).toEqual(resting);
+test("an untouched lamp cools to a stop and a touch warms it again", async () => {
+  await run(60);
+  expect(vi.getTimerCount()).toBe(1);
 
-  input.lastInputAt = jump(1);
-  expect(frame()).toBe("active");
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(vi.getTimerCount()).toBe(0);
+
+  const resting = bitmap().pixels.slice();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(bitmap().pixels).toEqual(resting);
+
+  pointerAt(canvas, "pointermove", 10, 10);
+  expect(vi.getTimerCount()).toBe(1);
+});
+
+test("a resize refits the lamp to the glass on screen", async () => {
+  measureViewAs(new DOMRect(edge + 10, edge, 20, span));
+  window.dispatchEvent(new Event("resize"));
+  await run(60);
+
+  const bands = field();
+  const outside = bands.some(
+    (value, i) =>
+      value > 0 && (i % columns < edge + 10 || i % columns >= edge + 30),
+  );
+  expect(outside).toBe(false);
+  expect(mass()).toBeGreaterThan(0);
 });
 
 test("the bounded render matches summing every blob over every cell but for cells on a band edge", () => {
@@ -222,20 +286,28 @@ test("the bounded render matches summing every blob over every cell but for cell
   expect(differing).toBeLessThan(span * span * 0.005);
 });
 
-test("the lamp holds the same few blobs however much glass is visible", () => {
-  const wax_ = (rect: typeof visible) => {
-    const mode = wax.create({
-      columns,
-      rows,
-      random: mulberry32(3),
-      options: {} as never,
-    });
-    const field = new Float32Array(columns * rows);
-    mode.step({ lastInputAt: 0, visible: rect }, 0);
-    mode.render(field);
-    return field.reduce((sum, value) => sum + value, 0);
+test("the lamp holds the same few blobs however much glass is visible", async () => {
+  const massOver = async (rect: DOMRect) => {
+    stop();
+    canvas.remove();
+    vi.spyOn(Math, "random").mockImplementation(mulberry32(3));
+    measureViewAs(rect);
+    mount();
+    await run(1);
+    return mass();
   };
-  const viewport = { left: 0, top: 30, right: columns, bottom: 130 };
+  const tile = await massOver(new DOMRect(edge, edge, span, span));
+  const viewport = await massOver(new DOMRect(0, 30, columns, 100));
 
-  expect(wax_(viewport) / wax_(visible)).toBeLessThan(1.5);
+  expect(viewport / tile).toBeLessThan(1.5);
+});
+
+test("stop cancels its frame and stops listening", () => {
+  pointerAt(canvas, "pointerdown", 80, 80);
+  stop();
+
+  expect(vi.getTimerCount()).toBe(0);
+  pointerAt(canvas, "pointermove", 80, 80);
+  window.dispatchEvent(new Event("resize"));
+  expect(vi.getTimerCount()).toBe(0);
 });
