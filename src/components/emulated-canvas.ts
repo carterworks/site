@@ -462,6 +462,14 @@ export class EmulatedCanvas extends HTMLElement {
   #style?: HTMLStyleElement;
   #nextFrame?: number;
   #idleTimer?: number;
+  /** Whether the last present showed `#output`, rather than the bitmap as is. */
+  #shownImage = false;
+  /** The frame a dissolve wipes away, while it runs. */
+  #dissolveFrom?: Uint8ClampedArray;
+  #dissolveStart?: number;
+  /** Per pixel, the dissolve progress (0–1) at which it shows the new frame. */
+  #threshold = new Float32Array(0);
+  #dissolving = false;
 
   connectedCallback() {
     this.#initialize();
@@ -513,6 +521,29 @@ export class EmulatedCanvas extends HTMLElement {
    */
   present() {
     return this.#blit() !== "still";
+  }
+
+  /**
+   * Freezes the frame on show and wipes the frames drawn after it in over it,
+   * blob by blob through a noise mask, so a change of scene dissolves rather
+   * than cuts. The frozen frame is what was shown, styled and mid-dissolve
+   * included, so nothing jumps. Before the first present there is nothing to
+   * freeze, and the next frame shows at once.
+   */
+  transition() {
+    if (this.#presentedAt === undefined) return;
+    const shown = this.#shownImage
+      ? this.#output?.data
+      : this.#read(this.#bitmap())?.data;
+    if (shown === undefined) return;
+    if (this.#dissolveFrom?.length !== shown.length) {
+      this.#dissolveFrom = new Uint8ClampedArray(shown.length);
+      this.#threshold = dissolveThreshold(this.width, this.height);
+    }
+    this.#dissolveFrom.set(shown);
+    this.#dissolveStart = undefined;
+    this.#dissolving = true;
+    this.#requestPresent();
   }
 
   /** Drops every pass's state, so the next present shows the bitmap opaque. */
@@ -693,14 +724,42 @@ export class EmulatedCanvas extends HTMLElement {
       idle ||= pace === "idle";
     }
 
+    const dissolving =
+      this.#dissolving &&
+      (image ??= this.#pixels(innerCanvas, handed)) !== undefined &&
+      this.#dissolve(image.data, now);
+
+    this.#shownImage = image !== undefined;
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
+    if (dissolving) return "active";
     // A drifting frame can keep a fade more than a level behind on every
     // present, so it never reports settled and would hold full rate for good.
     if (active && (!idle || now - this.#drewAt < DRIFTING_FADE_MS)) {
       return "active";
     }
     return active || idle ? "idle" : "still";
+  }
+
+  /** Shows the frozen frame wherever the dissolve has not reached; false once it is done. */
+  #dissolve(pixels: Uint8ClampedArray, now: number) {
+    const from = this.#dissolveFrom!;
+    this.#dissolveStart ??= now;
+    const progress = (now - this.#dissolveStart) / DISSOLVE_MS;
+    if (progress >= 1) {
+      this.#dissolving = false;
+      return false;
+    }
+    const threshold = this.#threshold;
+    for (let cell = 0, i = 0; cell < threshold.length; cell += 1, i += 4) {
+      if (threshold[cell] >= progress) {
+        pixels[i] = from[i];
+        pixels[i + 1] = from[i + 1];
+        pixels[i + 2] = from[i + 2];
+        pixels[i + 3] = from[i + 3];
+      }
+    }
+    return true;
   }
 
   /**
@@ -750,6 +809,39 @@ export class EmulatedCanvas extends HTMLElement {
     readback.drawImage(source, 0, 0);
     return readback.getImageData(0, 0, source.width, source.height);
   }
+}
+
+const DISSOLVE_MS = 800;
+
+/** Blobs across the dissolve's mask, along its width. */
+const DISSOLVE_BLOBS = 8;
+
+/**
+ * Simplex noise stretched to span 0–1, so a dissolve starts and finishes on
+ * time however the noise happens to fall.
+ */
+function dissolveThreshold(width: number, height: number) {
+  const noise = makeNoise2D(NOISE_SEED);
+  const threshold = new Float32Array(width * height);
+  const frequency = DISSOLVE_BLOBS / width;
+  let low = Infinity;
+  let high = -Infinity;
+  for (let y = 0, i = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1, i += 1) {
+      const value = noise(
+        x * frequency + NOISE_OFFSET_X,
+        y * frequency + NOISE_OFFSET_Y,
+      );
+      threshold[i] = value;
+      low = Math.min(low, threshold[i]);
+      high = Math.max(high, threshold[i]);
+    }
+  }
+  const span = Math.max(high - low, Number.EPSILON);
+  for (let i = 0; i < threshold.length; i += 1) {
+    threshold[i] = (threshold[i] - low) / span;
+  }
+  return threshold;
 }
 
 /** The idle redraw rate, for a pass that only drifts. */

@@ -472,6 +472,68 @@ test("noise drifts with data-noise-speed, and holds still without it", () => {
   expect(presentAfter(1000)).not.toBe(still);
 });
 
+/** How many of the shown pixels are white, and how many black. */
+function census() {
+  const reds = [...shown()].filter((_, i) => i % 4 === 0);
+  return {
+    white: reds.filter((red) => red === 255).length,
+    black: reds.filter((red) => red === 0).length,
+  };
+}
+
+test("a transition freezes the frame on show and wipes the frames after it in, blob by blob, over 800 ms", () => {
+  const canvas = mountCanvas({ width: "32", height: "32" });
+  const context = canvas.getContext("2d")!;
+  context.putImageData(square(32, 255), 0, 0);
+  canvas.present();
+
+  canvas.transition();
+  context.putImageData(square(32, 0), 0, 0);
+
+  expect(canvas.present()).toBe(true);
+  expect(census()).toEqual({ white: 1024, black: 0 });
+
+  clock += 400;
+  expect(canvas.present()).toBe(true);
+  const halfway = census();
+  expect(halfway.white).toBeGreaterThan(100);
+  expect(halfway.black).toBeGreaterThan(100);
+  expect(halfway.white + halfway.black).toBe(1024);
+
+  clock += 400;
+  expect(canvas.present()).toBe(false);
+  expect(census()).toEqual({ white: 0, black: 1024 });
+});
+
+test("a transition before anything was shown has nothing to freeze, so the next frame shows at once", () => {
+  const canvas = mountCanvas({ width: "32", height: "32" });
+  canvas.transition();
+  canvas.getContext("2d")!.putImageData(square(32, 0), 0, 0);
+
+  expect(canvas.present()).toBe(false);
+  expect(display.putImageData).not.toHaveBeenCalled();
+  expect(display.drawImage).toHaveBeenCalledTimes(1);
+});
+
+test("a transition mid-dissolve freezes the mix on show, so nothing jumps", () => {
+  const canvas = mountCanvas({ width: "32", height: "32" });
+  const context = canvas.getContext("2d")!;
+  context.putImageData(square(32, 255), 0, 0);
+  canvas.present();
+  canvas.transition();
+  context.putImageData(square(32, 0), 0, 0);
+  canvas.present();
+  clock += 400;
+  canvas.present();
+  const mix = [...shown()];
+
+  canvas.transition();
+  context.putImageData(square(32, 128), 0, 0);
+  canvas.present();
+
+  expect([...shown()]).toEqual(mix);
+});
+
 describe("presenting on its own", () => {
   beforeEach(() => {
     vi.useFakeTimers({
@@ -684,4 +746,27 @@ describe("presenting drifting noise", () => {
       expect(await presentsOver(1000)).toBeLessThanOrEqual(8);
     }
   });
+});
+
+test("a transition keeps the canvas presenting every frame until the dissolve ends, then stops", async () => {
+  vi.useFakeTimers({
+    toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
+  });
+  try {
+    const canvas = document.createElement("emulated-canvas");
+    Object.assign(canvas.dataset, { width: "8", height: "8" });
+    document.body.replaceChildren(canvas);
+    canvas.getContext("2d")!.putImageData(square(8, 255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+
+    canvas.transition();
+    canvas.getContext("2d")!.putImageData(square(8, 0), 0, 0);
+    display.putImageData.mockClear();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(display.putImageData.mock.calls.length).toBeGreaterThan(40);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    vi.useRealTimers();
+  }
 });
