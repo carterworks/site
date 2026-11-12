@@ -113,15 +113,14 @@ export type ShaderPass = {
  * Builds a pass for one element, so any state it keeps between frames belongs
  * to that element. A pass reads its own knobs from `frame.data`, so a new
  * effect never touches the element: write one, add it to `SHADERS` and
- * document its `data-*` attribute. For example, a two-colour palette:
+ * document its `data-*` attribute. For example, an inverter:
  *
  * ```ts
- * const palette: Shader = () => ({
- *   active: ({ data }) => data.palette !== undefined,
- *   apply(pixels, { data }) {
- *     const [dark, light] = data.palette!.split(",").map(Number);
+ * const invert: Shader = () => ({
+ *   active: ({ data }) => data.invert !== undefined,
+ *   apply(pixels) {
  *     for (let i = 0; i < pixels.length; i += 4)
- *       pixels.fill(pixels[i] < 128 ? dark : light, i, i + 3);
+ *       for (let c = i; c < i + 3; c += 1) pixels[c] = 255 - pixels[c];
  *     return false;
  *   },
  * });
@@ -185,11 +184,83 @@ const ghost: Shader = () => {
   };
 };
 
+type Rgb = [number, number, number];
+
+let rgbContext: CanvasRenderingContext2D | null | undefined;
+
+/** Resolve any CSS colour to `[r, g, b]`. */
+export function colourRgb(value: string): Rgb {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
+  if (hex !== null) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1].replace(/./g, (digit) => digit + digit)
+        : hex[1];
+    return [
+      Number.parseInt(digits.slice(0, 2), 16),
+      Number.parseInt(digits.slice(2, 4), 16),
+      Number.parseInt(digits.slice(4, 6), 16),
+    ];
+  }
+  if (rgbContext === undefined) {
+    rgbContext = document
+      .createElement("canvas")
+      .getContext("2d", { willReadFrequently: true });
+  }
+  if (rgbContext === null) return [0, 0, 0];
+  rgbContext.clearRect(0, 0, 1, 1);
+  rgbContext.fillStyle = value;
+  rgbContext.fillRect(0, 0, 1, 1);
+  const [r, g, b] = rgbContext.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
+}
+
+/**
+ * Recolours the frame in two colours: each pixel's luma, over black, picks its
+ * place on the scale from `data-palette-base` (dark) to `data-palette-ink`
+ * (light), so a consumer can draw in any colour and still show in the theme's.
+ * The scale is a 256-entry table, rebuilt only when a colour changes.
+ */
+const palette: Shader = () => {
+  let colours = "";
+  const table = new Uint8ClampedArray(256 * 3);
+  return {
+    active: ({ data }) =>
+      data.paletteBase !== undefined && data.paletteInk !== undefined,
+    apply(pixels, { data }) {
+      const base = data.paletteBase!;
+      const ink = data.paletteInk!;
+      if (colours !== `${base} ${ink}`) {
+        colours = `${base} ${ink}`;
+        const from = colourRgb(base);
+        const to = colourRgb(ink);
+        for (let level = 0; level < 256; level += 1) {
+          for (let channel = 0; channel < 3; channel += 1) {
+            table[level * 3 + channel] =
+              from[channel] + ((to[channel] - from[channel]) * level) / 255;
+          }
+        }
+      }
+      for (let i = 0; i < pixels.length; i += 4) {
+        // Rec. 709 weights in 256ths, which sum to 256.
+        const luma =
+          (pixels[i] * 54 + pixels[i + 1] * 183 + pixels[i + 2] * 19) >> 8;
+        const entry = (((luma * pixels[i + 3]) / 255) | 0) * 3;
+        pixels[i] = table[entry];
+        pixels[i + 1] = table[entry + 1];
+        pixels[i + 2] = table[entry + 2];
+        pixels[i + 3] = 255;
+      }
+      return false;
+    },
+  };
+};
+
 /**
  * Per-pixel passes over the logical bitmap, in order. To add an effect, write a
  * `Shader` and add it to this list.
  */
-export const SHADERS: Shader[] = [ghost];
+export const SHADERS: Shader[] = [palette, ghost];
 
 /**
  * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
@@ -232,8 +303,11 @@ export type EmulatedCanvasProps = {
  * `data-ghost` (0–100, default 0) emulates an LCD's slow pixel response: it is
  * the percentage of the previous frame the panel keeps per 60 Hz frame, so
  * moving content smears into a fading trail that lasts as long at any refresh
- * rate. It is capped just below 100 so the panel can never freeze. The knobs
- * are live.
+ * rate. It is capped just below 100 so the panel can never freeze.
+ *
+ * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
+ * recolour the frame in two colours, by each pixel's luma: black shows as the
+ * base and white as the ink. The knobs are live.
  *
  * Effects like the ghost are `SHADERS`, an ordered list of per-pixel passes
  * that run on the logical bitmap, never at display resolution, so each costs
@@ -263,6 +337,8 @@ export class EmulatedCanvas extends HTMLElement {
     "data-gap",
     "data-shape",
     "data-ghost",
+    "data-palette-base",
+    "data-palette-ink",
     "data-manual",
   ];
 

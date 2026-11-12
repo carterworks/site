@@ -353,6 +353,70 @@ test("a one-level step settles at once, so a slowly drifting frame lets its owne
   expect(shown()[0]).toBe(101);
 });
 
+/** Puts these RGBA pixels, in a row, as the whole bitmap of `canvas`. */
+function drawRow(canvas: EmulatedCanvas, ...rgba: number[][]) {
+  const data = Uint8ClampedArray.from(rgba.flat());
+  canvas
+    .getContext("2d")
+    ?.putImageData({ width: rgba.length, height: 1, data } as ImageData, 0, 0);
+}
+
+const pixelsShown = () => [...shown()].join(" ");
+
+test("a palette maps each pixel's luma onto the scale from data-palette-base to data-palette-ink, opaque", () => {
+  const canvas = mountCanvas({
+    width: "5",
+    height: "1",
+    paletteBase: "#102030",
+    paletteInk: "#ffffff",
+  });
+  drawRow(
+    canvas,
+    [0, 0, 0, 255],
+    [255, 255, 255, 255],
+    [255, 255, 255, 0],
+    [128, 128, 128, 255],
+    [0, 255, 0, 255],
+  );
+
+  canvas.present();
+
+  const mix = (share: number) =>
+    [0x10, 0x20, 0x30].map((base) => Math.round(base + (255 - base) * share));
+  expect(pixelsShown()).toBe(
+    [
+      [0x10, 0x20, 0x30, 255],
+      [255, 255, 255, 255],
+      [0x10, 0x20, 0x30, 255],
+      [...mix(128 / 255), 255],
+      [...mix(182 / 255), 255],
+    ]
+      .flat()
+      .join(" "),
+  );
+});
+
+test("a palette follows its knobs, and is off without both", () => {
+  const canvas = mountCanvas({
+    width: "1",
+    height: "1",
+    paletteBase: "#000000",
+    paletteInk: "#ff0000",
+  });
+  drawRow(canvas, [255, 255, 255, 255]);
+  canvas.present();
+  expect(pixelsShown()).toBe("255 0 0 255");
+
+  canvas.dataset.paletteInk = "#00ff00";
+  canvas.present();
+  expect(pixelsShown()).toBe("0 255 0 255");
+
+  delete canvas.dataset.paletteInk;
+  display.drawImage.mockClear();
+  canvas.present();
+  expect(display.drawImage).toHaveBeenCalledTimes(1);
+});
+
 describe("presenting on its own", () => {
   beforeEach(() => {
     vi.useFakeTimers({
