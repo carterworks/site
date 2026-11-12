@@ -1,5 +1,5 @@
+import { clamp } from "../../lib/clamp";
 import {
-  clamp,
   fixedStep,
   cellScale,
   pointOn,

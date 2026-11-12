@@ -1,3 +1,5 @@
+import { clamp } from "../../lib/clamp";
+
 /**
  * The 2D context a toy draws with: what a plain canvas's and an
  * `OffscreenCanvas`'s contexts share.
@@ -79,10 +81,6 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
       last = undefined;
     },
   };
-}
-
-export function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 /**

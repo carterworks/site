@@ -1,12 +1,6 @@
+import { clamp } from "../../lib/clamp";
 import { line } from "./line";
-import {
-  clamp,
-  duration,
-  pointOn,
-  TUNED_GRID,
-  type Point,
-  type Toy,
-} from "./toy";
+import { duration, pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
 
 const MAX_RIPPLES = 24;
 
