@@ -1,5 +1,5 @@
 import { RANDOM } from "./backdrop-toy-setting";
-import { MODES } from "./backdrop-toys";
+import { TOYS } from "./backdrop-toys";
 import { imageToy } from "./backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "./site-settings";
@@ -95,7 +95,7 @@ class PlayToolbarElement extends HTMLElement {
     }
 
     toy.replaceChildren(
-      ...[...MODES, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
+      ...[...TOYS, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
         option(label, id),
       ),
       Object.assign(option("Image", "image"), { hidden: true }),
@@ -120,7 +120,7 @@ class PlayToolbarElement extends HTMLElement {
 
     const render = () => {
       toy.value =
-        backdrop()?.mode === "image" ? "image" : settings.backdrop.value();
+        backdrop()?.toy === "image" ? "image" : settings.backdrop.value();
       describe(theme, "Theme", settings.theme.label());
       describe(display, "Display", settings.display.label());
     };

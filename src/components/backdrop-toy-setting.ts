@@ -3,14 +3,14 @@ import {
   storedChoice,
   storeChoice,
 } from "../lib/cycle-setting";
-import { MODES } from "./backdrop-toys";
+import { TOYS } from "./backdrop-toys";
 
-export const MODE_KEY = "backdrop-mode";
+export const TOY_KEY = "backdrop-mode";
 
 export const RANDOM = "random";
-const IDS = MODES.map((mode) => mode.id);
+const IDS = TOYS.map((toy) => toy.id);
 
-const stored = () => storedChoice(MODE_KEY, IDS);
+const stored = () => storedChoice(TOY_KEY, IDS);
 
 /**
  * Picks a random mode on every page load and navigation unless one is stored.
@@ -18,7 +18,7 @@ const stored = () => storedChoice(MODE_KEY, IDS);
  * its mode would otherwise stay put. Random is offered once a mode is stored,
  * and stays offered after choosing it until the next full load.
  */
-export function createBackdropMode(
+export function createBackdropToy(
   random = Math.random,
   events: EventTarget = document,
 ) {
@@ -27,7 +27,7 @@ export function createBackdropMode(
 
   const show = (id: string) => {
     last = id;
-    document.querySelector("pixel-backdrop")?.setMode(id);
+    document.querySelector("pixel-backdrop")?.setToy(id);
   };
 
   const showRandom = () => {
@@ -46,10 +46,10 @@ export function createBackdropMode(
 
   const choose = (id: string) => {
     if (id === RANDOM) {
-      storeChoice(MODE_KEY);
+      storeChoice(TOY_KEY);
       showRandom();
     } else {
-      storeChoice(MODE_KEY, id);
+      storeChoice(TOY_KEY, id);
       show(id);
     }
     offerRandom = true;
@@ -60,7 +60,7 @@ export function createBackdropMode(
     value: current,
     label() {
       const id = current();
-      return MODES.find((mode) => mode.id === id)?.label ?? "Random";
+      return TOYS.find((toy) => toy.id === id)?.label ?? "Random";
     },
     choose,
     cycle() {

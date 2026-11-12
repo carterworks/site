@@ -20,7 +20,7 @@ import type { Toy } from "./toy";
 /**
  * Every backdrop toy, in menu order; the first is the default.
  */
-export const MODES: Toy[] = [
+export const TOYS: Toy[] = [
   shimmer,
   pond,
   pinbed,

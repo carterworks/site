@@ -10,7 +10,7 @@ import {
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import "../pixel-backdrop";
-import { MODES } from ".";
+import { TOYS } from ".";
 
 /**
  * Golden snapshots of what each toy shows under each look, to catch a refactor
@@ -150,7 +150,7 @@ function markup(canvas: HTMLElement, shadow: ShadowRoot) {
   };
 }
 
-for (const { id } of MODES) {
+for (const { id } of TOYS) {
   for (const { name, display, scheme } of LOOKS) {
     test(`${id} on ${name}`, async () => {
       // As the theme toggle sets it; the stubbed OS scheme is light.

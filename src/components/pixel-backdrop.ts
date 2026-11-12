@@ -1,7 +1,7 @@
 import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
-import { MODES } from "./backdrop-toys";
+import { TOYS } from "./backdrop-toys";
 import { duration, TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
 import { isToyPress } from "./backdrop-press";
 
@@ -137,7 +137,7 @@ export class PixelBackdrop extends HTMLElement {
   #schemeObserver = new MutationObserver(() => this.#applyPalette());
   #shownPalette?: string;
   #display?: Display;
-  #chosen = MODES[0];
+  #chosen = TOYS[0];
   /** Stops the running toy; set exactly while one runs. */
   #stopToy?: () => void;
   /** The press a hold began with, until the hold ends. */
@@ -152,7 +152,7 @@ export class PixelBackdrop extends HTMLElement {
   #grabbed = false;
 
   /** The id of the chosen toy, which is the incoming one mid-dissolve. */
-  get mode(): string {
+  get toy(): string {
     return this.#chosen.id;
   }
 
@@ -268,12 +268,12 @@ export class PixelBackdrop extends HTMLElement {
    * (before the canvas exists, disabled, reduced motion) is remembered and
    * starts when one can.
    */
-  setMode(id: string) {
-    const toy = MODES.find((candidate) => candidate.id === id);
+  setToy(id: string) {
+    const toy = TOYS.find((candidate) => candidate.id === id);
     if (toy !== undefined) this.play(toy);
   }
 
-  /** Like `setMode` for a toy the registry does not list. */
+  /** Like `setToy` for a toy the registry does not list. */
   play(toy: Toy) {
     if (toy === this.#chosen) return;
     this.#chosen = toy;

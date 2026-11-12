@@ -17,7 +17,7 @@ import {
   SLOW_TEST_MS,
 } from "../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
-import { MODES } from "./backdrop-toys";
+import { TOYS } from "./backdrop-toys";
 import "./pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
@@ -110,7 +110,7 @@ async function presentsPerSecond(seconds: number) {
   return counts;
 }
 
-describe.each(MODES.map((toy) => [toy.id]))("%s", (id) => {
+describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
   test("presents at most once per animation frame while played", async () => {
     mount(id);
     await play();

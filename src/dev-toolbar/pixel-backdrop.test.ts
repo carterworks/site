@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readDefaults } from "../components/pixel-backdrop";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
-import { MODES } from "../components/backdrop-toys";
-import { MODE_KEY } from "../components/backdrop-toy-setting";
+import { TOYS } from "../components/backdrop-toys";
+import { TOY_KEY } from "../components/backdrop-toy-setting";
 import {
   CONTROLS,
   STORAGE_KEY,
@@ -19,7 +19,7 @@ vi.mock("../components/backdrop-toys", () => {
     start: () => () => {},
   });
   return {
-    MODES: [
+    TOYS: [
       toy("plain"),
       toy("silty", { ghost: 55, noise: 12 }),
       toy("cultured", { ghost: 70, noise: 0 }),
@@ -160,44 +160,44 @@ test("mode select lists every backdrop mode by label, in registry order", () => 
   init(canvas);
 
   const select = canvas.querySelector<StubSelect>(
-    'astro-dev-toolbar-select[aria-label="Mode"]',
+    'astro-dev-toolbar-select[aria-label="Toy"]',
   )!;
   expect(
     [...select.element.options].map((option) => option.textContent),
-  ).toEqual(MODES.map((mode) => mode.label));
+  ).toEqual(TOYS.map((toy) => toy.label));
 });
 
-test("choosing a mode calls setMode without saving a user preference", () => {
+test("choosing a mode calls setToy without saving a user preference", () => {
   const backdrop = mountBackdrop();
-  const setMode = vi.fn();
-  Object.assign(backdrop, { setMode });
+  const setToy = vi.fn();
+  Object.assign(backdrop, { setToy });
   const canvas = document.createElement("div");
   init(canvas);
 
   const select = canvas.querySelector<StubSelect>(
-    'astro-dev-toolbar-select[aria-label="Mode"]',
+    'astro-dev-toolbar-select[aria-label="Toy"]',
   )!;
-  select.element.value = MODES[2].id;
+  select.element.value = TOYS[2].id;
   select.element.dispatchEvent(new Event("change"));
 
-  expect(setMode).toHaveBeenCalledWith(MODES[2].id);
-  expect(localStorage.getItem(MODE_KEY)).toBeNull();
+  expect(setToy).toHaveBeenCalledWith(TOYS[2].id);
+  expect(localStorage.getItem(TOY_KEY)).toBeNull();
   backdrop.remove();
 });
 
-function modeSelect(canvas: HTMLElement) {
+function toySelect(canvas: HTMLElement) {
   return canvas.querySelector<StubSelect>(
-    'astro-dev-toolbar-select[aria-label="Mode"]',
+    'astro-dev-toolbar-select[aria-label="Toy"]',
   )!;
 }
 
 test("mode select opens on the backdrop's current mode", () => {
   const backdrop = mountBackdrop();
-  backdrop.setMode(MODES[2].id);
+  backdrop.setToy(TOYS[2].id);
   const canvas = document.createElement("div");
   init(canvas);
 
-  expect(modeSelect(canvas).element.value).toBe(MODES[2].id);
+  expect(toySelect(canvas).element.value).toBe(TOYS[2].id);
   backdrop.remove();
 });
 
@@ -206,10 +206,10 @@ test("mode select follows the backdrop's mode after a navigation", () => {
   const canvas = document.createElement("div");
   init(canvas);
 
-  backdrop.setMode(MODES[2].id);
+  backdrop.setToy(TOYS[2].id);
   document.dispatchEvent(new Event("astro:page-load"));
 
-  expect(modeSelect(canvas).element.value).toBe(MODES[2].id);
+  expect(toySelect(canvas).element.value).toBe(TOYS[2].id);
   backdrop.remove();
 });
 
@@ -218,7 +218,7 @@ const slider = (canvas: HTMLElement, key: string) =>
 
 test("the ghost and noise sliders open on the shown mode's look", () => {
   const backdrop = mountBackdrop();
-  backdrop.setMode("silty");
+  backdrop.setToy("silty");
   const canvas = document.createElement("div");
   init(canvas);
 
@@ -232,7 +232,7 @@ test("choosing a mode moves the ghost and noise sliders to its look", () => {
   const canvas = document.createElement("div");
   init(canvas);
 
-  const select = modeSelect(canvas);
+  const select = toySelect(canvas);
   select.element.value = "cultured";
   select.element.dispatchEvent(new Event("change"));
 
@@ -243,7 +243,7 @@ test("choosing a mode moves the ghost and noise sliders to its look", () => {
 
 test("a slider tweak overrides the look, and is what persists", async () => {
   const backdrop = mountBackdrop();
-  backdrop.setMode("silty");
+  backdrop.setToy("silty");
   const canvas = document.createElement("div");
   init(canvas);
 

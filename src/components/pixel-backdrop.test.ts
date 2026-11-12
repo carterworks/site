@@ -58,7 +58,7 @@ vi.mock("./backdrop-toys", () => {
       };
     },
   });
-  return { MODES: [probe("probe"), probe("tuned", { ghost: 55, noise: 12 })] };
+  return { TOYS: [probe("probe"), probe("tuned", { ghost: 55, noise: 12 })] };
 });
 
 beforeEach(() => {
@@ -252,7 +252,7 @@ test.each<[string, () => void]>([
     "a navigation",
     () => document.dispatchEvent(new Event("astro:before-swap")),
   ],
-  ["a toy change", () => backdropElement().setMode("tuned")],
+  ["a toy change", () => backdropElement().setToy("tuned")],
   ["disconnect", () => backdropElement().remove()],
   ["disable", () => backdropElement().configure({ enabled: false })],
   ["reduced motion", () => motion.set(true)],
@@ -336,15 +336,15 @@ test("the chosen toy runs while the backdrop is connected, enabled and in motion
   ]);
 });
 
-test("setMode stops the toy, dissolves the canvas and starts the next, and ignores an unknown or the same id", () => {
+test("setToy stops the toy, dissolves the canvas and starts the next, and ignores an unknown or the same id", () => {
   const transition = vi.spyOn(EmulatedCanvas.prototype, "transition");
   const backdrop = mount();
 
-  backdrop.setMode("tuned");
-  backdrop.setMode("tuned");
-  backdrop.setMode("missing");
+  backdrop.setToy("tuned");
+  backdrop.setToy("tuned");
+  backdrop.setToy("missing");
 
-  expect(backdrop.mode).toBe("tuned");
+  expect(backdrop.toy).toBe("tuned");
   expect(seen.log).toEqual(["start probe", "stop probe", "start tuned"]);
   expect(transition).toHaveBeenCalledTimes(1);
 });
@@ -359,18 +359,18 @@ const unlisted: Toy = {
   },
 };
 
-test("play dissolves into a toy outside the registry, and setMode swaps back", () => {
+test("play dissolves into a toy outside the registry, and setToy swaps back", () => {
   const transition = vi.spyOn(EmulatedCanvas.prototype, "transition");
   const backdrop = mount();
 
   backdrop.play(unlisted);
 
-  expect(backdrop.mode).toBe("unlisted");
+  expect(backdrop.toy).toBe("unlisted");
   expect(transition).toHaveBeenCalledTimes(1);
 
-  backdrop.setMode("tuned");
+  backdrop.setToy("tuned");
 
-  expect(backdrop.mode).toBe("tuned");
+  expect(backdrop.toy).toBe("tuned");
   expect(seen.log).toEqual([
     "start probe",
     "stop probe",
@@ -396,13 +396,13 @@ test("a toy chosen while none runs starts once one can, with no dissolve", async
   const transition = vi.spyOn(EmulatedCanvas.prototype, "transition");
   const backdrop = document.createElement("pixel-backdrop");
   document.body.append(backdrop);
-  backdrop.setMode("tuned");
+  backdrop.setToy("tuned");
 
   const canvas = document.createElement("emulated-canvas");
   backdrop.append(canvas);
   await Promise.resolve();
 
-  expect(backdrop.mode).toBe("tuned");
+  expect(backdrop.toy).toBe("tuned");
   expect(seen.log).toEqual(["start tuned"]);
   expect(transition).not.toHaveBeenCalled();
 });
@@ -410,7 +410,7 @@ test("a toy chosen while none runs starts once one can, with no dissolve", async
 test("a toy chosen under reduced motion shows its own look once motion resumes", () => {
   motion.set(true);
   const backdrop = mount();
-  backdrop.setMode("tuned");
+  backdrop.setToy("tuned");
 
   motion.set(false);
 
@@ -459,7 +459,7 @@ test("a toy's look sets the canvas's ghost and noise, and a configured knob wins
   const defaults = readDefaults();
   expect(canvas.dataset.ghost).toBe(String(defaults.ghost));
 
-  backdrop.setMode("tuned");
+  backdrop.setToy("tuned");
   expect(canvas.dataset).toMatchObject({ ghost: "55", noise: "12" });
   expect(backdrop.look).toEqual({ ghost: 55, noise: 12 });
 
@@ -624,7 +624,7 @@ test("a palette knob set through configure outranks the display's", () => {
 
 test("a display's look reaches the canvas, and Site gives back the look it had", () => {
   const backdrop = mount();
-  backdrop.setMode("tuned");
+  backdrop.setToy("tuned");
   const canvas = canvasOf(backdrop);
   const defaults = readDefaults();
 

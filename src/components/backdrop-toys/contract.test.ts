@@ -12,7 +12,7 @@ import {
 import { mulberry32 } from "../backdrop-noise";
 import { MAX_GHOST } from "../emulated-canvas-limits";
 import "../emulated-canvas";
-import { MODES } from ".";
+import { TOYS } from ".";
 import type { Toy, ToyCanvas } from "./toy";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
@@ -145,7 +145,7 @@ test("the allocation count catches a toy that copies a buffer every frame", asyn
 });
 
 test("only registered toys are allowed to rest idle", () => {
-  const ids = MODES.map((toy) => toy.id);
+  const ids = TOYS.map((toy) => toy.id);
   expect(ids).toEqual(
     expect.arrayContaining([
       ...Object.keys(RESTING_IDLE),
@@ -154,7 +154,7 @@ test("only registered toys are allowed to rest idle", () => {
   );
 });
 
-describe.each(MODES.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
+describe.each(TOYS.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
   test("has a look, if any, within 0–100 and under the canvas's ghost cap", () => {
     const { ghost = 0, noise = 0 } = toy.look ?? {};
     expect(ghost).toBeGreaterThanOrEqual(0);

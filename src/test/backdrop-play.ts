@@ -37,7 +37,7 @@ export function mount(
   display = "site",
 ) {
   const backdrop = document.createElement("pixel-backdrop");
-  backdrop.setMode(id);
+  backdrop.setToy(id);
   backdrop.setDisplay(display);
   backdrop.configure(knobs);
   const canvas = document.createElement("emulated-canvas");

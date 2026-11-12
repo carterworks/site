@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
 import { DISPLAYS } from "./backdrop-displays";
-import { createBackdropMode, RANDOM } from "./backdrop-toy-setting";
-import { MODES } from "./backdrop-toys";
+import { createBackdropToy, RANDOM } from "./backdrop-toy-setting";
+import { TOYS } from "./backdrop-toys";
 import "./play-toolbar";
 import { settings } from "./site-settings";
 import { createThemeSetting } from "./theme-setting";
 
 vi.mock("./backdrop-toys", () => ({
-  MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
+  TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
 const markup = `
@@ -30,13 +30,13 @@ const markup = `
 
 let osScheme: "light" | "dark" = "light";
 let osListeners: (() => void)[] = [];
-let mode = "";
-const setMode = vi.fn((id: string) => {
-  mode = id;
+let toyId = "";
+const setToy = vi.fn((id: string) => {
+  toyId = id;
 });
 const setDisplay = vi.fn();
 const play = vi.fn((toy: { id: string }) => {
-  mode = toy.id;
+  toyId = toy.id;
 });
 
 const get = <T extends Element>(selector: string) => {
@@ -79,23 +79,23 @@ function mount() {
   localStorage.clear();
   Object.assign(settings, {
     theme: createThemeSetting(),
-    backdrop: createBackdropMode(() => 0, new EventTarget()),
+    backdrop: createBackdropToy(() => 0, new EventTarget()),
     display: createBackdropDisplay(),
   });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
-  Object.defineProperty(backdrop, "mode", { get: () => mode });
-  Object.assign(backdrop, { setMode, setDisplay, play });
+  Object.defineProperty(backdrop, "toy", { get: () => toyId });
+  Object.assign(backdrop, { setToy, setDisplay, play });
   document.body.append(backdrop);
 }
 
 beforeEach(() => {
   osScheme = "light";
   osListeners = [];
-  mode = MODES[0].id;
-  setMode.mockClear();
+  toyId = TOYS[0].id;
+  setToy.mockClear();
   play.mockClear();
   setDisplay.mockClear();
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -115,7 +115,7 @@ afterEach(() => {
 });
 
 test("the controls show the current values and nothing is stored on load", () => {
-  expect(shownToy()).toBe(MODES[0].label);
+  expect(shownToy()).toBe(TOYS[0].label);
   expect(theme().textContent).toBe("Theme: Light");
   expect(display().textContent).toBe(`Display: ${DISPLAYS[0].label}`);
   expect(localStorage.length).toBe(0);
@@ -134,20 +134,20 @@ test("the toy menu offers every toy, then Random", () => {
   const offered = [...toy().options].filter((option) => !option.hidden);
 
   expect(offered.map((option) => option.value)).toEqual([
-    ...MODES.map((mode) => mode.id),
+    ...TOYS.map((toy) => toy.id),
     RANDOM,
   ]);
   expect(offered.map((option) => option.textContent)).toEqual([
-    ...MODES.map((mode) => mode.label),
+    ...TOYS.map((toy) => toy.label),
     "Random",
   ]);
 });
 
 test("choosing a toy from the menu plays it and keeps it shown", () => {
-  chooseToy(MODES[1].id);
+  chooseToy(TOYS[1].id);
 
-  expect(setMode).toHaveBeenCalledWith(MODES[1].id);
-  expect(shownToy()).toBe(MODES[1].label);
+  expect(setToy).toHaveBeenCalledWith(TOYS[1].id);
+  expect(shownToy()).toBe(TOYS[1].label);
 });
 
 test("choosing Random from the menu shows Random", () => {
@@ -181,9 +181,9 @@ test("choosing a toy after a picture shows it and closes the bitmap", async () =
   choosePicture();
   await settle();
 
-  chooseToy(MODES[1].id);
+  chooseToy(TOYS[1].id);
 
-  expect(shownToy()).toBe(MODES[1].label);
+  expect(shownToy()).toBe(TOYS[1].label);
   expect(picture.close).toHaveBeenCalled();
 });
 
@@ -206,7 +206,7 @@ test("a picture still decoding when a toy is chosen is dropped", async () => {
   decodes(picture);
   choosePicture();
 
-  chooseToy(MODES[1].id);
+  chooseToy(TOYS[1].id);
   await settle();
 
   expect(play).not.toHaveBeenCalled();
@@ -268,7 +268,7 @@ test("choosing a toy clears a failed-decode message", async () => {
   choosePicture();
   await settle();
 
-  chooseToy(MODES[1].id);
+  chooseToy(TOYS[1].id);
 
   expect(status()).toBe("");
 });
@@ -295,7 +295,7 @@ test("a page load re-renders, as the toy is chosen after the bar connects", () =
 
   document.dispatchEvent(new Event("astro:page-load"));
 
-  expect(shownToy()).toBe(MODES[1].label);
+  expect(shownToy()).toBe(TOYS[1].label);
 });
 
 test("the display button cycles the display and shows the new one", () => {

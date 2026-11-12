@@ -1,5 +1,5 @@
 import { defineToolbarApp } from "astro/toolbar";
-import { MODES } from "../components/backdrop-toys";
+import { TOYS } from "../components/backdrop-toys";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   readDefaults,
@@ -163,7 +163,7 @@ type Control =
       choices: Record<string, string>;
     }
   | { kind: "color"; key: ColorKey; label: string }
-  | { kind: "mode"; label: string };
+  | { kind: "toy"; label: string };
 
 const range = (
   key: KeyOf<number>,
@@ -174,12 +174,10 @@ const range = (
   suffix?: string,
 ): Control => ({ kind: "range", key, label, min, max, step, suffix });
 
-const modeChoices = Object.fromEntries(
-  MODES.map((mode) => [mode.id, mode.label]),
-);
+const toyChoices = Object.fromEntries(TOYS.map((toy) => [toy.id, toy.label]));
 
 export const CONTROLS: Control[] = [
-  { kind: "mode", label: "Mode" },
+  { kind: "toy", label: "Toy" },
   { kind: "toggle", key: "enabled", label: "Enabled" },
   { kind: "toggle", key: "autoFit", label: "Fit viewport", disables: "scale" },
   range("scale", "Scale", 1, 64, 1),
@@ -284,16 +282,16 @@ function addControl(
       update({ [control.key]: toggle.input.checked });
       syncDisabled();
     });
-  } else if (control.kind === "mode") {
+  } else if (control.kind === "toy") {
     output.remove();
     // Not persisted: the dev picker is for tuning, not a user preference.
-    const select = addSelect(cell, control.label, modeChoices);
+    const select = addSelect(cell, control.label, toyChoices);
     // Modes are random per navigation, so the select must not assume one.
     refreshers.push(() => {
-      select.value = backdrop()?.mode ?? select.value;
+      select.value = backdrop()?.toy ?? select.value;
     });
     select.addEventListener("change", () => {
-      backdrop()?.setMode(select.value);
+      backdrop()?.setToy(select.value);
       for (const refresh of refreshers) refresh();
     });
   } else {
