@@ -251,6 +251,53 @@ test("turning the ghost off and on again starts the panel from the current frame
   expect([...shown()]).toEqual([0, 0, 0, 255]);
 });
 
+test("data-ghost-rise and data-ghost-fall set the brightening and darkening response apart", () => {
+  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "70" });
+  draw(canvas, 0);
+  canvas.present();
+
+  draw(canvas, 255);
+  presentFor(canvas, 1000 / 60, 60);
+  expect(shown()[0]).toBe(255);
+
+  draw(canvas, 0);
+  presentFor(canvas, 1000 / 60, 60);
+  expect(Math.abs(shown()[0] - 255 * 0.7)).toBeLessThanOrEqual(1);
+});
+
+test("data-ghost-rise and data-ghost-fall each default to data-ghost", () => {
+  const canvas = mountCanvas({ ghost: "70", ghostRise: "0" });
+  draw(canvas, 255);
+  canvas.present();
+
+  draw(canvas, 0);
+  presentFor(canvas, 1000 / 60, 60);
+
+  expect(Math.abs(shown()[0] - 255 * 0.7)).toBeLessThanOrEqual(1);
+});
+
+test("a pixel brightening overall rises in every channel, even one that darkens", () => {
+  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "90" });
+  drawRow(canvas, [200, 0, 0, 255]);
+  canvas.present();
+
+  drawRow(canvas, [0, 255, 0, 255]);
+  presentFor(canvas, 1000 / 60, 60);
+
+  expect(pixelsShown()).toBe("0 255 0 255");
+});
+
+test("an instant response with no time elapsed lands on the frame, not NaN", () => {
+  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "70" });
+  draw(canvas, 0);
+  canvas.present();
+
+  draw(canvas, 255);
+  canvas.present();
+
+  expect([...shown()]).toEqual([255, 255, 255, 255]);
+});
+
 test.each([
   ["scale", "x", "var(--emulated-canvas-scale, 1px)"],
   ["scale", "0", "var(--emulated-canvas-scale, 1px)"],

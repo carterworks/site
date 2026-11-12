@@ -146,10 +146,21 @@ export type Shader = () => ShaderPass;
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
-/** `data-ghost` as the share of the previous frame kept per 60 Hz frame. */
-function retention({ ghost }: DOMStringMap) {
+/** A `data-ghost` percentage as the share of the previous frame kept per 60 Hz frame. */
+function retention(ghost: string | undefined) {
   const percent = Number.parseInt(ghost ?? "");
   return Number.isFinite(percent) ? clamp(percent / 100, 0, MAX_GHOST) : 0;
+}
+
+/** Retention r per 60 Hz frame is the same curve as τ = -frame / ln r. */
+function timeConstant(retained: number) {
+  return SIXTY_HZ_FRAME_MS / -Math.log(retained);
+}
+
+/** The share of the way to its target a channel moves in `elapsedMs`. */
+function response(tau: number, elapsedMs: number) {
+  // No retention gives τ = 0, and 0 / 0 at no elapsed time would be NaN.
+  return tau > 0 ? 1 - Math.exp(-elapsedMs / tau) : 1;
 }
 
 /**
@@ -167,18 +178,26 @@ const SETTLED_LEVELS = 1;
  * trail the same length at any refresh rate, and keeping the state in floats
  * lets it land on the frame exactly instead of stalling a few 8-bit steps
  * short.
+ *
+ * Real panels brighten and darken at different speeds, so a pixel getting
+ * brighter overall follows the rise curve in every channel and one getting
+ * darker the fall curve. Choosing per pixel rather than per channel keeps a
+ * colour change from splitting into a fast and a slow channel.
  */
 const ghost: Shader = () => {
   let panel: Float32Array | undefined;
-  let tau = 0;
-  let retained = 0;
+  let riseTau = 0;
+  let fallTau = 0;
+  let active = false;
   return {
     configure(data) {
-      retained = retention(data);
-      // Retention r per 60 Hz frame is the same curve as τ = -frame / ln r.
-      tau = SIXTY_HZ_FRAME_MS / -Math.log(retained);
+      const rise = retention(data.ghostRise ?? data.ghost);
+      const fall = retention(data.ghostFall ?? data.ghost);
+      riseTau = timeConstant(rise);
+      fallTau = timeConstant(fall);
+      active = rise > 0 || fall > 0;
     },
-    active: () => retained > 0,
+    active: () => active,
     apply(pixels, { elapsedMs }) {
       if (panel?.length !== pixels.length) {
         // Seed the panel with this frame so it starts opaque; otherwise a high
@@ -186,17 +205,24 @@ const ghost: Shader = () => {
         panel = Float32Array.from(pixels);
         return "still";
       }
-      const response = 1 - Math.exp(-elapsedMs / tau);
+      const rise = response(riseTau, elapsedMs);
+      const fall = response(fallTau, elapsedMs);
       let changing = false;
-      for (let i = 0; i < pixels.length; i += 1) {
-        const target = pixels[i];
-        const level = panel[i] + (target - panel[i]) * response;
-        if (Math.abs(target - level) < SETTLED_LEVELS) {
-          panel[i] = target;
-        } else {
-          panel[i] = level;
-          pixels[i] = level;
-          changing = true;
+      for (let pixel = 0; pixel < pixels.length; pixel += 4) {
+        const brightening =
+          pixels[pixel] + pixels[pixel + 1] + pixels[pixel + 2] >
+          panel[pixel] + panel[pixel + 1] + panel[pixel + 2];
+        const share = brightening ? rise : fall;
+        for (let i = pixel; i < pixel + 4; i += 1) {
+          const target = pixels[i];
+          const level = panel[i] + (target - panel[i]) * share;
+          if (Math.abs(target - level) < SETTLED_LEVELS) {
+            panel[i] = target;
+          } else {
+            panel[i] = level;
+            pixels[i] = level;
+            changing = true;
+          }
         }
       }
       return changing ? "active" : "still";
@@ -429,6 +455,8 @@ export type EmulatedCanvasProps = {
  * the percentage of the previous frame the panel keeps per 60 Hz frame, so
  * moving content smears into a fading trail that lasts as long at any refresh
  * rate. It is capped just below 100 so the panel can never freeze.
+ * `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting to
+ * `data-ghost`) set it apart for pixels getting brighter and darker.
  *
  * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
  * recolour the frame in two colours, by each pixel's luma: black shows as the
@@ -468,6 +496,8 @@ export class EmulatedCanvas extends HTMLElement {
     "data-gap",
     "data-shape",
     "data-ghost",
+    "data-ghost-rise",
+    "data-ghost-fall",
     "data-palette-base",
     "data-palette-ink",
     "data-palette-levels",
