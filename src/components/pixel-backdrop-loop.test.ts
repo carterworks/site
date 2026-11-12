@@ -599,6 +599,170 @@ test("a press on a link never suppresses selection", () => {
   expect(holding()).toBe(false);
 });
 
+const FINGER = 7;
+const LONG_PRESS = 300;
+
+const fingerDown = (target: EventTarget = document.body) =>
+  press(target, { pointerType: "touch", pointerId: FINGER });
+
+const finger = (type: string, init: PointerEventInit = {}) =>
+  window.dispatchEvent(
+    new PointerEvent(type, {
+      pointerType: "touch",
+      pointerId: FINGER,
+      clientX: 100,
+      clientY: 100,
+      ...init,
+    }),
+  );
+
+/** Whether the page's scroll for a touchmove would be blocked. */
+function scrollBlocked() {
+  const move = new TouchEvent("touchmove", { bubbles: true, cancelable: true });
+  document.body.dispatchEvent(move);
+  return move.defaultPrevented;
+}
+
+const touchEnd = (type: string) =>
+  document.body.dispatchEvent(new TouchEvent(type, { bubbles: true }));
+
+test("a still long-press in empty space grabs a hold mode, and its drag reaches the mode as the pointer", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  finger("pointermove", { clientX: 200, clientY: 300 });
+
+  const input = await latestInput();
+  expect(input.press).toMatchObject({ held: true });
+  expect(input.pointer).toEqual({
+    x: expect.closeTo(20, 0),
+    y: expect.closeTo(30, 0),
+  });
+  expect(holding()).toBe(true);
+});
+
+test("a touch on a hold mode reaches it only once it is a long-press or a tap", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(100);
+  expect(probe.input!.press).toBeUndefined();
+
+  finger("pointerup");
+
+  expect((await latestInput()).press).toMatchObject({ held: false });
+  expect(holding()).toBe(false);
+});
+
+test("a touch that moves before the long-press is a scroll: it never grabs nor blocks it", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  finger("pointermove", { clientY: 115 });
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  expect(scrollBlocked()).toBe(false);
+  expect((await latestInput()).press).toBeUndefined();
+  expect(holding()).toBe(false);
+});
+
+test("a grabbed touch blocks the page's scroll until it is released", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+  expect(scrollBlocked()).toBe(true);
+
+  finger("pointerup");
+
+  expect(scrollBlocked()).toBe(false);
+});
+
+test("a non-hold mode never grabs a touch", async () => {
+  mount();
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+  finger("pointermove", { clientX: 200 });
+
+  expect(scrollBlocked()).toBe(false);
+  expect((await latestInput()).pointer).toBeUndefined();
+});
+
+test("a long-press on a link or on text never grabs", async () => {
+  mount().setMode("silt");
+  const link = document.createElement("a");
+  document.body.append(link);
+  fingerDown(link);
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+  expect(scrollBlocked()).toBe(false);
+  finger("pointerup");
+
+  const text = document.createTextNode("words");
+  Object.defineProperty(document, "caretPositionFromPoint", {
+    value: () => ({ offsetNode: text, offset: 0 }),
+    configurable: true,
+  });
+  vi.spyOn(Range.prototype, "getClientRects").mockReturnValue([
+    new DOMRect(0, 0, 200, 200),
+  ] as unknown as DOMRectList);
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  expect(scrollBlocked()).toBe(false);
+  expect((await latestInput()).press).toBeUndefined();
+});
+
+const touchHoldEnds: [string, () => void][] = [
+  ["pointerup", () => finger("pointerup")],
+  ["pointercancel", () => finger("pointercancel")],
+  ["touchend", () => touchEnd("touchend")],
+  ["touchcancel", () => touchEnd("touchcancel")],
+  ["window blur", () => window.dispatchEvent(new Event("blur"))],
+  ["a mode switch", () => backdropElement().setMode("pond")],
+  ["disconnect", () => backdropElement().remove()],
+  ["disable", () => backdropElement().configure({ enabled: false })],
+];
+
+test.each(touchHoldEnds)("%s lets go of a grabbed touch", async (_, end) => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  end();
+
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
+  expect(probe.input!.press?.held).not.toBe(true);
+});
+
+test.each(touchHoldEnds)(
+  "%s stops a touch from grabbing later",
+  async (_, end) => {
+    mount().setMode("silt");
+    fingerDown();
+
+    end();
+    await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+    expect(scrollBlocked()).toBe(false);
+    expect(holding()).toBe(false);
+  },
+);
+
+test("a second finger lifting does not let go of a grabbed touch", async () => {
+  mount().setMode("silt");
+  fingerDown();
+  await vi.advanceTimersByTimeAsync(LONG_PRESS);
+
+  document.body.dispatchEvent(
+    new TouchEvent("touchend", {
+      bubbles: true,
+      touches: [new Touch({ identifier: 0, target: document.body })],
+    }),
+  );
+  finger("pointerup", { pointerId: FINGER + 1 });
+
+  expect(scrollBlocked()).toBe(true);
+});
+
 test("a mode requested before the canvas exists applies once it arrives", async () => {
   const backdrop = document.createElement("pixel-backdrop");
   document.body.append(backdrop);

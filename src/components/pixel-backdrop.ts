@@ -8,6 +8,7 @@ import {
   type Look,
   type Mode,
   type ModeInstance,
+  type Point,
 } from "./backdrop-modes/mode";
 import { isToyPress } from "./backdrop-press";
 import { makeCoarseNoise, makeNoise2D, mulberry32 } from "./backdrop-noise";
@@ -103,8 +104,21 @@ export function readDefaults(): PixelBackdropOptions {
   ) as PixelBackdropOptions;
 }
 
-/** Set on `<html>` for the length of a hold; the stylesheet turns it into `user-select: none`. */
+/**
+ * Set on `<html>` for the length of a hold; the stylesheet turns off text
+ * selection, the touch callout and overscroll for it.
+ */
 const HOLDING = "data-backdrop-holding";
+
+/**
+ * How long a touch on a hold mode must stay put to grab the toy. Touch is how
+ * the page scrolls, so a finger only takes the toy once it is clearly not
+ * scrolling, and well before iOS's own long-press.
+ */
+const GRAB_MS = 250;
+
+/** How far, in CSS pixels, a waiting touch may drift before it counts as a scroll. */
+const GRAB_SLOP = 10;
 
 const STEP = 1000 / 60;
 
@@ -295,6 +309,10 @@ export class PixelBackdrop extends HTMLElement {
    */
   #inputPending = false;
   #holdPointer?: number;
+  /** A touch on a hold mode waiting out `GRAB_MS`: where it went down. */
+  #waiting?: { point: Point; clientX: number; clientY: number; timer: number };
+  /** A touch that has grabbed a hold mode: its moves drive the toy and never scroll. */
+  #grabbed = false;
   #input: BackdropInput = {
     lastInputAt: -Infinity,
     visible: { left: 0, top: 0, right: 0, bottom: 0 },
@@ -372,6 +390,11 @@ export class PixelBackdrop extends HTMLElement {
       passive: true,
     });
     window.addEventListener("blur", this.#endHold, { passive: true });
+    // Not passive, as blocking a scroll is its job. Registered up front:
+    // browsers decide whether a touch may block scrolling as it begins.
+    window.addEventListener("touchmove", this.#onTouchMove, { passive: false });
+    window.addEventListener("touchend", this.#onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", this.#onTouchEnd, { passive: true });
     document.addEventListener("selectionchange", this.#onSelectionChange, {
       passive: true,
     });
@@ -396,6 +419,9 @@ export class PixelBackdrop extends HTMLElement {
     window.removeEventListener("pointerup", this.#onPointerEnd);
     window.removeEventListener("pointercancel", this.#onPointerEnd);
     window.removeEventListener("blur", this.#endHold);
+    window.removeEventListener("touchmove", this.#onTouchMove);
+    window.removeEventListener("touchend", this.#onTouchEnd);
+    window.removeEventListener("touchcancel", this.#onTouchEnd);
     document.removeEventListener("selectionchange", this.#onSelectionChange);
     window.removeEventListener("resize", this.#onResize);
     document.removeEventListener("mouseleave", this.#onPointerLeave);
@@ -794,8 +820,11 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   #onPointerMove = (event: PointerEvent) => {
-    // Touch has no hover; taps alone are presses.
-    if (event.pointerType === "touch") return;
+    // Touch has no hover: only a grabbed finger moves the pointer.
+    if (event.pointerType === "touch") {
+      this.#onFingerMove(event);
+      return;
+    }
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
     this.#input.pointer = point;
@@ -813,20 +842,80 @@ export class PixelBackdrop extends HTMLElement {
     this.#wake();
   };
 
-  /** A new object per press, so a mode tells presses apart by identity. */
   #onPointerDown = (event: PointerEvent) => {
     if (!isToyPress(event)) return;
     const point = this.#logical(event.clientX, event.clientY);
     if (point === undefined) return;
-    this.#input.press = { ...point, at: this.#time, held: true };
     this.#holdPointer = event.pointerId;
-    if (this.#chosen.holds) this.#suppressSelection();
-    this.#touched();
+    if (this.#chosen.holds && event.pointerType === "touch") {
+      clearTimeout(this.#waiting?.timer);
+      const { clientX, clientY } = event;
+      const timer = window.setTimeout(this.#grab, GRAB_MS);
+      this.#waiting = { point, clientX, clientY, timer };
+      return;
+    }
+    this.#press(point, true);
   };
+
+  /** A new object per press, so a mode tells presses apart by identity. */
+  #press(point: Point, held: boolean) {
+    this.#input.press = { ...point, at: this.#time, held };
+    if (held && this.#chosen.holds) this.#suppressSelection();
+    this.#touched();
+  }
+
+  #grab = () => {
+    const waiting = this.#waiting;
+    if (waiting === undefined) return;
+    this.#waiting = undefined;
+    this.#grabbed = true;
+    this.#press(waiting.point, true);
+  };
+
+  #onFingerMove(event: PointerEvent) {
+    if (event.pointerId !== this.#holdPointer) return;
+    const waiting = this.#waiting;
+    if (waiting !== undefined) {
+      const drift = Math.hypot(
+        event.clientX - waiting.clientX,
+        event.clientY - waiting.clientY,
+      );
+      if (drift > GRAB_SLOP) this.#endHold();
+      return;
+    }
+    if (!this.#grabbed) return;
+    const point = this.#logical(event.clientX, event.clientY);
+    if (point === undefined) return;
+    this.#input.pointer = point;
+    this.#touched();
+  }
 
   /** Only the pointer that began the hold may end it; another finger lifting must not. */
   #onPointerEnd = (event: PointerEvent) => {
-    if (event.pointerId === this.#holdPointer) this.#endHold();
+    if (event.pointerId === this.#holdPointer) {
+      this.#release(event.type === "pointerup");
+    }
+  };
+
+  /**
+   * A touch hold's backstop for `pointerup` and `pointercancel`. Touches carry
+   * no pointer id, so it waits for the last finger to lift.
+   */
+  #onTouchEnd = (event: TouchEvent) => {
+    if (this.#waiting === undefined && !this.#grabbed) return;
+    if (event.touches.length === 0) this.#release(event.type === "touchend");
+  };
+
+  /** A touch lifted before it could grab is a tap: a press already released. */
+  #release(lifted: boolean) {
+    const waiting = this.#waiting;
+    this.#endHold();
+    if (waiting !== undefined && lifted) this.#press(waiting.point, false);
+  }
+
+  /** In iOS Safari only this stops a touch scroll and its overscroll bounce; pointer events and `touch-action` on the page can't. */
+  #onTouchMove = (event: TouchEvent) => {
+    if (this.#grabbed && event.cancelable) event.preventDefault();
   };
 
   /**
@@ -834,6 +923,12 @@ export class PixelBackdrop extends HTMLElement {
    * blur, where the release would never arrive.
    */
   #endHold = () => {
+    clearTimeout(this.#waiting?.timer);
+    this.#waiting = undefined;
+    if (this.#grabbed) {
+      this.#grabbed = false;
+      this.#input.pointer = undefined;
+    }
     if (this.#input.press !== undefined) this.#input.press.held = false;
     document.documentElement.removeAttribute(HOLDING);
   };
