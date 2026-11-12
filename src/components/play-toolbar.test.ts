@@ -20,7 +20,11 @@ const markup = `
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
     <p role="status" data-status></p>
-    <p data-fps></p>
+    <div data-fps hidden>
+      <p data-fps-rate></p>
+      <p data-fps-low></p>
+      <svg><polyline data-fps-history /></svg>
+    </div>
   </play-toolbar>
 `;
 
@@ -301,20 +305,70 @@ test("the display button cycles the display and shows the new one", () => {
   expect(display().textContent).toBe(`Display: ${DISPLAYS[1].label}`);
 });
 
-test("the frame rate is shown each half second, from the frames between", () => {
+const runFrames = () => {
   const frames: FrameRequestCallback[] = [];
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
     frames.push(callback),
   );
   vi.stubGlobal("cancelAnimationFrame", () => frames.splice(0));
   mount();
-  const fps = get("[data-fps]");
+  let now = 0;
+  frames.shift()?.(now);
+  return (...gaps: number[]) => {
+    for (const gap of gaps) frames.shift()?.((now += gap));
+  };
+};
+const repeat = (times: number, gap: number) => Array<number>(times).fill(gap);
+const rate = () => get("[data-fps-rate]").textContent;
+const low = () => get("[data-fps-low]").textContent;
+const history = () => get("[data-fps-history]").getAttribute("points");
 
-  for (let at = 0; at <= 500; at += 20) frames.shift()?.(at);
-  expect(fps.textContent).toBe("50 fps");
+test("the frame rate is shown each half second, from the frames between", () => {
+  const frame = runFrames();
+  expect(get<HTMLElement>("[data-fps]").hidden).toBe(true);
 
-  for (let at = 525; at <= 1000; at += 25) frames.shift()?.(at);
-  expect(fps.textContent).toBe("40 fps");
+  frame(...repeat(25, 20));
+  expect(get<HTMLElement>("[data-fps]").hidden).toBe(false);
+  expect(rate()).toBe("50 fps");
+
+  frame(...repeat(20, 25));
+  expect(rate()).toBe("40 fps");
+});
+
+test("the 1% low averages the slowest hundredth of recent frames", () => {
+  const frame = runFrames();
+
+  frame(...repeat(25, 20));
+  expect(low()).toBe("1% low 50");
+
+  frame(100, ...repeat(20, 20));
+  expect(low()).toBe("1% low 10");
+});
+
+test("the 1% low forgets frames older than 30s", () => {
+  const frame = runFrames();
+
+  frame(1000, ...repeat(58, 500), 500);
+  expect(low()).toBe("1% low 1");
+
+  frame(500);
+  expect(low()).toBe("1% low 2");
+});
+
+test("the sparkline steps through each half second's rate, scaled to the peak", () => {
+  const frame = runFrames();
+
+  frame(...repeat(25, 20), ...repeat(20, 25));
+
+  expect(history()).toBe("58,0 59,0 59,0.2 60,0.2");
+});
+
+test("the sparkline keeps only the last 30s", () => {
+  const frame = runFrames();
+
+  frame(...repeat(25 * 61, 20));
+
+  expect(history()?.split(" ")).toHaveLength(120);
 });
 
 test("the frame counter stops when the toolbar leaves", () => {

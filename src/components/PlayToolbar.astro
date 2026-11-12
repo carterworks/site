@@ -9,7 +9,13 @@
     <p class="paused-notice">Toys are paused for reduced motion.</p>
     <p role="status" data-status></p>
   </div>
-  <p class="fps" data-fps></p>
+  <div class="fps" data-fps hidden>
+    <p data-fps-rate></p>
+    <p data-fps-low></p>
+    <svg viewBox="0 0 60 1" preserveAspectRatio="none" aria-hidden="true">
+      <polyline data-fps-history></polyline>
+    </svg>
+  </div>
 </play-toolbar>
 
 <script>
@@ -85,16 +91,38 @@
   .fps {
     background: var(--color-bg);
     border-radius: var(--size-xs);
+    display: grid;
     font-variant-numeric: tabular-nums;
+    gap: 0.125rem;
     inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto
       auto;
-    margin: 0;
+    justify-items: end;
     padding: var(--size-2xs) var(--size-xs);
     position: fixed;
   }
 
-  .fps:empty {
+  .fps[hidden] {
     display: none;
+  }
+
+  .fps p {
+    margin: 0;
+  }
+
+  .fps svg {
+    background: color-mix(in oklch, currentColor 12%, transparent);
+    block-size: 1.25rem;
+    inline-size: 6rem;
+    margin-block-start: 0.25rem;
+    overflow: visible;
+  }
+
+  polyline {
+    fill: none;
+    shape-rendering: crispEdges;
+    stroke: currentColor;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
   }
 
   :is(button, a):focus-visible,

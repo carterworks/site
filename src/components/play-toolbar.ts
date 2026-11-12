@@ -9,6 +9,72 @@ const option = (label: string, value: string) =>
     value,
   });
 
+const SAMPLE_MS = 500;
+const HISTORY_MS = 30_000;
+const SLOTS = HISTORY_MS / SAMPLE_MS;
+
+/**
+ * Shows the frame rate each half second, with the 1% low and a sparkline of
+ * the last 30s. Returns a function that stops it.
+ */
+const meterFrames = (meter: HTMLElement) => {
+  const rate = meter.querySelector("[data-fps-rate]");
+  const low = meter.querySelector("[data-fps-low]");
+  const history = meter.querySelector("[data-fps-history]");
+  if (!rate || !low || !history) return () => {};
+
+  const recent: { at: number; ms: number }[] = [];
+  const rates: number[] = [];
+  let counted = 0;
+  let since: number | undefined;
+  let last: number | undefined;
+
+  const show = (now: number, elapsed: number) => {
+    while (recent[0] && recent[0].at <= now - HISTORY_MS) recent.shift();
+    rates.push((counted * 1000) / elapsed);
+    if (rates.length > SLOTS) rates.shift();
+
+    const slowest = recent
+      .map(({ ms }) => ms)
+      .sort((a, b) => b - a)
+      .slice(0, Math.ceil(recent.length / 100));
+    const slowestTotal = slowest.reduce((sum, ms) => sum + ms, 0);
+    const peak = Math.max(...rates);
+
+    rate.textContent = `${Math.round(rates.at(-1) ?? 0)} fps`;
+    low.textContent = `1% low ${Math.round((slowest.length * 1000) / slowestTotal)}`;
+    history.setAttribute(
+      "points",
+      rates
+        .flatMap((value, index) => {
+          const x = SLOTS - rates.length + index;
+          const y = (peak - value) / peak;
+          return [`${x},${y}`, `${x + 1},${y}`];
+        })
+        .join(" "),
+    );
+    meter.hidden = false;
+  };
+
+  let frame = 0;
+  const count = (now: number) => {
+    if (last !== undefined && now > last) {
+      recent.push({ at: now, ms: now - last });
+      counted += 1;
+    }
+    last = now;
+    since ??= now;
+    if (now - since >= SAMPLE_MS) {
+      show(now, now - since);
+      counted = 0;
+      since = now;
+    }
+    frame = requestAnimationFrame(count);
+  };
+  frame = requestAnimationFrame(count);
+  return () => cancelAnimationFrame(frame);
+};
+
 class PlayToolbarElement extends HTMLElement {
   cleanup?: () => void;
 
@@ -102,20 +168,7 @@ class PlayToolbarElement extends HTMLElement {
       render();
     });
 
-    let frames = 0;
-    let since: number | undefined;
-    let frame = 0;
-    const count = (now: number) => {
-      since ??= now;
-      if (now > since) frames += 1;
-      if (now - since >= 500) {
-        fps.textContent = `${Math.round((frames * 1000) / (now - since))} fps`;
-        frames = 0;
-        since = now;
-      }
-      frame = requestAnimationFrame(count);
-    };
-    frame = requestAnimationFrame(count);
+    const stopMeter = meterFrames(fps);
 
     // The label alone follows the OS; storage is never touched by it. The
     // toy is chosen on page load, after this connects.
@@ -123,7 +176,7 @@ class PlayToolbarElement extends HTMLElement {
     osScheme.addEventListener("change", render);
     document.addEventListener("astro:page-load", render);
     this.cleanup = () => {
-      cancelAnimationFrame(frame);
+      stopMeter();
       osScheme.removeEventListener("change", render);
       document.removeEventListener("astro:page-load", render);
       // The backdrop keeps redrawing the picture on resize until the next
