@@ -139,6 +139,39 @@ test("dragging with a press held leaves a wake that hovering does not", () => {
   expect(wake(true)).toBeGreaterThan(wake(false));
 });
 
+const DRAG_FRAMES = 100;
+
+function dragIn(events: number, distance: number) {
+  const { input, field, press, frame, energy } = setup();
+  const startX = size / 4;
+  input.pointer = { x: startX, y: middle };
+  press(startX, middle);
+  frame();
+  let total = 0;
+  let peak = 0;
+  for (let f = 1; f <= DRAG_FRAMES; f += 1) {
+    if (f % (DRAG_FRAMES / events) === 0) {
+      input.lastInputAt = f * STEP;
+      input.pointer = { x: startX + (distance * f) / DRAG_FRAMES, y: middle };
+    }
+    frame();
+    total += energy();
+    peak = Math.max(peak, ...field);
+  }
+  return { total, peak };
+}
+
+test("a drag injects the same energy however many events deliver it", () => {
+  const coarse = dragIn(10, 10).total;
+  const fine = dragIn(100, 10).total;
+
+  expect(Math.abs(fine - coarse) / coarse).toBeLessThan(0.2);
+});
+
+test("a long drag never piles the water up to full strength", () => {
+  expect(dragIn(100, 100).peak).toBeLessThan(0.75);
+});
+
 test("idle rain lands inside the visible rect and rests between drops", () => {
   const { frame, field } = setup();
   let drops = 0;
@@ -240,7 +273,7 @@ test("a scripted session paints the same frames as the unbounded pond", () => {
     if (f % 7 === 0) fold();
   }
 
-  expect(digest).toBe(35134348.05179492);
+  expect(digest).toBe(3766807.940044746);
 });
 
 test("an untouched pond never clears its buffers", () => {

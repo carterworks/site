@@ -14,8 +14,8 @@ const RAIN_SPREAD_MS = 3000;
 const RAIN_MARGIN = 4;
 const STONE = { radius: 2.6, amount: -6 };
 const RAIN = { radius: 1.3, amount: -1.5 };
-const HOVER = { radius: 1, amount: -0.25 };
-const DRAG = { radius: 1.6, amount: -0.7 };
+const HOVER = { radius: 1, amount: -0.25, spacing: 1 };
+const DRAG = { radius: 1.6, amount: -0.45, spacing: 1.5 };
 /** A press is a tap, which drops a stone, only if it lifts soon and barely moves. */
 const TAP_MS = 300;
 const TAP_SLOP = 1.5;
@@ -77,20 +77,28 @@ export const pond: Mode = {
       }
     };
 
-    /** Pokes about once per cell along the way, not counting where it starts. */
-    const stroke = (from: Point, to: Point, radius: number, amount: number) => {
-      const steps = Math.max(
-        1,
-        Math.ceil(Math.hypot(to.x - from.x, to.y - from.y)),
-      );
-      for (let s = 1; s <= steps; s += 1) {
+    /** Distance walked since the last poke, so the spacing survives tiny steps. */
+    let carry = 0;
+
+    /** Pokes at a fixed arc length, so the energy follows the path, not the event rate. */
+    const stroke = (
+      from: Point,
+      to: Point,
+      radius: number,
+      amount: number,
+      spacing: number,
+    ) => {
+      const length = Math.hypot(to.x - from.x, to.y - from.y);
+      let at = spacing - carry;
+      for (; at <= length; at += spacing) {
         poke(
-          from.x + ((to.x - from.x) * s) / steps,
-          from.y + ((to.y - from.y) * s) / steps,
+          from.x + ((to.x - from.x) * at) / length,
+          from.y + ((to.y - from.y) * at) / length,
           radius,
           amount,
         );
       }
+      carry = spacing - (at - length);
     };
 
     const wave = () => {
@@ -124,6 +132,7 @@ export const pond: Mode = {
         if (press !== undefined && press !== seenPress) {
           seenPress = press;
           tap = press;
+          carry = 0;
           seen.x = press.x;
           seen.y = press.y;
           hasSeen = true;
@@ -134,8 +143,8 @@ export const pond: Mode = {
           (pointer.x !== seen.x || pointer.y !== seen.y)
         ) {
           const held = press?.held === true;
-          const { radius, amount } = held ? DRAG : HOVER;
-          stroke(seen, pointer, radius * scale, amount);
+          const { radius, amount, spacing } = held ? DRAG : HOVER;
+          stroke(seen, pointer, radius * scale, amount, spacing * scale);
         }
         if (pointer !== undefined) {
           seen.x = pointer.x;
