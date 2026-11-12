@@ -152,8 +152,9 @@ function smallViewport() {
 /**
  * The part of the canvas a toy fits its scene to, in its pixels: the whole
  * canvas, unless the owner set `data-fit="viewport"` because the canvas is a
- * fixed layer larger than the viewport. Then it is the part on screen. A toy measures it on start and on `resize`. A
- * canvas not laid out yet counts as visible whole.
+ * fixed layer larger than the viewport. Then it is the part on screen. A toy
+ * measures it on start and on `resize`. A canvas not laid out yet counts as
+ * visible whole.
  */
 export function visibleCells(canvas: ToyCanvas): CellRect {
   const { width, height } = canvas;
