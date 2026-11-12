@@ -1,5 +1,13 @@
+import { RANDOM } from "./backdrop-mode-setting";
+import { MODES } from "./backdrop-modes";
 import { imageToy } from "./backdrop-modes/image";
 import { settings } from "./site-settings";
+
+const option = (label: string, value: string) =>
+  Object.assign(document.createElement("option"), {
+    textContent: label,
+    value,
+  });
 
 class PlayToolbarElement extends HTMLElement {
   cleanup?: () => void;
@@ -9,13 +17,20 @@ class PlayToolbarElement extends HTMLElement {
   }
 
   connectedCallback() {
-    const toy = this.querySelector<HTMLButtonElement>("[data-toy]");
+    const toy = this.querySelector<HTMLSelectElement>("[data-toy]");
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
     const display = this.querySelector<HTMLButtonElement>("[data-display]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
     if (!toy || !theme || !display || !pick || !input || !status) return;
+
+    toy.replaceChildren(
+      ...[...MODES, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
+        option(label, id),
+      ),
+      Object.assign(option("Image", "image"), { hidden: true }),
+    );
 
     let playing: ImageBitmap | undefined;
     let request = 0;
@@ -35,8 +50,8 @@ class PlayToolbarElement extends HTMLElement {
     };
 
     const render = () => {
-      const picture = backdrop()?.mode === "image";
-      describe(toy, "Toy", picture ? "Image" : settings.backdrop.label());
+      toy.value =
+        backdrop()?.mode === "image" ? "image" : settings.backdrop.value();
       describe(theme, "Theme", settings.theme.label());
       describe(display, "Display", settings.display.label());
     };
@@ -46,10 +61,10 @@ class PlayToolbarElement extends HTMLElement {
       playing = undefined;
     };
 
-    toy.addEventListener("click", () => {
+    toy.addEventListener("change", () => {
       request += 1;
       status.textContent = "";
-      settings.backdrop.cycle();
+      settings.backdrop.choose(toy.value);
       release();
       render();
     });

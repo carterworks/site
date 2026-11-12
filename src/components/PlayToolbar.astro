@@ -1,5 +1,5 @@
 <play-toolbar role="group" aria-label="Playground">
-  <button type="button" data-toy>Toy</button>
+  <label>Toy: <select data-toy></select></label>
   <button type="button" data-theme>Theme</button>
   <button type="button" data-display>Display</button>
   <button type="button" data-image>Image…</button>
@@ -35,6 +35,7 @@
   }
 
   button,
+  label,
   a {
     align-items: center;
     background: transparent;
@@ -51,7 +52,7 @@
     white-space: nowrap;
   }
 
-  [data-toy],
+  label,
   [data-theme],
   [data-display] {
     align-content: center;
@@ -62,7 +63,26 @@
     text-overflow: ellipsis;
   }
 
-  :is(button, a):focus-visible {
+  label {
+    display: flex;
+    gap: 0.25em;
+    padding-block: 0;
+  }
+
+  select {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    flex: 1;
+    font: inherit;
+    min-inline-size: 0;
+    outline: none;
+    text-overflow: ellipsis;
+  }
+
+  :is(button, a):focus-visible,
+  label:has(:focus-visible) {
     outline: 2px solid currentColor;
     outline-offset: 2px;
   }

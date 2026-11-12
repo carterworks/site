@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
 import { DISPLAYS } from "./backdrop-displays";
-import { createBackdropMode } from "./backdrop-mode-setting";
+import { createBackdropMode, RANDOM } from "./backdrop-mode-setting";
 import { MODES } from "./backdrop-modes";
 import "./play-toolbar";
 import { settings } from "./site-settings";
@@ -13,7 +13,7 @@ vi.mock("./backdrop-modes", () => ({
 
 const markup = `
   <play-toolbar role="group" aria-label="Playground">
-    <button type="button" data-toy></button>
+    <label>Toy <select data-toy></select></label>
     <button type="button" data-theme></button>
     <button type="button" data-display></button>
     <button type="button" data-image>Image…</button>
@@ -40,7 +40,12 @@ const get = <T extends Element>(selector: string) => {
   return element;
 };
 
-const toy = () => get<HTMLButtonElement>("[data-toy]");
+const toy = () => get<HTMLSelectElement>("[data-toy]");
+const shownToy = () => toy().selectedOptions[0]?.textContent;
+const chooseToy = (id: string) => {
+  toy().value = id;
+  toy().dispatchEvent(new Event("change"));
+};
 const theme = () => get<HTMLButtonElement>("[data-theme]");
 const display = () => get<HTMLButtonElement>("[data-display]");
 const status = () => get("[data-status]").textContent;
@@ -104,8 +109,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("the buttons show the current values and nothing is stored on load", () => {
-  expect(toy().textContent).toBe(`Toy: ${MODES[0].label}`);
+test("the controls show the current values and nothing is stored on load", () => {
+  expect(shownToy()).toBe(MODES[0].label);
   expect(theme().textContent).toBe("Theme: Light");
   expect(display().textContent).toBe(`Display: ${DISPLAYS[0].label}`);
   expect(localStorage.length).toBe(0);
@@ -113,18 +118,38 @@ test("the buttons show the current values and nothing is stored on load", () => 
 });
 
 test("each button's accessible name starts with its visible text", () => {
-  for (const button of [toy(), theme(), display()]) {
+  for (const button of [theme(), display()]) {
     expect(button.getAttribute("aria-label")).toBe(
       `${button.textContent}. Activate to change.`,
     );
   }
 });
 
-test("the toy button cycles the toy and shows the new one", () => {
-  toy().click();
+test("the toy menu offers every toy, then Random", () => {
+  const offered = [...toy().options].filter((option) => !option.hidden);
+
+  expect(offered.map((option) => option.value)).toEqual([
+    ...MODES.map((mode) => mode.id),
+    RANDOM,
+  ]);
+  expect(offered.map((option) => option.textContent)).toEqual([
+    ...MODES.map((mode) => mode.label),
+    "Random",
+  ]);
+});
+
+test("choosing a toy from the menu plays it and keeps it shown", () => {
+  chooseToy(MODES[1].id);
 
   expect(setMode).toHaveBeenCalledWith(MODES[1].id);
-  expect(toy().textContent).toBe(`Toy: ${MODES[1].label}`);
+  expect(shownToy()).toBe(MODES[1].label);
+});
+
+test("choosing Random from the menu shows Random", () => {
+  chooseToy(RANDOM);
+
+  expect(shownToy()).toBe("Random");
+  expect(localStorage.length).toBe(0);
 });
 
 test("the theme button flips between light and dark", () => {
@@ -142,18 +167,18 @@ test("a chosen picture is played as the image toy and named in the label", async
   await settle();
 
   expect(play.mock.calls[0][0]).toMatchObject({ id: "image", label: "Image" });
-  expect(toy().textContent).toBe("Toy: Image");
+  expect(shownToy()).toBe("Image");
 });
 
-test("cycling the toy after a picture restores the registry label and closes the bitmap", async () => {
+test("choosing a toy after a picture shows it and closes the bitmap", async () => {
   const picture = bitmap();
   decodes(picture);
   choosePicture();
   await settle();
 
-  toy().click();
+  chooseToy(MODES[1].id);
 
-  expect(toy().textContent).toBe(`Toy: ${MODES[1].label}`);
+  expect(shownToy()).toBe(MODES[1].label);
   expect(picture.close).toHaveBeenCalled();
 });
 
@@ -171,12 +196,12 @@ test("a second picture replaces the first, which is closed", async () => {
   expect(second.close).not.toHaveBeenCalled();
 });
 
-test("a picture still decoding when the toy is cycled is dropped", async () => {
+test("a picture still decoding when a toy is chosen is dropped", async () => {
   const picture = bitmap();
   decodes(picture);
   choosePicture();
 
-  toy().click();
+  chooseToy(MODES[1].id);
   await settle();
 
   expect(play).not.toHaveBeenCalled();
@@ -233,12 +258,12 @@ test("a file that cannot be decoded says so, and the next picture clears it", as
   expect(status()).toBe("");
 });
 
-test("cycling the toy clears a failed-decode message", async () => {
+test("choosing a toy clears a failed-decode message", async () => {
   decodes(new Error("not an image"));
   choosePicture();
   await settle();
 
-  toy().click();
+  chooseToy(MODES[1].id);
 
   expect(status()).toBe("");
 });
@@ -261,11 +286,11 @@ test("an OS colour scheme change re-renders the label without storing anything",
 
 test("a page load re-renders, as the toy is chosen after the bar connects", () => {
   settings.backdrop.cycle();
-  toy().textContent = "";
+  toy().value = "";
 
   document.dispatchEvent(new Event("astro:page-load"));
 
-  expect(toy().textContent).toBe(`Toy: ${MODES[1].label}`);
+  expect(shownToy()).toBe(MODES[1].label);
 });
 
 test("the display button cycles the display and shows the new one", () => {
