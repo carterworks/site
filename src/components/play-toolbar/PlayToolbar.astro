@@ -1,11 +1,14 @@
 <play-toolbar role="group" aria-label="Playground">
-  <label>Toy: <select data-toy></select></label>
-  <button type="button" data-theme>Theme</button>
-  <label>Display: <select data-display></select></label>
-  <label>Shape: <select data-shape aria-describedby="shape-note"></select></label>
-  <label>Cells: <select data-cells></select></label>
+  <label><span>Toy</span> <select data-toy></select></label>
   <button type="button" data-image>Image…</button>
   <input type="file" accept="image/*" hidden />
+  <label><span>Display</span> <select data-display></select></label>
+  <label
+    ><span>Shape</span>
+    <select data-shape aria-describedby="shape-note"></select></label
+  >
+  <label><span>Cells</span> <select data-cells></select></label>
+  <button type="button" data-theme>Theme</button>
   <a href="/">Home</a>
   <div class="notes">
     <p class="paused-notice">Toys are paused for reduced motion.</p>
@@ -26,22 +29,46 @@
 </script>
 
 <style>
-  /* A fixed width, so a longer label truncates instead of moving the buttons. */
+  /*
+   * At the top, as wide as its controls, so the backdrop keeps the rest of
+   * the screen. On a narrow screen the controls wrap into full rows.
+   */
   play-toolbar {
-    align-items: center;
     background: var(--color-bg);
     border-radius: var(--size-sm);
     color: var(--color-text);
     display: flex;
+    flex-wrap: wrap;
     font-size: 0.8125rem;
     gap: var(--size-2xs);
-    inline-size: 34rem;
-    inset: auto var(--size-sm) max(var(--size-sm), env(safe-area-inset-bottom));
+    inline-size: fit-content;
+    inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto;
     margin-inline: auto;
-    max-inline-size: calc(100% - 2 * var(--size-sm));
     padding: var(--size-2xs);
     position: fixed;
     z-index: 1;
+  }
+
+  /* Wrapping alone strands the last control on a row of its own. */
+  @media (width < 48rem) {
+    play-toolbar {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      inline-size: auto;
+      max-inline-size: 30rem;
+    }
+
+    play-toolbar > * {
+      grid-column: span 2;
+    }
+
+    label:has([data-toy]) {
+      grid-column: span 4;
+    }
+
+    label:has([data-display], [data-shape]) {
+      grid-column: span 3;
+    }
   }
 
   button,
@@ -54,40 +81,77 @@
     color: inherit;
     cursor: pointer;
     display: inline-flex;
+    flex: 1 1 auto;
     font: inherit;
+    gap: 0.5em;
     justify-content: center;
     min-block-size: 2.75rem;
-    padding: var(--size-xs);
+    padding: 0 var(--size-xs);
     text-decoration: none;
     white-space: nowrap;
   }
 
-  label,
-  [data-theme] {
-    align-content: center;
-    display: block;
-    flex: 1;
-    min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  label span {
+    opacity: 0.7;
   }
 
-  label {
-    display: flex;
-    gap: 0.25em;
-    padding-block: 0;
+  /* Wide enough for "Light" and "Dark" alike, so a press never moves the bar. */
+  [data-theme] {
+    min-inline-size: 7.5em;
+  }
+
+  label:has(:disabled) {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
   select {
     background: transparent;
+    block-size: 2.75rem;
     border: 0;
     color: inherit;
-    cursor: pointer;
+    cursor: inherit;
     flex: 1;
     font: inherit;
     min-inline-size: 0;
     outline: none;
-    text-overflow: ellipsis;
+  }
+
+  option {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  :is(button, a):focus-visible,
+  label:has(:focus-visible) {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .notes {
+    inset: calc(100% + var(--size-2xs)) 0 auto;
+    pointer-events: none;
+    position: absolute;
+    text-align: center;
+  }
+
+  .notes p {
+    background: var(--color-bg);
+    border-radius: var(--size-xs);
+    inline-size: fit-content;
+    margin: 0 auto var(--size-2xs);
+    padding: var(--size-2xs) var(--size-xs);
+  }
+
+  .notes p:empty,
+  .paused-notice {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .paused-notice {
+      display: block;
+    }
   }
 
   .fps {
@@ -96,7 +160,7 @@
     display: grid;
     font-variant-numeric: tabular-nums;
     gap: 0.125rem;
-    inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto
+    inset: auto var(--size-sm) max(var(--size-sm), env(safe-area-inset-bottom))
       auto;
     justify-items: end;
     padding: var(--size-2xs) var(--size-xs);
@@ -125,34 +189,5 @@
     stroke: currentColor;
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
-  }
-
-  :is(button, a):focus-visible,
-  label:has(:focus-visible) {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-
-  .notes {
-    background: var(--color-bg);
-    border-radius: var(--size-xs);
-    inset: auto 0 calc(100% + var(--size-2xs));
-    position: absolute;
-    text-align: center;
-  }
-
-  .notes p {
-    margin: 0;
-  }
-
-  .notes p:empty,
-  .paused-notice {
-    display: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .paused-notice {
-      display: block;
-    }
   }
 </style>
