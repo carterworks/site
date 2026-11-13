@@ -1,15 +1,15 @@
 import { defineToolbarApp } from "astro/toolbar";
-import { MODES } from "../components/backdrop-modes";
-import { MAX_GHOST } from "../components/emulated-canvas-limits";
+import { TOYS } from "../components/backdrop-toys";
+import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import {
   readDefaults,
-  type PixelBackdropOptions,
-} from "../components/pixel-backdrop";
+  type BackdropKnobs,
+} from "../components/pixel-backdrop/knobs";
 
 /**
- * A small tweakpane for the site's `<pixel-backdrop>`. Each control reads the
- * live options off the element and writes a partial back through `configure`,
- * so changes show up on the page immediately. The app also persists them to
+ * A small tweakpane for the site's `<pixel-backdrop>`. Each control shows the
+ * knob in effect and writes a tweak back through `configure`, so changes show
+ * up on the page immediately. The app also persists the tweaks to
  * localStorage and restores them once, when the toolbar first starts.
  *
  * The pane is rebuilt rather than built once: the dev toolbar resets every app
@@ -18,33 +18,119 @@ import {
  * this one does the same and also rebuilds after a swap.
  */
 
+type Knob = keyof BackdropKnobs;
+type NumericKnob = {
+  [K in Knob]: BackdropKnobs[K] extends number ? K : never;
+}[Knob];
+
+type Range = {
+  kind: "range";
+  min: number;
+  max: number;
+  step: number;
+  suffix?: string;
+};
+type Toggle = {
+  kind: "toggle";
+  /** A range knob greyed out while the toggle is on. */
+  disables?: NumericKnob;
+};
+type Select<T extends string> = { kind: "select"; choices: Record<T, string> };
+type Colour = { kind: "color" };
+
+/**
+ * The control a knob's value calls for. A colour is any string, and a choice
+ * a union of words, which the select must list exactly. The brackets stop
+ * the union from being split, so `"square" | "circle"` gets one select.
+ */
+type ControlFor<V> = {
+  label: string;
+  /** Starts a new section of the panel, under this heading. */
+  heading?: string;
+} & ([V] extends [number]
+  ? Range
+  : [V] extends [boolean]
+    ? Toggle
+    : string extends V
+      ? Colour
+      : Select<V & string>);
+
+type Controls = { [K in Knob]: ControlFor<BackdropKnobs[K]> };
+export type Control = Controls[Knob];
+
+/** One control per knob, in the panel's order. */
+export const CONTROLS: Controls = {
+  enabled: { kind: "toggle", label: "Enabled" },
+  autoFit: { kind: "toggle", label: "Fit viewport", disables: "scale" },
+  scale: { kind: "range", label: "Scale", min: 1, max: 64, step: 1 },
+  gap: { kind: "range", label: "Gap", min: 0, max: 8, step: 1 },
+  shape: {
+    kind: "select",
+    label: "Shape",
+    choices: { square: "Square", circle: "Circle" },
+  },
+  ghost: {
+    kind: "range",
+    label: "Ghost",
+    min: 0,
+    max: Math.round(MAX_GHOST * 100),
+    step: 1,
+    suffix: "%",
+  },
+  noise: {
+    kind: "range",
+    label: "Intensity",
+    heading: "Background noise",
+    min: 0,
+    max: 100,
+    step: 1,
+    suffix: "%",
+  },
+  noiseScale: {
+    kind: "range",
+    label: "Feature size",
+    min: 1,
+    max: 40,
+    step: 1,
+  },
+  noiseSpeed: {
+    kind: "range",
+    label: "Drift speed",
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  lightBase: {
+    kind: "color",
+    label: "Pixel (light)",
+    heading: "Pixel colours",
+  },
+  lightInk: { kind: "color", label: "Ink (light)" },
+  darkBase: { kind: "color", label: "Pixel (dark)" },
+  darkInk: { kind: "color", label: "Ink (dark)" },
+};
+
 type Refresher = () => void;
 
 const backdrop = () => document.querySelector("pixel-backdrop");
 
 /**
- * The knobs as the backdrop shows them, so the ghost and noise sliders read
- * the shown mode's look. Saving reads the raw options instead, so only a
- * tweak persists, not a look.
+ * The knobs as the backdrop shows them, the toy's look and the display's
+ * included. Saving reads the tweaks instead, so only a tweak persists.
  */
-const current = (): PixelBackdropOptions => {
-  const element = backdrop();
-  return element === null
-    ? readDefaults()
-    : { ...element.options, ...element.look };
-};
+const current = (): BackdropKnobs => backdrop()?.knobs ?? readDefaults();
 
 export const STORAGE_KEY = "pixel-backdrop";
 
 /**
  * Only keys the element still has, with the type it expects: storage outlives
- * schema changes, and a stale key must not leak into the options.
+ * schema changes, and a stale key must not leak into the tweaks.
  */
-export function loadSaved(options: object): Partial<PixelBackdropOptions> {
+export function loadSaved(knobs: object): Partial<BackdropKnobs> {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
     if (typeof saved !== "object" || saved === null) return {};
-    const known = options as Record<string, unknown>;
+    const known = knobs as Record<string, unknown>;
     return Object.fromEntries(
       Object.entries(saved).filter(
         ([key, value]) => key in known && typeof value === typeof known[key],
@@ -55,23 +141,18 @@ export function loadSaved(options: object): Partial<PixelBackdropOptions> {
   }
 }
 
-let pending: Partial<PixelBackdropOptions> = {};
+let pending: Partial<BackdropKnobs> = {};
 let updateQueued = false;
 let saveTimeout: number | undefined;
 
 /**
- * Store only what differs from the defaults, so later changes to the CSS
- * defaults still reach keys the user never touched.
+ * Store only the tweaks, so later changes to the CSS defaults still reach
+ * keys the user never touched. One at its default value is kept: it still
+ * outranks a toy's or a display's.
  */
-export function persistChanges(options: PixelBackdropOptions) {
-  const defaults = readDefaults();
-  const changes = Object.fromEntries(
-    Object.entries(options).filter(
-      ([key, value]) => value !== defaults[key as keyof PixelBackdropOptions],
-    ),
-  );
+export function persistTweaks(tweaks: Partial<BackdropKnobs>) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(changes));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tweaks));
   } catch {
     // Storage may be unavailable (private mode); tweaks just won't persist.
   }
@@ -81,8 +162,8 @@ export function persistChanges(options: PixelBackdropOptions) {
 const save = () => {
   window.clearTimeout(saveTimeout);
   saveTimeout = window.setTimeout(() => {
-    const options = backdrop()?.options;
-    if (options) persistChanges(options);
+    const tweaks = backdrop()?.tweaks;
+    if (tweaks) persistTweaks(tweaks);
   }, 250);
 };
 
@@ -99,7 +180,7 @@ const clearSaved = () => {
  * Sliders fire many `input` events per drag; merge them and apply once a frame
  * so the canvas isn't reconfigured and repainted several times per frame.
  */
-const update = (partial: Partial<PixelBackdropOptions>) => {
+const update = (partial: Partial<BackdropKnobs>) => {
   pending = { ...pending, ...partial };
   if (updateQueued) return;
   updateQueued = true;
@@ -112,7 +193,7 @@ const update = (partial: Partial<PixelBackdropOptions>) => {
   });
 };
 
-function makeRow(text: string) {
+function makeRow(panel: HTMLElement, text: string) {
   const row = document.createElement("div");
   row.className = "row";
   const label = document.createElement("label");
@@ -123,102 +204,42 @@ function makeRow(text: string) {
   row.appendChild(label);
   row.appendChild(control);
   row.appendChild(output);
-  return { row, label, control, output };
+  panel.appendChild(row);
+  return { label, control, output };
 }
 
-type KeyOf<T> = {
-  [K in keyof PixelBackdropOptions]: PixelBackdropOptions[K] extends T
-    ? K
-    : never;
-}[keyof PixelBackdropOptions];
+const toyChoices = Object.fromEntries(TOYS.map((toy) => [toy.id, toy.label]));
 
-type ColorKey = {
-  [K in keyof PixelBackdropOptions]: string extends PixelBackdropOptions[K]
-    ? K
-    : never;
-}[keyof PixelBackdropOptions];
+function addToy(panel: HTMLElement, refreshers: Refresher[]) {
+  const { control: cell, output } = makeRow(panel, "Toy");
+  output.remove();
+  // Not persisted: the dev picker is for tuning, not a user preference.
+  const select = addSelect(cell, "Toy", toyChoices);
+  // Toys are random per navigation, so the select must not assume one.
+  refreshers.push(() => {
+    select.value = backdrop()?.toy ?? select.value;
+  });
+  select.addEventListener("change", () => {
+    backdrop()?.setToy(select.value);
+    for (const refresh of refreshers) refresh();
+  });
+}
 
-type Control =
-  | { kind: "heading"; label: string }
-  | {
-      kind: "toggle";
-      key: KeyOf<boolean>;
-      label: string;
-      /** Number control greyed out while this toggle is on. */
-      disables?: KeyOf<number>;
-    }
-  | {
-      kind: "range";
-      key: KeyOf<number>;
-      label: string;
-      min: number;
-      max: number;
-      step: number;
-      suffix?: string;
-    }
-  | {
-      kind: "select";
-      key: Exclude<KeyOf<string>, ColorKey>;
-      label: string;
-      choices: Record<string, string>;
-    }
-  | { kind: "color"; key: ColorKey; label: string }
-  | { kind: "mode"; label: string };
-
-const range = (
-  key: KeyOf<number>,
-  label: string,
-  min: number,
-  max: number,
-  step: number,
-  suffix?: string,
-): Control => ({ kind: "range", key, label, min, max, step, suffix });
-
-const modeChoices = Object.fromEntries(
-  MODES.map((mode) => [mode.id, mode.label]),
-);
-
-export const CONTROLS: Control[] = [
-  { kind: "mode", label: "Mode" },
-  { kind: "toggle", key: "enabled", label: "Enabled" },
-  { kind: "toggle", key: "autoFit", label: "Fit viewport", disables: "scale" },
-  range("scale", "Scale", 1, 64, 1),
-  range("gap", "Gap", 0, 8, 1),
-  {
-    kind: "select",
-    key: "shape",
-    label: "Shape",
-    choices: { square: "Square", circle: "Circle" },
-  },
-  range("ghost", "Ghost", 0, Math.round(MAX_GHOST * 100), 1, "%"),
-  range("rippleSize", "Ripple size", 1, 60, 1),
-  range("rippleSpeed", "Ripple speed", 100, 2000, 50, "ms"),
-  { kind: "heading", label: "Background noise" },
-  range("noise", "Intensity", 0, 100, 1, "%"),
-  range("noiseScale", "Feature size", 1, 40, 1),
-  range("noiseSpeed", "Drift speed", 0, 100, 1),
-  { kind: "heading", label: "Pixel colours" },
-  { kind: "color", key: "lightBase", label: "Pixel (light)" },
-  { kind: "color", key: "lightInk", label: "Ink (light)" },
-  { kind: "color", key: "darkBase", label: "Pixel (dark)" },
-  { kind: "color", key: "darkInk", label: "Ink (dark)" },
-];
-
-function addControl(
+function addKnob(
   panel: HTMLElement,
   refreshers: Refresher[],
+  key: Knob,
   control: Control,
 ) {
-  if (control.kind === "heading") {
+  if (control.heading) {
     const heading = document.createElement("div");
     heading.className = "heading";
-    heading.textContent = control.label;
+    heading.textContent = control.heading;
     panel.appendChild(heading);
-    return;
   }
 
-  const { row, label, control: cell, output } = makeRow(control.label);
-  panel.appendChild(row);
+  const { label, control: cell, output } = makeRow(panel, control.label);
+  const value = () => current()[key];
 
   if (control.kind === "range") {
     const input = document.createElement("input");
@@ -226,7 +247,7 @@ function addControl(
     input.min = String(control.min);
     input.max = String(control.max);
     input.step = String(control.step);
-    input.id = `pixel-backdrop-${control.key}`;
+    input.id = `pixel-backdrop-${key}`;
     label.htmlFor = input.id;
     cell.appendChild(input);
 
@@ -234,28 +255,27 @@ function addControl(
       output.textContent = `${value}${control.suffix ?? ""}`;
     };
     refreshers.push(() => {
-      const value = current()[control.key];
-      input.value = String(value);
-      show(value);
+      input.value = String(value());
+      show(value() as number);
     });
     input.addEventListener("input", () => {
       const value = Number(input.value);
       show(value);
-      update({ [control.key]: value });
+      update({ [key]: value });
     });
   } else if (control.kind === "color") {
     const input = document.createElement("input");
     input.type = "color";
-    input.id = `pixel-backdrop-${control.key}`;
+    input.id = `pixel-backdrop-${key}`;
     label.htmlFor = input.id;
     cell.appendChild(input);
 
     refreshers.push(() => {
-      input.value = output.textContent = current()[control.key];
+      input.value = output.textContent = value() as string;
     });
     input.addEventListener("input", () => {
       output.textContent = input.value;
-      update({ [control.key]: input.value });
+      update({ [key]: input.value });
     });
   } else if (control.kind === "toggle") {
     output.remove();
@@ -264,7 +284,7 @@ function addControl(
     cell.appendChild(toggle);
 
     // Read the input, not `current()`: the write to the element is deferred a
-    // frame, so the options are still stale when `change` fires.
+    // frame, so the knobs are still stale when `change` fires.
     const syncDisabled = () => {
       if (!control.disables) return;
       const target = panel.querySelector<HTMLInputElement>(
@@ -277,35 +297,21 @@ function addControl(
         ?.toggleAttribute("data-disabled", toggle.input.checked);
     };
     refreshers.push(() => {
-      toggle.input.checked = current()[control.key];
+      toggle.input.checked = value() as boolean;
       syncDisabled();
     });
     toggle.input.addEventListener("change", () => {
-      update({ [control.key]: toggle.input.checked });
+      update({ [key]: toggle.input.checked });
       syncDisabled();
-    });
-  } else if (control.kind === "mode") {
-    output.remove();
-    // Not persisted: the dev picker is for tuning, not a user preference.
-    const select = addSelect(cell, control.label, modeChoices);
-    // Modes are random per navigation, so the select must not assume one.
-    refreshers.push(() => {
-      select.value = backdrop()?.mode ?? select.value;
-    });
-    select.addEventListener("change", () => {
-      backdrop()?.setMode(select.value);
-      for (const refresh of refreshers) refresh();
     });
   } else {
     output.remove();
     const select = addSelect(cell, control.label, control.choices);
     refreshers.push(() => {
-      select.value = current()[control.key];
+      select.value = value() as string;
     });
     select.addEventListener("change", () => {
-      update({
-        [control.key]: select.value as PixelBackdropOptions["shape"],
-      });
+      update({ [key]: select.value });
     });
   }
 }
@@ -404,7 +410,10 @@ function renderPane(canvas: ShadowRoot) {
   canvas.appendChild(pane);
 
   const refreshers: Refresher[] = [];
-  for (const control of CONTROLS) addControl(panel, refreshers, control);
+  addToy(panel, refreshers);
+  for (const [key, control] of Object.entries(CONTROLS)) {
+    addKnob(panel, refreshers, key as Knob, control);
+  }
   for (const refresh of refreshers) refresh();
   paneLife?.abort();
   paneLife = new AbortController();
@@ -433,11 +442,11 @@ function renderPane(canvas: ShadowRoot) {
 
 export default defineToolbarApp({
   init(canvas, app) {
-    // Restore here, not in renderPane: the persisted backdrop keeps its options
+    // Restore here, not in renderPane: the persisted backdrop keeps its tweaks
     // across view transitions, so re-applying storage after a swap would
-    // clobber live tweaks.
+    // clobber live ones.
     const element = backdrop();
-    if (element) element.configure(loadSaved(element.options));
+    if (element) element.configure(loadSaved(element.knobs));
     renderPane(canvas);
 
     // The toolbar re-appends itself on every view transition, which resets each

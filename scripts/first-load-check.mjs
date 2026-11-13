@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
 // Run against the production output: pnpm build && node --test scripts/first-load-check.mjs
@@ -19,8 +19,8 @@ test("web fonts never hide text while loading", () => {
   }
 });
 
-test("the first-load font is small and discovered in the document", () => {
-  assert.ok(statSync("dist/InterVariable-latin.woff2").size < 100_000);
+// Its size is a budget in scripts/budgets.mjs.
+test("the first-load font is discovered in the document", () => {
   assert.match(
     html,
     /<link[^>]*rel="preload"[^>]*href="\/InterVariable-latin.woff2"/,

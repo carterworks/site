@@ -1,0 +1,156 @@
+<play-toolbar role="group" aria-label="Playground">
+  <label>Toy: <select data-toy></select></label>
+  <button type="button" data-theme>Theme</button>
+  <button type="button" data-display>Display</button>
+  <button type="button" data-image>Image…</button>
+  <input type="file" accept="image/*" hidden />
+  <a href="/">Home</a>
+  <div class="notes">
+    <p class="paused-notice">Toys are paused for reduced motion.</p>
+    <p role="status" data-status></p>
+  </div>
+  <div class="fps" data-fps hidden>
+    <p data-fps-rate></p>
+    <p data-fps-low></p>
+    <svg viewBox="0 0 60 1" preserveAspectRatio="none" aria-hidden="true">
+      <polyline data-fps-history></polyline>
+    </svg>
+  </div>
+</play-toolbar>
+
+<script>
+  import "./play-toolbar";
+</script>
+
+<style>
+  /* A fixed width, so a longer label truncates instead of moving the buttons. */
+  play-toolbar {
+    align-items: center;
+    background: var(--color-bg);
+    border-radius: var(--size-sm);
+    color: var(--color-text);
+    display: flex;
+    font-size: 0.8125rem;
+    gap: var(--size-2xs);
+    inline-size: 34rem;
+    inset: auto var(--size-sm) max(var(--size-sm), env(safe-area-inset-bottom));
+    margin-inline: auto;
+    max-inline-size: calc(100% - 2 * var(--size-sm));
+    padding: var(--size-2xs);
+    position: fixed;
+    z-index: 1;
+  }
+
+  button,
+  label,
+  a {
+    align-items: center;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    justify-content: center;
+    min-block-size: 2.75rem;
+    padding: var(--size-xs);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  label,
+  [data-theme],
+  [data-display] {
+    align-content: center;
+    display: block;
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  label {
+    display: flex;
+    gap: 0.25em;
+    padding-block: 0;
+  }
+
+  select {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    flex: 1;
+    font: inherit;
+    min-inline-size: 0;
+    outline: none;
+    text-overflow: ellipsis;
+  }
+
+  .fps {
+    background: var(--color-bg);
+    border-radius: var(--size-xs);
+    display: grid;
+    font-variant-numeric: tabular-nums;
+    gap: 0.125rem;
+    inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto
+      auto;
+    justify-items: end;
+    padding: var(--size-2xs) var(--size-xs);
+    position: fixed;
+  }
+
+  .fps[hidden] {
+    display: none;
+  }
+
+  .fps p {
+    margin: 0;
+  }
+
+  .fps svg {
+    background: color-mix(in oklch, currentColor 12%, transparent);
+    block-size: 1.25rem;
+    inline-size: 6rem;
+    margin-block-start: 0.25rem;
+    overflow: visible;
+  }
+
+  polyline {
+    fill: none;
+    shape-rendering: crispEdges;
+    stroke: currentColor;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  :is(button, a):focus-visible,
+  label:has(:focus-visible) {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .notes {
+    background: var(--color-bg);
+    border-radius: var(--size-xs);
+    inset: auto 0 calc(100% + var(--size-2xs));
+    position: absolute;
+    text-align: center;
+  }
+
+  .notes p {
+    margin: 0;
+  }
+
+  .notes p:empty,
+  .paused-notice {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .paused-notice {
+      display: block;
+    }
+  }
+</style>

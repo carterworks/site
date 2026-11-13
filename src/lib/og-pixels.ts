@@ -1,4 +1,4 @@
-import { makeNoise2D } from "../components/backdrop-noise";
+import { makeNoise2D } from "./backdrop-noise";
 
 /**
  * Still pixel scenes for the Open Graph cards, drawn in the backdrop's grid
@@ -93,7 +93,7 @@ export function litText(mask: Uint8Array, seed: number, columns: number): Grid {
   return grid;
 }
 
-/** `#rrggbb` or `#rrggbbaa`, as the display themes write them. */
+/** `#rrggbb` or `#rrggbbaa`, as the displays write them. */
 function rgba(hex: string): [number, number, number, number] {
   const channel = (at: number) =>
     Number.parseInt(hex.slice(at, at + 2) || "ff", 16);

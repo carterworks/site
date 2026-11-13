@@ -1,0 +1,16 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+/**
+ * `<emulated-canvas>` mirrors a hidden `OffscreenCanvas` into a sealed display
+ * surface. Its knobs are its `data-*` attributes, documented on the element;
+ * leave one out and the element falls back to its own default.
+ */
+type Props = HTMLAttributes<"span">;
+---
+
+<emulated-canvas {...Astro.props}></emulated-canvas>
+
+<script>
+  import "./element";
+</script>

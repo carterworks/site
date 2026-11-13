@@ -8,5 +8,5 @@ for style in '' '-Italic'; do
   uv tool run --from fonttools==4.60.1 --with brotli==1.1.0 pyftsubset \
     "public/InterVariable${style}.woff2" \
     --output-file="public/InterVariable${style}-latin.woff2" \
-    --flavor=woff2 --unicodes="$unicodes" --no-hinting
+    --flavor=woff2 --unicodes="$unicodes" --no-hinting --layout-features+=tnum
 done
