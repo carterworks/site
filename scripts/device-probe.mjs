@@ -267,11 +267,18 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
   let canvas;
   let button;
   const label = () => button.textContent.replace("Display: ", "");
+  /** Sorted, as an attribute or property removed and set again moves to the end. */
   const attributes = (element) =>
     [...element.attributes]
       .filter(({ name }) => name !== "style")
       .map(({ name, value }) => `${name}="${value}"`)
-      .concat(element.style.cssText)
+      .concat(
+        [...element.style].map(
+          (property) =>
+            `${property}: ${element.style.getPropertyValue(property)}`,
+        ),
+      )
+      .sort()
       .join(" ");
   const look = () => attributes(canvas);
   const snapshot = () =>
