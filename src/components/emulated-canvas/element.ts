@@ -1,9 +1,13 @@
-import { makeNoise2D } from "../backdrop-noise";
+import {
+  makeNoise2D,
+  NOISE_OFFSET_X,
+  NOISE_OFFSET_Y,
+  NOISE_SEED,
+} from "../backdrop-noise";
 import { colourRgb } from "./colour";
 import { Pipeline } from "./pipeline";
 import type { Pace, ShaderFrame } from "./shader";
 import { SHADERS } from "./shaders";
-import { NOISE_OFFSET_X, NOISE_OFFSET_Y, NOISE_SEED } from "./shaders/noise";
 
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
 function getInnerContext(

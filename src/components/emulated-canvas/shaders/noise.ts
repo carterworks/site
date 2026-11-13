@@ -1,15 +1,12 @@
-import { makeCoarseNoise, makeNoise2D } from "../../backdrop-noise";
+import {
+  makeCoarseNoise,
+  makeNoise2D,
+  NOISE_OFFSET_X,
+  NOISE_OFFSET_Y,
+  NOISE_SEED,
+} from "../../backdrop-noise";
 import { clamp } from "../../../lib/clamp";
 import type { Shader } from "../shader";
-
-export const NOISE_SEED = 0x9e3779b9;
-
-/**
- * Simplex is exactly zero on integer lattice points, so sample off-lattice:
- * without this a 1-pixel feature size would flatten to a constant.
- */
-export const NOISE_OFFSET_X = 12.9898;
-export const NOISE_OFFSET_Y = 78.233;
 
 /**
  * The noise is sampled at most this many pixels apart and filled in between.

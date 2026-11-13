@@ -23,6 +23,15 @@ export function mulberry32(seed: number) {
   };
 }
 
+export const NOISE_SEED = 0x9e3779b9;
+
+/**
+ * Simplex is exactly zero on integer lattice points, so sample off-lattice:
+ * without this a 1-pixel feature size would flatten to a constant.
+ */
+export const NOISE_OFFSET_X = 12.9898;
+export const NOISE_OFFSET_Y = 78.233;
+
 /** Build a seeded 2D simplex field, returning values in [-1, 1]. */
 export function makeNoise2D(seed: number): (x: number, y: number) => number {
   const random = mulberry32(seed);
