@@ -228,6 +228,21 @@ test("a step that wakes its own loop and returns false still gets one more frame
   expect(step).toHaveBeenCalledTimes(2);
 });
 
+test("a stop inside a step has no frame to cancel, so the step's return still decides", () => {
+  spyFrames();
+  let left = 3;
+  const step = vi.fn(() => {
+    loop.stop();
+    return (left -= 1) > 0;
+  });
+  const loop = frameLoop(step);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  expect(step).toHaveBeenCalledTimes(3);
+});
+
 test("stopping a frame loop cancels its pending frame", () => {
   spyFrames();
   const step = vi.fn(() => true);

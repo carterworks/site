@@ -93,7 +93,8 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
  * sleeps once nothing moves. `wake` asks for a frame unless one is pending.
  * `stop` cancels a pending frame, and a later `wake` starts the loop again: a
  * loop that refused it would hide, from the contract test, a listener the
- * toy's stop forgot.
+ * toy's stop forgot. Inside a step no frame is pending, so `stop` there
+ * cancels nothing and the step's return still decides.
  *
  * A toy paced by `fixedStep` restarts it where its step returns false. A toy
  * that sleeps on a timer sets it where its step returns false, and clears it
