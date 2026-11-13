@@ -10,7 +10,7 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import { MAX_GHOST } from "../emulated-canvas/limits";
 import "../emulated-canvas/element";
 import { TOYS } from ".";

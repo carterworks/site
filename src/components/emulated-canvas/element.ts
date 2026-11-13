@@ -3,7 +3,7 @@ import {
   NOISE_OFFSET_X,
   NOISE_OFFSET_Y,
   NOISE_SEED,
-} from "../backdrop-noise";
+} from "../../lib/backdrop-noise";
 import { Pipeline } from "./pipeline";
 import { type Geometry, Presenter } from "./presenter";
 import type { Pace, ShaderFrame } from "./shader";

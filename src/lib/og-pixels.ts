@@ -1,4 +1,4 @@
-import { makeNoise2D } from "../components/backdrop-noise";
+import { makeNoise2D } from "./backdrop-noise";
 
 /**
  * Still pixel scenes for the Open Graph cards, drawn in the backdrop's grid

@@ -8,7 +8,7 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import { DISPLAYS } from "../backdrop-displays";
 import "../pixel-backdrop/element";
 import { TOYS } from ".";

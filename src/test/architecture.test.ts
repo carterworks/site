@@ -10,12 +10,12 @@ import { expect, test } from "vitest";
  * named there too, or `imports` must name "packages" to allow any.
  */
 const layers = {
-  lib: { files: ["src/lib/{clamp,cycle-setting,rgb}.ts"], imports: [] },
+  lib: {
+    files: ["src/lib/{clamp,cycle-setting,rgb,backdrop-noise}.ts"],
+    imports: [],
+  },
   "canvas kit": {
-    files: [
-      "src/components/emulated-canvas/{shader,colour,limits}.ts",
-      "src/components/backdrop-noise.ts",
-    ],
+    files: ["src/components/emulated-canvas/{shader,colour,limits}.ts"],
     imports: ["lib"],
   },
   "shader registry": {
@@ -40,7 +40,7 @@ const layers = {
   // pipeline, the presenter or the passes.
   canvas: {
     files: ["src/components/emulated-canvas/element.ts"],
-    imports: ["pipeline", "presenter", "shader registry", "canvas kit"],
+    imports: ["pipeline", "presenter", "shader registry", "canvas kit", "lib"],
   },
   "toy kit": {
     files: ["src/components/backdrop-toys/{toy,line}.ts"],
@@ -98,7 +98,7 @@ const layers = {
   },
   "site lib": {
     files: ["src/lib/*.ts"],
-    imports: ["site lib", "packages"],
+    imports: ["site lib", "lib", "packages"],
   },
   // Pages reach the backdrop only through its entry points, never a single
   // toy, the toy kit or the dev toolbar.
@@ -122,11 +122,6 @@ const layers = {
 };
 
 const exceptions = [
-  {
-    from: "src/lib/og-pixels.ts",
-    to: "src/components/backdrop-noise.ts",
-    why: "link previews share the backdrop's noise, which lives in components",
-  },
   {
     from: "src/components/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
