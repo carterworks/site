@@ -5,7 +5,7 @@
  * the device. The probe runs by itself there and posts each step back; this
  * prints them as they arrive, then a summary, and exits after one complete run.
  *
- *   pnpm perf:device [--toy fireflies] [--display pocket] [--seconds 8]
+ *   pnpm perf:device [--toy pond] [--display pocket] [--seconds 8]
  *                    [--https 8443 | --http 192.168.1.20:8080] [--minutes 30]
  *                    [--stay] [--json results.json] [--dist dist]
  *   pnpm perf:device:test
@@ -61,7 +61,7 @@ import { play } from "./play-page.mjs";
 
 const { values: options } = parseArgs({
   options: {
-    toy: { type: "string", default: "fireflies" },
+    toy: { type: "string", default: "pond" },
     display: { type: "string" },
     seconds: { type: "string" },
     https: { type: "string", default: "8443" },

@@ -5,19 +5,9 @@ import { pond } from "./pond";
 import { shimmer } from "./shimmer";
 import { silt } from "./silt";
 import { wax } from "./wax";
-import { fireflies } from "./fireflies";
 import type { Toy } from "./toy";
 
 /**
  * Every backdrop toy, in menu order; the first is the default.
  */
-export const TOYS: Toy[] = [
-  shimmer,
-  pond,
-  pinbed,
-  culture,
-  wax,
-  silt,
-  mote,
-  fireflies,
-];
+export const TOYS: Toy[] = [shimmer, pond, pinbed, culture, wax, silt, mote];
