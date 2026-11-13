@@ -317,3 +317,14 @@ test("the grass repeats across the whole ground, but for where the critter cover
   expect(first.length).toBeGreaterThan(0);
   for (const x of first) expect(tufts).toContain(x + 80);
 });
+
+test("woken after a long sleep, it rises one step of its hop, not the pause's worth", async () => {
+  const toy = setup();
+  expect(await toy.run(60 * 5)).toBe("still");
+  await toy.run(60 * 60);
+
+  toy.tap(toy.bodyX(), GROUND - 2);
+  await toy.run(1);
+
+  expect(toy.bodyTop()).toBe(STANDING_TOP - 1);
+});
