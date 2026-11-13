@@ -22,9 +22,10 @@ export type Pace = "still" | "idle" | "active";
  * `apply` edits the logical bitmap's RGBA bytes in place and returns how soon
  * its output changes again, so the canvas knows when to present next. A pass
  * whose knobs leave it off reports so through `active`, a pure query checked
- * first: when no pass is active the bitmap skips the pixel read-back and goes
- * to the display in one copy. A pass that goes inactive and active again is
- * rebuilt, so it starts from the current frame, not a stale one.
+ * first: when no pass is active and no dissolve runs, the bitmap skips the
+ * pixel read-back and goes to the display in one copy. A pass that goes
+ * inactive and active again is rebuilt, so it starts from the current frame,
+ * not a stale one.
  */
 export type ShaderPass = {
   configure(data: DOMStringMap): void;
