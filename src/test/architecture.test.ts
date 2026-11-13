@@ -10,7 +10,7 @@ import { expect, test } from "vitest";
  * named there too, or `imports` must name "packages" to allow any.
  */
 const layers = {
-  lib: { files: ["src/lib/{clamp,cycle-setting}.ts"], imports: ["lib"] },
+  lib: { files: ["src/lib/{clamp,cycle-setting,rgb}.ts"], imports: ["lib"] },
   "canvas kit": {
     files: [
       "src/components/emulated-canvas/{shader,colour,limits}.ts",
