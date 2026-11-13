@@ -27,12 +27,13 @@ export default {
   font: { "/InterVariable-latin.woff2": 102_000 },
 
   /**
-   * Live DOM nodes and event listeners gained, after garbage collection, by a
-   * second run of each tour: every toy and display on /play, and client-side
-   * navigation from the homepage to the blog, a post, back, and home, which
-   * swaps the page around the backdrop that persists across it.
+   * Live DOM nodes and JavaScript event listeners gained, after garbage
+   * collection, by a second run of each tour: every toy and display on /play,
+   * and client-side navigation from the homepage to the blog, a post, back,
+   * and home, which swaps the page around the backdrop that persists across
+   * it. Keyed by the DevTools metric each reads.
    */
-  leaks: { nodes: 0, listeners: 0 },
+  leaks: { Nodes: 0, JSEventListeners: 0 },
 
   /**
    * On the homepage, the worst toy on the worst display: layouts and style

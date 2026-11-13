@@ -39,6 +39,7 @@ const BROTLI = {
 };
 // Carries the renderer's compositor frame, with its render passes and quads.
 const QUADS = "disabled-by-default-viz.quads";
+const LEAKS = Object.keys(budgets.leaks);
 
 const started = Date.now();
 /** Logs time so far, so a slow runner's log shows where the time went. */
@@ -80,12 +81,7 @@ const metrics = async () => {
       ({ name, value }) => [name, value],
     ),
   );
-  for (const name of [
-    "LayoutCount",
-    "RecalcStyleCount",
-    "Nodes",
-    "JSEventListeners",
-  ]) {
+  for (const name of ["LayoutCount", "RecalcStyleCount", ...LEAKS]) {
     need(name in all, `Performance.getMetrics has no ${name}`);
   }
   return all;
@@ -202,20 +198,16 @@ for (const [name, limits] of Object.entries(budgets.perFrame)) {
 const live = async () => {
   await playFor({ ms: 100, press: false });
   await devtools.send("HeapProfiler.collectGarbage");
-  const { Nodes, JSEventListeners } = await metrics();
-  return { nodes: Nodes, listeners: JSEventListeners };
+  return metrics();
 };
 const leaks = async (name, tour) => {
   await tour();
   const before = await live();
   await tour();
   const after = await live();
-  for (const [key, noun] of [
-    ["nodes", "DOM nodes"],
-    ["listeners", "event listeners"],
-  ]) {
+  for (const key of LEAKS) {
     check(
-      `Leaks: ${noun} gained ${name} (${before[key]} before)`,
+      `${key} gained ${name} (${before[key]} before)`,
       after[key] - before[key],
       budgets.leaks[key],
     );
