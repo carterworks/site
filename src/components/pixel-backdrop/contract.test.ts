@@ -11,6 +11,7 @@ import {
   countAllocations,
   installSoftCanvas,
   litPixels,
+  SoftContext,
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
@@ -132,14 +133,18 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
   });
 
   test("with no style changing, presents only after the toy draws", async () => {
+    const draws = vi.spyOn(SoftContext.prototype, "putImageData");
     mount(id, { ghost: 0, noise: 0 });
     const offscreen = bitmaps.offscreen[0].getContext();
-    const draws = vi.spyOn(offscreen, "putImageData");
     await play();
     await vi.advanceTimersByTimeAsync(SETTLE_MS);
 
+    // Counted from before mount, so a toy that draws in `start` counts.
+    const toyDraws = draws.mock.contexts.filter(
+      (context) => context === offscreen,
+    ).length;
     expect(presents()).toBeGreaterThan(0);
-    expect(presents()).toBeLessThanOrEqual(draws.mock.calls.length);
+    expect(presents()).toBeLessThanOrEqual(toyDraws);
   });
 
   test("reads nothing back and allocates nothing per frame once warmed up", async () => {
