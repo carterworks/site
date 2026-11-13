@@ -2428,6 +2428,62 @@ exports[`planet on Amber LCD > markup 1`] = `
 
 exports[`planet on Amber LCD 1`] = `"d2a5d29ff6d82bed8146b158acbc13f30f65e0c8f6d8d99c343ba7030d2065c5 over 1 changed frames"`;
 
+exports[`planet on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Grid 1`] = `"2c76a93199f8d258af0db78eaee8575339e92c94586c5fad2f38457d8ce4faa6 over 261 changed frames"`;
+
 exports[`planet on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -2596,6 +2652,62 @@ exports[`planet on Site in light > markup 1`] = `
 `;
 
 exports[`planet on Site in light 1`] = `"025485127e164e54bf27904e32c9a9985f57fa160820235a9006c73a0fbe7888 over 291 changed frames"`;
+
+exports[`planet on Tet > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#0b1218",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "55",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#0b1218",
+    "data-palette-ink": "#ff6a3d",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Tet 1`] = `"0d4707746f5f7a29288b2ccf4c5bd408559f2e681e0121ef05c646d1cea942c8 over 258 changed frames"`;
 
 exports[`planet on Thermal > markup 1`] = `
 {
