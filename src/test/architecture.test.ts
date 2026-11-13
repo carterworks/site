@@ -235,6 +235,28 @@ test("every import a layer allows, one of its files makes", () => {
   expect(unused, "remove these allowances").toEqual([]);
 });
 
+/**
+ * What a toy could learn about the page it runs on: the canvas's attributes,
+ * styles, the viewport, storage. Its only window use is the resize listener.
+ */
+const hostApis =
+  /\b(?:dataset|getAttribute|getComputedStyle|matchMedia|localStorage|sessionStorage|document|innerWidth|innerHeight|devicePixelRatio|visualViewport|screen|window(?!\.addEventListener\("resize"))\b/g;
+
+test("a toy reads nothing about the page it runs on", () => {
+  const reads = production
+    .filter((file) => layerOf(file) === "toys")
+    .flatMap((file) =>
+      Array.from(
+        sources.get(file)!.matchAll(hostApis),
+        ([api]) => `${file} reads ${api}`,
+      ),
+    );
+  expect(
+    reads,
+    "a toy may read only its canvas, its events and the window resizing",
+  ).toEqual([]);
+});
+
 test("every exception still happens", () => {
   const stale = exceptions.filter(
     (exception) =>
