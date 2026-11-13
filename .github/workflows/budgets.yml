@@ -31,3 +31,5 @@ jobs:
         run: node --test scripts/first-load-check.mjs
       - name: Hold the build to its budgets
         run: node scripts/budget-check.mjs
+      - name: Run the device probe end to end
+        run: node scripts/perf-device.mjs --self-test
