@@ -48,7 +48,11 @@ export class Pipeline {
     return any;
   }
 
-  /** Runs every active pass over `pixels`, in order, and returns how soon to present next. */
+  /**
+   * Runs every active pass over `pixels`, in order, and returns how soon to
+   * present next. Call `active` first each frame, as it rebuilds the passes
+   * that went off; it is separate so a caller can skip reading pixels back.
+   */
   apply(
     pixels: Uint8ClampedArray,
     frame: ShaderFrame,
