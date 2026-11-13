@@ -145,12 +145,12 @@ export class PixelBackdrop extends HTMLElement {
   play(toy: Toy) {
     if (toy === this.#chosen) return;
     this.#chosen = toy;
-    const canvas = this.#canvas;
-    if (canvas === undefined || this.#stopToy === undefined) return;
-    this.#stopToy();
-    canvas.transition();
-    this.#apply();
-    this.#stopToy = run(toy, canvas);
+    if (this.#stopToy !== undefined) {
+      this.#stopToy();
+      this.#stopToy = undefined;
+      this.#canvas?.transition();
+    }
+    this.#start();
   }
 
   #state() {
@@ -222,12 +222,12 @@ export class PixelBackdrop extends HTMLElement {
 /**
  * Starts `toy` with the pointer relayed to it. A stopped backdrop draws
  * nothing, so a hold there would only block the page's scroll and selection
- * over an empty screen. The relay stops first, so the toy hears a hold's
- * `pointercancel`.
+ * over an empty screen, which is why the relay waits for the toy to start.
+ * It stops first, so the toy hears a hold's `pointercancel`.
  */
 function run(toy: Toy, canvas: EmulatedCanvas) {
-  const stopRelay = relayPointer(canvas);
   const stopToy = toy.start(canvas);
+  const stopRelay = relayPointer(canvas);
   return () => {
     stopRelay();
     stopToy();

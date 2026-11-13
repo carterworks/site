@@ -254,6 +254,25 @@ test("play dissolves into a toy outside the registry, and setToy swaps back", ()
   ]);
 });
 
+test("a toy whose start throws leaves nothing running, and the next toy starts as usual", () => {
+  const broken: Toy = {
+    id: "broken",
+    label: "Broken",
+    start() {
+      throw new Error("broken");
+    },
+  };
+  const backdrop = mount();
+
+  expect(() => backdrop.play(broken)).toThrow("broken");
+  fingerDown();
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
+
+  backdrop.setToy("tuned");
+  expect(seen.log).toEqual(["start probe", "stop probe", "start tuned"]);
+});
+
 test("a toy played under reduced motion starts once motion resumes", () => {
   motion.set(true);
   const backdrop = mount();
