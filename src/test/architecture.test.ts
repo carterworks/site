@@ -62,11 +62,17 @@ const layers = {
     files: ["src/components/pixel-backdrop/{pointer-relay,press}.ts"],
     imports: ["pointer relay"],
   },
+  // What the backdrop shows is decided from data alone, never the elements.
+  look: {
+    files: ["src/components/pixel-backdrop/look.ts"],
+    imports: ["knobs", "toy kit", "displays"],
+  },
   backdrop: {
     files: ["src/components/pixel-backdrop.ts"],
     imports: [
       "backdrop",
       "pointer relay",
+      "look",
       "knobs",
       "canvas",
       "toy registry",
