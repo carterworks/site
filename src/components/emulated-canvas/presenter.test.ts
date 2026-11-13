@@ -286,10 +286,11 @@ describe("the echo", () => {
     ]);
   });
 
-  test("is put on its canvas once per show, after the display, with no blend or fill, allocating nothing", () => {
+  test("is put on its canvas once per show, after the display, with no blend or fill, allocating nothing for frames in one buffer", () => {
     const { presenter, canvases } = mount({ shadow: POCKET });
     const [, echo] = canvases();
-    presenter.show(row(INK, UNLIT));
+    const frame = row(INK, UNLIT);
+    presenter.show(frame);
     const calls: string[] = [];
     for (const name of ["putImageData", "drawImage", "fillRect"] as const) {
       const write = SoftContext.prototype[name] as (...args: unknown[]) => void;
@@ -303,11 +304,12 @@ describe("the echo", () => {
       });
     }
 
-    const frames = [row(UNLIT, INK), row(INK, INK)];
+    const drawn = [row(UNLIT, INK), row(INK, INK)].map(({ data }) => data);
 
     const allocations = countAllocations();
     try {
-      for (const frame of frames) {
+      for (const pixels of drawn) {
+        frame.data.set(pixels);
         presenter.show(frame);
         presenter.show(frame);
       }
@@ -320,6 +322,20 @@ describe("the echo", () => {
     );
     expect(pixelsOf(echo)).toEqual([0, 22, 26, 46, 0, 22, 26, 46]);
     expect(allocations.count()).toBe(0);
+  });
+
+  test("a run of one colour casts one shadow along it, wherever it starts", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 5);
+
+    presenter.show(row(UNLIT, INK, INK, INK, UNLIT));
+
+    expect(pixelsOf(canvases()[1])).toEqual([
+      ...[0, 0, 0, 0],
+      ...[0, 22, 26, 46],
+      ...[0, 22, 26, 46],
+      ...[0, 22, 26, 46],
+      ...[0, 0, 0, 0],
+    ]);
   });
 
   test("turned on after a show casts the shown frame at once, and recolours when the base changes", () => {

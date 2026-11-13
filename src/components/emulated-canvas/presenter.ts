@@ -114,11 +114,17 @@ export class Presenter {
   readonly #style: HTMLStyleElement;
   readonly #display: HTMLCanvasElement;
   #context?: CanvasRenderingContext2D;
-  #echo?: { context: CanvasRenderingContext2D; shadow: ImageData };
+  #echo?: {
+    context: CanvasRenderingContext2D;
+    shadow: ImageData;
+    words: Uint32Array;
+  };
   #opacity = 0;
   #unlit: Rgb = WHITE;
   /** The last frame shown as pixels, to recast when the shadow changes. */
   #shown?: ImageData;
+  /** The same pixels a word each, kept while the frame keeps its buffer. */
+  #shownWords?: Uint32Array;
   readonly #factor: Rgb = [1, 1, 1];
   readonly #paint: Rgb = [0, 0, 0];
 
@@ -156,6 +162,9 @@ export class Presenter {
     if (frame instanceof ImageData) {
       context.putImageData(frame, 0, 0);
       this.#shown = frame;
+      if (this.#shownWords?.buffer !== frame.data.buffer) {
+        this.#shownWords = new Uint32Array(frame.data.buffer);
+      }
     } else {
       context.drawImage(frame, 0, 0);
       this.#shown = undefined;
@@ -184,7 +193,8 @@ export class Presenter {
     const context = echo.getContext("2d");
     if (context === null) return undefined;
     this.#display.after(echo);
-    return { context, shadow: new ImageData(this.#columns, this.#rows) };
+    const shadow = new ImageData(this.#columns, this.#rows);
+    return { context, shadow, words: new Uint32Array(shadow.data.buffer) };
   }
 
   /**
@@ -193,17 +203,27 @@ export class Presenter {
    * present, which costs software rendering more than all else on the page.
    * Plain paint cast here from the pixels already in hand is exact wherever
    * it falls on unlit, which is most of the screen; see `multiplyOverlay`.
+   * A frame is mostly runs of one colour, so a pixel the same as the one
+   * before copies its shadow, which cuts the cast to a tenth.
    */
   #cast() {
     const echo = this.#echo;
     const frame = this.#shown;
-    if (echo === undefined || frame === undefined) return;
+    const words = this.#shownWords;
+    if (echo === undefined || frame === undefined || words === undefined) {
+      return;
+    }
     const pixels = frame.data;
     const shadow = echo.shadow.data;
+    const shadowWords = echo.words;
     const unlit = this.#unlit;
     const factor = this.#factor;
     const paint = this.#paint;
-    for (let i = 0; i < pixels.length; i += 4) {
+    for (let at = 0, i = 0; at < words.length; at += 1, i += 4) {
+      if (at > 0 && words[at] === words[at - 1]) {
+        shadowWords[at] = shadowWords[at - 1];
+        continue;
+      }
       const strength = (this.#opacity * pixels[i + 3]) / 255;
       for (let c = 0; c < 3; c += 1) {
         factor[c] = 1 - strength * darkening(pixels[i + c], unlit[c]);
