@@ -3,7 +3,7 @@ import type { EmulatedCanvas } from "./emulated-canvas/element";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
 import { TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
-import { isToyPress } from "./backdrop-press";
+import { isToyPress } from "./pixel-backdrop/press";
 import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
 
 /**
