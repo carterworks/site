@@ -27,7 +27,9 @@ export async function launch(builds, { gpu = false } = {}) {
   }
   const browser = await chromium.launch({
     channel: "chromium",
-    args: gpu ? ["--enable-gpu", "--ignore-gpu-blocklist"] : [],
+    // Without `--disable-gpu`, a machine whose GPU, or SwiftShader, starts
+    // would composite on it, and its compositor would not count as software's.
+    args: gpu ? ["--enable-gpu", "--ignore-gpu-blocklist"] : ["--disable-gpu"],
   });
   const system = await browser.newBrowserCDPSession();
   const { gpu: info } = await system.send("SystemInfo.getInfo");
