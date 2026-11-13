@@ -1,7 +1,7 @@
 <play-toolbar role="group" aria-label="Playground">
   <label>Toy: <select data-toy></select></label>
   <button type="button" data-theme>Theme</button>
-  <button type="button" data-display>Display</button>
+  <label>Display: <select data-display></select></label>
   <button type="button" data-image>Image…</button>
   <input type="file" accept="image/*" hidden />
   <a href="/">Home</a>
@@ -60,8 +60,7 @@
   }
 
   label,
-  [data-theme],
-  [data-display] {
+  [data-theme] {
     align-content: center;
     display: block;
     flex: 1;

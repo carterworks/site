@@ -81,3 +81,24 @@ test("keeps cycling when storage is blocked", () => {
   display.cycle();
   expect(display.label()).toBe(site.label);
 });
+
+test("choosing a screen stores and applies it", () => {
+  const display = createBackdropDisplay();
+
+  display.choose(last.id);
+
+  expect(display.value()).toBe(last.id);
+  expect(localStorage.getItem(DISPLAY_KEY)).toBe(last.id);
+  expect(setDisplay).toHaveBeenLastCalledWith(last.id);
+});
+
+test("choosing the site's look applies it and clears the store", () => {
+  localStorage.setItem(DISPLAY_KEY, last.id);
+  const display = createBackdropDisplay();
+
+  display.choose(site.id);
+
+  expect(display.value()).toBe(site.id);
+  expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
+  expect(setDisplay).toHaveBeenLastCalledWith(site.id);
+});

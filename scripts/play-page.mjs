@@ -66,32 +66,35 @@ export async function launch(builds, { gpu = false } = {}) {
 /** The /play page's controls, and what they offer. */
 export function playControls(page) {
   const toyOptions = page.locator("[data-toy] option:not([hidden])");
-  const displayButton = page.locator("[data-display]");
+  const displayControl = page.locator("[data-display]");
+  const displayOptions = page.locator("select[data-display] option");
   const shownDisplay = async () =>
-    (await displayButton.textContent()).replace("Display: ", "");
+    (await displayControl.textContent()).replace("Display: ", "");
   return {
     open: (host) => page.goto(`http://${host}.localhost/play/`),
     toys: () =>
       toyOptions.evaluateAll((all) =>
         all.map((option) => option.value).filter((id) => id !== "random"),
       ),
-    /** Every display, in the order the button cycles through them, ending back on the first. */
-    async displays() {
-      const seen = [];
-      while (!seen.includes(await shownDisplay())) {
-        seen.push(await shownDisplay());
-        await displayButton.click();
-      }
-      return seen;
-    },
+    /** Every display's name, in menu order. */
+    displays: () => displayOptions.allTextContents(),
     hasToy: async (toy) =>
       (await toyOptions.and(page.locator(`[value="${toy}"]`)).count()) > 0,
     chooseToy: (toy) => page.selectOption("[data-toy]", toy),
-    /** Presses the display button until `display` shows; false if it never does. */
+    /** Chooses `display` by name; false if the page does not offer it. */
     async chooseDisplay(display, displayCount) {
+      if ((await displayOptions.count()) > 0) {
+        if (!(await displayOptions.allTextContents()).includes(display)) {
+          return false;
+        }
+        await displayControl.selectOption({ label: display });
+        return true;
+      }
+      // A base build from before the menu, which `perf --against` compares
+      // with, has a button that steps through the displays.
       for (let presses = 0; (await shownDisplay()) !== display; presses += 1) {
         if (presses === displayCount) return false;
-        await displayButton.click();
+        await displayControl.click();
       }
       return true;
     },
