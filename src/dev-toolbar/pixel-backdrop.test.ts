@@ -223,6 +223,73 @@ test("toy select follows the backdrop's toy after a navigation", () => {
 const slider = (canvas: HTMLElement, key: string) =>
   canvas.querySelector<HTMLInputElement>(`#pixel-backdrop-${key}`)!;
 
+function describeRow(row: Element) {
+  if (row.matches(".heading")) return `## ${row.textContent}`;
+  if (row.matches(".actions")) return `[${row.textContent}]`;
+  const label = row.querySelector("label")!;
+  const input = row.querySelector<HTMLInputElement>(".control > input");
+  const select = row.querySelector<StubSelect>("astro-dev-toolbar-select");
+  const toggle = row.querySelector<StubToggle>("astro-dev-toolbar-toggle");
+  const control = input
+    ? `${input.type} #${input.id}` +
+      (input.type === "range"
+        ? ` ${input.min}..${input.max}/${input.step}`
+        : "")
+    : select
+      ? `select ${[...select.element.options].map((option) => `${option.value}=${option.textContent}`).join(",")}`
+      : `toggle ${toggle!.input.checked ? "on" : "off"}`;
+  const output = row.querySelector("output");
+  const disabled = row.hasAttribute("data-disabled") ? " (disabled)" : "";
+  return `${label.textContent}: ${control}${output ? ` -> ${output.textContent}` : ""}${disabled}`;
+}
+
+test("the panel lists every control in order, with its label, id, range and shown value", () => {
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const rows = [...canvas.querySelector(".panel")!.children].map(describeRow);
+
+  expect(rows).toMatchInlineSnapshot(`
+    [
+      "Toy: select plain=PLAIN,silty=SILTY,cultured=CULTURED",
+      "Enabled: toggle on",
+      "Fit viewport: toggle off",
+      "Scale: range #pixel-backdrop-scale 1..64/1 -> 8",
+      "Gap: range #pixel-backdrop-gap 0..8/1 -> 1",
+      "Shape: select square=Square,circle=Circle",
+      "Ghost: range #pixel-backdrop-ghost 0..98/1 -> 0%",
+      "## Background noise",
+      "Intensity: range #pixel-backdrop-noise 0..100/1 -> 0%",
+      "Feature size: range #pixel-backdrop-noiseScale 1..40/1 -> 4",
+      "Drift speed: range #pixel-backdrop-noiseSpeed 0..100/1 -> 0",
+      "## Pixel colours",
+      "Pixel (light): color #pixel-backdrop-lightBase -> #fff",
+      "Ink (light): color #pixel-backdrop-lightInk -> #000",
+      "Pixel (dark): color #pixel-backdrop-darkBase -> #000",
+      "Ink (dark): color #pixel-backdrop-darkInk -> #fff",
+      "[Reset]",
+    ]
+  `);
+});
+
+test("the Fit viewport toggle greys out the scale slider", async () => {
+  const canvas = document.createElement("div");
+  init(canvas);
+  const fit = [...canvas.querySelectorAll(".row")]
+    .find((row) => row.querySelector("label")!.textContent === "Fit viewport")!
+    .querySelector<StubToggle>("astro-dev-toolbar-toggle")!;
+
+  fit.input.checked = true;
+  fit.input.dispatchEvent(new Event("change"));
+
+  expect(slider(canvas, "scale").disabled).toBe(true);
+  expect(
+    slider(canvas, "scale").closest(".row")!.hasAttribute("data-disabled"),
+  ).toBe(true);
+  // Flush the queued write, or it lands on the next test's backdrop.
+  await new Promise(requestAnimationFrame);
+});
+
 test("the ghost and noise sliders open on the shown toy's look", () => {
   const backdrop = mountBackdrop();
   backdrop.setToy("silty");
