@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "vitest";
 import {
+  backdropDeclarations,
   backdropDefaults,
   installBackdropDefaults,
 } from "../../test/backdrop-defaults";
@@ -26,6 +27,21 @@ test("every knob has exactly one default in global.css, and every default is a k
   expect(
     names.filter((name, index) => names.indexOf(name) !== index),
     "defaults declared more than once",
+  ).toEqual([]);
+});
+
+test("no stylesheet declares a --backdrop-* property but the knob defaults", () => {
+  const knobDefaults = defaults.map(
+    ([name]) => `src/layouts/global.css: ${name}`,
+  );
+  const strays = backdropDeclarations().filter(
+    (declaration, index, all) =>
+      !knobDefaults.includes(declaration) || all.indexOf(declaration) !== index,
+  );
+
+  expect(
+    strays,
+    "declared besides the knob defaults in global.css's :root; the element sets --backdrop-display-* itself",
   ).toEqual([]);
 });
 

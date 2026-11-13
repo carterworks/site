@@ -1,20 +1,36 @@
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
+const root = join(import.meta.dirname, "../..");
+
+/** The source as the browser applies it: a commented-out declaration is none. */
+const readStyles = (file: string) =>
+  readFileSync(join(root, file), "utf8").replace(
+    /\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g,
+    "",
+  );
 
 /**
  * The `--backdrop-*` declarations in global.css's `:root` block, the knobs'
- * defaults, as `[property, value]` in file order. A `--backdrop-display-*`
- * property is never among them: the element sets those on itself at runtime,
- * and the stylesheets only read them through `var()`.
+ * defaults, as `[property, value]` in file order.
  */
 export function backdropDefaults(): [string, string][] {
-  const css = readFileSync(
-    join(import.meta.dirname, "../layouts/global.css"),
-    "utf8",
-  );
-  const root = css.match(/^:root \{$([\s\S]*?)^\}$/m)?.[1] ?? "";
-  return [...root.matchAll(/^\s*(--backdrop-[\w-]+)\s*:\s*([^;]+);/gm)].map(
+  const css = readStyles("src/layouts/global.css");
+  const block = css.match(/^:root \{$([\s\S]*?)^\}$/m)?.[1] ?? "";
+  return [...block.matchAll(/^\s*(--backdrop-[\w-]+)\s*:\s*([^;]+);/gm)].map(
     ([, property, value]) => [property, value.trim()],
+  );
+}
+
+/**
+ * Every `--backdrop-*` declaration in a stylesheet or component under src/,
+ * as `file: property`. A `var(--backdrop-*)` reads one, so isn't among them.
+ */
+export function backdropDeclarations(): string[] {
+  return globSync("src/**/*.{css,astro}", { cwd: root }).flatMap((file) =>
+    [...readStyles(file).matchAll(/(--backdrop-[\w-]+)\s*:/g)].map(
+      ([, property]) => `${file}: ${property}`,
+    ),
   );
 }
 
