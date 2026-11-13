@@ -2,10 +2,12 @@
  * The limits `pnpm budgets` holds the built site to; `scripts/budget-check.mjs`
  * measures them and fails when any is exceeded. Every value is a count, exact
  * for the pinned Chromium, so each limit is today's value with no margin
- * unless one is stated. A change that does less lowers its limit to the new
- * value in the same commit; a limit is raised only on purpose, with the
- * reason in that commit. A Playwright upgrade can move the compositor counts;
- * reset them from its first run's log, in the upgrade's own commit.
+ * unless one is stated. Each run prints every measured value beside its
+ * limit. A change that does less lowers its limit to the new value in the
+ * same commit; a limit is raised only on purpose, to the value the run
+ * printed, with the reason in that commit. A Playwright upgrade can move the
+ * compositor counts; reset them from its first run's log, in the upgrade's
+ * own commit.
  */
 export default {
   /**
@@ -37,9 +39,9 @@ export default {
 
   /**
    * On the homepage, the worst toy on the worst display: layouts and style
-   * recalculations in 30 frames of hover-only play, which writes nothing the
-   * page must restyle, and in one press and release, which set and remove an
-   * attribute on `<html>`, a style recalculation each.
+   * recalculations in half a second of hover-only play, which writes nothing
+   * the page must restyle, and in one press and release, which set and remove
+   * an attribute on `<html>`, a style recalculation each.
    */
   play: {
     hoverLayouts: 0,
