@@ -8,7 +8,7 @@ import {
 import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/settings/backdrop-toy-setting";
-import { DISPLAYS } from "../components/backdrop-displays";
+import { DISPLAYS } from "../components/pixel-backdrop/backdrop-displays";
 import { backdropDefaults } from "../test/backdrop-defaults";
 import {
   CONTROLS,

@@ -55,7 +55,7 @@ const layers = {
     imports: ["toy kit", "lib"],
   },
   displays: {
-    files: ["src/components/backdrop-displays.ts"],
+    files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
     imports: ["lib"],
   },
   knobs: {

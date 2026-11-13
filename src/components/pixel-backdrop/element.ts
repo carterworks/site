@@ -1,6 +1,6 @@
 import "../emulated-canvas/element";
 import type { EmulatedCanvas } from "../emulated-canvas/element";
-import { DISPLAYS, storedDisplay, type Display } from "../backdrop-displays";
+import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "../backdrop-toys";
 import type { Toy } from "../backdrop-toys/toy";
 import { relayPointer } from "./pointer-relay";

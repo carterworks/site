@@ -1,5 +1,9 @@
 import { nextInRotation, storeChoice } from "../../lib/cycle-setting";
-import { DISPLAYS, DISPLAY_KEY, storedDisplay } from "../backdrop-displays";
+import {
+  DISPLAYS,
+  DISPLAY_KEY,
+  storedDisplay,
+} from "../pixel-backdrop/backdrop-displays";
 
 const [SITE] = DISPLAYS;
 const IDS = DISPLAYS.map((display) => display.id);

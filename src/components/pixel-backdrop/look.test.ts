@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { expect, test } from "vitest";
-import { DISPLAYS, type Display, type DisplayLook } from "../backdrop-displays";
+import { DISPLAYS, type Display, type DisplayLook } from "./backdrop-displays";
 import type { Toy } from "../backdrop-toys/toy";
 import { EmulatedCanvas } from "../emulated-canvas/element";
 import { KNOBS, type BackdropKnobs } from "./knobs";

@@ -1,5 +1,5 @@
 import { hexRgb, multiplyOverlay, type Rgb } from "../../lib/rgb";
-import type { Display, DisplayLook } from "../backdrop-displays";
+import type { Display, DisplayLook } from "./backdrop-displays";
 import { type Look, TUNED_GRID, type Toy } from "../backdrop-toys/toy";
 import type { BackdropKnobs } from "./knobs";
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./settings/backdrop-display-setting";
-import { DISPLAYS } from "./backdrop-displays";
+import { DISPLAYS } from "./pixel-backdrop/backdrop-displays";
 import { createBackdropToy, RANDOM } from "./settings/backdrop-toy-setting";
 import { TOYS } from "./backdrop-toys";
 import "./play-toolbar";

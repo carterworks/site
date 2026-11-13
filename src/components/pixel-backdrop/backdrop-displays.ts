@@ -1,4 +1,4 @@
-import { storedChoice } from "../lib/cycle-setting";
+import { storedChoice } from "../../lib/cycle-setting";
 
 /**
  * The screen a display gives the backdrop, as the canvas knobs that
