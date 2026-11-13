@@ -20,7 +20,10 @@ export default {
    */
   javascript: { "/": 34_200 },
 
-  /** Bytes of the font the homepage preloads. Margin: 0.7%. */
+  /**
+   * Bytes of each font the homepage preloads, as built; a font preloaded or
+   * no longer preloaded fails the run until it is listed here. Margin: 0.7%.
+   */
   font: { "/InterVariable-latin.woff2": 102_000 },
 
   /**

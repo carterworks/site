@@ -104,6 +104,14 @@ for (const [path, limit] of Object.entries(budgets.javascript)) {
   check(`JavaScript on ${path}, brotli bytes`, bytes, limit);
 }
 await devtools.send("Network.setCacheDisabled", { cacheDisabled: false });
+await page.goto(`${ORIGIN}/`);
+const fonts = await page
+  .locator('link[rel="preload"][as="font"]')
+  .evaluateAll((links) => links.map((link) => new URL(link.href).pathname));
+need(
+  fonts.sort().join(", ") === Object.keys(budgets.font).sort().join(", "),
+  `the homepage preloads ${fonts.join(", ") || "no font"}, but budgets.font holds ${Object.keys(budgets.font).join(", ")}`,
+);
 for (const [path, limit] of Object.entries(budgets.font)) {
   check(`Font ${path}, bytes`, statSync(join(options.dist, path)).size, limit);
 }
