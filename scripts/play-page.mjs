@@ -7,6 +7,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 import { chromium } from "playwright";
 
 export const VIEWPORT = { width: 1280, height: 800 };
@@ -96,10 +97,8 @@ export function playControls(page) {
 }
 
 /** Holds every CPU core's clock high while it runs; see the callers for why. */
-export const holdClockHigh = async () => {
-  const { Worker } = await import("node:worker_threads");
+export const holdClockHigh = () =>
   new Worker("for (;;);", { eval: true }).unref();
-};
 
 /**
  * Runs in the page, as `page.evaluate(play, { ms, press })`. Sweeps the

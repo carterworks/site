@@ -56,7 +56,7 @@ if (options.against) builds.base = options.against;
 // A powersave governor clocks the CPU by load, and the displays load it
 // differently, so the same script looked 2.5 times slower on one display than
 // another. A spinning core holds the clock high for every combination.
-await holdClockHigh();
+holdClockHigh();
 
 const { browser, system, renderer, page, devtools } = await launch(builds, {
   gpu: options.gpu,
