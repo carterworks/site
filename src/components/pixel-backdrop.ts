@@ -113,17 +113,20 @@ export class PixelBackdrop extends HTMLElement {
   configure(partial: Partial<BackdropKnobs>) {
     this.#defaults ??= readDefaults();
     this.#tweaks = { ...this.#tweaks, ...partial };
-    this.#apply();
-    if (this.options.enabled) this.#start();
-    else this.#stop();
+    this.#repaint();
   }
 
   /** Restore the defaults from the `--backdrop-*` custom properties. */
   reset() {
     this.#defaults = readDefaults();
-    this.configure(this.#defaults);
     this.#tweaks = {};
+    this.#repaint();
+  }
+
+  #repaint() {
     this.#apply();
+    if (this.options.enabled) this.#start();
+    else this.#stop();
   }
 
   /** Show the canvas as a registered display; an unknown id is ignored. */

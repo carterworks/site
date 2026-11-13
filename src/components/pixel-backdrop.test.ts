@@ -510,3 +510,34 @@ test.each(ids.flatMap((from) => ids.map((to) => [from, to])))(
     expect(markupOf(switched)).toEqual(expected);
   },
 );
+
+test.each<[string, Partial<PixelBackdrop["options"]>, number]>([
+  ["a tweaked palette", { lightBase: "#123456" }, 1],
+  ["an untouched palette", { gap: 5 }, 0],
+])(
+  "on a display, reset with %s restarts the canvas's passes exactly when its palette changes",
+  (_, tweak, restarts) => {
+    const backdrop = mount();
+    backdrop.setDisplay("pocket-lcd");
+    backdrop.configure(tweak);
+    const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
+
+    backdrop.reset();
+
+    expect(reset).toHaveBeenCalledTimes(restarts);
+    expect(canvasOf(backdrop).dataset).toMatchObject({
+      gap: String(pocket.gap),
+      paletteBase: pocket.base,
+    });
+  },
+);
+
+test("reset writes each attribute it changes once", async () => {
+  const backdrop = mount();
+  backdrop.setDisplay("pocket-lcd");
+  backdrop.configure({ noiseSpeed: 9 });
+
+  expect(await writesDuring(backdrop, () => backdrop.reset())).toEqual([
+    "EMULATED-CANVAS data-noise-speed",
+  ]);
+});
