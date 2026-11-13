@@ -50,7 +50,8 @@ const ATTRIBUTES = [
  * cell size in CSS pixels (default 1), `data-gap` the space between cells
  * (default 0), and `data-shape` the cell form, inscribed in the cell:
  * `"square"` (default), `"circle"`, `"ring"`, `"diamond"`, `"hex"` (pointy
- * top, odd rows half a cell right), `"dash"` (a horizontal capsule),
+ * top, odd rows half a cell right), `"triangle"` (two cells wide, up and down
+ * by turns, interlocking), `"dash"` (a horizontal capsule),
  * `"slash"` (bottom left to top right) or `"cross"`. With the defaults the
  * outer canvas is a straight 1:1 mirror. A page can instead size cells from
  * CSS by setting `--emulated-canvas-scale` to a length on the element, which

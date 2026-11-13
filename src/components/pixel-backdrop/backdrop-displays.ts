@@ -30,6 +30,7 @@ export type DisplayLook = {
     | "ring"
     | "diamond"
     | "hex"
+    | "triangle"
     | "dash"
     | "slash"
     | "cross";

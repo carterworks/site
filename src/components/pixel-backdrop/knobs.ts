@@ -30,6 +30,7 @@ export const KNOBS = {
     | "ring"
     | "diamond"
     | "hex"
+    | "triangle"
     | "dash"
     | "slash"
     | "cross"

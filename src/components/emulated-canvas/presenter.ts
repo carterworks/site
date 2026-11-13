@@ -8,6 +8,7 @@ export const SHAPES = [
   "ring",
   "diamond",
   "hex",
+  "triangle",
   "dash",
   "slash",
   "cross",
@@ -161,6 +162,19 @@ function cutOut(shape: PixelShape, gap: number, lead: number): string[] {
       };
       return [rows(true), rows(false)];
     }
+    case "triangle": {
+      if (gap === 0) return paint();
+      // The triangles' sides run along a lattice of 45° lines through the
+      // midpoints of the row gaps, two strides apart along each row, each
+      // inked 1.5 gaps wide across a row.
+      const at = (centre: number, side: number, fade: number) =>
+        `calc((${STRIDE} * ${centre} + ${side * 0.75 * gap}px) * 0.7071 + ${fade}px)`;
+      const line = (centre: number) =>
+        `transparent ${at(centre, -1, -0.5)}, ${INK} ${at(centre, -1, 0.5)} ${at(centre, 1, -0.5)}, transparent ${at(centre, 1, 0.5)}`;
+      const lattice = (angle: string) =>
+        `linear-gradient(${angle}, ${line(0.5)}, ${line(2.5)}) ${offset}px ${offset}px / calc(2 * ${STRIDE}) calc(2 * ${STRIDE})`;
+      return paint(...gaps.slice(1), lattice("45deg"), lattice("135deg"));
+    }
   }
 }
 
@@ -175,9 +189,19 @@ type Shifted = {
   /** Half a stride right, or left. */
   right: boolean;
   source: (column: number, row: number) => number;
+  /** Covers every cell, so the display under it is hidden and left undrawn. */
+  covers?: boolean;
+  mask?: string;
 };
 
-/** A hex grid's odd rows sit half a cell right. */
+/**
+ * A hex grid's odd rows sit half a cell right. A triangle grid's up and down
+ * triangles are each two cells wide, half a cell either side of their own,
+ * so each comes from a canvas of its own whose pixels are two cells wide,
+ * half a cell left. Their sides are diagonal, so the down triangles' canvas
+ * is masked to them over the up triangles': the one mask on a canvas, as no
+ * pixel grid splits along a diagonal.
+ */
 const SHIFTED: Partial<Record<PixelShape, (columns: number) => Shifted[]>> = {
   hex: (columns) => [
     {
@@ -187,13 +211,45 @@ const SHIFTED: Partial<Record<PixelShape, (columns: number) => Shifted[]>> = {
       source: (column, row) => (row % 2 === 1 ? column : -1),
     },
   ],
+  triangle: (columns) => [
+    {
+      name: "up",
+      columns: columns + 1,
+      right: false,
+      source: (column, row) => column - ((column + row) % 2),
+      covers: true,
+    },
+    {
+      name: "down",
+      columns: columns + 1,
+      right: false,
+      source: (column, row) => column - ((column + row + 1) % 2),
+      mask: downTriangles(),
+    },
+  ],
 };
 
-function shiftedStyle({ name, columns, right }: Shifted) {
+/**
+ * Each down triangle, out to the middle of the gaps around it: a quarter
+ * turn opening up from where its tip's gap lines cross, in a tile two
+ * strides square, one per row parity. It is in the canvas's own place, half a
+ * stride left of the cells.
+ */
+function downTriangles() {
+  const wedge = `conic-gradient(from -45deg, #000 0 90deg, transparent 0)`;
+  const size = `calc(2 * ${STRIDE}) calc(2 * ${STRIDE})`;
+  return `${wedge} ${STRIDE} 0 / ${size}, ${wedge} calc(2 * ${STRIDE}) ${STRIDE} / ${size}`;
+}
+
+const covered = (shape: PixelShape) =>
+  SHIFTED[shape]?.(0).some(({ covers }) => covers) ?? false;
+
+function shiftedStyle({ name, columns, right, mask }: Shifted) {
   return `
     .${name} {
       inline-size: calc(${columns} * var(--stride));
       inset: 0 auto auto 0;
+      ${mask ? `mask: ${mask};` : ""}
       pointer-events: none;
       position: absolute;
       translate: calc(var(--stride) / ${right ? 2 : -2});
@@ -256,6 +312,7 @@ function displayStyle(
       )
       .join("")}
     ${(SHIFTED[shape]?.(columns) ?? []).map(shiftedStyle).join("")}
+    ${covered(shape) ? "canvas:not([class]) { visibility: hidden; }" : ""}
     ${echoStyle(shadow)}`;
 }
 
@@ -284,6 +341,8 @@ export class Presenter {
   /** The same pixels a word each, kept while the frame keeps its buffer. */
   #shownWords?: Uint32Array;
   #shiftedShape?: PixelShape;
+  /** The display is hidden under shifted canvases, so drawing it would be wasted. */
+  #covered = false;
   #shifted: {
     context: CanvasRenderingContext2D;
     image: ImageData;
@@ -320,6 +379,7 @@ export class Presenter {
   #shift(shape: PixelShape) {
     if (shape === this.#shiftedShape) return;
     this.#shiftedShape = shape;
+    this.#covered = covered(shape);
     for (const { context } of this.#shifted) context.canvas.remove();
     let last: Element = this.#display;
     this.#shifted = (SHIFTED[shape]?.(this.#columns) ?? []).flatMap(
@@ -374,14 +434,14 @@ export class Presenter {
       context = this.#context = created;
     }
     if (frame instanceof ImageData) {
-      context.putImageData(frame, 0, 0);
+      if (!this.#covered) context.putImageData(frame, 0, 0);
       this.#shown = frame;
       if (this.#shownWords?.buffer !== frame.data.buffer) {
         this.#shownWords = new Uint32Array(frame.data.buffer);
       }
       this.#showShifted();
     } else {
-      context.drawImage(frame, 0, 0);
+      if (!this.#covered) context.drawImage(frame, 0, 0);
       this.#shown = undefined;
     }
     this.#cast();

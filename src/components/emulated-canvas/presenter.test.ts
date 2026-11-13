@@ -210,6 +210,31 @@ describe("a cell shape", () => {
     expect(presenter.needsPixels).toBe(true);
   });
 
+  test("triangle shows each up and each down cell two cells wide, on two canvases half a cell left, the down one masked to its triangles", () => {
+    const { presenter, canvases, style } = mountGrid(
+      { shape: "triangle", gap: 2 },
+      3,
+    );
+    const [A, B, C, D, E, F] = [GREEN, BLUE, RED, WHITE, BLUE, GREEN].map(
+      (colour, at) => [...colour.slice(0, 3), 250 - at],
+    );
+
+    presenter.show(grid([A, B, C], [D, E, F]));
+
+    const [, up, down] = canvases();
+    expect(canvases().map(({ className }) => className)).toEqual([
+      "",
+      "up",
+      "down",
+    ]);
+    expect(pixelsOf(up)).toEqual([A, A, C, C, CLEAR, E, E, CLEAR].flat());
+    expect(pixelsOf(down)).toEqual([CLEAR, B, B, CLEAR, D, D, F, F].flat());
+    expect(style()).toContain("translate: calc(var(--stride) / -2)");
+    expect(style()).toContain("visibility: hidden");
+    expect(/\.down \{[^}]*\}/.exec(style())![0]).toContain("mask");
+    expect(/\.up \{[^}]*\}/.exec(style())![0]).not.toContain("mask");
+  });
+
   test("going back to square removes the shifted canvas", () => {
     const { presenter, canvases } = mountGrid({ shape: "hex" });
 
