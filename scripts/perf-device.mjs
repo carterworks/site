@@ -133,9 +133,16 @@ async function respond(request, response) {
   const url = new URL(request.url, "http://probe");
   if (request.method === "POST" && url.pathname === "/probe-result") {
     let body = "";
-    for await (const chunk of request) body += chunk;
+    for await (const chunk of request) {
+      if (body.length <= MAX_RESULT_BYTES) body += chunk;
+    }
+    if (body.length > MAX_RESULT_BYTES) return response.writeHead(413).end();
+    // Control characters from the page could rewrite the terminal.
+    const result = JSON.parse(body, (key, value) =>
+      typeof value === "string" ? value.replace(/\p{Cc}/gu, " ") : value,
+    );
     response.writeHead(204).end();
-    report(JSON.parse(body));
+    report(result);
     return;
   }
   const path = join(root, decodeURIComponent(url.pathname));
