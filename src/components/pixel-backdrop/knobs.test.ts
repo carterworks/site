@@ -30,6 +30,19 @@ test("every knob has exactly one default in global.css, and every default is a k
   ).toEqual([]);
 });
 
+test("each knob has a property of its own, clear of the element's --backdrop-display-*", () => {
+  const properties = knobs.map(([key]) => property(key));
+
+  expect(
+    properties.filter((name) => name.startsWith("--backdrop-display-")),
+    "knobs on a property the element sets for the active display",
+  ).toEqual([]);
+  expect(
+    properties.filter((name, index) => properties.indexOf(name) !== index),
+    "knobs sharing a property",
+  ).toEqual([]);
+});
+
 test("no stylesheet declares a --backdrop-* property but the knob defaults", () => {
   const knobDefaults = defaults.map(
     ([name]) => `src/layouts/global.css: ${name}`,
