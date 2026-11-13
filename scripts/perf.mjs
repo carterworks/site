@@ -45,7 +45,7 @@
  * machine, and are not what a real screen costs.
  */
 import { parseArgs } from "node:util";
-import { onePercentLow } from "../src/components/frame-rate.ts";
+import { onePercentLow } from "../src/components/play-toolbar/frame-rate.ts";
 import {
   holdClockHigh,
   launch,

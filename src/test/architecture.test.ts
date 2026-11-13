@@ -85,8 +85,7 @@ const layers = {
   },
   controls: {
     files: [
-      "src/components/{settings,command-bar}/*.ts",
-      "src/components/{play-toolbar,frame-rate}.ts",
+      "src/components/{settings,command-bar,play-toolbar}/*.ts",
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
     ],
@@ -123,7 +122,7 @@ const layers = {
 
 const exceptions = [
   {
-    from: "src/components/play-toolbar.ts",
+    from: "src/components/play-toolbar/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
   },
