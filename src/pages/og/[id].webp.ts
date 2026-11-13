@@ -8,8 +8,8 @@ import {
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import { formatDateLong } from "../../lib/date";
 import {
+  cardLandscape,
   HORIZON,
-  landscape,
   litText,
   OG_HEIGHT,
   OG_WIDTH,
@@ -125,7 +125,7 @@ async function backdrop(card: Card) {
   const seed = seedOf(card.id);
   if (card.scene !== "display") {
     const terrain = card.scene === "peaks" ? PEAKS : HORIZON;
-    return paint(landscape(seed, terrain), SITE_LOOK);
+    return paint(cardLandscape(seed, terrain), SITE_LOOK);
   }
   const mask = await render(
     {

@@ -11,8 +11,8 @@ import { expect, test } from "vitest";
  */
 const layers = {
   lib: {
-    files: ["src/lib/{clamp,cycle-setting,rgb,backdrop-noise}.ts"],
-    imports: [],
+    files: ["src/lib/{clamp,cycle-setting,rgb,backdrop-noise,landscape}.ts"],
+    imports: ["lib"],
   },
   "canvas kit": {
     files: ["src/components/emulated-canvas/{shader,colour,limits}.ts"],

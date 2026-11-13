@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  cardLandscape,
   HORIZON,
-  landscape,
   litText,
   OG_HEIGHT,
   OG_WIDTH,
@@ -25,16 +25,18 @@ test("seedOf is stable for an id and differs between ids", () => {
   expect(seedOf("index")).not.toBe(seedOf("blog"));
 });
 
-describe("landscape", () => {
+describe("cardLandscape", () => {
   test("draws the same scene for the same seed", () => {
-    expect(landscape(1, HORIZON).cells).toEqual(landscape(1, HORIZON).cells);
-    expect(landscape(1, HORIZON).cells).not.toEqual(
-      landscape(2, HORIZON).cells,
+    expect(cardLandscape(1, HORIZON).cells).toEqual(
+      cardLandscape(1, HORIZON).cells,
+    );
+    expect(cardLandscape(1, HORIZON).cells).not.toEqual(
+      cardLandscape(2, HORIZON).cells,
     );
   });
 
   test("leaves the sky empty and fills the ground", () => {
-    const { cells, columns, rows } = landscape(1, HORIZON);
+    const { cells, columns, rows } = cardLandscape(1, HORIZON);
     expect(cells.slice(0, columns).every((value) => value === 0)).toBe(true);
     expect(cells.slice((rows - 1) * columns).every((value) => value > 0)).toBe(
       true,
@@ -42,13 +44,13 @@ describe("landscape", () => {
   });
 
   test("raises peaks above the horizon", () => {
-    expect(litCount(landscape(1, PEAKS))).toBeGreaterThan(
-      litCount(landscape(1, HORIZON)),
+    expect(litCount(cardLandscape(1, PEAKS))).toBeGreaterThan(
+      litCount(cardLandscape(1, HORIZON)),
     );
   });
 
   test("fills the card with whole cells", () => {
-    const { columns, rows } = landscape(1, HORIZON);
+    const { columns, rows } = cardLandscape(1, HORIZON);
     expect(OG_WIDTH % columns).toBe(0);
     expect(rows).toBe(OG_HEIGHT / (OG_WIDTH / columns));
   });
