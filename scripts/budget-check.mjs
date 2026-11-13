@@ -18,8 +18,9 @@
  * clock and, from /proc (so Linux only), the run time of every other
  * Chromium thread. Interference still inflates CPU time, through a busy
  * sibling hyperthread or a lower clock, but only ever inflates it, so each
- * cost is the cheapest of ROUNDS identical rounds, each from a fresh load. And
- * it is divided by the cheapest of as many rounds of a fixed reference page,
+ * cost is the cheapest of ROUNDS identical rounds, each from a fresh load (and
+ * of more if that is over its limit; see ATTEMPTS). And it is divided by the
+ * cheapest of as many rounds of a fixed reference page,
  * `scripts/budget-reference.html`, interleaved with them, so whatever slows
  * the machine slows both. On the machine the limits were set on, eight busy
  * cores and a looping build raised the absolute costs by 50-60% but moved no
@@ -66,7 +67,7 @@ const governor = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor";
 const clockScales =
   existsSync(governor) &&
   readFileSync(governor, "utf8").trim() !== "performance";
-if (clockScales) await holdClockHigh();
+if (clockScales) holdClockHigh();
 
 const { browser, system, renderer, page, devtools } = await launch({
   [HOST]: options.dist,
@@ -372,24 +373,41 @@ const parts = { mainThread: "main thread", compositor: "compositor" };
 const shows = new Set(
   Object.keys(parts).flatMap((part) => Object.keys(budgets.frameCost[part])),
 );
+/**
+ * A show over its limit is measured again, ROUNDS more rounds of each page,
+ * up to ATTEMPTS in all, and judged on the cheapest of all its rounds: a
+ * regression stays over, while interference that lasted a whole attempt,
+ * such as the main thread sharing a core with a busy hyperthread, does not.
+ */
+const ATTEMPTS = 3;
 for (const show of shows) {
   const [toy, display] = show.split(" on ");
-  await showOnHomepage(toy, display);
+  const owed = Object.keys(parts).filter(
+    (part) => show in budgets.frameCost[part],
+  );
   const reference = [];
   const measured = [];
-  for (let round = 0; round < ROUNDS; round += 1) {
-    reference.push(await measureRound(REFERENCE));
-    measured.push(await measureRound(`${ORIGIN}/`));
+  const ratio = (part) => cheapest(measured, part) / cheapest(reference, part);
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
+    await showOnHomepage(toy, display);
+    for (let round = 0; round < ROUNDS; round += 1) {
+      reference.push(await measureRound(REFERENCE));
+      measured.push(await measureRound(`${ORIGIN}/`));
+    }
+    const over = owed.filter(
+      (part) => ratio(part) > budgets.frameCost[part][show],
+    );
+    if (over.length === 0 || attempt === ATTEMPTS) break;
+    console.log(
+      `Measuring ${show} again: ${over.map((part) => `${parts[part]} ${ratio(part).toFixed(3)}`).join(", ")} over its limit after attempt ${attempt}.`,
+    );
   }
-  for (const [part, label] of Object.entries(parts)) {
-    if (!(show in budgets.frameCost[part])) continue;
-    const cost = cheapest(measured, part);
-    const base = cheapest(reference, part);
+  for (const part of owed) {
     const rounds = (all) =>
       all.map((round) => round[part].toFixed(2)).join(" ");
     check(
-      `Frame cost, ${label}, ${show}, × reference (${ms(cost)} ÷ ${ms(base)}; rounds ${rounds(measured)} ÷ ${rounds(reference)})`,
-      Math.round((cost / base) * 1000) / 1000,
+      `Frame cost, ${parts[part]}, ${show}, × reference (${ms(cheapest(measured, part))} ÷ ${ms(cheapest(reference, part))}; rounds ${rounds(measured)} ÷ ${rounds(reference)})`,
+      Math.round(ratio(part) * 1000) / 1000,
       budgets.frameCost[part][show],
     );
   }
