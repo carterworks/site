@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { countAllocations } from "../../test/toy-canvas";
-import { type EmulatedCanvas, SHADERS, type ShaderFrame } from "./element";
+import "./element";
+import type { EmulatedCanvas } from "./element";
+import type { ShaderFrame } from "./shader";
+import { SHADERS } from "./shaders";
 
 const display = {
   drawImage: vi.fn(),

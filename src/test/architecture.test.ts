@@ -11,12 +11,21 @@ import { expect, test } from "vitest";
  */
 const layers = {
   lib: { files: ["src/lib/{clamp,cycle-setting}.ts"], imports: ["lib"] },
-  canvas: {
+  "canvas kit": {
     files: [
-      "src/components/emulated-canvas/*.ts",
+      "src/components/emulated-canvas/{shader,colour,limits}.ts",
       "src/components/backdrop-noise.ts",
     ],
-    imports: ["canvas", "lib"],
+    imports: ["canvas kit", "lib"],
+  },
+  // A pass sees only the contract and its helpers, never the element.
+  shaders: {
+    files: ["src/components/emulated-canvas/shaders/*.ts"],
+    imports: ["shaders", "canvas kit", "lib"],
+  },
+  canvas: {
+    files: ["src/components/emulated-canvas/*.ts"],
+    imports: ["canvas", "shaders", "canvas kit", "lib"],
   },
   "toy kit": {
     files: ["src/components/backdrop-toys/{toy,line}.ts"],
@@ -56,7 +65,7 @@ const layers = {
   },
   "dev toolbar": {
     files: ["src/dev-toolbar/*.ts"],
-    imports: ["toy registry", "canvas", "astro/toolbar"],
+    imports: ["toy registry", "canvas", "canvas kit", "astro/toolbar"],
   },
   "site lib": {
     files: ["src/lib/*.ts"],
