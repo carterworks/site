@@ -98,8 +98,17 @@ const REFERENCE =
 
 const round = (value) => Math.round(value * 100) / 100;
 const runs = [];
-let finished;
-const complete = new Promise((resolve) => (finished = resolve));
+const listeners = new Set();
+/** The next result `wanted` accepts. */
+const arrival = (wanted) =>
+  new Promise((resolve) => {
+    const listener = (result) => {
+      if (!wanted(result)) return;
+      listeners.delete(listener);
+      resolve(result);
+    };
+    listeners.add(listener);
+  });
 
 const server = createServer((request, response) =>
   respond(request, response).catch((error) => {
@@ -215,13 +224,12 @@ function report(result) {
       writeFileSync(options.json, JSON.stringify(runs, null, 2));
       console.log(`Saved ${runs.length} run(s) to ${options.json}.`);
     }
-    if (!options.stay) finished(result);
   } else if (result.type === "error") {
     console.error(
       `Run ${result.run} failed: ${result.stack ?? result.message}`,
     );
-    if (selfTest) finished(result);
   }
+  for (const listener of listeners) listener(result);
 }
 
 const tailscale = (...args) =>
@@ -291,12 +299,11 @@ setTimeout(() => {
   process.exit(runs.length > 0 ? 0 : 1);
 }, minutes * 60_000).unref();
 
-if (selfTest) {
-  process.exitCode = (await runSelfTest(origin)) ? 0 : 1;
-  process.exit();
+if (selfTest) process.exit((await runSelfTest(origin)) ? 0 : 1);
+if (!options.stay) {
+  await arrival(({ type }) => type === "done");
+  process.exit(0);
 }
-await complete;
-process.exit(0);
 
 /** Plays the device in headless Chromium; true if the run was complete and clean. */
 async function runSelfTest(origin) {
@@ -322,22 +329,48 @@ async function runSelfTest(origin) {
   );
 
   const browser = await chromium.launch({ channel: "chromium" });
-  const page = await browser.newPage();
-  page.on("pageerror", (error) => problems.push(`page error: ${error}`));
-  await page.goto(`${origin}/play/?probe`);
-  const result = await complete;
-  await browser.close();
-
-  if (result.type !== "done") {
-    problems.push("no complete run arrived");
-  } else {
-    expect(result.steps.length === result.steps[0]?.total, "steps are missing");
+  /** A run in a fresh context, after `before` has used the page as a visitor might. */
+  const runIn = async (before) => {
+    const page = await (await browser.newContext()).newPage();
+    const failed = new Promise((resolve) =>
+      page.on("pageerror", (error) =>
+        resolve({ type: "error", message: `page error: ${error}` }),
+      ),
+    );
+    await before?.(page);
+    const ended = arrival(({ type }) => type === "done" || type === "error");
+    await page.goto(`${origin}/play/?probe`);
+    const result = await Promise.race([ended, failed]);
+    await page.context().close();
+    return result;
+  };
+  const check = (name, result) => {
+    if (result.type !== "done") {
+      problems.push(`${name}: no complete run: ${result.message}`);
+      return;
+    }
+    expect(
+      result.steps.length === result.steps[0]?.total,
+      `${name}: steps are missing`,
+    );
     for (const step of result.steps) {
       for (const problem of step.problems) {
-        problems.push(`${step.name}, ${step.display ?? ""}: ${problem}`);
+        const what = [step.name, step.display, step.toy].filter(Boolean);
+        problems.push(`${name}: ${what.join(", ")}: ${problem}`);
       }
     }
-  }
+  };
+  check("from the first display", await runIn());
+  // A device that has chosen another display starts every step from it.
+  check(
+    "from the second display",
+    await runIn(async (page) => {
+      await page.goto(`${origin}/play/`);
+      await page.click("[data-display]");
+    }),
+  );
+  await browser.close();
+
   for (const problem of problems) console.error(`Self-test: ${problem}`);
   console.log(
     problems.length === 0
