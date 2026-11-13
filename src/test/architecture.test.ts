@@ -48,8 +48,8 @@ const layers = {
     imports: ["canvas kit"],
   },
   "pointer relay": {
-    files: ["src/components/pixel-backdrop/press.ts"],
-    imports: [],
+    files: ["src/components/pixel-backdrop/{pointer-relay,press}.ts"],
+    imports: ["pointer relay"],
   },
   backdrop: {
     files: ["src/components/pixel-backdrop.ts"],
