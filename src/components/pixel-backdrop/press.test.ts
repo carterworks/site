@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { isToyPress } from "./backdrop-press";
+import { isToyPress } from "./press";
 
 afterEach(() => document.body.replaceChildren());
 

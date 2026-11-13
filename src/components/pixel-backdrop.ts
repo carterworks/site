@@ -3,7 +3,7 @@ import type { EmulatedCanvas } from "./emulated-canvas/element";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
 import { TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
-import { isToyPress } from "./backdrop-press";
+import { relayPointer } from "./pixel-backdrop/pointer-relay";
 import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
 
 /**
@@ -20,12 +20,6 @@ import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
  * `noise` unless they are tweaked; see `look`.
  */
 
-/**
- * Set on `<html>` for the length of a hold; the stylesheet turns off text
- * selection, the touch callout and overscroll for it.
- */
-const HOLDING = "data-backdrop-holding";
-
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
 
@@ -36,22 +30,6 @@ function prefersDark() {
   if (override === "light") return false;
   return darkScheme.matches;
 }
-
-/**
- * A copy of a window pointer event for the canvas, carrying what a toy
- * written for a plain canvas reads. It does not bubble, so it never reaches
- * the window listeners that forward it.
- */
-const forwarded = (type: string, event: PointerEvent) =>
-  new PointerEvent(type, {
-    clientX: event.clientX,
-    clientY: event.clientY,
-    pointerId: event.pointerId,
-    pointerType: event.pointerType,
-    button: event.button,
-    buttons: event.buttons,
-    isPrimary: event.isPrimary,
-  });
 
 export class PixelBackdrop extends HTMLElement {
   #options!: BackdropKnobs;
@@ -64,18 +42,8 @@ export class PixelBackdrop extends HTMLElement {
   #shownPalette?: string;
   #display?: Display;
   #chosen = TOYS[0];
-  /** Stops the running toy; set exactly while one runs. */
+  /** Stops the running toy and its pointer relay; set exactly while one runs. */
   #stopToy?: () => void;
-  /** The press a hold began with, until the hold ends. */
-  #hold?: PointerEvent;
-  /**
-   * Whether the hold is a touch that has grabbed the toy: its moves go to the
-   * toy and never scroll. Any touch in the open grabs at once, for every toy,
-   * so none can fall back to scrolling under the finger. One that waited to
-   * tell a hold from a swipe lost every quick drag to the scroll; the page
-   * still scrolls from its content, where a press is never the toy's.
-   */
-  #grabbed = false;
 
   /** The id of the chosen toy, which is the incoming one mid-dissolve. */
   get toy(): string {
@@ -115,26 +83,6 @@ export class PixelBackdrop extends HTMLElement {
     this.#display ??= DISPLAYS.find(({ id }) => id === storedDisplay());
     this.#apply();
 
-    window.addEventListener("pointermove", this.#onPointerMove, {
-      passive: true,
-    });
-    window.addEventListener("pointerdown", this.#onPointerDown, {
-      passive: true,
-    });
-    window.addEventListener("pointerup", this.#onPointerEnd, { passive: true });
-    window.addEventListener("pointercancel", this.#onPointerEnd, {
-      passive: true,
-    });
-    window.addEventListener("blur", this.#release, { passive: true });
-    // The swap replaces <html>'s attributes, so a hold must not outlive its
-    // `HOLDING` styles into the next page.
-    document.addEventListener("astro:before-swap", this.#release);
-    // Not passive, as blocking a scroll is its job. Registered up front:
-    // browsers decide whether a touch may block scrolling as it begins.
-    window.addEventListener("touchmove", this.#onTouchMove, { passive: false });
-    window.addEventListener("touchend", this.#onTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", this.#onTouchEnd, { passive: true });
-    document.addEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.addEventListener("change", this.#onMotionChange);
     darkScheme.addEventListener("change", this.#applyPalette);
     // The theme toggle emits no event, and ClientRouter navigations reset
@@ -149,16 +97,6 @@ export class PixelBackdrop extends HTMLElement {
   disconnectedCallback() {
     this.#canvasObserver.disconnect();
     this.#stop();
-    window.removeEventListener("pointermove", this.#onPointerMove);
-    window.removeEventListener("pointerdown", this.#onPointerDown);
-    window.removeEventListener("pointerup", this.#onPointerEnd);
-    window.removeEventListener("pointercancel", this.#onPointerEnd);
-    window.removeEventListener("blur", this.#release);
-    document.removeEventListener("astro:before-swap", this.#release);
-    window.removeEventListener("touchmove", this.#onTouchMove);
-    window.removeEventListener("touchend", this.#onTouchEnd);
-    window.removeEventListener("touchcancel", this.#onTouchEnd);
-    document.removeEventListener("mouseleave", this.#onPointerLeave);
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#applyPalette);
     this.#schemeObserver.disconnect();
@@ -205,11 +143,10 @@ export class PixelBackdrop extends HTMLElement {
     this.#chosen = toy;
     const canvas = this.#canvas;
     if (canvas === undefined || this.#stopToy === undefined) return;
-    this.#release();
     this.#stopToy();
     canvas.transition();
     this.#applyLook(canvas);
-    this.#stopToy = toy.start(canvas);
+    this.#stopToy = run(toy, canvas);
   }
 
   /**
@@ -249,12 +186,11 @@ export class PixelBackdrop extends HTMLElement {
     if (reducedMotion.matches || !this.#options.enabled) return;
     this.#applyLook(canvas);
     delete canvas.dataset.manual;
-    this.#stopToy = this.#chosen.start(canvas);
+    this.#stopToy = run(this.#chosen, canvas);
   }
 
   /** The canvas goes manual too, so its fades and drift stop with the toy. */
   #stop() {
-    this.#release();
     this.#stopToy?.();
     this.#stopToy = undefined;
     if (this.#canvas !== undefined) this.#canvas.dataset.manual = "";
@@ -353,100 +289,24 @@ export class PixelBackdrop extends HTMLElement {
     return `max(1px, round(up, max(100lvw, 100lvh) / ${canvas.width}, 1px) - ${this.#knob("gap")}px)`;
   }
 
-  #forward(type: string, event: PointerEvent) {
-    this.#canvas?.dispatchEvent(forwarded(type, event));
-  }
-
-  /** Touch has no hover: only a grabbed finger's moves reach the toy. */
-  #onPointerMove = (event: PointerEvent) => {
-    if (this.#stopToy === undefined) return;
-    if (
-      event.pointerType === "touch" &&
-      !(this.#grabbed && event.pointerId === this.#hold?.pointerId)
-    ) {
-      return;
-    }
-    this.#forward("pointermove", event);
-  };
-
-  #onPointerLeave = () => {
-    if (this.#stopToy === undefined) return;
-    this.#canvas?.dispatchEvent(
-      new PointerEvent("pointerleave", { pointerType: "mouse" }),
-    );
-  };
-
-  /**
-   * A stopped backdrop draws nothing, so a hold there would only block the
-   * page's scroll and selection over an empty screen.
-   */
-  #onPointerDown = (event: PointerEvent) => {
-    if (this.#stopToy === undefined || !isToyPress(event)) return;
-    this.#release();
-    this.#hold = event;
-    this.#grabbed = event.pointerType === "touch";
-    this.#suppressSelection();
-    this.#forward("pointerdown", event);
-  };
-
-  /** Only the pointer that began the hold may end it; another finger lifting must not. */
-  #onPointerEnd = (event: PointerEvent) => {
-    if (event.pointerId !== this.#hold?.pointerId) return;
-    this.#endHold();
-    this.#forward(event.type, event);
-  };
-
-  /**
-   * A touch hold's backstop for `pointerup` and `pointercancel`. Touches carry
-   * no pointer id, so it waits for the last finger to lift.
-   */
-  #onTouchEnd = (event: TouchEvent) => {
-    if (this.#grabbed && event.touches.length === 0) this.#release();
-  };
-
-  /**
-   * In iOS Safari only this stops a touch scroll and its overscroll bounce;
-   * pointer events and `touch-action` on the page can't. iOS waits on a
-   * non-passive listener before it starts scrolling, so cancelling the first
-   * move is enough. `touchstart` is left alone: cancelling it would also
-   * swallow the click and focus a tap synthesizes.
-   */
-  #onTouchMove = (event: TouchEvent) => {
-    if (this.#grabbed && event.cancelable) event.preventDefault();
-  };
-
-  /**
-   * Ends a hold the pointer never released: on blur, a navigation, a touch
-   * backstop, a toy change or a stop. The toy is told by a `pointercancel`,
-   * as a plain canvas tells it when a touch turns into a scroll.
-   */
-  #release = () => {
-    const hold = this.#hold;
-    this.#endHold();
-    if (hold !== undefined && this.#stopToy !== undefined) {
-      this.#forward("pointercancel", hold);
-    }
-  };
-
-  #endHold() {
-    this.#hold = undefined;
-    this.#grabbed = false;
-    document.documentElement.removeAttribute(HOLDING);
-  }
-
-  /**
-   * Without `preventDefault`, which would break touch scrolling: the layer
-   * ignores pointer events, so a drag from the margin starts a native text
-   * selection across the page instead of dragging the toy.
-   */
-  #suppressSelection() {
-    document.documentElement.setAttribute(HOLDING, "");
-    getSelection()?.removeAllRanges();
-  }
-
   #onMotionChange = () => {
     if (reducedMotion.matches) this.#stop();
     else this.#start();
+  };
+}
+
+/**
+ * Starts `toy` with the pointer relayed to it. A stopped backdrop draws
+ * nothing, so a hold there would only block the page's scroll and selection
+ * over an empty screen. The relay stops first, so the toy hears a hold's
+ * `pointercancel`.
+ */
+function run(toy: Toy, canvas: EmulatedCanvas) {
+  const stopRelay = relayPointer(canvas);
+  const stopToy = toy.start(canvas);
+  return () => {
+    stopRelay();
+    stopToy();
   };
 }
 

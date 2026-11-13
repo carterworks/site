@@ -117,17 +117,6 @@ const FINGER = 7;
 const fingerDown = (target: EventTarget = document.body) =>
   press(target, { pointerType: "touch", pointerId: FINGER });
 
-const finger = (type: string, init: PointerEventInit = {}) =>
-  window.dispatchEvent(
-    new PointerEvent(type, {
-      pointerType: "touch",
-      pointerId: FINGER,
-      clientX: 100,
-      clientY: 100,
-      ...init,
-    }),
-  );
-
 /** Whether the page's scroll for a touchmove would be blocked. */
 function scrollBlocked() {
   const move = new TouchEvent("touchmove", { bubbles: true, cancelable: true });
@@ -138,122 +127,9 @@ function scrollBlocked() {
 const holding = () =>
   document.documentElement.hasAttribute("data-backdrop-holding");
 
-test("a hover is passed to the toy on the canvas with what a plain canvas's event carries", () => {
-  mount();
-
-  window.dispatchEvent(
-    new PointerEvent("pointermove", {
-      clientX: 12,
-      clientY: 34,
-      pointerId: 3,
-      pointerType: "pen",
-      buttons: 0,
-      isPrimary: true,
-    }),
-  );
-
-  expect(seen.events).toHaveLength(1);
-  expect(seen.events[0].event).toMatchObject({
-    type: "pointermove",
-    clientX: 12,
-    clientY: 34,
-    pointerId: 3,
-    pointerType: "pen",
-    buttons: 0,
-    isPrimary: true,
-    bubbles: false,
-  });
-});
-
-test("touch has no hover: a finger's moves reach the toy only while it holds a grab", () => {
-  mount();
-  finger("pointermove");
-  expect(seen.events).toEqual([]);
-
-  fingerDown();
-  finger("pointermove", { clientX: 200 });
-  finger("pointermove", { clientX: 220, pointerId: FINGER + 1 });
-
-  expect(types()).toEqual(["pointerdown", "pointermove"]);
-  expect(seen.events[1].event.clientX).toBe(200);
-});
-
-test("a press in the open reaches the toy, suppresses selection and clears one already begun", () => {
-  mount();
-  const paragraph = document.createElement("p");
-  paragraph.textContent = "words";
-  document.body.append(paragraph);
-  getSelection()!.selectAllChildren(paragraph);
-
-  press(document.body);
-
-  expect(types()).toEqual(["pointerdown"]);
-  expect(holding()).toBe(true);
-  expect(getSelection()!.isCollapsed).toBe(true);
-});
-
-test.each(["a", "main", "header", "button"])(
-  "a press on %s never reaches the toy, grabs or suppresses selection",
-  (tag) => {
-    mount();
-    const content = document.createElement(tag);
-    document.body.append(content);
-
-    press(content);
-    fingerDown(content);
-
-    expect(seen.events).toEqual([]);
-    expect(holding()).toBe(false);
-    expect(scrollBlocked()).toBe(false);
-  },
-);
-
-test("the hold's own pointerup reaches the toy and ends it, and another pointer's does not", () => {
-  mount();
-  press(document.body, { pointerId: 1 });
-
-  window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 2 }));
-  expect(holding()).toBe(true);
-
-  window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
-  expect(types()).toEqual(["pointerdown", "pointerup"]);
-  expect(holding()).toBe(false);
-});
-
-test("a grabbed touch blocks the page's scroll from its first move until it lifts", () => {
-  mount();
-  fingerDown();
-  expect(scrollBlocked()).toBe(true);
-
-  finger("pointerup");
-
-  expect(scrollBlocked()).toBe(false);
-  expect(types()).toEqual(["pointerdown", "pointerup"]);
-});
-
 const backdropElement = () => document.querySelector("pixel-backdrop")!;
 
 test.each<[string, () => void]>([
-  ["pointercancel", () => finger("pointercancel")],
-  [
-    "touchend",
-    () =>
-      document.body.dispatchEvent(
-        new TouchEvent("touchend", { bubbles: true }),
-      ),
-  ],
-  [
-    "touchcancel",
-    () =>
-      document.body.dispatchEvent(
-        new TouchEvent("touchcancel", { bubbles: true }),
-      ),
-  ],
-  ["window blur", () => window.dispatchEvent(new Event("blur"))],
-  [
-    "a navigation",
-    () => document.dispatchEvent(new Event("astro:before-swap")),
-  ],
   ["a toy change", () => backdropElement().setToy("tuned")],
   ["disconnect", () => backdropElement().remove()],
   ["disable", () => backdropElement().configure({ enabled: false })],
@@ -276,27 +152,21 @@ test.each<[string, () => void]>([
   },
 );
 
-test("a second finger lifting does not let go of a grabbed touch", () => {
-  mount();
+test("a disconnected backdrop relays nothing, and relays again once reconnected", () => {
+  const backdrop = mount();
+  backdrop.remove();
+
+  press(document.body);
   fingerDown();
+  expect(seen.events).toEqual([]);
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
 
-  document.body.dispatchEvent(
-    new TouchEvent("touchend", {
-      bubbles: true,
-      touches: [new Touch({ identifier: 0, target: document.body })],
-    }),
-  );
-  finger("pointerup", { pointerId: FINGER + 1 });
+  document.body.append(backdrop);
+  press(document.body);
 
-  expect(scrollBlocked()).toBe(true);
-});
-
-test("the pointer leaving the page reaches the toy as a pointerleave", () => {
-  mount();
-
-  document.dispatchEvent(new MouseEvent("mouseleave"));
-
-  expect(types()).toEqual(["pointerleave"]);
+  expect(types()).toEqual(["pointerdown"]);
+  expect(holding()).toBe(true);
 });
 
 test.each<[string, (backdrop: PixelBackdrop) => void]>([
