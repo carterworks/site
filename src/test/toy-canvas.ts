@@ -4,9 +4,10 @@ import { vi } from "vitest";
  * A software stand-in for a 2D canvas, so toys run under happy-dom, which
  * has none. It draws the calls toys and the emulated canvas make (rectangles,
  * image data, copies) into plain straight-alpha RGBA bytes, honouring
- * `globalAlpha` and the composite modes in `BLENDS` plus `copy`, and throws on
- * any other mode rather than draw it wrong. It counts what a test checks:
- * drawing that reaches past the bitmap's edges, and pixel read-backs.
+ * `globalAlpha` and the composite modes the site draws with, `source-over` and
+ * `copy`, and throws on any other mode rather than draw it wrong. It counts
+ * what a test checks: drawing that reaches past the bitmap's edges, and pixel
+ * read-backs.
  */
 export const softStats = { outOfBounds: 0, reads: 0 };
 
@@ -44,16 +45,6 @@ function parseColour(value: string): Rgba {
   return [Number(r), Number(g), Number(b), Math.round(Number(a) * 255)];
 }
 
-/** A blend mode's function of backdrop and source channels, each 0–1. */
-type Blend = (backdrop: number, source: number) => number;
-
-const sourceOver: Blend = (_, source) => source;
-
-/** The modes the canvas draws with, from Compositing and Blending Level 1. */
-const BLENDS: Partial<Record<string, Blend>> = {
-  "source-over": sourceOver,
-};
-
 export class SoftContext {
   globalAlpha = 1;
   globalCompositeOperation = "source-over";
@@ -76,11 +67,9 @@ export class SoftContext {
   }
 
   fillRect(x: number, y: number, width: number, height: number) {
-    const blend = this.#blend();
+    this.#applyMode();
     const colour = this.#colour;
-    this.#each(x, y, width, height, (i) =>
-      this.#composite(i, colour, 0, blend),
-    );
+    this.#each(x, y, width, height, (i) => this.#composite(i, colour, 0));
   }
 
   clearRect(x: number, y: number, width: number, height: number) {
@@ -123,13 +112,12 @@ export class SoftContext {
     if (bitmap === undefined || arguments.length !== 3) {
       throw new Error("SoftContext draws only a whole soft canvas, unscaled");
     }
-    const blend = this.#blend();
+    this.#applyMode();
     this.#each(dx, dy, bitmap.width, bitmap.height, (i, x, y) =>
       this.#composite(
         i,
         bitmap.pixels,
         ((y - dy) * bitmap.width + (x - dx)) * 4,
-        blend,
       ),
     );
   }
@@ -139,31 +127,25 @@ export class SoftContext {
    * so `copy` clears what it does not cover; over transparent black it is then
    * the same as `source-over`.
    */
-  #blend() {
+  #applyMode() {
     const mode = this.globalCompositeOperation;
-    if (mode === "copy") {
-      this.bitmap.pixels.fill(0);
-      return sourceOver;
-    }
-    const blend = BLENDS[mode];
-    if (blend === undefined) {
+    if (mode === "copy") this.bitmap.pixels.fill(0);
+    else if (mode !== "source-over") {
       throw new Error(`SoftContext cannot composite with ${mode}`);
     }
-    return blend;
   }
 
   /**
    * Draws the straight RGBA source pixel at `source[from]` over pixel `i` by
-   * the compositing spec's general formula (blend, then source-over), in
-   * floats rounded to the nearest byte. A browser keeps premultiplied bytes,
-   * so a translucent result can differ from it by a level or so; an opaque
-   * one matches.
+   * the compositing spec's source-over, in floats rounded to the nearest byte.
+   * A browser keeps premultiplied bytes, so a translucent result can differ
+   * from it by a level or so; an opaque one matches.
    */
-  #composite(i: number, source: ArrayLike<number>, from: number, blend: Blend) {
+  #composite(i: number, source: ArrayLike<number>, from: number) {
     const { pixels } = this.bitmap;
     const alpha = (source[from + 3] / 255) * this.globalAlpha;
     // What the formula gives, minus its float work on the hot full-frame copies.
-    if (alpha === 1 && blend === sourceOver) {
+    if (alpha === 1) {
       for (let channel = 0; channel < 4; channel += 1) {
         pixels[i + channel] = source[from + channel];
       }
@@ -174,8 +156,7 @@ export class SoftContext {
     for (let channel = 0; channel < 3; channel += 1) {
       const backdrop = pixels[i + channel] / 255;
       const colour = source[from + channel] / 255;
-      const mixed = (1 - below) * colour + below * blend(backdrop, colour);
-      const premultiplied = alpha * mixed + (1 - alpha) * below * backdrop;
+      const premultiplied = alpha * colour + (1 - alpha) * below * backdrop;
       pixels[i + channel] =
         shown === 0 ? 0 : Math.round((premultiplied / shown) * 255);
     }
