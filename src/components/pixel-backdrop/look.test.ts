@@ -343,6 +343,7 @@ const complete: Display = {
     vignette: { clear: 33, edge: "#e6d3d3" },
     base: "#f89b03",
     ink: "#3c070d",
+    stops: ["#2bd96b", "#e3f01c"],
     levels: 2,
     gap: 1,
     ghostRise: 86,

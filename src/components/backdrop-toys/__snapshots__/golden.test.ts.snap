@@ -227,6 +227,62 @@ exports[`culture on Site in light > markup 1`] = `
 
 exports[`culture on Site in light 1`] = `"f362eed192086982a9589cfa572aef2f6a48bdf3d40c39585bde4f2eb64ebc83 over 500 changed frames"`;
 
+exports[`culture on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`culture on Thermal 1`] = `"1d8ec0d70c099bccc1bc9380d0c345ae4961c0937513fe50bbdae3e4651c7101 over 409 changed frames"`;
+
 exports[`horizon on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -453,6 +509,62 @@ exports[`horizon on Site in light > markup 1`] = `
 `;
 
 exports[`horizon on Site in light 1`] = `"7f54eaf9e46c59db0b948698740143a56e7d08502eb4983730402092fe8b4bd5 over 65 changed frames"`;
+
+exports[`horizon on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Thermal 1`] = `"fc005002c442cf1bb7d324dd11b8032df697234d34f750bac487d1c050aba2e5 over 1 changed frames"`;
 
 exports[`mote on Amber LCD > markup 1`] = `
 {
@@ -681,6 +793,62 @@ exports[`mote on Site in light > markup 1`] = `
 
 exports[`mote on Site in light 1`] = `"441b19489359a75d9aa95aa39e9b5379cd5afdb9cc8fb89814793f1293faea63 over 501 changed frames"`;
 
+exports[`mote on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "55",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`mote on Thermal 1`] = `"31c69390d2708e1d939f7f8d2361644c1a42edde0326ee25661022336907a7a0 over 439 changed frames"`;
+
 exports[`peaks on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -907,6 +1075,62 @@ exports[`peaks on Site in light > markup 1`] = `
 `;
 
 exports[`peaks on Site in light 1`] = `"659e20b11e2454a5556be4974bfd120d6bbe0a8e23880a2afbc108d9d7821f2b over 65 changed frames"`;
+
+exports[`peaks on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Thermal 1`] = `"be6d91095caca88f35b4ed91354d59c347698fae98c75f4df9feff5c3bb30f99 over 1 changed frames"`;
 
 exports[`pinbed on Amber LCD > markup 1`] = `
 {
@@ -1135,6 +1359,62 @@ exports[`pinbed on Site in light > markup 1`] = `
 
 exports[`pinbed on Site in light 1`] = `"6a998e139c8ffc62f1025bb54a7aeb8d854ab0d0dac2f151f21804340ff7afe6 over 384 changed frames"`;
 
+exports[`pinbed on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "40",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`pinbed on Thermal 1`] = `"12a89e7230257c721de835efbe66a95b1bf1b4dc86efb46da94b6b1912b6708e over 342 changed frames"`;
+
 exports[`pond on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -1361,6 +1641,62 @@ exports[`pond on Site in light > markup 1`] = `
 `;
 
 exports[`pond on Site in light 1`] = `"fba504945cb0325642f5dc4e00ab07a4fb0ea060b9537b13e665dc0076a2ebd7 over 501 changed frames"`;
+
+exports[`pond on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "50",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`pond on Thermal 1`] = `"8bb34843e964d12f3a8bdca59869285055213c3ee449591710a308171f84b691 over 501 changed frames"`;
 
 exports[`shimmer on Amber LCD > markup 1`] = `
 {
@@ -1589,6 +1925,62 @@ exports[`shimmer on Site in light > markup 1`] = `
 
 exports[`shimmer on Site in light 1`] = `"a2b379b433c272560aab6d469afab211d5aae5505c23faf6111728aa8978a787 over 235 changed frames"`;
 
+exports[`shimmer on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`shimmer on Thermal 1`] = `"f35068c2d41fcc1df0ec68389c3d3788b45bd84725d326a247127ea123a7a07e over 189 changed frames"`;
+
 exports[`silt on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -1816,6 +2208,62 @@ exports[`silt on Site in light > markup 1`] = `
 
 exports[`silt on Site in light 1`] = `"b4f3339ecafcd8897dd1d98a9fe318ddb19d4273893d0104f76101a1e025eccf over 405 changed frames"`;
 
+exports[`silt on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "55",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`silt on Thermal 1`] = `"15f6f2cdd2dcdb5e64a8876df97b219399e8c45b659807b04cccde0011745de4 over 324 changed frames"`;
+
 exports[`wax on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -2042,3 +2490,59 @@ exports[`wax on Site in light > markup 1`] = `
 `;
 
 exports[`wax on Site in light 1`] = `"b83a1e4261f27ea34327aaca041b5f9d0c1ce8841ae1ac8509f57ee054c604e7 over 501 changed frames"`;
+
+exports[`wax on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "75",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`wax on Thermal 1`] = `"986b8fe0d034c24e3496cc3a0a8bbe3f58f0f1100d6f384704c2771433ca5471 over 499 changed frames"`;

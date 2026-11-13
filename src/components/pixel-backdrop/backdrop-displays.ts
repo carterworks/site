@@ -18,6 +18,8 @@ export type DisplayLook = {
    */
   vignette?: { clear: number; edge: string };
   base: string;
+  /** Colours spaced evenly between the base and the ink, which the scale runs through. */
+  stops?: string[];
   ink: string;
   levels: number;
   gap: number;
@@ -73,6 +75,19 @@ export const DISPLAYS: Display[] = [
       gap: 1,
       ghostRise: 86,
       ghostFall: 76,
+    },
+  },
+  {
+    id: "thermal",
+    label: "Thermal",
+    look: {
+      base: "#cdd8ee",
+      stops: ["#2bd96b", "#e3f01c", "#ff4a0a"],
+      ink: "#000000",
+      levels: 5,
+      gap: 2,
+      ghostRise: 40,
+      ghostFall: 40,
     },
   },
 ];
