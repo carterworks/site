@@ -27,6 +27,10 @@ export type Look = { ghost: number; noise: number };
  * scheduling once nothing moves. `start` returns the stop, which removes its
  * listeners and cancels its frames and timers.
  *
+ * A toy passes one `AbortController`'s `signal` to every `addEventListener`,
+ * the window's included, so its stop removes them all with one `abort()`, and
+ * runs its loop with `frameLoop`.
+ *
  * An owner may style what it draws: `<pixel-backdrop>` recolours it in the
  * display's palette, lays noise under it and dissolves between toys, but the
  * toy never sees any of that. `look` is the ghost and noise it was tuned with,
@@ -79,6 +83,40 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
     },
     restart() {
       last = undefined;
+    },
+  };
+}
+
+/**
+ * A toy's animation loop. `step` runs on an animation frame with its time,
+ * and the loop asks for the next frame only while `step` returns true, so it
+ * sleeps once nothing moves. `wake` asks for a frame unless one is pending and
+ * says whether it did, so a toy can restart its pacer only when the loop
+ * starts again. `stop` cancels a pending frame, and a later `wake` starts the
+ * loop again: a loop that refused it would hide, from the contract test, a
+ * listener the toy's stop forgot.
+ *
+ * A toy paced by `fixedStep` restarts it where its step returns false, or,
+ * if its loop also stops from outside the step, as `if (loop.wake())
+ * pace.restart()`. A toy that sleeps on a timer sets it where its step
+ * returns false, and clears it in its own wake before `loop.wake()`.
+ */
+export function frameLoop(step: (now: number) => boolean) {
+  let frame: number | undefined;
+  const tick = (now: number) => {
+    frame = undefined;
+    if (step(now)) wake();
+  };
+  const wake = () => {
+    if (frame !== undefined) return false;
+    frame = requestAnimationFrame(tick);
+    return true;
+  };
+  return {
+    wake,
+    stop() {
+      cancelAnimationFrame(frame ?? 0);
+      frame = undefined;
     },
   };
 }
