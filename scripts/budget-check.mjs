@@ -46,10 +46,15 @@ const lap = (stage) =>
   console.log(`${stage} at ${Math.round((Date.now() - started) / 1000)} s.`);
 const results = [];
 const check = (budget, measured, limit) =>
-  results.push({ budget, measured, limit, met: measured <= limit });
+  results.push({
+    budget,
+    measured,
+    limit,
+    result: measured <= limit ? "ok" : "MISSED",
+  });
 /** A measurement that comes back empty would pass every budget, so it fails the run. */
-const need = (found, nothing) => {
-  if (!found) throw new Error(`Measured nothing: ${nothing}.`);
+const need = (found, why) => {
+  if (!found) throw new Error(`Cannot measure the budgets: ${why}.`);
 };
 const sum = (values) => values.reduce((total, value) => total + value, 0);
 const most = (rows, key) => Math.max(0, ...rows.map((row) => row[key]));
@@ -63,6 +68,11 @@ if (renderer) {
     `Chromium composited with ${renderer}; budgets need software.`,
   );
 }
+// The compositor counts hold for one Chromium build rendering in software, so
+// a first failure on a new machine starts by comparing this line.
+console.log(`Chromium ${browser.version()}, compositing in software.`);
+// A selector that matches nothing should fail the run now, not in 30 s.
+page.setDefaultTimeout(10_000);
 
 const metrics = async () => {
   const all = Object.fromEntries(
@@ -373,15 +383,8 @@ for (const display of displays) {
   }
 }
 
-console.table(
-  results.map(({ budget, measured, limit, met }) => ({
-    budget,
-    measured,
-    limit,
-    result: met ? "ok" : "MISSED",
-  })),
-);
-const missed = results.filter(({ met }) => !met);
+console.table(results);
+const missed = results.filter(({ result }) => result !== "ok");
 console.log(
   `${results.length - missed.length} of ${results.length} budgets met in ${Math.round((Date.now() - started) / 1000)} s.`,
 );
