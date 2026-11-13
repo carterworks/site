@@ -10,8 +10,8 @@ import {
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
-import { MAX_GHOST } from "../emulated-canvas-limits";
-import "../emulated-canvas";
+import { MAX_GHOST } from "../emulated-canvas/limits";
+import "../emulated-canvas/element";
 import { TOYS } from ".";
 import type { Toy, ToyCanvas } from "./toy";
 

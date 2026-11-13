@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import "../components/pixel-backdrop";
 import { readDefaults } from "../components/pixel-backdrop/knobs";
-import { MAX_GHOST } from "../components/emulated-canvas-limits";
+import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/backdrop-toy-setting";
 import {

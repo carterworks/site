@@ -1,4 +1,4 @@
-import { MAX_GHOST } from "../emulated-canvas-limits";
+import { MAX_GHOST } from "../emulated-canvas/limits";
 
 /**
  * The backdrop's knobs, one entry each: how its default parses and the dev
