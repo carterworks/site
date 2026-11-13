@@ -40,6 +40,7 @@ function expectExercised(presentsDuringPlay: number) {
 const STILL: Record<string, { reason: string }> = {
   peaks: { reason: "a mountain range, drawn once like a picture" },
   horizon: { reason: "a low skyline, drawn once like a picture" },
+  crags: { reason: "a lit rock face, drawn once like a picture" },
 };
 
 /** Time for the ghost to fade out a still frame, with plenty to spare. */
