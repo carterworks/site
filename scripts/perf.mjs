@@ -100,6 +100,16 @@ if (toys.length === 0) {
   throw new Error(`The /play page in ${options.dist} has no toy menu.`);
 }
 const displays = await controls.displays();
+if (builds.base) {
+  await controls.open("base");
+  if ((await controls.toys()).length === 0) {
+    console.log(
+      `Could not compare against the base build in ${options.against}: its /play page has no toy menu, a <select data-toy>, to choose toys from.`,
+    );
+    await browser.close();
+    process.exit(0);
+  }
+}
 
 /** Cumulative CPU ms of each renderer and GPU process, and the page's time in script. */
 const spent = async () => {
@@ -207,6 +217,10 @@ await browser.close();
 
 if (!options.against) {
   console.table(rows);
+} else if (rows.length === 0) {
+  console.log(
+    `Could not compare against the base build in ${options.against}: no toy on any display could be measured on both builds.`,
+  );
 } else {
   const percent = (share) => `${Math.round(share * 100)}%`;
   console.table(
