@@ -18,14 +18,25 @@ const layers = {
     ],
     imports: ["canvas kit", "lib"],
   },
-  // A pass sees only the contract and its helpers, never the element.
+  "shader registry": {
+    files: ["src/components/emulated-canvas/shaders/index.ts"],
+    imports: ["shaders", "canvas kit"],
+  },
+  // A pass sees only the contract and its helpers, never another pass, the
+  // registry or the element.
   shaders: {
     files: ["src/components/emulated-canvas/shaders/*.ts"],
-    imports: ["shaders", "canvas kit", "lib"],
+    imports: ["canvas kit", "lib"],
   },
+  pipeline: {
+    files: ["src/components/emulated-canvas/pipeline.ts"],
+    imports: ["canvas kit"],
+  },
+  // Other layers reach the canvas through the element and the kit, never the
+  // pipeline or the passes.
   canvas: {
-    files: ["src/components/emulated-canvas/*.ts"],
-    imports: ["canvas", "shaders", "canvas kit", "lib"],
+    files: ["src/components/emulated-canvas/element.ts"],
+    imports: ["pipeline", "shader registry", "canvas kit"],
   },
   "toy kit": {
     files: ["src/components/backdrop-toys/{toy,line}.ts"],
