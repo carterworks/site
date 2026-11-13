@@ -1,6 +1,7 @@
 import { makeNoise2D } from "../backdrop-noise";
 import { colourRgb } from "./colour";
-import type { Pace, Shader, ShaderFrame, ShaderPass } from "./shader";
+import { Pipeline } from "./pipeline";
+import type { Pace, Shader, ShaderFrame } from "./shader";
 import { SHADERS } from "./shaders";
 import { NOISE_OFFSET_X, NOISE_OFFSET_Y, NOISE_SEED } from "./shaders/noise";
 
@@ -228,8 +229,10 @@ export class EmulatedCanvas extends HTMLElement {
   /** When the animation frame of the last frame-driven present began; timer presents leave it. */
   #presentedFrameAt = -Infinity;
   #drewAt = -Infinity;
-  #passes = this.#shaders().map((_, index) => this.#build(index));
-  #wasActive = new Set<ShaderPass>();
+  #pipeline = new Pipeline(
+    (this.constructor as typeof EmulatedCanvas).shaders,
+    this.dataset,
+  );
   #frame: ShaderFrame = {
     width: 0,
     height: 0,
@@ -257,7 +260,7 @@ export class EmulatedCanvas extends HTMLElement {
     if (name === "data-manual") this.#cancelNext();
     else {
       this.#configure();
-      for (const pass of this.#passes) pass.configure(this.dataset);
+      this.#pipeline.configure();
     }
     this.#requestPresent();
   }
@@ -328,19 +331,8 @@ export class EmulatedCanvas extends HTMLElement {
 
   /** Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn. */
   reset() {
-    this.#passes = this.#shaders().map((_, index) => this.#build(index));
-    this.#wasActive.clear();
+    this.#pipeline.reset();
     this.#dissolving = false;
-  }
-
-  #shaders() {
-    return (this.constructor as typeof EmulatedCanvas).shaders;
-  }
-
-  #build(index: number) {
-    const pass = this.#shaders()[index].create();
-    pass.configure(this.dataset);
-    return pass;
   }
 
   /** Created on demand: a consumer may ask for the context before connection. */
@@ -581,23 +573,11 @@ export class EmulatedCanvas extends HTMLElement {
     frame.elapsedMs = now - (this.#presentedAt ?? now);
     this.#presentedAt = now;
 
-    let image: ImageData | undefined;
-    let active = false;
-    let idle = false;
-    for (let index = 0; index < this.#passes.length; index += 1) {
-      const pass = this.#passes[index];
-      if (!pass.active()) {
-        if (this.#wasActive.delete(pass))
-          this.#passes[index] = this.#build(index);
-        continue;
-      }
-      this.#wasActive.add(pass);
-      image ??= this.#pixels(innerCanvas);
-      if (image === undefined) break;
-      const pace = pass.apply(image.data, frame);
-      active ||= pace === "active";
-      idle ||= pace === "idle";
-    }
+    let image = this.#pipeline.active() ? this.#pixels(innerCanvas) : undefined;
+    const pace =
+      image === undefined
+        ? "still"
+        : this.#pipeline.apply(image.data, frame, now - this.#drewAt);
 
     const dissolving =
       this.#dissolving &&
@@ -608,13 +588,7 @@ export class EmulatedCanvas extends HTMLElement {
     if (image === undefined) context.drawImage(innerCanvas, 0, 0);
     else context.putImageData(image, 0, 0);
     this.#copyToEcho(outerCanvas);
-    if (dissolving) return "active";
-    // A drifting frame can keep a fade more than a level behind on every
-    // present, so it never reports settled and would hold full rate for good.
-    if (active && (!idle || now - this.#drewAt < DRIFTING_FADE_MS)) {
-      return "active";
-    }
-    return active || idle ? "idle" : "still";
+    return dissolving ? "active" : pace;
   }
 
   /** Shows the frozen frame wherever the dissolve has not reached; false once it is done. */
@@ -717,9 +691,6 @@ function dissolveThreshold(width: number, height: number) {
 
 /** The idle redraw rate, for a pass that only drifts. */
 const IDLE_FRAME_MS = 1000 / 8;
-
-/** How long after a draw a fade over a drifting pass may keep full rate. */
-const DRIFTING_FADE_MS = 1000;
 
 /** The 2D context's methods that change pixels; every other call leaves them be. */
 const PIXEL_WRITERS = [
