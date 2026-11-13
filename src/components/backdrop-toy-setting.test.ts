@@ -102,7 +102,7 @@ test("Random is gone after a reload with nothing stored", () => {
 });
 
 test("ignores a stored id that is no longer a toy", () => {
-  localStorage.setItem("backdrop-mode", "gone");
+  localStorage.setItem("backdrop-mode", "fireflies");
   const events = new EventTarget();
   createBackdropToy(fixedRandom(0), events);
 
