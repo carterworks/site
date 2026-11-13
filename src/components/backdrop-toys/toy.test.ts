@@ -1,7 +1,15 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { cellScale, fixedStep, pointOn, sameRect, visibleCells } from "./toy";
+import {
+  cellScale,
+  fixedStep,
+  frameLoop,
+  pointOn,
+  sameRect,
+  visibleCells,
+} from "./toy";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   document.body.replaceChildren();
 });
@@ -142,4 +150,98 @@ test("a fixed step catches up no more than its cap after a long pause", () => {
   pace.advance(0, () => {});
 
   expect(stepsOver(pace, [60_000])).toBe(10);
+});
+
+function spyFrames() {
+  vi.useFakeTimers({
+    toFake: ["requestAnimationFrame", "cancelAnimationFrame"],
+  });
+  return vi.spyOn(window, "requestAnimationFrame");
+}
+
+test("a frame loop asks for frames only while its step returns true", () => {
+  const frames = spyFrames();
+  let left = 3;
+  const loop = frameLoop(() => (left -= 1) > 0);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  expect(left).toBe(0);
+  expect(frames).toHaveBeenCalledTimes(3);
+});
+
+test("a frame loop's step gets the frame's time", () => {
+  spyFrames();
+  const times: number[] = [];
+  const loop = frameLoop((now) => {
+    times.push(now);
+    return false;
+  });
+
+  loop.wake();
+  vi.advanceTimersByTime(16);
+
+  expect(times).toEqual([16]);
+});
+
+test("waking a frame loop with a frame pending asks for no other, and says so", () => {
+  const frames = spyFrames();
+  const loop = frameLoop(() => false);
+
+  expect(loop.wake()).toBe(true);
+  expect(loop.wake()).toBe(false);
+  expect(frames).toHaveBeenCalledTimes(1);
+
+  vi.advanceTimersByTime(16);
+  expect(loop.wake()).toBe(true);
+});
+
+test("a step that wakes its own loop and goes on still has one frame pending", () => {
+  const frames = spyFrames();
+  let left = 2;
+  const loop = frameLoop(() => {
+    loop.wake();
+    return (left -= 1) > 0;
+  });
+
+  loop.wake();
+  vi.advanceTimersByTime(16);
+
+  expect(frames).toHaveBeenCalledTimes(2);
+});
+
+test("stopping a frame loop cancels its pending frame", () => {
+  spyFrames();
+  const step = vi.fn(() => true);
+  const loop = frameLoop(step);
+
+  loop.wake();
+  loop.stop();
+  vi.advanceTimersByTime(1000);
+
+  expect(step).not.toHaveBeenCalled();
+});
+
+test("a stopped frame loop starts again when woken, so a leaked listener still shows", () => {
+  const frames = spyFrames();
+  const loop = frameLoop(() => false);
+
+  loop.wake();
+  loop.stop();
+
+  expect(loop.wake()).toBe(true);
+  expect(frames).toHaveBeenCalledTimes(2);
+});
+
+test("a frame loop asks for every frame with the same callback, so it allocates none per frame", () => {
+  const frames = spyFrames();
+  let left = 3;
+  const loop = frameLoop(() => (left -= 1) > 0);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  const callbacks = new Set(frames.mock.calls.map(([callback]) => callback));
+  expect(callbacks.size).toBe(1);
 });

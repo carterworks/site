@@ -1,6 +1,6 @@
 import { clamp } from "../../lib/clamp";
 import { line } from "./line";
-import { pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
+import { frameLoop, pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
 
 const MAX_RIPPLES = 24;
 /** A ring's largest radius, in pixels at the tuned width. */
@@ -38,7 +38,6 @@ export const shimmer: Toy = {
     let moved = false;
     // Set to start, so the first frame clears whatever the canvas showed.
     let lit = true;
-    let frame: number | undefined;
 
     const plot = (x: number, y: number, opacity: number) => {
       const i = (y * width + x) * 4;
@@ -74,7 +73,6 @@ export const shimmer: Toy = {
     };
 
     const draw = (now: number) => {
-      frame = undefined;
       pixels.fill(0);
       let drew = false;
       if (moved && hovering) {
@@ -96,12 +94,10 @@ export const shimmer: Toy = {
       if (drew || lit) context.putImageData(image, 0, 0);
       // A frame that drew needs one more after it, to clear what it drew.
       lit = drew;
-      if (drew) wake();
+      return drew;
     };
 
-    const wake = () => {
-      frame ??= requestAnimationFrame(draw);
-    };
+    const { wake, stop } = frameLoop(draw);
 
     const onMove = (event: PointerEvent) => {
       const point = pointOn(canvas, event);
@@ -137,20 +133,18 @@ export const shimmer: Toy = {
       hovering = false;
     };
 
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointerup", onLift);
-    canvas.addEventListener("pointercancel", onLift);
-    canvas.addEventListener("pointerleave", onLeave);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointerup", onLift, { signal });
+    canvas.addEventListener("pointercancel", onLift, { signal });
+    canvas.addEventListener("pointerleave", onLeave, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointerup", onLift);
-      canvas.removeEventListener("pointercancel", onLift);
-      canvas.removeEventListener("pointerleave", onLeave);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      stop();
     };
   },
 };

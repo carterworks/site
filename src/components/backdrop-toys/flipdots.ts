@@ -2,6 +2,7 @@ import { clamp } from "../../lib/clamp";
 import { line } from "./line";
 import {
   fixedStep,
+  frameLoop,
   pointOn,
   TUNED_GRID,
   visibleCells,
@@ -71,7 +72,6 @@ export const flipdots: Toy = {
     const here: Point = { x: 0, y: 0 };
     let lastTapAt = -Infinity;
     let changed = false;
-    let frame: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const drawDisc = (index: number) => {
@@ -149,19 +149,16 @@ export const flipdots: Toy = {
     const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
 
     const step = (now: number) => {
-      frame = undefined;
       pace.advance(now, simulate);
       if (changed) {
         context.putImageData(image, 0, 0);
         changed = false;
       }
-      if (activeCount > 0) wake();
-      else pace.restart();
+      if (activeCount === 0) pace.restart();
+      return activeCount > 0;
     };
 
-    const wake = () => {
-      frame ??= requestAnimationFrame(step);
-    };
+    const { wake, stop } = frameLoop(step);
 
     const wipe = () => {
       for (let index = 0; index < discs; index += 1) {
@@ -243,18 +240,17 @@ export const flipdots: Toy = {
 
     for (let index = 0; index < discs; index += 1) drawDisc(index);
 
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointerleave", onLeave);
-    window.addEventListener("resize", onResize);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointerleave", onLeave, { signal });
+    window.addEventListener("resize", onResize, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      stop();
       clearTimeout(timer);
     };
   },
