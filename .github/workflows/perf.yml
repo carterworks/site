@@ -5,6 +5,7 @@ on:
     paths:
       - src/**
       - scripts/perf.mjs
+      - scripts/play-page.mjs
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/perf.yml
