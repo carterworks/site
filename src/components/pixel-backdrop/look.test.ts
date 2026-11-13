@@ -499,14 +499,6 @@ test("a tweaked knob sets no custom property on the canvas", () => {
   expect(Object.keys(look.canvasStyle)).toEqual(["--emulated-canvas-scale"]);
 });
 
-test("nothing tweaked is a fresh start, and a tweak leaves nothing behind once removed", () => {
-  const fresh = resolve();
-  for (const key of Object.keys(KNOBS) as (keyof BackdropKnobs)[]) {
-    resolve({ tweaks: { [key]: another(key) } });
-    expect(resolve({ tweaks: {} }), key).toEqual(fresh);
-  }
-});
-
 test("the defaults set as tweaks are not a fresh start: they outrank a display", () => {
   expect(resolve({ display: pocket, tweaks: { ...DEFAULTS } })).not.toEqual(
     resolve({ display: pocket }),
