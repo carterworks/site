@@ -37,6 +37,15 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
   const round = (value) => Math.round(value * 100) / 100;
   const median = (values) =>
     values.toSorted((a, b) => a - b)[values.length >> 1];
+  /**
+   * The mean of the values near the median: a stall cannot move it, and on a
+   * 1 ms timer 16 and 17 ms gaps average to the true interval.
+   */
+  const typical = (values) => {
+    const middle = median(values);
+    const near = values.filter((value) => Math.abs(value / middle - 1) < 0.5);
+    return near.reduce((sum, value) => sum + value, 0) / near.length;
+  };
   const matches = (name, filter) =>
     !filter || name.toLowerCase().includes(filter.toLowerCase());
 
@@ -212,22 +221,22 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
     );
   };
   /**
-   * A native scan costs the same with or without a JIT, so the loops' cost
-   * over its cost per element says which runs them, whatever the device's
-   * speed. In desktop Chromium they cost 1.7–5.7 times the scan compiled and
-   * 64–117 times with `--jitless`. Warm against cold is no tell there: V8
-   * sometimes compiles a loop inside its first 5 ms, then runs it warm slower.
+   * A native scan costs the same with or without a JIT, in V8 and in
+   * WebKit, whose typed array `indexOf` is C++, so the loops' cost over its
+   * cost per element says which runs them, whatever the device's speed. The
+   * threshold sits between the largest compiled ratio plausible, about 14 if
+   * the scan is SIMD on a phone, and the smallest interpreted one seen; see
+   * `REFERENCE` in perf-device.mjs. Warm against cold is no tell: V8 sometimes
+   * compiles a loop inside its first 5 ms, then runs it warm slower.
    */
   const calibrate = () => {
     const loops = {};
     for (const [name, [kernel, iterations]] of Object.entries(KERNELS)) {
-      const cold = rate(kernel, iterations, 5);
-      loops[name] = { cold, warm: warmRate(kernel, iterations) };
+      loops[name] = warmRate(kernel, iterations);
     }
     const scanNs = warmRate(() => floats.indexOf(-1), floats.length);
-    const slowdown =
-      median(Object.values(loops).map(({ warm }) => warm)) / scanNs;
-    return { loops, scanNs, slowdown, compiled: slowdown < 15 };
+    const slowdown = median(Object.values(loops)) / scanNs;
+    return { loops, scanNs, slowdown, compiled: slowdown < 30 };
   };
 
   const timerResolution = () => {
@@ -335,7 +344,7 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
       secure: isSecureContext,
       wakeLock,
       timerMs: timerResolution(),
-      frameMs: median(gaps),
+      frameMs: typical(gaps),
       ...calibration,
     };
   };

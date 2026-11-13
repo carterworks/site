@@ -91,10 +91,10 @@ const TYPES = {
   ".webm": "video/webm",
   ".woff2": "font/woff2",
 };
-// Warm, in headless Chromium on an i7-8700K with and without --jitless, and in
-// Safari on an iPhone over HTTPS and plain HTTP, which ran no native scan.
+// Headless Chromium on an i7-8700K, with and without --jitless; Safari on an
+// iPhone over HTTPS and plain HTTP, before the probe timed a native scan.
 const REFERENCE =
-  "compiled 0.7–4.6 ns and 1.7–5.7 scans in desktop Chromium, 0.6–0.7 ns on an iPhone; interpreted 51–93 ns and 64–117 scans, 24–74 ns";
+  "desktop Chromium's loops cost 1.7–5.7 scans compiled and 64–117 interpreted; an iPhone's ran 0.6–0.7 ns an iteration compiled and 24–74 interpreted";
 
 const round = (value) => Math.round(value * 100) / 100;
 const runs = [];
@@ -183,10 +183,12 @@ const warnings = (env) => [
         `WARNING: the device's JavaScript looks interpreted: its loops cost ${round(env.slowdown)} times a native scan, where compiled ones cost a few. These numbers do not reflect the real site.`,
       ]),
 ];
-const loops = (env, when) =>
+const loops = (env) =>
   Object.entries(env.loops)
-    .map(([name, times]) => `${name} ${round(times[when])}`)
+    .map(([name, ns]) => `${name} ${round(ns)}`)
     .join(", ");
+const SAVES =
+  "saves: ms of script per frame against as shipped, first and last averaged; approximate, as each pass changes the pixels the next works on.";
 
 function report(result) {
   if (result.type === "env") {
@@ -198,7 +200,7 @@ function report(result) {
       `Secure context: ${result.secure ? "yes" : "NO"}; screen wake lock ${result.wakeLock}.`,
     );
     console.log(
-      `JavaScript ${result.compiled ? "compiled" : "INTERPRETED"}: ns per loop iteration warm ${loops(result, "warm")}, first 5 ms ${loops(result, "cold")}; ${round(result.slowdown)} times a native scan's ${round(result.scanNs)} ns per element (for reference, ${REFERENCE}).`,
+      `JavaScript ${result.compiled ? "compiled" : "INTERPRETED"}: ns per loop iteration warm ${loops(result)}; ${round(result.slowdown)} times a native scan's ${round(result.scanNs)} ns per element (for reference, ${REFERENCE}).`,
     );
     for (const warning of warnings(result)) console.log(warning);
   } else if (result.type === "step") {
