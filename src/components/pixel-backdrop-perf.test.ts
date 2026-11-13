@@ -11,13 +11,13 @@ import {
   countAllocations,
   installSoftCanvas,
   litPixels,
-  SoftContext,
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
+import { Presenter } from "./emulated-canvas/presenter";
 import "./pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
@@ -50,28 +50,13 @@ let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
 let animationFrames: Set<number>;
 
-const isEcho = (context: unknown) =>
-  (context as SoftContext).canvas?.classList.contains("echo");
-
-/** Copies onto the display: the plain canvas inside the closed shadow root that is not the echo. */
-function presents() {
-  const onDisplay = (spy: { mock: { contexts: unknown[] } }) =>
-    spy.mock.contexts.filter(
-      (context) =>
-        bitmaps.plain.includes((context as SoftContext).bitmap) &&
-        !isEcho(context),
-    ).length;
-  return (
-    onDisplay(vi.mocked(SoftContext.prototype.putImageData)) +
-    onDisplay(vi.mocked(SoftContext.prototype.drawImage))
-  );
-}
+/** Frames the canvas handed its presenter to show. */
+const presents = () => vi.mocked(Presenter.prototype.show).mock.calls.length;
 
 beforeEach(() => {
   useFakeFrames();
   bitmaps = installSoftCanvas();
-  vi.spyOn(SoftContext.prototype, "putImageData");
-  vi.spyOn(SoftContext.prototype, "drawImage");
+  vi.spyOn(Presenter.prototype, "show");
   animationFrames = new Set();
   const requestFrame = window.requestAnimationFrame;
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
@@ -218,16 +203,13 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
     },
   );
 
-  test("with a pixel shadow, copies each present to the echo once, reading and allocating nothing", async () => {
+  // That each present copies to the echo once is the presenter's, whatever the toy draws: presenter.test.ts pins it.
+  test("with a pixel shadow, presents reading and allocating nothing", async () => {
     const canvas = mount(id);
     canvas.dataset.shadow = "40";
     await play();
     softStats.reads = 0;
     const before = presents();
-    const echoCopies = () =>
-      vi.mocked(SoftContext.prototype.drawImage).mock.contexts.filter(isEcho)
-        .length;
-    const echoedBefore = echoCopies();
 
     const allocations = countAllocations();
     try {
@@ -237,7 +219,6 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
     }
 
     expectExercised(id, presents() - before);
-    expect(echoCopies() - echoedBefore).toBe(presents() - before);
     expect(softStats.reads).toBe(0);
     expect(allocations.count()).toBe(0);
   });
