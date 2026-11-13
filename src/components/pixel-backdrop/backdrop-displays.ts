@@ -23,6 +23,8 @@ export type DisplayLook = {
   ink: string;
   levels: number;
   gap: number;
+  /** The cells' form; without one, the shape knob decides. */
+  shape?: "square" | "circle";
   ghostRise: number;
   ghostFall: number;
   shadow?: { opacity: number; x: number; y: number };
@@ -59,6 +61,7 @@ export const DISPLAYS: Display[] = [
       ink: "#263c2b",
       levels: 4,
       gap: 2,
+      shape: "square",
       ghostRise: 45,
       ghostFall: 30,
       shadow: { opacity: 25, x: 4, y: 4 },
@@ -73,6 +76,7 @@ export const DISPLAYS: Display[] = [
       ink: "#3c070d",
       levels: 2,
       gap: 1,
+      shape: "square",
       ghostRise: 86,
       ghostFall: 76,
     },
@@ -86,6 +90,7 @@ export const DISPLAYS: Display[] = [
       ink: "#000000",
       levels: 5,
       gap: 2,
+      shape: "square",
       ghostRise: 40,
       ghostFall: 40,
     },

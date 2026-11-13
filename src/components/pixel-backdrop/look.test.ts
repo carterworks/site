@@ -346,6 +346,7 @@ const complete: Display = {
     stops: ["#2bd96b", "#e3f01c"],
     levels: 2,
     gap: 1,
+    shape: "square",
     ghostRise: 86,
     ghostFall: 76,
     shadow: { opacity: 25, x: 4, y: 4 },
@@ -394,6 +395,15 @@ test("a display colours the canvas and the screen behind it, and lays its grid, 
     "--backdrop-display-vignette": undefined,
   });
   expect(look.hostFlags["data-vignette"]).toBe(false);
+});
+
+test("a display without a shape of its own leaves the cells to the shape knob", () => {
+  const { shape, ...unshaped } = screen;
+  expect(shape).toBe("square");
+
+  expect(resolve({ display: { ...pocket, look: unshaped } }).data.shape).toBe(
+    DEFAULTS.shape,
+  );
 });
 
 test("only a display with a backlight vignette lays one over the screen, and one without a grid leaves the gaps the screen's", () => {
