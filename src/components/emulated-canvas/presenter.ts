@@ -217,9 +217,11 @@ export class Presenter {
    */
   #cast() {
     const echo = this.#echo;
+    if (echo === undefined) return;
     const frame = this.#shown;
     const words = this.#shownWords;
-    if (echo === undefined || frame === undefined || words === undefined) {
+    if (frame === undefined || words === undefined) {
+      echo.context.clearRect(0, 0, this.#columns, this.#rows);
       return;
     }
     const pixels = frame.data;

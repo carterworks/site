@@ -349,14 +349,20 @@ describe("the echo", () => {
     expect(pixelsOf(canvases()[1]).slice(0, 4)).not.toEqual([0, 0, 0, 0]);
   });
 
-  test("turned on before anything is shown, or after a bitmap, casts nothing until pixels are shown", () => {
+  test("turned on before anything is shown casts nothing", () => {
     const { presenter, canvases } = mount();
-    presenter.configure({ ...PLAIN, shadow: POCKET });
-    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
 
-    presenter.configure(PLAIN);
-    presenter.show(bitmap(INK, INK));
     presenter.configure({ ...PLAIN, shadow: POCKET });
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  test("shown a bitmap, whose pixels it cannot cast from, shows no shadow rather than the last one", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET });
+    presenter.show(row(INK, INK));
+
+    presenter.show(bitmap(UNLIT, UNLIT));
+
     expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
   });
 });
