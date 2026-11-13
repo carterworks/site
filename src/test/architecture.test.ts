@@ -85,8 +85,8 @@ const layers = {
   },
   controls: {
     files: [
-      "src/components/settings/*.ts",
-      "src/components/{play-toolbar,command-bar,frame-rate}.ts",
+      "src/components/{settings,command-bar}/*.ts",
+      "src/components/{play-toolbar,frame-rate}.ts",
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
     ],
@@ -106,7 +106,7 @@ const layers = {
     files: [
       "src/*.ts",
       "src/{pages,layouts,integrations}/**",
-      "src/components/*.astro",
+      "src/components/**/*.astro",
     ],
     imports: [
       "site",
