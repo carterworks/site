@@ -19,6 +19,14 @@ headless Chromium; its options are at the top of
 `pnpm exec playwright install --no-shell chromium`. On NixOS, run it as
 `nix-shell --run "pnpm perf"`.
 
+`pnpm budgets` builds the site and fails if it misses a performance budget:
+script bytes, layouts and style recalculations during play, leaks, render
+passes and frame cost, each limit in
+[`scripts/budgets.mjs`](./scripts/budgets.mjs) with what it covers. Every pull
+request runs it. It needs the same browser, and Linux; on NixOS, run it as
+`nix-shell --run "pnpm budgets"`. A change that makes something cheaper lowers
+its limit too.
+
 ## Deployment
 
 The site deploys to Cloudflare as a Worker serving static assets, defined in
