@@ -258,6 +258,21 @@ test("rain stops after a while so an untouched pond lets the loop sleep", async 
   expect(vi.getTimerCount()).toBe(0);
 });
 
+test("rain stops even when its last drop falls due in the frame the rain ends", async () => {
+  const rainEnds = performance.now() + 20_000;
+  let calls = 0;
+  // A drop draws its x, its y and then the wait for the next, of 3 to 6 s.
+  vi.mocked(Math.random).mockImplementation(() => {
+    calls += 1;
+    if (calls % 3 !== 0) return 0.5;
+    const wait = rainEnds - 1 - performance.now() - 3000;
+    return Math.min(Math.max(wait / 3000, 0), 0.999);
+  });
+  await vi.advanceTimersByTimeAsync(40_000);
+
+  expect(vi.getTimerCount()).toBe(0);
+});
+
 test("a pond that is about to rain sleeps on a timer between drops instead of stopping", async () => {
   await tap(middle, middle);
   await vi.advanceTimersByTimeAsync(8000);

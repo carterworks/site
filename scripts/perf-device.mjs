@@ -11,9 +11,10 @@
  *   pnpm perf:device:test
  *
  * `--toy` and `--display` match names as `pnpm perf` does, and the matrix of
- * every match is measured; `--toy ""` takes every toy. Each step settles, then
- * measures for `--seconds` while the pointer `pnpm perf` uses plays with the
- * toy:
+ * every match is measured; `--toy ""` takes every toy, though Peaks and
+ * Horizon come out invalid as never drawing, since they are still scenes,
+ * drawn once before a step starts. Each step settles, then measures for
+ * `--seconds` while the pointer `pnpm perf` uses plays with the toy:
  *   environment   the device, whether the page is a secure context, the
  *                 timer, the frame interval idle, and whether its JavaScript
  *                 runs compiled: tight loops' cost per iteration over a

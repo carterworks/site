@@ -1,4 +1,6 @@
-import { makeNoise2D } from "./backdrop-noise";
+import { landscape, texture, type Grid, type Terrain } from "./landscape";
+
+export { HORIZON, PEAKS, type Grid } from "./landscape";
 
 /**
  * Still pixel scenes for the Open Graph cards, drawn in the backdrop's grid
@@ -12,14 +14,6 @@ export const OG_HEIGHT = 630;
 
 /** The backdrop's tuned width, so a card shows as many cells as the screen does. */
 const COLUMNS = 80;
-
-export type Grid = { columns: number; rows: number; cells: Float32Array };
-
-/** Rows of ground from the bottom edge, and how far the skyline wanders from it. */
-export type Terrain = { level: number; relief: number };
-
-export const HORIZON: Terrain = { level: 12, relief: 5 };
-export const PEAKS: Terrain = { level: 19, relief: 9 };
 
 export type Look = {
   ink: string;
@@ -38,34 +32,15 @@ export function seedOf(id: string): number {
   return hash >>> 0;
 }
 
+const rowsOf = (columns: number) => OG_HEIGHT / (OG_WIDTH / columns);
+
 function emptyGrid(columns: number): Grid {
-  const rows = OG_HEIGHT / (OG_WIDTH / columns);
+  const rows = rowsOf(columns);
   return { columns, rows, cells: new Float32Array(columns * rows) };
 }
 
-/** The backdrop's mottle: broad blotches with a finer grain over them. */
-function texture(seed: number) {
-  const noise = makeNoise2D(seed);
-  return (x: number, y: number) =>
-    (noise(x / 15, y / 15) + 0.5 * noise(x / 6 + 99, y / 6)) / 1.5;
-}
-
-/** A seeded skyline over mottled ground that darkens with depth. */
-export function landscape(seed: number, { level, relief }: Terrain): Grid {
-  const grid = emptyGrid(COLUMNS);
-  const { columns, rows, cells } = grid;
-  const ridge = makeNoise2D(seed ^ 7);
-  const mottle = texture(seed);
-  for (let x = 0; x < columns; x += 1) {
-    const top =
-      rows - level - relief * (ridge(x / 18, 0.5) + 0.3 * ridge(x / 5, 9));
-    for (let y = Math.max(0, Math.ceil(top)); y < rows; y += 1) {
-      const value = 0.35 + mottle(x, y) * 0.5 + Math.min(0.3, (y - top) / 30);
-      cells[y * columns + x] = Math.min(1, Math.max(0.15, value));
-    }
-  }
-  return grid;
-}
+export const cardLandscape = (seed: number, terrain: Terrain) =>
+  landscape(seed, terrain, COLUMNS, rowsOf(COLUMNS), 1);
 
 /**
  * Lights the cells a card-sized RGBA `mask` mostly covers, over faint specks

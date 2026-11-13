@@ -20,7 +20,7 @@ export default {
    * every page loads, misses it on purpose: raise the limit by what the run
    * measured over it, in the toy's commit.
    */
-  javascript: { "/": 24_100 },
+  javascript: { "/": 24_600 },
 
   /**
    * Bytes of each font the homepage preloads, as built; a font preloaded or
