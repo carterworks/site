@@ -35,7 +35,9 @@ export type Display = {
  * falls.
  *
  * Pocket's ink is lighter than the photo's #1f3326 because its own shadow
- * darkens solid ink to ink·(1 − o + o·ink/base). The shadow is kept to the
+ * darkens solid ink to ink·(1 − o + o·ink/base). The shadow is paint exact
+ * over the base, so on ink that holds in red and leaves green and blue 2–3/255
+ * lighter, #1f3528 for #1f3326. The shadow is kept to the
  * reference render's ~16% rather than a reflective panel's full double pass,
  * which darkens the backing beside every shape by 45%.
  */

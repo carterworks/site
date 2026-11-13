@@ -26,7 +26,7 @@ import { TOYS } from ".";
  *   stylesheet in the canvas's shadow root, as readable text.
  *
  * Not pinned: how a browser paints that CSS (cell scaling, `image-rendering`,
- * the gap overlay, the echo's multiply blend and offset, the vignette), and
+ * the gap overlay, the echo's offset, the vignette), and
  * page styles such as PixelBackdrop.astro's, which turn the backdrop's
  * properties into the screen colour, gap colour and vignette. Every look
  * recolours, so a frame presented without a pass, by `drawImage`, never runs

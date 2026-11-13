@@ -34,7 +34,7 @@ const layers = {
   },
   presenter: {
     files: ["src/components/emulated-canvas/presenter.ts"],
-    imports: ["canvas kit"],
+    imports: ["canvas kit", "lib"],
   },
   // Other layers reach the canvas through the element and the kit, never the
   // pipeline, the presenter or the passes.

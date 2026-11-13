@@ -76,10 +76,13 @@ export type EmulatedCanvasProps = {
  * background); set it to whatever shows behind the element.
  *
  * `data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's
- * segments over their backplate: a copy of the display at that opacity,
- * multiplied over it and offset by `data-shadow-x` and `data-shadow-y` (whole
- * CSS pixels, default 0). It is copied on the GPU on each present. With a
- * palette, only pixels darker than the base cast a shadow.
+ * segments over their backplate: each pixel darkens what lies under it by how
+ * much darker it is than unlit, at that opacity, offset by `data-shadow-x` and
+ * `data-shadow-y` (whole CSS pixels, default 0). With a palette unlit is its
+ * base, so only pixels darker than the base cast a shadow; without one it is
+ * white. The shadow is cast from the frame's pixels on each present, so a
+ * shadow over drawing other than a whole-bitmap `putImageData`, with no pass
+ * on, reads the bitmap back.
  *
  * Effects are `SHADERS`, an ordered list of per-pixel passes (a drifting
  * noise, a two-colour palette and an LCD's ghosting), each documenting its own
@@ -397,11 +400,13 @@ export class EmulatedCanvas extends HTMLElement {
     frame.elapsedMs = now - (this.#presentedAt ?? now);
     this.#presentedAt = now;
 
-    let image = this.#pipeline.active() ? this.#pixels(innerCanvas) : undefined;
+    const active = this.#pipeline.active();
+    let image =
+      active || presenter.needsPixels ? this.#pixels(innerCanvas) : undefined;
     const pace =
-      image === undefined
-        ? "still"
-        : this.#pipeline.apply(image.data, frame, now - this.#drewAt);
+      active && image !== undefined
+        ? this.#pipeline.apply(image.data, frame, now - this.#drewAt)
+        : "still";
 
     const dissolving =
       this.#dissolving &&
