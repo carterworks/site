@@ -56,7 +56,7 @@ const layers = {
   },
   knobs: {
     files: ["src/components/pixel-backdrop/knobs.ts"],
-    imports: ["canvas kit"],
+    imports: [],
   },
   "pointer relay": {
     files: ["src/components/pixel-backdrop/{pointer-relay,press}.ts"],
@@ -124,6 +124,11 @@ const exceptions = [
     from: "src/components/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
+  },
+  {
+    from: "src/dev-toolbar/pixel-backdrop.ts",
+    to: "src/components/emulated-canvas/limits.ts",
+    why: "the ghost slider stops at the canvas's retention cap",
   },
 ];
 

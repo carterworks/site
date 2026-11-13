@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import "../components/pixel-backdrop";
-import { readDefaults } from "../components/pixel-backdrop/knobs";
+import {
+  KNOBS,
+  property,
+  readDefaults,
+} from "../components/pixel-backdrop/knobs";
 import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/backdrop-toy-setting";
+import { backdropDefaults } from "../test/backdrop-defaults";
 import {
+  CONTROLS,
   STORAGE_KEY,
   loadSaved,
   persistChanges,
@@ -28,6 +34,28 @@ vi.mock("../components/backdrop-toys", () => {
 });
 
 const options = { gap: 2, shape: "square", enabled: true };
+
+const declared = new Map(backdropDefaults());
+
+test.for(Object.entries(CONTROLS))(
+  "the default for %s is one its control can show",
+  ([key, control]) => {
+    const css = declared.get(property(key)) ?? "";
+    const value = KNOBS[key as keyof typeof KNOBS](css);
+
+    if (control.kind === "range") {
+      expect(value).toBeGreaterThanOrEqual(control.min);
+      expect(value).toBeLessThanOrEqual(control.max);
+    } else if (control.kind === "toggle") {
+      expect(["true", "false"]).toContain(css);
+    } else if (control.kind === "select") {
+      expect(Object.keys(control.choices)).toContain(value);
+    } else {
+      // The colour input accepts only this form, and shows black for any other.
+      expect(value).toMatch(/^#[\da-f]{6}$/i);
+    }
+  },
+);
 
 beforeEach(() => {
   localStorage.clear();
