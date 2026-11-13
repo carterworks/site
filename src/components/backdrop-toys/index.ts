@@ -1,5 +1,4 @@
 import { culture } from "./culture";
-import { filings } from "./filings";
 import { mote } from "./mote";
 import { pinbed } from "./pinbed";
 import { pond } from "./pond";
@@ -28,7 +27,6 @@ export const TOYS: Toy[] = [
   wax,
   silt,
   mote,
-  filings,
   pendulums,
   curtain,
   tray,
