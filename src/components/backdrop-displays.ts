@@ -11,7 +11,12 @@ export type DisplayLook = {
    * pixel show through, so dark neighbours merge and the grid stays faint.
    */
   grid?: string;
-  vignette?: string;
+  /**
+   * A backlight fading toward the corners: the screen multiplied by white out
+   * to `clear` percent of the way to the farthest corner, then by a colour
+   * falling to `edge` there.
+   */
+  vignette?: { clear: number; edge: string };
   base: string;
   ink: string;
   levels: number;
@@ -61,7 +66,7 @@ export const DISPLAYS: Display[] = [
     id: "amber-lcd",
     label: "Amber LCD",
     look: {
-      vignette: "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+      vignette: { clear: 33, edge: "#e6d3d3" },
       base: "#f89b03",
       ink: "#3c070d",
       levels: 2,

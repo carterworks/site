@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
@@ -540,4 +542,13 @@ test("reset writes each attribute it changes once", async () => {
   expect(await writesDuring(backdrop, () => backdrop.reset())).toEqual([
     "EMULATED-CANVAS data-noise-speed",
   ]);
+});
+
+test("the backdrop's page styles blend nothing, as a blend over a changing canvas is re-blended on every present", () => {
+  const page = readFileSync(
+    join(import.meta.dirname, "PixelBackdrop.astro"),
+    "utf8",
+  );
+
+  expect(page).not.toContain("mix-blend-mode");
 });

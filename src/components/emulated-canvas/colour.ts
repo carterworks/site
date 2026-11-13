@@ -1,21 +1,11 @@
-type Rgb = [number, number, number];
+import { hexRgb, type Rgb } from "../../lib/rgb";
 
 let rgbContext: CanvasRenderingContext2D | null | undefined;
 
 /** Resolve any CSS colour to `[r, g, b]`. */
 export function colourRgb(value: string): Rgb {
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
-  if (hex !== null) {
-    const digits =
-      hex[1].length === 3
-        ? hex[1].replace(/./g, (digit) => digit + digit)
-        : hex[1];
-    return [
-      Number.parseInt(digits.slice(0, 2), 16),
-      Number.parseInt(digits.slice(2, 4), 16),
-      Number.parseInt(digits.slice(4, 6), 16),
-    ];
-  }
+  const hex = hexRgb(value);
+  if (hex !== undefined) return hex;
   if (rgbContext === undefined) {
     rgbContext = document
       .createElement("canvas")

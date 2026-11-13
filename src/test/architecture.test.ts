@@ -69,7 +69,7 @@ const layers = {
   // What the backdrop shows is decided from data alone, never the elements.
   look: {
     files: ["src/components/pixel-backdrop/look.ts"],
-    imports: ["knobs", "toy kit", "displays"],
+    imports: ["knobs", "toy kit", "displays", "lib"],
   },
   backdrop: {
     files: ["src/components/pixel-backdrop.ts"],

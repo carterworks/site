@@ -7,7 +7,7 @@ exports[`bubblewrap on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -234,7 +234,7 @@ exports[`cradle on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -461,7 +461,7 @@ exports[`culture on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -688,7 +688,7 @@ exports[`curtain on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -915,7 +915,7 @@ exports[`dominoes on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1142,7 +1142,7 @@ exports[`filings on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1369,7 +1369,7 @@ exports[`fireflies on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1596,7 +1596,7 @@ exports[`flipdots on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1823,7 +1823,7 @@ exports[`mote on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2050,7 +2050,7 @@ exports[`pendulums on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2277,7 +2277,7 @@ exports[`pinbed on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2504,7 +2504,7 @@ exports[`pond on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2731,7 +2731,7 @@ exports[`rake on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2958,7 +2958,7 @@ exports[`shimmer on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3185,7 +3185,7 @@ exports[`silt on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3412,7 +3412,7 @@ exports[`tray on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3639,7 +3639,7 @@ exports[`wax on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",

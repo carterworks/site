@@ -20,3 +20,18 @@ export function multiplyOverlay(
   }
   return alpha;
 }
+
+/** `#rgb` or `#rrggbb` as `[r, g, b]`, or undefined for any other form. */
+export function hexRgb(value: string): Rgb | undefined {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
+  if (hex === null) return undefined;
+  const digits =
+    hex[1].length === 3
+      ? hex[1].replace(/./g, (digit) => digit + digit)
+      : hex[1];
+  return [
+    Number.parseInt(digits.slice(0, 2), 16),
+    Number.parseInt(digits.slice(2, 4), 16),
+    Number.parseInt(digits.slice(4, 6), 16),
+  ];
+}

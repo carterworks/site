@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { multiplyOverlay, type Rgb } from "./rgb";
+import { hexRgb, multiplyOverlay, type Rgb } from "./rgb";
 
 const BASE: Rgb = [136, 157, 88];
 
@@ -70,4 +70,14 @@ test("a base channel of zero stays zero in the colour", () => {
   multiplyOverlay([0, 157, 88], [1, 0.5, 0.7], colour);
 
   expect(colour[0]).toBe(0);
+});
+
+test.each([
+  ["#f89b03", [248, 155, 3]],
+  ["#F89B03", [248, 155, 3]],
+  [" #fb0 ", [255, 187, 0]],
+  ["rgb(248 155 3)", undefined],
+  ["#f89b0", undefined],
+])("hex %j is %j", (value, rgb) => {
+  expect(hexRgb(value)).toEqual(rgb);
 });

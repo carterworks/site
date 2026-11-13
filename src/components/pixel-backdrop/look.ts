@@ -1,3 +1,4 @@
+import { hexRgb, multiplyOverlay, type Rgb } from "../../lib/rgb";
 import type { Display, DisplayLook } from "../backdrop-displays";
 import { TUNED_GRID, type Toy } from "../backdrop-toys/toy";
 import type { BackdropKnobs } from "./knobs";
@@ -100,7 +101,7 @@ export function resolveLook(input: LookInput): ResolvedLook {
     hostStyle: {
       "--backdrop-display-screen": look?.base,
       "--backdrop-display-grid": look?.grid,
-      "--backdrop-display-vignette": look?.vignette,
+      "--backdrop-display-vignette": look && vignette(look),
     },
     hostFlags: {
       "data-disabled": !knobs.enabled,
@@ -108,6 +109,28 @@ export function resolveLook(input: LookInput): ResolvedLook {
     },
     palette: `${base} ${ink}`,
   };
+}
+
+/**
+ * The display's tuned vignette multiplies the screen, but a blend over the
+ * canvas is re-blended on every present, which costs software rendering more
+ * than all else on the page. Plain paint is exact over the screen colour,
+ * which most of the screen shows; see `multiplyOverlay`. Gradients mix
+ * premultiplied, so every stop between matches the multiply too.
+ */
+function vignette({ base, vignette }: DisplayLook) {
+  if (vignette === undefined) return undefined;
+  const screen = hexRgb(base);
+  const edge = hexRgb(vignette.edge);
+  if (screen === undefined || edge === undefined) return undefined;
+  const paint: Rgb = [0, 0, 0];
+  const alpha = multiplyOverlay(
+    screen,
+    edge.map((channel) => channel / 255) as Rgb,
+    paint,
+  );
+  const [r, g, b] = paint.map(Math.round);
+  return `radial-gradient(farthest-corner, transparent ${vignette.clear}%, rgb(${r} ${g} ${b} / ${Number(alpha.toFixed(3))}))`;
 }
 
 /**

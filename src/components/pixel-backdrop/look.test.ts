@@ -306,7 +306,14 @@ function withChanged(display: Display, path: string[]): Display {
   const parent = path.slice(0, -1).reduce((at, key) => at[key] as Fields, look);
   const field = path.at(-1)!;
   const value = parent[field];
-  parent[field] = typeof value === "number" ? value + 1 : `${value} changed`;
+  parent[field] =
+    typeof value === "number"
+      ? value + 1
+      : typeof value === "string" && /^#[0-9a-f]{6}$/.test(value)
+        ? value === "#010203"
+          ? "#030201"
+          : "#010203"
+        : `${value} changed`;
   return { ...display, look: look as unknown as Display["look"] };
 }
 
@@ -363,12 +370,29 @@ test("only a display with a backlight vignette lays one over the screen, and one
   expect(look.hostStyle).toEqual({
     "--backdrop-display-screen": amber.look!.base,
     "--backdrop-display-grid": undefined,
-    "--backdrop-display-vignette": amber.look!.vignette,
+    "--backdrop-display-vignette": AMBER_VIGNETTE,
   });
   expect(look.hostFlags["data-vignette"]).toBe(true);
   for (const key of ["shadow", "shadowX", "shadowY"]) {
     expect(look.data[key]).toBeUndefined();
   }
+});
+
+/**
+ * Amber multiplies its screen #f89b03 by #e6d3d3 at the corners, darkening
+ * red by 25/255 and green and blue by 44/255. The overlay takes the larger,
+ * 44/255 = 0.173, as its alpha, and as its colour the screen times each
+ * channel's shortfall from it, red 248·(44 − 25)/44 = 107.
+ */
+const AMBER_VIGNETTE =
+  "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))";
+
+test("Amber's vignette is plain paint that darkens its screen exactly as its tuned multiply would", () => {
+  expect(amber.look!.vignette).toEqual({ clear: 33, edge: "#e6d3d3" });
+
+  expect(resolve({ display: amber }).hostStyle).toMatchObject({
+    "--backdrop-display-vignette": AMBER_VIGNETTE,
+  });
 });
 
 test("Site sets none of a display's attributes or properties, and shows the toy's own look", () => {
