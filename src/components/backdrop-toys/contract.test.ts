@@ -21,16 +21,11 @@ vi.setConfig({ testTimeout: SLOW_TEST_MS });
 const SIZE = 160;
 
 /**
- * Toys allowed to keep an idle loop (at most ~8 frames a second) once input
- * stops, each with the reason beside it. Every other toy must stop asking for
- * frames, so an untouched tab costs nothing.
- */
-const RESTING_IDLE: Record<string, string> = {};
-
-/**
- * Toys allowed to outlive SETTLE_MS while they animate in short bursts, each
- * with the reason beside it. They must average at most `maxPerSecond` presents
- * past SETTLE_MS and fully stop within `stopMs` of the last input.
+ * Every toy must stop asking for frames once input stops, so an untouched tab
+ * costs nothing. These may outlive SETTLE_MS while they animate in short
+ * bursts, each with the reason beside it. They must average at most
+ * `maxPerSecond` presents past SETTLE_MS and fully stop within `stopMs` of the
+ * last input.
  */
 const SLOW_DRAIN: Record<
   string,
@@ -201,14 +196,9 @@ test("the listener check catches a toy that listens without a signal", () => {
   ]);
 });
 
-test("only registered toys are allowed to rest idle", () => {
+test("only registered toys are allowed to drain slowly", () => {
   const ids = TOYS.map((toy) => toy.id);
-  expect(ids).toEqual(
-    expect.arrayContaining([
-      ...Object.keys(RESTING_IDLE),
-      ...Object.keys(SLOW_DRAIN),
-    ]),
-  );
+  expect(ids).toEqual(expect.arrayContaining(Object.keys(SLOW_DRAIN)));
 });
 
 describe.each(TOYS.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
@@ -283,10 +273,6 @@ describe.each(TOYS.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
             (maxPerSecond * (stopMs - SETTLE_MS)) / 1000,
           );
           expect(vi.getTimerCount()).toBe(0);
-        } else if (id in RESTING_IDLE) {
-          const frames = vi.spyOn(window, "requestAnimationFrame");
-          await vi.advanceTimersByTimeAsync(1000);
-          expect(frames.mock.calls.length).toBeLessThanOrEqual(8);
         } else {
           expect(vi.getTimerCount()).toBe(0);
         }
