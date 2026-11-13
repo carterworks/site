@@ -18,6 +18,7 @@ const markup = `
     <button type="button" data-theme></button>
     <label>Display <select data-display></select></label>
     <label>Shape <select data-shape></select></label>
+    <label>Cells <select data-cells></select></label>
     <button type="button" data-image>Image…</button>
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
@@ -38,7 +39,7 @@ const setToy = vi.fn((id: string) => {
   toyId = id;
 });
 const setDisplay = vi.fn();
-let tweaks: { shape?: string } = {};
+let tweaks: { shape?: string; autoFit?: boolean; scale?: number } = {};
 const configure = vi.fn((partial: object) => Object.assign(tweaks, partial));
 const play = vi.fn((toy: { id: string }) => {
   toyId = toy.id;
@@ -98,7 +99,12 @@ function mount() {
   const backdrop = document.createElement("pixel-backdrop");
   Object.defineProperty(backdrop, "toy", { get: () => toyId });
   Object.defineProperty(backdrop, "knobs", {
-    get: () => ({ shape: tweaks.shape ?? "square" }),
+    get: () => ({
+      shape: "square",
+      autoFit: true,
+      scale: 8,
+      ...tweaks,
+    }),
   });
   Object.assign(backdrop, { setToy, setDisplay, play, configure });
   document.body.append(backdrop);
@@ -461,4 +467,38 @@ test("a chosen shape gives way to a display's own, and returns after it", () => 
   expect(configure).toHaveBeenLastCalledWith({ shape: "hex" });
   expect(shape().value).toBe("hex");
   expect(shape().disabled).toBe(false);
+});
+
+const cells = () => get<HTMLSelectElement>("[data-cells]");
+const chooseCells = (value: string) => {
+  cells().value = value;
+  cells().dispatchEvent(new Event("change"));
+};
+
+test("the cell menu fits the screen by default, or takes a size", () => {
+  expect([...cells().options].map((option) => option.textContent)).toEqual([
+    "Fit",
+    "5px",
+    "7px",
+    "10px",
+    "14px",
+  ]);
+  expect(cells().selectedOptions[0].textContent).toBe("Fit");
+});
+
+test("choosing a cell size stops fitting and stores nothing", () => {
+  chooseCells("7");
+
+  expect(configure).toHaveBeenLastCalledWith({ autoFit: false, scale: 7 });
+  expect(cells().selectedOptions[0].textContent).toBe("7px");
+  expect(localStorage.length).toBe(0);
+});
+
+test("choosing Fit fits the screen again", () => {
+  chooseCells("7");
+
+  chooseCells("fit");
+
+  expect(configure).toHaveBeenLastCalledWith({ autoFit: true });
+  expect(cells().selectedOptions[0].textContent).toBe("Fit");
 });

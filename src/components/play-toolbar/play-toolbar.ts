@@ -29,6 +29,9 @@ const SHAPES: Shape[] = [
   "cross",
 ];
 
+const FIT = "fit";
+const CELL_SIZES = [5, 7, 10, 14];
+
 const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 
 const SAMPLE_MS = 500;
@@ -109,6 +112,7 @@ class PlayToolbarElement extends HTMLElement {
     const display = this.querySelector<HTMLSelectElement>("[data-display]");
     const shape = this.querySelector<HTMLSelectElement>("[data-shape]");
     const shapeNote = this.querySelector<HTMLElement>("[data-shape-note]");
+    const cells = this.querySelector<HTMLSelectElement>("[data-cells]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
@@ -119,6 +123,7 @@ class PlayToolbarElement extends HTMLElement {
       !display ||
       !shape ||
       !shapeNote ||
+      !cells ||
       !pick ||
       !input ||
       !status ||
@@ -137,6 +142,10 @@ class PlayToolbarElement extends HTMLElement {
       ...DISPLAYS.map(({ id, label }) => option(label, id)),
     );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
+    cells.replaceChildren(
+      option("Fit", FIT),
+      ...CELL_SIZES.map((size) => option(`${size}px`, String(size))),
+    );
 
     let playing: ImageBitmap | undefined;
     let request = 0;
@@ -165,9 +174,11 @@ class PlayToolbarElement extends HTMLElement {
       );
       display.value = settings.display.value();
       const { label, look } = shownDisplay();
+      const knobs = backdrop()?.knobs;
       shape.disabled = look?.shape !== undefined;
-      shape.value = look?.shape ?? backdrop()?.knobs.shape ?? SHAPES[0];
+      shape.value = look?.shape ?? knobs?.shape ?? SHAPES[0];
       shapeNote.textContent = shape.disabled ? `${label} sets the shape.` : "";
+      cells.value = knobs?.autoFit === false ? String(knobs.scale) : FIT;
     };
 
     const release = () => {
@@ -194,6 +205,14 @@ class PlayToolbarElement extends HTMLElement {
     shape.addEventListener("change", () => {
       chosenShape = shape.value as Shape;
       applyShape();
+      render();
+    });
+    cells.addEventListener("change", () => {
+      backdrop()?.configure(
+        cells.value === FIT
+          ? { autoFit: true }
+          : { autoFit: false, scale: Number(cells.value) },
+      );
       render();
     });
     pick.addEventListener("click", () => input.click());
