@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../test/backdrop-defaults";
-import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
-import type { Toy } from "./backdrop-toys/toy";
-import { EmulatedCanvas } from "./emulated-canvas/element";
-import { DISPLAYS } from "./backdrop-displays";
-import "./pixel-backdrop";
-import type { PixelBackdrop } from "./pixel-backdrop";
-import { readDefaults } from "./pixel-backdrop/knobs";
+import { installBackdropDefaults } from "../../test/backdrop-defaults";
+import { installSoftCanvas, useFakeFrames } from "../../test/toy-canvas";
+import type { Toy } from "../backdrop-toys/toy";
+import { EmulatedCanvas } from "../emulated-canvas/element";
+import { DISPLAYS } from "../backdrop-displays";
+import "./element";
+import type { PixelBackdrop } from "./element";
+import { readDefaults } from "./knobs";
 
 const motion = vi.hoisted(() => {
   const listeners = new Set<() => void>();
@@ -38,7 +38,7 @@ const seen = vi.hoisted(() => ({
   log: [] as string[],
 }));
 
-vi.mock("./backdrop-toys", () => {
+vi.mock("../backdrop-toys", () => {
   const probe = (id: string, look?: Toy["look"]): Toy => ({
     id,
     label: id,
@@ -595,7 +595,7 @@ test("reset writes each attribute it changes once", async () => {
 
 test("the backdrop's page styles blend nothing, as a blend over a changing canvas is re-blended on every present", () => {
   const page = readFileSync(
-    join(import.meta.dirname, "PixelBackdrop.astro"),
+    join(import.meta.dirname, "../PixelBackdrop.astro"),
     "utf8",
   );
 

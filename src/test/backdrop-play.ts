@@ -4,7 +4,7 @@ import { place } from "./toy-canvas";
 
 /**
  * Stubs `matchMedia` with a reduced-motion query a test can flip. Import this
- * module before `pixel-backdrop`, which reads its media queries as it loads.
+ * module before `pixel-backdrop/element`, which reads its media queries as it loads.
  */
 export const motion = (() => {
   const listeners = new Set<() => void>();

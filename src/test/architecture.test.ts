@@ -72,7 +72,7 @@ const layers = {
     imports: ["knobs", "toy kit", "displays", "lib"],
   },
   backdrop: {
-    files: ["src/components/pixel-backdrop.ts"],
+    files: ["src/components/pixel-backdrop/element.ts"],
     imports: [
       "pointer relay",
       "look",

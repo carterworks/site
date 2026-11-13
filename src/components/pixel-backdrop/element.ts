@@ -1,11 +1,11 @@
-import "./emulated-canvas/element";
-import type { EmulatedCanvas } from "./emulated-canvas/element";
-import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
-import { TOYS } from "./backdrop-toys";
-import type { Toy } from "./backdrop-toys/toy";
-import { relayPointer } from "./pixel-backdrop/pointer-relay";
-import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
-import { resolveKnobs, resolveLook } from "./pixel-backdrop/look";
+import "../emulated-canvas/element";
+import type { EmulatedCanvas } from "../emulated-canvas/element";
+import { DISPLAYS, storedDisplay, type Display } from "../backdrop-displays";
+import { TOYS } from "../backdrop-toys";
+import type { Toy } from "../backdrop-toys/toy";
+import { relayPointer } from "./pointer-relay";
+import { readDefaults, type BackdropKnobs } from "./knobs";
+import { resolveKnobs, resolveLook } from "./look";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and

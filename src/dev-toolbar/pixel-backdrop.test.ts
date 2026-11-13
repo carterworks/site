@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import "../components/pixel-backdrop";
+import "../components/pixel-backdrop/element";
 import {
   KNOBS,
   property,
