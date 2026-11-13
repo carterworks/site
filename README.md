@@ -34,7 +34,7 @@ its commit.
 
 `pnpm perf:device` measures the same page on a real device. It builds the site,
 publishes it over HTTPS on this machine's Tailscale name (port 8443 unless
-`--https` picks 443 or 10000), and prints an address to open on the device,
+`--https` picks another), and prints an address to open on the device,
 where the probe runs by itself for about two minutes: whether the page is a
 secure context and its JavaScript compiled, idle, each display as shipped, and
 each shader pass switched off. Results print in the terminal as they arrive;
