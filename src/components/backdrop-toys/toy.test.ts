@@ -255,7 +255,7 @@ test("stopping a frame loop cancels its pending frame", () => {
   expect(step).not.toHaveBeenCalled();
 });
 
-test("a stopped frame loop starts again when woken, so a leaked listener still shows", () => {
+test("a stopped frame loop starts again when woken", () => {
   const frames = spyFrames();
   const loop = frameLoop(() => false);
 

@@ -24,12 +24,9 @@ export type Look = { ghost: number; noise: number };
  * A backdrop toy, written as it would be for any canvas. It draws through
  * `canvas.getContext("2d")`, in any colour, listens for pointer events on the
  * canvas itself, and runs its own `requestAnimationFrame` loop, which stops
- * scheduling once nothing moves. `start` returns the stop, which removes its
- * listeners and cancels its frames and timers.
- *
- * A toy passes one `AbortController`'s `signal` to every `addEventListener`,
- * the window's included, so its stop removes them all with one `abort()`, and
- * runs its loop with `frameLoop`.
+ * scheduling once nothing moves. `start` returns the stop, which cancels its
+ * frames and timers and aborts the signal every listener was added with, the
+ * window's included.
  *
  * An owner may style what it draws: `<pixel-backdrop>` recolours it in the
  * display's palette, lays noise under it and dissolves between toys, but the
@@ -88,17 +85,15 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
 }
 
 /**
- * A toy's animation loop. `step` runs on an animation frame with its time,
- * and the loop asks for the next frame only while `step` returns true, so it
- * sleeps once nothing moves. `wake` asks for a frame unless one is pending.
- * `stop` cancels a pending frame, and a later `wake` starts the loop again: a
- * loop that refused it would hide, from the contract test, a listener the
- * toy's stop forgot. Inside a step no frame is pending, so `stop` there
- * cancels nothing and the step's return still decides.
+ * The animation loop the toys here run on, so each need not write its own.
+ * `step` runs on an animation frame with its time, and the loop asks for the
+ * next frame only while `step` returns true, so it sleeps once nothing moves.
+ * `wake` asks for a frame unless one is pending. `stop` cancels a pending
+ * frame, as `cancelAnimationFrame` does, and a later `wake` starts the loop
+ * again; inside a step none is pending, so the step's return still decides.
  *
- * A toy paced by `fixedStep` restarts it where its step returns false. A toy
- * that sleeps on a timer sets it where its step returns false, and clears it
- * in its own wake before `loop.wake()`.
+ * A toy paced by `fixedStep` restarts it, and a toy that sleeps on a timer
+ * sets it, where its step returns false.
  */
 export function frameLoop(step: (now: number) => boolean) {
   let frame: number | undefined;
