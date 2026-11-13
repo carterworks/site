@@ -5,7 +5,6 @@ import { pond } from "./pond";
 import { shimmer } from "./shimmer";
 import { silt } from "./silt";
 import { wax } from "./wax";
-import { pendulums } from "./pendulums";
 import { curtain } from "./curtain";
 import { tray } from "./tray";
 import { bubblewrap } from "./bubblewrap";
@@ -27,7 +26,6 @@ export const TOYS: Toy[] = [
   wax,
   silt,
   mote,
-  pendulums,
   curtain,
   tray,
   bubblewrap,
