@@ -325,6 +325,46 @@ describe("the echo", () => {
     expect(allocations.count()).toBe(0);
   });
 
+  /**
+   * Over the base (136, 157, 88), red 200 is lighter and blue 88 the same, so
+   * only green darkens, by 0.25·57/157: that is the alpha, 23.1/255, and the
+   * paint keeps the base's red and blue, so over the base they stay as they were.
+   */
+  test("a pixel lighter than unlit in a channel casts nothing in it", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 1);
+
+    presenter.show(row([200, 100, 88, 255]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([136, 0, 88, 23]);
+  });
+
+  /**
+   * Unlit (128, 255, 0) at half opacity: red darkens by 0.5·64/128 = 0.25,
+   * green by 0.5·127/255, just under, and blue, unlit at zero, by nothing.
+   * The alpha is 0.25, 63.75/255; green keeps 255·(0.25 − 127/510)/0.25 = 1.
+   */
+  test("an unlit colour with a zero channel casts nothing in that channel", () => {
+    const unlit = { opacity: 50, x: 0, y: 0, unlit: "#80ff00" };
+    const { presenter, canvases } = mount({ shadow: unlit }, 1);
+
+    presenter.show(row([64, 128, 200, 255]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 1, 0, 64]);
+  });
+
+  /**
+   * Ink at half alpha casts at 0.25·128/255: red darkens by that times
+   * 98/136, 23.06/255 of alpha, and green and blue keep 157 and 88 times
+   * their shortfall from red over it, 22.39 and 25.55.
+   */
+  test("a translucent pixel under a palette casts by its alpha", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 1);
+
+    presenter.show(row([0x26, 0x3c, 0x2b, 128]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 22, 26, 23]);
+  });
+
   test("a run of one colour casts one shadow along it, wherever it starts", () => {
     const { presenter, canvases } = mount({ shadow: POCKET }, 5);
 
