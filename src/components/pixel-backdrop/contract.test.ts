@@ -32,6 +32,16 @@ function expectExercised(presentsDuringPlay: number) {
   expect(presentsDuringPlay).toBeGreaterThan(100);
 }
 
+/**
+ * Toys that draw a still scene on start and on resize and never animate, so
+ * play gives the per-frame checks no frames to count. They are held to the
+ * still checks instead: nothing presents or is scheduled between draws.
+ */
+const STILL: Record<string, { reason: string }> = {
+  peaks: { reason: "a mountain range, drawn once like a picture" },
+  horizon: { reason: "a low skyline, drawn once like a picture" },
+};
+
 /** Time for the ghost to fade out a still frame, with plenty to spare. */
 const FADE_MS = 2000;
 /** Presses in one `play()`: the drag, then the tap. */
@@ -87,20 +97,6 @@ async function presentsPerSecond(seconds: number) {
 }
 
 describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
-  test("presents at most once per animation frame while played", async () => {
-    mount(id);
-    await play();
-
-    // A toy that rests through the hover sweep leaves the canvas on its idle timer, which presents outside any frame.
-    const idleTicks = vi
-      .mocked(window.setTimeout)
-      .mock.calls.filter(([, ms]) => ms === IDLE_FRAME_MS).length;
-    expectExercised(presents());
-    expect(presents()).toBeLessThanOrEqual(
-      animationFrames.size + idleTicks + 1,
-    );
-  });
-
   test("lights visible pixels while played", async () => {
     mount(id);
     let peak = 0;
@@ -147,24 +143,6 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
     expect(presents()).toBeLessThanOrEqual(toyDraws);
   });
 
-  test("reads nothing back and allocates nothing per frame once warmed up", async () => {
-    mount(id);
-    await play();
-    softStats.reads = 0;
-    const before = presents();
-
-    const allocations = countAllocations();
-    try {
-      await play();
-    } finally {
-      allocations.restore();
-    }
-
-    expectExercised(presents() - before);
-    expect(softStats.reads).toBe(0);
-    expect(allocations.count()).toBe(0);
-  });
-
   test.each(DISPLAYS.map((display) => [display.id]))(
     "on the %s display, writes nothing to the DOM but a press's hold, and reads no computed style, once warmed up",
     async (display) => {
@@ -200,48 +178,9 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
     },
   );
 
-  // That each present copies to the echo once is the presenter's, whatever the toy draws: presenter.test.ts pins it.
-  test("with a pixel shadow, presents reading and allocating nothing", async () => {
-    const canvas = mount(id);
-    canvas.dataset.shadow = "40";
-    await play();
-    softStats.reads = 0;
-    const before = presents();
-
-    const allocations = countAllocations();
-    try {
-      await play();
-    } finally {
-      allocations.restore();
-    }
-
-    expectExercised(presents() - before);
-    expect(softStats.reads).toBe(0);
-    expect(allocations.count()).toBe(0);
-  });
-
   describe.each(DISPLAYS.filter(({ look }) => look).map(({ id }) => [id]))(
     "on the %s display",
     (display) => {
-      test("presents at most once per animation frame, reading and allocating nothing once warmed up", async () => {
-        mount(id, {}, display);
-        await play();
-        softStats.reads = 0;
-        const before = presents();
-
-        const allocations = countAllocations();
-        try {
-          await play();
-        } finally {
-          allocations.restore();
-        }
-
-        expectExercised(presents() - before);
-        expect(presents()).toBeLessThanOrEqual(animationFrames.size + 1);
-        expect(softStats.reads).toBe(0);
-        expect(allocations.count()).toBe(0);
-      });
-
       test("presents nothing once still, as its noise is off", async () => {
         mount(id, {}, display);
         await play();
@@ -299,4 +238,123 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
     expect(move.defaultPrevented).toBe(true);
     expect(heard).toEqual(["pointerdown", "pointermove"]);
   });
+});
+
+test("only registered toys are still", () => {
+  const ids = TOYS.map((toy) => toy.id);
+  expect(ids).toEqual(expect.arrayContaining(Object.keys(STILL)));
+});
+
+const animated = TOYS.filter(({ id }) => !(id in STILL)).map(({ id }) => [id]);
+
+describe.each(animated)("%s, animated", (id) => {
+  test("presents at most once per animation frame while played", async () => {
+    mount(id);
+    await play();
+
+    // A toy that rests through the hover sweep leaves the canvas on its idle timer, which presents outside any frame.
+    const idleTicks = vi
+      .mocked(window.setTimeout)
+      .mock.calls.filter(([, ms]) => ms === IDLE_FRAME_MS).length;
+    expectExercised(presents());
+    expect(presents()).toBeLessThanOrEqual(
+      animationFrames.size + idleTicks + 1,
+    );
+  });
+
+  test("reads nothing back and allocates nothing per frame once warmed up", async () => {
+    mount(id);
+    await play();
+    softStats.reads = 0;
+    const before = presents();
+
+    const allocations = countAllocations();
+    try {
+      await play();
+    } finally {
+      allocations.restore();
+    }
+
+    expectExercised(presents() - before);
+    expect(softStats.reads).toBe(0);
+    expect(allocations.count()).toBe(0);
+  });
+
+  // That each present copies to the echo once is the presenter's, whatever the toy draws: presenter.test.ts pins it.
+  test("with a pixel shadow, presents reading and allocating nothing", async () => {
+    const canvas = mount(id);
+    canvas.dataset.shadow = "40";
+    await play();
+    softStats.reads = 0;
+    const before = presents();
+
+    const allocations = countAllocations();
+    try {
+      await play();
+    } finally {
+      allocations.restore();
+    }
+
+    expectExercised(presents() - before);
+    expect(softStats.reads).toBe(0);
+    expect(allocations.count()).toBe(0);
+  });
+
+  describe.each(DISPLAYS.filter(({ look }) => look).map(({ id }) => [id]))(
+    "on the %s display",
+    (display) => {
+      test("presents at most once per animation frame, reading and allocating nothing once warmed up", async () => {
+        mount(id, {}, display);
+        await play();
+        softStats.reads = 0;
+        const before = presents();
+
+        const allocations = countAllocations();
+        try {
+          await play();
+        } finally {
+          allocations.restore();
+        }
+
+        expectExercised(presents() - before);
+        expect(presents()).toBeLessThanOrEqual(animationFrames.size + 1);
+        expect(softStats.reads).toBe(0);
+        expect(allocations.count()).toBe(0);
+      });
+    },
+  );
+});
+
+describe.each(Object.keys(STILL).map((id) => [id]))("%s, still", (id) => {
+  test.each(DISPLAYS.map((display) => [display.id]))(
+    "on the %s display over static noise, presents only when it draws, and asks for no frames or timers between",
+    async (display) => {
+      mount(id, { noiseSpeed: 0 }, display);
+      await vi.advanceTimersByTimeAsync(FADE_MS);
+      const painted = presents();
+      expect(painted).toBeGreaterThan(0);
+      vi.mocked(window.requestAnimationFrame).mockClear();
+      vi.mocked(window.setTimeout).mockClear();
+      softStats.reads = 0;
+
+      const allocations = countAllocations();
+      try {
+        await play();
+        await vi.advanceTimersByTimeAsync(SETTLE_MS);
+      } finally {
+        allocations.restore();
+      }
+
+      expect(presents()).toBe(painted);
+      expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+      expect(window.setTimeout).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(0);
+      expect(softStats.reads).toBe(0);
+      expect(allocations.count()).toBe(0);
+
+      window.dispatchEvent(new Event("resize"));
+      await vi.advanceTimersByTimeAsync(FADE_MS);
+      expect(presents()).toBeGreaterThan(painted);
+    },
+  );
 });

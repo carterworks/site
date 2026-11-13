@@ -227,6 +227,233 @@ exports[`culture on Site in light > markup 1`] = `
 
 exports[`culture on Site in light 1`] = `"f362eed192086982a9589cfa572aef2f6a48bdf3d40c39585bde4f2eb64ebc83 over 500 changed frames"`;
 
+exports[`horizon on Amber LCD > markup 1`] = `
+{
+  "backdropData": {
+    "data-vignette": "",
+  },
+  "backdropStyle": {
+    "--backdrop-display-screen": "#f89b03",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "1",
+    "data-ghost": "70",
+    "data-ghost-fall": "76",
+    "data-ghost-rise": "86",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f89b03",
+    "data-palette-ink": "#3c070d",
+    "data-palette-levels": "2",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 1px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 1px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: 0px -1px -1px 0px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: 0px -1px -1px 0px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Amber LCD 1`] = `"2779647ba165cd6b39f9c0f46c8a6f7e0d514f0b4a1cac939127bd6a86cd9f74 over 1 changed frames"`;
+
+exports[`horizon on Pocket LCD > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-grid": "#0000000a",
+    "--backdrop-display-screen": "#889d58",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "30",
+    "data-ghost-rise": "45",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#889d58",
+    "data-palette-ink": "#263c2b",
+    "data-palette-levels": "4",
+    "data-scale": "7",
+    "data-shadow": "25",
+    "data-shadow-x": "4",
+    "data-shadow-y": "4",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+    ":host {",
+    "isolation: isolate;",
+    "}",
+    ".echo {",
+    "inset: 0 auto auto 0;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "translate: 4px 4px;",
+    "z-index: 1;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Pocket LCD 1`] = `"ffbf00092344b2a3e9924867bd085fa44c9b516987e96886fb590ad60c6e73b9 over 1 changed frames"`;
+
+exports[`horizon on Site in dark > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#141414",
+    "data-palette-ink": "#6e6e7a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Site in dark 1`] = `"12e2ab220dc112e1f493700f34d00fd5d0317cfef7d457b591c657c78477c6e7 over 65 changed frames"`;
+
+exports[`horizon on Site in light > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f4f4f2",
+    "data-palette-ink": "#8a8a99",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Site in light 1`] = `"7f54eaf9e46c59db0b948698740143a56e7d08502eb4983730402092fe8b4bd5 over 65 changed frames"`;
+
 exports[`mote on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -453,6 +680,233 @@ exports[`mote on Site in light > markup 1`] = `
 `;
 
 exports[`mote on Site in light 1`] = `"441b19489359a75d9aa95aa39e9b5379cd5afdb9cc8fb89814793f1293faea63 over 501 changed frames"`;
+
+exports[`peaks on Amber LCD > markup 1`] = `
+{
+  "backdropData": {
+    "data-vignette": "",
+  },
+  "backdropStyle": {
+    "--backdrop-display-screen": "#f89b03",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "1",
+    "data-ghost": "70",
+    "data-ghost-fall": "76",
+    "data-ghost-rise": "86",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f89b03",
+    "data-palette-ink": "#3c070d",
+    "data-palette-levels": "2",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 1px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 1px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: 0px -1px -1px 0px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: 0px -1px -1px 0px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Amber LCD 1`] = `"2d904d3bbea111b91c9e2564a6ed616f2601eb547cbefcbae7333a6dc7aeb1ee over 1 changed frames"`;
+
+exports[`peaks on Pocket LCD > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-grid": "#0000000a",
+    "--backdrop-display-screen": "#889d58",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "30",
+    "data-ghost-rise": "45",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#889d58",
+    "data-palette-ink": "#263c2b",
+    "data-palette-levels": "4",
+    "data-scale": "7",
+    "data-shadow": "25",
+    "data-shadow-x": "4",
+    "data-shadow-y": "4",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+    ":host {",
+    "isolation: isolate;",
+    "}",
+    ".echo {",
+    "inset: 0 auto auto 0;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "translate: 4px 4px;",
+    "z-index: 1;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Pocket LCD 1`] = `"de5dca624833ca1ba43acb9bd33eb96beb851e177522ad955cbdc90b5ec81f01 over 1 changed frames"`;
+
+exports[`peaks on Site in dark > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#141414",
+    "data-palette-ink": "#6e6e7a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Site in dark 1`] = `"dcbe06d321916b0467a55b941a81af50e3f3aebf8717789fc15ef958431fa1c7 over 65 changed frames"`;
+
+exports[`peaks on Site in light > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f4f4f2",
+    "data-palette-ink": "#8a8a99",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Site in light 1`] = `"659e20b11e2454a5556be4974bfd120d6bbe0a8e23880a2afbc108d9d7821f2b over 65 changed frames"`;
 
 exports[`pinbed on Amber LCD > markup 1`] = `
 {
