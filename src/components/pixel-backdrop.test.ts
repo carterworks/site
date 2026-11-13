@@ -481,15 +481,15 @@ test("the noise's feature size reaches the canvas in its own pixels, scaled from
   });
 });
 
-test("a tweaked knob is set on the canvas as its custom property, for a toy to read, until reset", () => {
+test("a tweaked knob sets no custom property on the canvas", () => {
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
 
-  backdrop.configure({ rippleSize: 9 });
-  expect(canvas.style.getPropertyValue("--backdrop-ripple-size")).toBe("9");
+  backdrop.configure({ ghost: 30, gap: 3, lightInk: "#123456" });
 
-  backdrop.reset();
-  expect(canvas.style.getPropertyValue("--backdrop-ripple-size")).toBe("");
+  expect(
+    Array.from(canvas.style).filter((name) => name.startsWith("--backdrop-")),
+  ).toEqual([]);
 });
 
 test("reset restores the stylesheet defaults after a knob was tweaked", () => {

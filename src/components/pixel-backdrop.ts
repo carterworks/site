@@ -15,9 +15,8 @@ import { isToyPress } from "./backdrop-press";
  *
  * The element owns its render knobs so the dev-toolbar app can tweak them
  * live. The canvas's are mirrored onto the `<emulated-canvas>`'s `data-*`
- * attributes, its public API, and a tweaked knob is also set on it as its
- * `--backdrop-*` custom property, where a toy reads its own. A toy's `look`
- * stands in for `ghost` and `noise` unless they are tweaked; see `look`.
+ * attributes, its public API. A toy's `look` stands in for `ghost` and
+ * `noise` unless they are tweaked; see `look`.
  */
 
 export type PixelBackdropOptions = {
@@ -350,13 +349,6 @@ export class PixelBackdrop extends HTMLElement {
     if (autoFit)
       canvas.style.setProperty("--emulated-canvas-scale", this.#fit(canvas));
     else canvas.style.removeProperty("--emulated-canvas-scale");
-    for (const [key, value] of Object.entries(this.#options)) {
-      if (this.#tweaked.has(key)) {
-        canvas.style.setProperty(property(key), String(value));
-      } else {
-        canvas.style.removeProperty(property(key));
-      }
-    }
 
     this.toggleAttribute("data-disabled", !enabled);
   }
