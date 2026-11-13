@@ -37,8 +37,9 @@ publishes it over HTTPS on this machine's Tailscale name (port 8443 unless
 `--https` picks another), and prints an address to open on the device,
 where the probe runs by itself for about two minutes: whether the page is a
 secure context and its JavaScript compiled, idle, each display as shipped, and
-each shader pass switched off. Results print in the terminal as they arrive;
-its options are at the top of
+each shader pass switched off. Keep the device's screen from locking meanwhile,
+as a hidden page voids the step it hides. Results print in the terminal as they
+arrive; its options are at the top of
 [`scripts/perf-device.mjs`](./scripts/perf-device.mjs). Use HTTPS: over plain
 HTTP (`--http host:port`), Safari on an iPhone ran the page's script without a
 JIT, 15 times slower. `pnpm perf:device:test` runs it end to end in headless

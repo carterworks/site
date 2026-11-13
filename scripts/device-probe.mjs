@@ -344,7 +344,7 @@ export function probe(
     await wait(SETTLE_MS);
   };
 
-  const environment = async (wakeLock) => {
+  const environment = async () => {
     backdrop.configure({ enabled: false });
     const { gaps } = await measure(1000);
     const calibration = calibrate();
@@ -355,7 +355,6 @@ export function probe(
       devicePixelRatio,
       viewport: `${innerWidth}×${innerHeight}`,
       secure: isSecureContext,
-      wakeLock,
       timerMs: timerResolution(),
       frameMs: typical(gaps),
       ...calibration,
@@ -509,30 +508,7 @@ export function probe(
   const start = async () => {
     await setUp();
     const original = { toy: backdrop.toy, display: label() };
-    // A phone that locks its screen mid-run hides the page and voids the
-    // step. A page that hides loses its lock, so it asks again on its return.
-    let lock;
-    let holding = isSecureContext && navigator.wakeLock !== undefined;
-    const hold = async () => {
-      lock = await navigator.wakeLock
-        .request("screen")
-        .catch((error) => `refused: ${error.message}`);
-    };
-    if (holding) {
-      await hold();
-      document.addEventListener("visibilitychange", () => {
-        if (holding && !document.hidden) hold();
-      });
-    }
-    const env = await environment(
-      !isSecureContext
-        ? "unavailable on an insecure page"
-        : typeof lock === "string"
-          ? lock
-          : lock
-            ? "held"
-            : "unsupported",
-    );
+    const env = await environment();
     await post(env);
 
     const toys = [
@@ -591,8 +567,6 @@ export function probe(
       }
     }
     choose(original.toy, original.display);
-    holding = false;
-    lock?.release?.();
     await post({ type: "done", env, steps: results });
     show(table(env, results));
     box.style.pointerEvents = "auto";

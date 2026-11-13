@@ -222,9 +222,7 @@ function report(result) {
         `Note: frames come every ${round(result.frameMs)} ms idle, so the display or browser paces below 60 Hz; Low Power Mode is a common cause.`,
       );
     }
-    console.log(
-      `Secure context: ${result.secure ? "yes" : "NO"}; screen wake lock ${result.wakeLock}.`,
-    );
+    console.log(`Secure context: ${result.secure ? "yes" : "NO"}.`);
     console.log(
       `JavaScript ${result.compiled ? "compiled" : "INTERPRETED"}: ns per loop iteration warm ${loops(result)}; ${round(result.slowdown)} times a native scan's ${round(result.scanNs)} ns per element (for reference, ${REFERENCE}).`,
     );
