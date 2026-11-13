@@ -5,9 +5,7 @@ import { pond } from "./pond";
 import { shimmer } from "./shimmer";
 import { silt } from "./silt";
 import { wax } from "./wax";
-import { bubblewrap } from "./bubblewrap";
 import { fireflies } from "./fireflies";
-import { dominoes } from "./dominoes";
 import type { Toy } from "./toy";
 
 /**
@@ -21,7 +19,5 @@ export const TOYS: Toy[] = [
   wax,
   silt,
   mote,
-  bubblewrap,
   fireflies,
-  dominoes,
 ];
