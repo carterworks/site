@@ -177,8 +177,8 @@ export class PixelBackdrop extends HTMLElement {
 
   /**
    * Writes only what differs from the markup, as every write to the canvas
-   * reconfigures its passes and re-presents it, and so restores anything
-   * else changed.
+   * reconfigures its passes and re-presents it. Comparing with the markup,
+   * not the last look, also repairs what anything else changed.
    *
    * The ghost would otherwise cross-fade the old palette through grey while
    * the page colour changes at once, so a change of palette starts the passes
