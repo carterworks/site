@@ -274,6 +274,7 @@ const SHAPES = {
   circle: true,
   ring: true,
   diamond: true,
+  hex: true,
   dash: true,
   slash: true,
   cross: true,

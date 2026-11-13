@@ -49,17 +49,17 @@ const ATTRIBUTES = [
  * canvas can magnify each logical pixel into a cell: `data-scale` sets the
  * cell size in CSS pixels (default 1), `data-gap` the space between cells
  * (default 0), and `data-shape` the cell form, inscribed in the cell:
- * `"square"` (default), `"circle"`, `"ring"`, `"diamond"`, `"dash"` (a
- * horizontal capsule), `"slash"` (bottom left to top right) or `"cross"`.
- * With the defaults the outer
- * canvas is a straight 1:1 mirror. A page can instead size cells from CSS by
- * setting `--emulated-canvas-scale` to a length on the element, which then
- * follows viewport changes without any script.
+ * `"square"` (default), `"circle"`, `"ring"`, `"diamond"`, `"hex"` (pointy
+ * top, odd rows half a cell right), `"dash"` (a horizontal capsule),
+ * `"slash"` (bottom left to top right) or `"cross"`. With the defaults the
+ * outer canvas is a straight 1:1 mirror. A page can instead size cells from
+ * CSS by setting `--emulated-canvas-scale` to a length on the element, which
+ * then follows viewport changes without any script.
  *
- * Gaps and the rest of each cell outside its shape are painted over the cells
- * rather than cut out,
- * in `--emulated-canvas-gap-color` (default `Canvas`, the page's default
- * background); set it to whatever shows behind the element.
+ * Gaps and the rest of each cell outside its shape are painted over the
+ * cells rather than cut out, in `--emulated-canvas-gap-color` (default
+ * `Canvas`, the page's default background); set it to whatever shows behind
+ * the element. A pixel shadow is cast from square cells whatever the shape.
  *
  * `data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's
  * segments over their backplate: each pixel darkens what lies under it by how

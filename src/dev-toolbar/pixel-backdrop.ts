@@ -72,6 +72,7 @@ export const CONTROLS: Controls = {
       circle: "Circle",
       ring: "Ring",
       diamond: "Diamond",
+      hex: "Hex",
       dash: "Dash",
       slash: "Slash",
       cross: "Cross",

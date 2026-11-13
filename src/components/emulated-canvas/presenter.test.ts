@@ -62,6 +62,28 @@ function bitmap(...rgba: number[][]) {
 
 const GREEN = [0, 200, 0, 255];
 const BLUE = [0, 0, 200, 255];
+const RED = [200, 0, 0, 255];
+const WHITE = [255, 255, 255, 255];
+const CLEAR = [0, 0, 0, 0];
+
+/** An image of these rows of RGBA pixels. */
+function grid(...rows: number[][][]) {
+  return new ImageData(
+    Uint8ClampedArray.from(rows.flat(2)),
+    rows[0].length,
+    rows.length,
+  );
+}
+
+/** A presenter of a 2 x 2 bitmap, or `columns` wide. */
+function mountGrid(geometry: Partial<Geometry>, columns = 2) {
+  const root = document.createElement("div").attachShadow({ mode: "open" });
+  const presenter = new Presenter(root, columns, 2);
+  presenter.configure({ ...PLAIN, ...geometry });
+  const canvases = () => [...root.querySelectorAll("canvas")];
+  const style = () => root.querySelector("style")?.textContent ?? "";
+  return { presenter, canvases, style };
+}
 
 describe("the display", () => {
   test("is a bitmap-sized canvas after the stylesheet", () => {
@@ -151,7 +173,7 @@ describe("the stylesheet", () => {
 /** The rules whose selector names a canvas, which a frame changes every present. */
 const canvasRules = (style: string) =>
   [...style.matchAll(/([^{}]*)\{([^}]*)\}/g)]
-    .filter(([, selector]) => /canvas|\.layer/.test(selector))
+    .filter(([, selector]) => /canvas|^\s*\./.test(selector))
     .map(([, , body]) => body);
 
 describe("a cell shape", () => {
@@ -172,6 +194,39 @@ describe("a cell shape", () => {
     expect(canvases()).toHaveLength(1);
     expect(style()).toContain("mask");
     expect(canvasRules(style()).join()).not.toContain("mask");
+  });
+
+  test("hex shows the odd rows again half a cell right, on a canvas over the display that is clear on even rows", () => {
+    const { presenter, canvases, style } = mountGrid({ shape: "hex", gap: 2 });
+
+    presenter.show(grid([GREEN, BLUE], [RED, WHITE]));
+
+    const [display, odd] = canvases();
+    expect(canvases()).toHaveLength(2);
+    expect(pixelsOf(display)).toEqual([GREEN, BLUE, RED, WHITE].flat());
+    expect(pixelsOf(odd)).toEqual([CLEAR, CLEAR, RED, WHITE].flat());
+    expect(style()).toContain("translate: calc(var(--stride) / 2)");
+    expect(canvasRules(style()).join()).not.toContain("mask");
+    expect(presenter.needsPixels).toBe(true);
+  });
+
+  test("going back to square removes the shifted canvas", () => {
+    const { presenter, canvases } = mountGrid({ shape: "hex" });
+
+    presenter.configure({ ...PLAIN, shape: "square" });
+
+    expect(canvases()).toHaveLength(1);
+    expect(presenter.needsPixels).toBe(false);
+  });
+
+  test("a shifted canvas sits under the shadow's echo", () => {
+    const { canvases } = mountGrid({ shape: "hex", shadow: SHADOW });
+
+    expect(canvases().map(({ className }) => className)).toEqual([
+      "",
+      "odd",
+      "echo",
+    ]);
   });
 
   test.each(SHAPES)("%s is sized by the cell, not a fixed length", (shape) => {

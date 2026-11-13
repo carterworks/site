@@ -274,7 +274,7 @@ test("the panel lists every control in order, with its label, id, range and show
       "Fit viewport: toggle off",
       "Scale: range #pixel-backdrop-scale 1..64/1 -> 1",
       "Gap: range #pixel-backdrop-gap 0..8/1 -> 0",
-      "Shape: select square=Square,circle=Circle,ring=Ring,diamond=Diamond,dash=Dash,slash=Slash,cross=Cross",
+      "Shape: select square=Square,circle=Circle,ring=Ring,diamond=Diamond,hex=Hex,dash=Dash,slash=Slash,cross=Cross",
       "Ghost: range #pixel-backdrop-ghost 0..98/1 -> 0%",
       "## Background noise",
       "Intensity: range #pixel-backdrop-noise 0..100/1 -> 0%",

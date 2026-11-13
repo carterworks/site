@@ -25,7 +25,14 @@ export const KNOBS = {
   gap: numeric,
   /** Cell form. */
   shape: choice<
-    "square" | "circle" | "ring" | "diamond" | "dash" | "slash" | "cross"
+    | "square"
+    | "circle"
+    | "ring"
+    | "diamond"
+    | "hex"
+    | "dash"
+    | "slash"
+    | "cross"
   >(),
   /** Share of each previous frame the panel keeps, in percent. */
   ghost: numeric,
