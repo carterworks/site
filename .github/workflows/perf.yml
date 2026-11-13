@@ -5,9 +5,13 @@ on:
     paths:
       - src/**
       - scripts/perf.mjs
+      - scripts/play-page.mjs
       - package.json
       - pnpm-lock.yaml
       - .github/workflows/perf.yml
+
+permissions:
+  contents: read
 
 env:
   CI: true
@@ -16,6 +20,7 @@ jobs:
   perf:
     runs-on: ubuntu-latest
     name: Performance
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

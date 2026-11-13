@@ -3,7 +3,7 @@
  * Chromium, while a scripted pointer plays with it.
  *
  *   pnpm perf [--toy pond] [--display pocket] [--throttle 4] [--seconds 2]
- *             [--against ../base/dist] [--dist dist] [--gpu]
+ *             [--against ../base/dist] [--rounds 5] [--dist dist] [--gpu]
  *
  * Chromium renders in software unless `--gpu` asks for the machine's GPU,
  * which fails rather than fall back. The first line printed says which.
@@ -24,215 +24,208 @@
  * give way. The slowdown also inflates `renderer`, so read the CPU columns
  * unthrottled.
  *
- * A powersave governor would clock the CPU by how hard each display loads it,
- * skewing one display against another, so a spinning core holds the clock
- * high throughout. The machine is still shared: three runs of one build moved
- * `cpu` by up to a sixth and `script` by up to half. `--against` takes another
- * build and measures both back to back for each combination, so drift between
- * runs hits both alike. Pages render at a device pixel ratio of 1: the numbers
- * rank changes on one machine, and are not what a real screen costs.
+ * `--against` takes another build, the base, and compares this one, the
+ * head, with it instead. Each combination is measured in `--rounds` pairs,
+ * each from a fresh load, base and head taking turns to go first, on
+ * `virtualClock` so both do the same work in every frame. The shared machine
+ * slows a whole pair alike far more often than one half of it, so each pair
+ * gives a ratio, head cpu over base cpu, and the row reports their median and
+ * range. It reports; it never fails. The last lines name the costliest rows
+ * and give the noise: how far each row's ratios stray from its median.
+ *
+ * With the same build on both sides, on an i7-8700K shared with other work,
+ * 5 rounds of 1 s: idle, the LCD rows' medians stayed in 0.96–1.03 and the
+ * Site rows', a third the cost, in 0.92–1.13; with eight busy loops and a
+ * build looping, 0.95–1.04 for all. Ratios within a row typically strayed ±7%
+ * from its median. So a threshold under about 5% on an LCD row, or 15% on a
+ * Site row, would fire on noise here; a CI runner's noise is unmeasured. Two
+ * seconds a round did not narrow the Site rows.
+ *
+ * Pages render at a device pixel ratio of 1: the numbers rank changes on one
+ * machine, and are not what a real screen costs.
  */
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import { Worker } from "node:worker_threads";
-import { chromium } from "playwright";
 import { onePercentLow } from "../src/components/frame-rate.ts";
+import {
+  holdClockHigh,
+  launch,
+  play,
+  playControls,
+  playOnClock,
+  virtualClock,
+} from "./play-page.mjs";
 
 const { values: options } = parseArgs({
   options: {
     toy: { type: "string" },
     display: { type: "string" },
     throttle: { type: "string", default: "1" },
-    seconds: { type: "string", default: "2" },
+    seconds: { type: "string" },
     against: { type: "string" },
+    rounds: { type: "string", default: "5" },
     dist: { type: "string", default: "dist" },
     gpu: { type: "boolean" },
   },
 });
 
 const WARM_UP_MS = 500;
+const seconds = Number(options.seconds ?? (options.against ? 1 : 2));
 
-/** Each build is served at its own host, so neither sees the other's storage. */
 const builds = { head: options.dist };
 if (options.against) builds.base = options.against;
-for (const [host, path] of Object.entries(builds)) {
-  builds[host] = pathToFileURL(`${resolve(path)}/`);
-  if (!existsSync(new URL("play/index.html", builds[host]))) {
-    throw new Error(`No /play page in ${path}: run \`pnpm build\` first.`);
-  }
-}
 
 // A powersave governor clocks the CPU by load, and the displays load it
-// differently, so the same script looked 2.5 times slower on one display than
-// another. A spinning core holds the clock high for every combination.
-new Worker("for (;;);", { eval: true }).unref();
+// differently: idle, without this the same Site frame cost three times the
+// CPU, and paired ratios strayed ±12% rather than ±9%. Under load it made no
+// difference.
+holdClockHigh();
 
-const browser = await chromium.launch({
-  channel: "chromium",
-  args: options.gpu ? ["--enable-gpu", "--ignore-gpu-blocklist"] : [],
+const { browser, system, renderer, page, devtools } = await launch(builds, {
+  gpu: options.gpu,
 });
-const system = await browser.newBrowserCDPSession();
-const { gpu } = await system.send("SystemInfo.getInfo");
-const renderer =
-  gpu.featureStatus.gpu_compositing === "enabled"
-    ? gpu.devices[0].deviceString
-    : undefined;
-if (options.gpu && !renderer) {
-  throw new Error(
-    "--gpu found no usable GPU driver, so Chromium composites in software. On NixOS, run it with `nix-shell --run`.",
-  );
-}
 console.log(`Rendering: ${renderer ?? "software"}`);
-const context = await browser.newContext({
-  viewport: { width: 1280, height: 800 },
-});
-await context.route("**/*", (route) => {
-  const { hostname, pathname } = new URL(route.request().url());
-  const file = new URL(
-    `.${pathname.endsWith("/") ? `${pathname}index.html` : pathname}`,
-    builds[hostname.split(".")[0]],
-  );
-  return existsSync(file)
-    ? route.fulfill({ path: file.pathname })
-    : route.fulfill({ status: 404 });
-});
-const page = await context.newPage();
-const devtools = await context.newCDPSession(page);
-await devtools.send("Performance.enable");
 await devtools.send("Emulation.setCPUThrottlingRate", {
   rate: Number(options.throttle),
 });
+if (options.against) {
+  await page.context().addInitScript(virtualClock, { paused: true });
+}
+const playing = (options) =>
+  builds.base ? playOnClock(page, options) : page.evaluate(play, options);
+const controls = playControls(page);
 
-const open = (host) => page.goto(`http://${host}.localhost/play/`);
-const toyOptions = page.locator("[data-toy] option:not([hidden])");
-const displayButton = page.locator("[data-display]");
-const shownDisplay = async () =>
-  (await displayButton.textContent()).replace("Display: ", "");
-
-await open("head");
-const toys = await toyOptions.evaluateAll((all) =>
-  all.map((option) => option.value).filter((id) => id !== "random"),
-);
+await controls.open("head");
+const toys = await controls.toys();
 if (toys.length === 0) {
   throw new Error(`The /play page in ${options.dist} has no toy menu.`);
 }
-const displays = [];
-while (!displays.includes(await shownDisplay())) {
-  displays.push(await shownDisplay());
-  await displayButton.click();
-}
+const displays = await controls.displays();
 
-/**
- * Runs in the page. Sweeps the pointer down the viewport's diagonal, then
- * drags it back up, placing it by the clock so a slow frame samples the same
- * path more coarsely. Resolves with the ms between frames.
- */
-const play = (ms) =>
-  new Promise((resolve) => {
-    const gaps = [];
-    let start;
-    let last;
-    let held = false;
-    const point = (type, share, buttons) =>
-      window.dispatchEvent(
-        new PointerEvent(type, {
-          clientX: share * innerWidth,
-          clientY: share * innerHeight,
-          pointerType: "mouse",
-          pointerId: 1,
-          isPrimary: true,
-          buttons,
-        }),
-      );
-    const frame = (now) => {
-      start ??= now;
-      if (last !== undefined) gaps.push(now - last);
-      last = now;
-      const share = (now - start) / ms;
-      if (share >= 1) {
-        point("pointerup", 0, 0);
-        resolve(gaps);
-        return;
-      }
-      if (share >= 0.5 && !held) {
-        point("pointerdown", 1, 1);
-        held = true;
-      }
-      point("pointermove", held ? 2 - share * 2 : share * 2, held ? 1 : 0);
-      requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  });
-
-/** Cumulative ms: CPU across each kind of process, and the page's time in script. */
+/** Cumulative CPU ms of each renderer and GPU process, and the page's time in script. */
 const spent = async () => {
   const [{ metrics }, { processInfo }] = await Promise.all([
     devtools.send("Performance.getMetrics"),
     system.send("SystemInfo.getProcessInfo"),
   ]);
-  const cpu = (kind) =>
-    processInfo
-      .filter(({ type }) => type === kind)
-      .reduce((sum, { cpuTime }) => sum + cpuTime * 1000, 0);
   return {
-    renderer: cpu("renderer"),
-    gpu: cpu("GPU"),
+    processes: new Map(
+      processInfo.map(({ id, type, cpuTime }) => [
+        id,
+        { type, ms: cpuTime * 1000 },
+      ]),
+    ),
     script: metrics.find(({ name }) => name === "ScriptDuration").value * 1000,
   };
 };
+/** A process gone by `after` would read as negative time, so only those in `after` count. */
+const cpuBetween = (before, after, kind) =>
+  [...after.processes]
+    .filter(([, { type }]) => type === kind)
+    .reduce(
+      (sum, [id, { ms }]) => sum + ms - (before.processes.get(id)?.ms ?? 0),
+      0,
+    );
 
 /** A fresh page load per measurement, so one toy's leftovers never cost the next. */
 const measure = async (host, toy, display) => {
-  await open(host);
-  if ((await toyOptions.and(page.locator(`[value="${toy}"]`)).count()) === 0) {
+  await controls.open(host);
+  if (!(await controls.hasToy(toy))) return undefined;
+  if (!(await controls.chooseDisplay(display, displays.length))) {
     return undefined;
   }
-  for (let presses = 0; (await shownDisplay()) !== display; presses += 1) {
-    if (presses === displays.length) return undefined;
-    await displayButton.click();
-  }
-  await page.selectOption("[data-toy]", toy);
-  await page.evaluate(play, WARM_UP_MS);
+  await controls.chooseToy(toy);
+  await playing({ ms: WARM_UP_MS });
   const before = await spent();
-  const gaps = await page.evaluate(play, Number(options.seconds) * 1000);
+  const gaps = await playing({ ms: seconds * 1000 });
   const after = await spent();
-  const perFrame = (key) => (after[key] - before[key]) / gaps.length;
+  const perFrame = (ms) => ms / gaps.length;
+  const rendererMs = perFrame(cpuBetween(before, after, "renderer"));
+  const gpuMs = perFrame(cpuBetween(before, after, "GPU"));
   return {
     fps: (gaps.length * 1000) / gaps.reduce((sum, gap) => sum + gap, 0),
     low: onePercentLow(gaps),
-    cpu: perFrame("renderer") + perFrame("gpu"),
-    renderer: perFrame("renderer"),
-    gpu: perFrame("gpu"),
-    script: perFrame("script"),
+    cpu: rendererMs + gpuMs,
+    renderer: rendererMs,
+    gpu: gpuMs,
+    script: perFrame(after.script - before.script),
   };
 };
 
 const matches = (name, filter) =>
   !filter || name.toLowerCase().includes(filter.toLowerCase());
 const round = (value) => Math.round(value * 100) / 100;
+const median = (values) => {
+  const sorted = values.toSorted((a, b) => a - b);
+  const middle = sorted.length / 2;
+  return (sorted[Math.floor(middle)] + sorted[Math.ceil(middle - 1)]) / 2;
+};
 
 const rows = [];
 for (const display of displays.filter((name) =>
   matches(name, options.display),
 )) {
   for (const toy of toys.filter((id) => matches(id, options.toy))) {
-    const base = builds.base && (await measure("base", toy, display));
-    const head = await measure("head", toy, display);
+    if (!options.against) {
+      const head = await measure("head", toy, display);
+      rows.push({
+        toy,
+        display,
+        ...Object.fromEntries(
+          Object.entries(head).map(([key, value]) => [key, round(value)]),
+        ),
+      });
+      continue;
+    }
+    const pairs = [];
+    for (let pair = 0; pair < Number(options.rounds); pair += 1) {
+      // Alternating which goes first cancels any cost of going first or second.
+      const order = pair % 2 ? ["head", "base"] : ["base", "head"];
+      const measured = {};
+      for (const host of order) {
+        measured[host] = await measure(host, toy, display);
+      }
+      if (measured.base && measured.head) {
+        pairs.push({ base: measured.base.cpu, head: measured.head.cpu });
+      }
+    }
+    if (pairs.length === 0) continue;
+    const ratios = pairs.map(({ base, head }) => head / base);
+    const ratio = median(ratios);
     rows.push({
       toy,
       display,
-      ...Object.fromEntries(
-        Object.entries(head).map(([key, value]) => [key, round(value)]),
-      ),
-      ...(base && {
-        "base cpu": round(base.cpu),
-        "cpu Δ%": Math.round((head.cpu / base.cpu - 1) * 100),
-      }),
+      "base cpu": round(median(pairs.map(({ base }) => base))),
+      "head cpu": round(median(pairs.map(({ head }) => head))),
+      ratio,
+      lowest: Math.min(...ratios),
+      highest: Math.max(...ratios),
+      strays: Math.max(...ratios.map((each) => Math.abs(each / ratio - 1))),
     });
   }
 }
 await browser.close();
 
-console.table(rows);
+if (!options.against) {
+  console.table(rows);
+} else {
+  const percent = (share) => `${Math.round(share * 100)}%`;
+  console.table(
+    rows.map(({ ratio, lowest, highest, strays, ...row }) => ({
+      ...row,
+      ratio: ratio.toFixed(2),
+      range: `${lowest.toFixed(2)}–${highest.toFixed(2)}`,
+      "strays ±": percent(strays),
+    })),
+  );
+  const named = ({ toy, display, ratio, lowest, highest }) =>
+    `${toy} on ${display} ×${ratio.toFixed(2)} (${lowest.toFixed(2)}–${highest.toFixed(2)})`;
+  const byRatio = rows.toSorted((a, b) => b.ratio - a.ratio);
+  console.log(
+    `Costliest against base: ${byRatio.slice(0, 3).map(named).join("; ")}.`,
+  );
+  const strays = rows.map((row) => row.strays);
+  const widest = rows.find((row) => row.strays === Math.max(...strays));
+  console.log(
+    `Noise: within a row, the paired ratios stray from its median by ±${percent(median(strays))} typically and ±${percent(widest.strays)} at most (${named(widest)}). Medians of ${rows.length} rows run ${byRatio.at(-1).ratio.toFixed(2)}–${byRatio[0].ratio.toFixed(2)}.`,
+  );
+}

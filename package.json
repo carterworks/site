@@ -29,6 +29,7 @@
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
     "perf": "astro build && node scripts/perf.mjs",
+    "budgets": "astro build && node scripts/budget-check.mjs",
     "verify": "oxfmt --check . && pnpm check && pnpm test",
     "deploy": "alchemy deploy"
   },
