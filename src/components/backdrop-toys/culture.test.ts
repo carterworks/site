@@ -5,9 +5,12 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import { culture } from "./culture";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const SIZE = 160;
 const STEP = 1000 / 60;

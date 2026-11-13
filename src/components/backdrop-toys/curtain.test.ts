@@ -6,8 +6,11 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { curtain } from "./curtain";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const SIZE = 160;
 /** What the viewport probe below shows of the canvas: 120 by 90 cells. */

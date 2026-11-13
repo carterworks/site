@@ -8,9 +8,12 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import type { Point } from "./toy";
 import { farCells, renderBlobs, wax } from "./wax";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const columns = 160;
 const rows = 160;

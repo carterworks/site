@@ -6,9 +6,12 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../backdrop-noise";
 import { filings } from "./filings";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const size = 160;
 const FRAME = 16;

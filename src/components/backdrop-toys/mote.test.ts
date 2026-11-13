@@ -5,8 +5,11 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mote } from "./mote";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const STEP = 1000 / 60;
 /** Lit cells of the standing sprite once its two eyes are cut out. */

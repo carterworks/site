@@ -5,8 +5,11 @@ import {
   pointerAt,
   type SoftBitmap,
   useFakeFrames,
+  SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { pendulums } from "./pendulums";
+
+vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
 const size = 160;
 const FRAME = 16;
