@@ -7,9 +7,9 @@ import {
 } from "../components/pixel-backdrop/knobs";
 
 /**
- * A small tweakpane for the site's `<pixel-backdrop>`. Each control reads the
- * live options off the element and writes a partial back through `configure`,
- * so changes show up on the page immediately. The app also persists them to
+ * A small tweakpane for the site's `<pixel-backdrop>`. Each control shows the
+ * knob in effect and writes a tweak back through `configure`, so changes show
+ * up on the page immediately. The app also persists the tweaks to
  * localStorage and restores them once, when the toolbar first starts.
  *
  * The pane is rebuilt rather than built once: the dev toolbar resets every app
@@ -115,28 +115,22 @@ type Refresher = () => void;
 const backdrop = () => document.querySelector("pixel-backdrop");
 
 /**
- * The knobs as the backdrop shows them, so the ghost and noise sliders read
- * the shown toy's look. Saving reads the raw options instead, so only a
- * tweak persists, not a look.
+ * The knobs as the backdrop shows them, the toy's look and the display's
+ * included. Saving reads the tweaks instead, so only a tweak persists.
  */
-const current = (): BackdropKnobs => {
-  const element = backdrop();
-  return element === null
-    ? readDefaults()
-    : { ...element.options, ...element.look };
-};
+const current = (): BackdropKnobs => backdrop()?.knobs ?? readDefaults();
 
 export const STORAGE_KEY = "pixel-backdrop";
 
 /**
  * Only keys the element still has, with the type it expects: storage outlives
- * schema changes, and a stale key must not leak into the options.
+ * schema changes, and a stale key must not leak into the tweaks.
  */
-export function loadSaved(options: object): Partial<BackdropKnobs> {
+export function loadSaved(knobs: object): Partial<BackdropKnobs> {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
     if (typeof saved !== "object" || saved === null) return {};
-    const known = options as Record<string, unknown>;
+    const known = knobs as Record<string, unknown>;
     return Object.fromEntries(
       Object.entries(saved).filter(
         ([key, value]) => key in known && typeof value === typeof known[key],
@@ -152,18 +146,13 @@ let updateQueued = false;
 let saveTimeout: number | undefined;
 
 /**
- * Store only what differs from the defaults, so later changes to the CSS
- * defaults still reach keys the user never touched.
+ * Store only the tweaks, so later changes to the CSS defaults still reach
+ * keys the user never touched. One at its default value is kept: it still
+ * outranks a toy's or a display's.
  */
-export function persistChanges(options: BackdropKnobs) {
-  const defaults = readDefaults();
-  const changes = Object.fromEntries(
-    Object.entries(options).filter(
-      ([key, value]) => value !== defaults[key as keyof BackdropKnobs],
-    ),
-  );
+export function persistTweaks(tweaks: Partial<BackdropKnobs>) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(changes));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tweaks));
   } catch {
     // Storage may be unavailable (private mode); tweaks just won't persist.
   }
@@ -173,8 +162,8 @@ export function persistChanges(options: BackdropKnobs) {
 const save = () => {
   window.clearTimeout(saveTimeout);
   saveTimeout = window.setTimeout(() => {
-    const options = backdrop()?.options;
-    if (options) persistChanges(options);
+    const tweaks = backdrop()?.tweaks;
+    if (tweaks) persistTweaks(tweaks);
   }, 250);
 };
 
@@ -295,7 +284,7 @@ function addKnob(
     cell.appendChild(toggle);
 
     // Read the input, not `current()`: the write to the element is deferred a
-    // frame, so the options are still stale when `change` fires.
+    // frame, so the knobs are still stale when `change` fires.
     const syncDisabled = () => {
       if (!control.disables) return;
       const target = panel.querySelector<HTMLInputElement>(
@@ -453,11 +442,11 @@ function renderPane(canvas: ShadowRoot) {
 
 export default defineToolbarApp({
   init(canvas, app) {
-    // Restore here, not in renderPane: the persisted backdrop keeps its options
+    // Restore here, not in renderPane: the persisted backdrop keeps its tweaks
     // across view transitions, so re-applying storage after a swap would
-    // clobber live tweaks.
+    // clobber live ones.
     const element = backdrop();
-    if (element) element.configure(loadSaved(element.options));
+    if (element) element.configure(loadSaved(element.knobs));
     renderPane(canvas);
 
     // The toolbar re-appends itself on every view transition, which resets each

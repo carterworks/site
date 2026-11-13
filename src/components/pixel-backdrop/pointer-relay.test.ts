@@ -220,6 +220,48 @@ test("a mouse hold grabs nothing: the page still scrolls, and a lifting touch do
   expect(types()).toEqual(["pointerdown"]);
 });
 
+test("a pen hold grabs nothing: its moves reach the canvas and the page still scrolls", () => {
+  press(document.body, { pointerType: "pen", pointerId: 2 });
+  window.dispatchEvent(
+    new PointerEvent("pointermove", { pointerType: "pen", pointerId: 2 }),
+  );
+
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(true);
+  expect(types()).toEqual(["pointerdown", "pointermove"]);
+});
+
+test("another pointer's pointercancel does not let go of a grabbed touch", () => {
+  fingerDown();
+
+  finger("pointercancel", { pointerId: FINGER + 1 });
+
+  expect(scrollBlocked()).toBe(true);
+  expect(holding()).toBe(true);
+  expect(types()).toEqual(["pointerdown"]);
+});
+
+test("a window blur lets go of a mouse hold, which the canvas hears as a pointercancel", () => {
+  press(document.body);
+
+  window.dispatchEvent(new Event("blur"));
+
+  expect(holding()).toBe(false);
+  expect(heard.map(({ type, pointerType }) => [type, pointerType])).toEqual([
+    ["pointerdown", "mouse"],
+    ["pointercancel", "mouse"],
+  ]);
+});
+
+test("the pointer leaving the page mid-hold reaches the canvas as a pointerleave, and the hold goes on", () => {
+  press(document.body);
+
+  document.dispatchEvent(new MouseEvent("mouseleave"));
+  window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
+
+  expect(types()).toEqual(["pointerdown", "pointerleave", "pointerup"]);
+});
+
 test("with no hold, a blur or a navigation tells the canvas nothing", () => {
   window.dispatchEvent(new Event("blur"));
   document.dispatchEvent(new Event("astro:before-swap"));

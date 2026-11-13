@@ -25,8 +25,6 @@ export type ResolvedLook = {
   hostStyle: Record<string, string | undefined>;
   /** Boolean attributes on the backdrop. */
   hostFlags: Record<string, boolean>;
-  /** Changes exactly when the colours do; the element then restarts the canvas's passes. */
-  palette: string;
 };
 
 /**
@@ -82,10 +80,10 @@ export function resolveLook(input: LookInput): ResolvedLook {
       scale: String(knobs.scale),
       noiseScale: String((knobs.noiseScale * columns) / TUNED_GRID),
       noiseSpeed: String(knobs.noiseSpeed),
-      ghost: String(Math.round(knobs.ghost)),
+      ghost: String(knobs.ghost),
       ghostRise: text(ghostOf?.ghostRise),
       ghostFall: text(ghostOf?.ghostFall),
-      noise: String(Math.round(knobs.noise)),
+      noise: String(knobs.noise),
       shadow: text(look?.shadow?.opacity),
       shadowX: text(look?.shadow?.x),
       shadowY: text(look?.shadow?.y),
@@ -99,15 +97,14 @@ export function resolveLook(input: LookInput): ResolvedLook {
         : undefined,
     },
     hostStyle: {
-      "--backdrop-display-screen": look?.base,
+      "--backdrop-display-screen": look && base,
       "--backdrop-display-grid": look?.grid,
-      "--backdrop-display-vignette": look && vignette(look),
+      "--backdrop-display-vignette": look && vignette({ ...look, base }),
     },
     hostFlags: {
       "data-disabled": !knobs.enabled,
       "data-vignette": look?.vignette !== undefined,
     },
-    palette: `${base} ${ink}`,
   };
 }
 

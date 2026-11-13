@@ -254,6 +254,25 @@ test("play dissolves into a toy outside the registry, and setToy swaps back", ()
   ]);
 });
 
+test("a toy whose start throws leaves nothing running, and the next toy starts as usual", () => {
+  const broken: Toy = {
+    id: "broken",
+    label: "Broken",
+    start() {
+      throw new Error("broken");
+    },
+  };
+  const backdrop = mount();
+
+  expect(() => backdrop.play(broken)).toThrow("broken");
+  fingerDown();
+  expect(scrollBlocked()).toBe(false);
+  expect(holding()).toBe(false);
+
+  backdrop.setToy("tuned");
+  expect(seen.log).toEqual(["start probe", "stop probe", "start tuned"]);
+});
+
 test("a toy played under reduced motion starts once motion resumes", () => {
   motion.set(true);
   const backdrop = mount();
@@ -309,7 +328,7 @@ test("the canvas is coloured in the scheme's palette, and a manual flip restarts
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  const { lightBase, lightInk, darkBase, darkInk } = backdrop.options;
+  const { lightBase, lightInk, darkBase, darkInk } = backdrop.knobs;
   expect(canvas.dataset).toMatchObject({
     paletteBase: lightBase,
     paletteInk: lightInk,
@@ -335,11 +354,11 @@ test("a toy's look sets the canvas's ghost and noise, and a configured knob wins
 
   backdrop.setToy("tuned");
   expect(canvas.dataset).toMatchObject({ ghost: "55", noise: "12" });
-  expect(backdrop.look).toEqual({ ghost: 55, noise: 12 });
+  expect(backdrop.knobs).toMatchObject({ ghost: 55, noise: 12 });
 
   backdrop.configure({ ghost: 30 });
   expect(canvas.dataset.ghost).toBe("30");
-  expect(backdrop.look.ghost).toBe(30);
+  expect(backdrop.knobs.ghost).toBe(30);
 
   backdrop.reset();
   expect(canvas.dataset.ghost).toBe("55");
@@ -354,7 +373,8 @@ test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   backdrop.configure({ ghost: 70 });
   backdrop.reset();
 
-  expect(backdrop.options).toMatchObject({ ghost: 40 });
+  expect(backdrop.knobs).toMatchObject({ ghost: 40 });
+  expect(backdrop.tweaks).toEqual({});
 });
 
 test("a reconnected backdrop keeps its tweaks", () => {
@@ -364,18 +384,24 @@ test("a reconnected backdrop keeps its tweaks", () => {
   backdrop.remove();
   document.body.append(backdrop);
 
-  expect(backdrop.options.ghost).toBe(20);
+  expect(backdrop.tweaks).toEqual({ ghost: 20 });
 });
 
 const pocket = DISPLAYS[1].look!;
 
-test("on a display, the look shows the noise stopped and the toy's own ghost", () => {
+test("on a display, the knobs in effect are the display's, with the noise stopped and the toy's own ghost", () => {
   const backdrop = mount();
   backdrop.setToy("tuned");
 
   backdrop.setDisplay("pocket-lcd");
 
-  expect(backdrop.look).toEqual({ ghost: 55, noise: 0 });
+  expect(backdrop.knobs).toMatchObject({
+    gap: pocket.gap,
+    shape: "square",
+    lightBase: pocket.base,
+    ghost: 55,
+    noise: 0,
+  });
 });
 
 test("on a display, a ghost set through configure takes its rise and fall off the canvas", () => {
@@ -479,6 +505,29 @@ test.each<[string, (backdrop: PixelBackdrop) => unknown]>([
   expect(await writesDuring(backdrop, () => change(backdrop))).toEqual([]);
 });
 
+test("an apply restores an attribute someone else changed on the canvas", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  const ghost = canvas.dataset.ghost;
+  canvas.dataset.ghost = "99";
+
+  backdrop.configure({});
+
+  expect(canvas.dataset.ghost).toBe(ghost);
+});
+
+test("a reconnect restores an attribute changed while the backdrop was away", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  const gap = canvas.dataset.gap;
+  backdrop.remove();
+  canvas.dataset.gap = "7";
+
+  document.body.append(backdrop);
+
+  expect(canvas.dataset.gap).toBe(gap);
+});
+
 test("a tweak writes only the attribute it changes", async () => {
   const backdrop = mount();
 
@@ -513,7 +562,7 @@ test.each(ids.flatMap((from) => ids.map((to) => [from, to])))(
   },
 );
 
-test.each<[string, Partial<PixelBackdrop["options"]>, number]>([
+test.each<[string, PixelBackdrop["tweaks"], number]>([
   ["a tweaked palette", { lightBase: "#123456" }, 1],
   ["an untouched palette", { gap: 5 }, 0],
 ])(
