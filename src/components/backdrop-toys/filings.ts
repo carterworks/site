@@ -2,6 +2,7 @@ import { clamp } from "../../lib/clamp";
 import { line } from "./line";
 import {
   fixedStep,
+  frameLoop,
   pointOn,
   visibleCells,
   type CellRect,
@@ -79,7 +80,6 @@ export const filings: Toy = {
     let dragged = false;
     let touched = false;
     let aimed = false;
-    let frame: number | undefined;
 
     const centre = (rect: CellRect) => {
       gap = POLE_GAP * (rect.bottom - rect.top);
@@ -171,16 +171,13 @@ export const filings: Toy = {
     };
 
     const step = (now: number) => {
-      frame = undefined;
       pace.advance(now, simulate);
       draw();
-      if (busy) wake();
-      else pace.restart();
+      if (!busy) pace.restart();
+      return busy;
     };
 
-    const wake = () => {
-      frame ??= requestAnimationFrame(step);
-    };
+    const { wake, stop } = frameLoop(step);
 
     const onDown = (event: PointerEvent) => {
       held = true;
@@ -224,20 +221,18 @@ export const filings: Toy = {
     };
 
     centre(visible);
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerup", onUp);
-    canvas.addEventListener("pointercancel", onCancel);
-    window.addEventListener("resize", onResize);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerup", onUp, { signal });
+    canvas.addEventListener("pointercancel", onCancel, { signal });
+    window.addEventListener("resize", onResize, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("pointercancel", onCancel);
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      stop();
     };
   },
 };
