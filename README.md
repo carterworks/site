@@ -32,6 +32,18 @@ pull request runs it. It needs the same browser; on NixOS, run it as
 one that must do more raises it to the value the run printed, with the reason in
 its commit.
 
+`pnpm perf:device` measures the same page on a real device. It builds the site,
+publishes it over HTTPS on this machine's Tailscale name (port 8443 unless
+`--https` picks 443 or 10000), and prints an address to open on the device,
+where the probe runs by itself for about two minutes: whether the page is a
+secure context and its JavaScript compiled, idle, each display as shipped, and
+each shader pass switched off. Results print in the terminal as they arrive;
+its options are at the top of
+[`scripts/perf-device.mjs`](./scripts/perf-device.mjs). Use HTTPS: over plain
+HTTP (`--http host:port`), Safari on an iPhone ran the page's script without a
+JIT, 15 times slower. `pnpm perf:device:test` runs it end to end in headless
+Chromium, as every pull request does.
+
 ## Deployment
 
 The site deploys to Cloudflare as a Worker serving static assets, defined in
