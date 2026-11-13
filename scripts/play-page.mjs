@@ -10,7 +10,7 @@ import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
 import { chromium } from "playwright";
 
-export const VIEWPORT = { width: 1280, height: 800 };
+const VIEWPORT = { width: 1280, height: 800 };
 
 /**
  * Launches Chromium for `builds`, `{ host: distPath }`, rendering in software
