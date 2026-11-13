@@ -16,11 +16,11 @@ export default {
    * proxy for what is sent: the CDN picks its own compression. Not covered:
    * inline scripts, which count as the document's, and anything fetched after
    * the page settles; /play loads the same but for its toolbar. Margin: 2%,
-   * about 700 bytes, under the 1.2 KB a toy averages, so a new toy, which
+   * about 500 bytes, under the 1 KB a toy averages, so a new toy, which
    * every page loads, misses it on purpose: raise the limit by what the run
    * measured over it, in the toy's commit.
    */
-  javascript: { "/": 34_500 },
+  javascript: { "/": 24_100 },
 
   /**
    * Bytes of each font the homepage preloads, as built; a font preloaded or

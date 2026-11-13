@@ -5,16 +5,15 @@
  * the device. The probe runs by itself there and posts each step back; this
  * prints them as they arrive, then a summary, and exits after one complete run.
  *
- *   pnpm perf:device [--toy fireflies] [--display pocket] [--seconds 8]
+ *   pnpm perf:device [--toy pond] [--display pocket] [--seconds 8]
  *                    [--https 8443 | --http 192.168.1.20:8080] [--minutes 30]
  *                    [--stay] [--json results.json] [--dist dist]
  *   pnpm perf:device:test
  *
  * `--toy` and `--display` match names as `pnpm perf` does, and the matrix of
- * every match is measured; `--toy ""` takes every toy, though Bubblewrap and
- * Dominoes come out invalid, as the scripted pointer leaves each still for
- * longer than a step allows. Each step settles, then measures for `--seconds`
- * while the pointer `pnpm perf` uses plays with the toy:
+ * every match is measured; `--toy ""` takes every toy. Each step settles, then
+ * measures for `--seconds` while the pointer `pnpm perf` uses plays with the
+ * toy:
  *   environment   the device, whether the page is a secure context, the
  *                 timer, the frame interval idle, and whether its JavaScript
  *                 runs compiled: tight loops' cost per iteration over a
@@ -62,7 +61,7 @@ import { play } from "./play-page.mjs";
 
 const { values: options } = parseArgs({
   options: {
-    toy: { type: "string", default: "fireflies" },
+    toy: { type: "string", default: "pond" },
     display: { type: "string" },
     seconds: { type: "string" },
     https: { type: "string", default: "8443" },
