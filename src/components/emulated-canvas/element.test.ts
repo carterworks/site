@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   countAllocations,
   installSoftCanvas,
+  SoftContext,
   softStats,
 } from "../../test/toy-canvas";
 import { EmulatedCanvas } from "./element";
@@ -20,6 +21,7 @@ import {
   presentFor,
   fadingFromWhite,
   square,
+  drawRow,
 } from "../../test/emulated-canvas";
 
 useFakeCanvas();
@@ -306,6 +308,82 @@ describe("with no pass active", () => {
 
     expect(screen()).toEqual([0, 0, 0, 0, 0x33, 0x66, 0x99, 255, 0, 0, 0, 0]);
     expect(softStats.reads).toBe(0);
+  });
+});
+
+describe("the shadow's cast", () => {
+  beforeEach(() => {
+    installSoftCanvas();
+  });
+
+  /** Counts the images put on the shadow's canvas from now on. */
+  function countCasts() {
+    const put = SoftContext.prototype.putImageData;
+    let casts = 0;
+    vi.spyOn(SoftContext.prototype, "putImageData").mockImplementation(
+      function (this: SoftContext, ...args: Parameters<typeof put>) {
+        if (this.canvas?.className === "echo") casts += 1;
+        put.apply(this, args);
+      },
+    );
+    return () => casts;
+  }
+
+  function shownWithShadow() {
+    const canvas = mountCanvas({
+      width: "2",
+      height: "1",
+      shadow: "25",
+      ...POCKET,
+    });
+    drawRow(canvas, [0x88, 0x9d, 0x58, 255], [0x26, 0x3c, 0x2b, 255]);
+    canvas.present();
+    return canvas;
+  }
+
+  test("is untouched by a burst of writes to attributes it does not depend on", () => {
+    const canvas = shownWithShadow();
+    const casts = countCasts();
+
+    Object.assign(canvas.dataset, {
+      scale: "4",
+      gap: "2",
+      shape: "circle",
+      shadowX: "4",
+      shadowY: "4",
+      paletteInk: "#263c2b",
+      paletteLevels: "4",
+      ghost: "50",
+      ghostRise: "45",
+      noise: "10",
+      noiseSpeed: "20",
+    });
+
+    expect(casts()).toBe(0);
+  });
+
+  test("is recast once when its opacity or the unlit colour changes, and once per present", () => {
+    const canvas = shownWithShadow();
+    const casts = countCasts();
+
+    canvas.dataset.shadow = "40";
+    expect(casts()).toBe(1);
+
+    canvas.dataset.paletteBase = "#e8a33a";
+    expect(casts()).toBe(2);
+
+    canvas.present();
+    expect(casts()).toBe(3);
+  });
+
+  test("turned on after a frame was shown casts once", () => {
+    const canvas = shownWithShadow();
+    canvas.dataset.shadow = "0";
+    const casts = countCasts();
+
+    canvas.dataset.shadow = "25";
+
+    expect(casts()).toBe(1);
   });
 });
 

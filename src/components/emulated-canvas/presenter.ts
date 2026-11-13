@@ -120,6 +120,8 @@ export class Presenter {
     words: Uint32Array;
   };
   #opacity = 0;
+  /** The unlit colour as configured, so only a change of it is parsed and recast. */
+  #unlitColour?: string;
   #unlit: Rgb = WHITE;
   /** The last frame shown as pixels, to recast when the shadow changes. */
   #shown?: ImageData;
@@ -179,8 +181,14 @@ export class Presenter {
       this.#echo = undefined;
       return;
     }
+    const recast =
+      this.#echo === undefined ||
+      opacity / 100 !== this.#opacity ||
+      unlit !== this.#unlitColour;
     this.#echo ??= this.#createEcho();
+    if (!recast) return;
     this.#opacity = opacity / 100;
+    this.#unlitColour = unlit;
     this.#unlit = unlit === undefined ? WHITE : colourRgb(unlit);
     this.#cast();
   }
