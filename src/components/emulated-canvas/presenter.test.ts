@@ -176,14 +176,16 @@ describe("a pixel shadow", () => {
     expect(canvasRule).toContain("margin");
   });
 
-  test.each([
-    ["square", 5],
-    ["circle", 0],
-    ["circle", 5],
-  ] as const)(
-    "on %s cells with gap %i is plain paint, never a blend or a layer opacity",
-    (shape, gap) => {
-      const { style } = mount({ shape, gap, shadow: SHADOW });
+  test.each(
+    (["square", "circle"] as const).flatMap((shape) =>
+      [0, 5].flatMap((gap) =>
+        [0, SHADOW.opacity].map((opacity) => [shape, gap, opacity] as const),
+      ),
+    ),
+  )(
+    "on %s cells with gap %i at opacity %i is plain paint, never a blend or a layer opacity",
+    (shape, gap, opacity) => {
+      const { style } = mount({ shape, gap, shadow: { ...SHADOW, opacity } });
 
       expect(style()).not.toContain("mix-blend-mode");
       expect(style()).not.toContain("opacity");
