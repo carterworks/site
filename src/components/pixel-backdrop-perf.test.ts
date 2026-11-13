@@ -45,8 +45,6 @@ const FADE_MS = 2000;
 const PRESSES_PER_PLAY = 2;
 /** What `<pixel-backdrop>` sets on `<html>` for the length of a hold, so each press writes it twice. */
 const HOLDING = "data-backdrop-holding";
-/** Shimmer reads its ripple size and speed at each press, through a `getComputedStyle` each. */
-const STYLE_READS_PER_PRESS: Partial<Record<string, number>> = { shimmer: 2 };
 
 let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
@@ -186,7 +184,7 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
   });
 
   test.each(DISPLAYS.map((display) => [display.id]))(
-    "on the %s display, writes nothing to the DOM but a press's hold, and reads computed style only on a press, once warmed up",
+    "on the %s display, writes nothing to the DOM but a press's hold, and reads no computed style, once warmed up",
     async (display) => {
       // A document observer can't see into the canvas's closed shadow root.
       const { shadow } = mountWithShadow(id, {}, display);
@@ -216,12 +214,7 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
       expect(writes, "DOM writes").toEqual(
         Array.from({ length: PRESSES_PER_PLAY * 2 }, () => hold),
       );
-      expect(
-        styleReads.mock.calls.length,
-        "getComputedStyle calls",
-      ).toBeLessThanOrEqual(
-        PRESSES_PER_PLAY * (STYLE_READS_PER_PRESS[id] ?? 1),
-      );
+      expect(styleReads, "getComputedStyle calls").not.toHaveBeenCalled();
     },
   );
 

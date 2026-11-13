@@ -90,33 +90,31 @@ test("a held finger smears where it drags, and a new press never joins on to the
   expect(lit().sort()).toEqual(segment(42, 42).sort());
 });
 
-test("a press grows a ring that fades over --backdrop-ripple-speed, then stops drawing", async () => {
-  canvas.style.setProperty("--backdrop-ripple-size", "6");
-  canvas.style.setProperty("--backdrop-ripple-speed", ".1s");
-  pointerAt(canvas, "pointerdown", 40.5, 40.5);
-  await vi.advanceTimersByTimeAsync(50);
+test("a press grows a ring that fades over 900 ms, then stops drawing", async () => {
+  pointerAt(canvas, "pointerdown", 80.5, 80.5);
+  await vi.advanceTimersByTimeAsync(450);
 
   const distances = lit().map((key) => {
     const [x, y] = key.split(",").map(Number);
-    return Math.hypot(x + 0.5 - 40.5, y + 0.5 - 40.5);
+    return Math.hypot(x + 0.5 - 80.5, y + 0.5 - 80.5);
   });
   expect(distances.length).toBeGreaterThan(0);
-  expect(levelAt(bitmap(), 40, 40)).toBe(0);
-  expect(Math.max(...distances)).toBeLessThan(12);
+  expect(levelAt(bitmap(), 80, 80)).toBe(0);
+  expect(Math.max(...distances)).toBeLessThan(30);
 
-  await vi.advanceTimersByTimeAsync(100);
+  await vi.advanceTimersByTimeAsync(350);
+  expect(lit().length).toBeGreaterThan(0);
+
+  await vi.advanceTimersByTimeAsync(200);
   expect(lit()).toEqual([]);
   expect(vi.getTimerCount()).toBe(0);
 });
 
-test("without --backdrop-ripple-* a ring lasts its default 900 ms", async () => {
+test("a press reads no computed style", () => {
+  const styleReads = vi.spyOn(window, "getComputedStyle");
   pointerAt(canvas, "pointerdown", 40.5, 40.5);
 
-  await vi.advanceTimersByTimeAsync(800);
-  expect(lit().length).toBeGreaterThan(0);
-
-  await vi.advanceTimersByTimeAsync(200);
-  expect(vi.getTimerCount()).toBe(0);
+  expect(styleReads).not.toHaveBeenCalled();
 });
 
 test("stop cancels its frame and ignores the pointer from then on", async () => {

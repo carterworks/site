@@ -1,19 +1,13 @@
 import { clamp } from "../../lib/clamp";
 import { line } from "./line";
-import { duration, pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
+import { pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
 
 const MAX_RIPPLES = 24;
+/** A ring's largest radius, in pixels at the tuned width. */
+const RIPPLE_SIZE = 25;
+const RIPPLE_MS = 900;
 
-/** For a page that sets no `--backdrop-ripple-*`, like a plain canvas's. */
-const DEFAULT_RIPPLE_SIZE = 25;
-const DEFAULT_RIPPLE_MS = 900;
-
-type Ripple = Point & { size: number; ms: number; born?: number };
-
-function knob(canvas: Element, name: string, parse: typeof duration) {
-  const value = parse(getComputedStyle(canvas).getPropertyValue(name).trim());
-  return Number.isFinite(value) && value > 0 ? value : undefined;
-}
+type Ripple = Point & { born?: number };
 
 /**
  * The original backdrop: moving the pointer smears a segment from the pixel it
@@ -23,9 +17,7 @@ function knob(canvas: Element, name: string, parse: typeof duration) {
  *
  * It draws white on transparent, fading by alpha so any page shows through a
  * faint pixel, into its own image data put whole each frame, so presenting it
- * on an emulated canvas needs no read-back. A ring's size
- * and lifetime come from `--backdrop-ripple-size` (in pixels of the tuned
- * width) and `--backdrop-ripple-speed`, read at each press.
+ * on an emulated canvas needs no read-back.
  */
 export const shimmer: Toy = {
   id: "shimmer",
@@ -64,7 +56,7 @@ export const shimmer: Toy = {
     };
 
     const ring = (ripple: Ripple, progress: number) => {
-      const radius = progress * ripple.size * scale;
+      const radius = progress * RIPPLE_SIZE * scale;
       const strength = 1 - progress;
       const reach = Math.ceil(radius + 1);
       const top = Math.max(0, Math.floor(ripple.y) - reach);
@@ -93,7 +85,7 @@ export const shimmer: Toy = {
       for (let i = ripples.length - 1; i >= 0; i -= 1) {
         const ripple = ripples[i];
         ripple.born ??= now;
-        const progress = (now - ripple.born) / ripple.ms;
+        const progress = (now - ripple.born) / RIPPLE_MS;
         if (progress >= 1) {
           ripples.splice(i, 1);
           continue;
@@ -132,15 +124,7 @@ export const shimmer: Toy = {
     const onDown = (event: PointerEvent) => {
       // A finger lands somewhere new, so its first move must not join on to the last.
       if (event.pointerType === "touch") hovering = false;
-      ripples.push({
-        ...pointOn(canvas, event),
-        size:
-          knob(canvas, "--backdrop-ripple-size", Number.parseFloat) ??
-          DEFAULT_RIPPLE_SIZE,
-        ms:
-          knob(canvas, "--backdrop-ripple-speed", duration) ??
-          DEFAULT_RIPPLE_MS,
-      });
+      ripples.push(pointOn(canvas, event));
       if (ripples.length > MAX_RIPPLES) ripples.shift();
       wake();
     };
