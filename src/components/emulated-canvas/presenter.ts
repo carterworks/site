@@ -151,12 +151,12 @@ export class Presenter {
     this.#style.textContent = displayStyle(this.#columns, this.#rows, geometry);
   }
 
-  /** Shows the frame: image data as its pixels, a bitmap as drawn. */
+  /** Shows the frame: image data as its pixels, a bitmap as drawn. False when the display cannot draw. */
   show(frame: ImageData | OffscreenCanvas) {
     let context = this.#context;
     if (context === undefined) {
       const created = this.#display.getContext("2d");
-      if (created === null) return;
+      if (created === null) return false;
       // `copy` replaces the display outright, so no clear is needed first.
       created.globalCompositeOperation = "copy";
       context = this.#context = created;
@@ -172,6 +172,7 @@ export class Presenter {
       this.#shown = undefined;
     }
     this.#cast();
+    return true;
   }
 
   /** Created only once a shadow is wanted, so a canvas without one pays nothing. */

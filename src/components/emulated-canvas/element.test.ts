@@ -647,6 +647,19 @@ describe("presenting on its own", () => {
     expect(shown()[0]).toBe(10);
   });
 
+  test("a display with no 2D context schedules nothing, even mid-fade", async () => {
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue(null);
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+
+    context.putImageData(pixels(0), 0, 0);
+    await Promise.resolve();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   test("a detached canvas schedules nothing", async () => {
     const canvas = mountLive({ ghost: "70" });
     const context = canvas.getContext("2d")!;
