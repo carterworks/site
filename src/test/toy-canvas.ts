@@ -370,6 +370,53 @@ const fromDependency = () =>
   (new Error().stack?.split("\n")[3] ?? "").includes("node_modules");
 
 /**
+ * Records the listeners a toy adds, on any target, until `restore`, each with
+ * the signal it was given. A toy may run only its own folder's code and
+ * `src/lib` (the architecture test holds it to that), so a listener counts
+ * when the code adding it is there: one added by happy-dom (a signal's own
+ * `abort` wiring), the canvas element or `src/test` never is.
+ */
+export function recordListeners() {
+  const added: { target: EventTarget; type: string; signal?: AbortSignal }[] =
+    [];
+  // The global `EventTarget` is Node's, not happy-dom's, and happy-dom's
+  // window carries its own bound copy of the method.
+  const owners = [Object.getPrototypeOf(Node.prototype) as EventTarget, window];
+  const originals = owners.map((owner) =>
+    Object.getOwnPropertyDescriptor(owner, "addEventListener")!,
+  );
+  for (const owner of owners) {
+    const add = owner.addEventListener;
+    Object.defineProperty(owner, "addEventListener", {
+      configurable: true,
+      value(
+        this: EventTarget,
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | AddEventListenerOptions,
+      ) {
+        // Frames: this, its caller.
+        const caller = new Error().stack?.split("\n")[2] ?? "";
+        if (/\/src\/(components\/backdrop-toys|lib)\//.test(caller)) {
+          const signal =
+            typeof options === "object" ? options.signal : undefined;
+          added.push({ target: this, type, signal });
+        }
+        add.call(this, type, listener, options);
+      },
+    });
+  }
+  return {
+    added,
+    restore() {
+      owners.forEach((owner, index) =>
+        Object.defineProperty(owner, "addEventListener", originals[index]),
+      );
+    },
+  };
+}
+
+/**
  * Counts buffers, canvases, large arrays and array copies made until
  * `restore`. Small objects are left alone: they are cheap, and toys make them
  * freely.
