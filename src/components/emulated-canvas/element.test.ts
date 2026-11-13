@@ -2,110 +2,21 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { countAllocations } from "../../test/toy-canvas";
 import { EmulatedCanvas } from "./element";
 import type { Shader } from "./shader";
+import {
+  display,
+  FILLED,
+  pixels,
+  fake,
+  useFakeCanvas,
+  mountCanvas,
+  draw,
+  shown,
+  presentFor,
+  fadingFromWhite,
+  square,
+} from "../../test/emulated-canvas";
 
-const display = {
-  drawImage: vi.fn(),
-  putImageData: vi.fn(),
-  clearRect: vi.fn(),
-  imageSmoothingEnabled: true,
-};
-
-/** The grey `fillRect` paints, as the fake has no fill style. */
-const FILLED = 77;
-
-/** Just enough of a 2D bitmap for pixels to flow from the consumer to the display. */
-class FakeBitmap {
-  pixels: Uint8ClampedArray;
-  #context?: object;
-  constructor(
-    public width: number,
-    public height: number,
-  ) {
-    this.pixels = new Uint8ClampedArray(width * height * 4);
-  }
-  getContext() {
-    const { pixels, width, height } = this;
-    return (this.#context ??= {
-      drawImage: (source: FakeBitmap) => pixels.set(source.pixels),
-      fillRect: () => {
-        for (let i = 0; i < pixels.length; i += 4) {
-          pixels.set([FILLED, FILLED, FILLED, 255], i);
-        }
-      },
-      getImageData: () => {
-        reads += 1;
-        return { width, height, data: pixels.slice() };
-      },
-      putImageData: (image: ImageData) => pixels.set(image.data),
-    });
-  }
-}
-
-/** A 1 x 1 opaque grey of `level`, as whole-bitmap image data. */
-function pixels(level: number) {
-  const data = Uint8ClampedArray.of(level, level, level, 255);
-  return { width: 1, height: 1, data } as ImageData;
-}
-
-let clock = 0;
-let reads = 0;
-
-beforeEach(() => {
-  vi.stubGlobal("OffscreenCanvas", FakeBitmap);
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-    display as unknown as CanvasRenderingContext2D,
-  );
-  clock = 0;
-  reads = 0;
-  vi.spyOn(performance, "now").mockImplementation(() => clock);
-  display.drawImage.mockClear();
-  display.putImageData.mockClear();
-  display.clearRect.mockClear();
-});
-
-afterEach(() => {
-  document.body.replaceChildren();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
-
-function mountCanvas(data: Record<string, string>) {
-  const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, { width: "1", height: "1", manual: "" }, data);
-  document.body.replaceChildren(canvas);
-  return canvas;
-}
-
-/** Fills the bitmap with an opaque grey of `level`. */
-function draw(canvas: EmulatedCanvas, level: number) {
-  const data = new Uint8ClampedArray(canvas.width * canvas.height * 4);
-  for (let i = 0; i < data.length; i += 4) {
-    data.set([level, level, level, 255], i);
-  }
-  canvas.getContext("2d")?.putImageData({ data } as ImageData, 0, 0);
-}
-
-function shown(): Uint8ClampedArray {
-  return display.putImageData.mock.lastCall?.[0].data;
-}
-
-/** Presents at `hz` for `ms` of wall-clock time. */
-function presentFor(canvas: EmulatedCanvas, ms: number, hz: number) {
-  const frames = Math.round((ms * hz) / 1000);
-  for (let i = 0; i < frames; i += 1) {
-    clock += 1000 / hz;
-    canvas.present();
-  }
-}
-
-/** A canvas that was showing white and has just been drawn black. */
-function fadingFromWhite(ghost: string) {
-  const canvas = mountCanvas({ ghost });
-  draw(canvas, 255);
-  canvas.present();
-  draw(canvas, 0);
-  return canvas;
-}
+useFakeCanvas();
 
 test.each([
   [1, 0],
@@ -233,33 +144,6 @@ test("the element observes its own attributes and every shader's", () => {
   expect(new Set(observed).size).toBe(observed.length);
 });
 
-test("at 60 Hz each ghost frame keeps data-ghost of the previous one", () => {
-  const canvas = fadingFromWhite("70");
-
-  presentFor(canvas, 1000 / 60, 60);
-
-  expect(Math.abs(shown()[0] - 255 * 0.7)).toBeLessThanOrEqual(1);
-});
-
-test("the ghost trail fades by elapsed time, so a faster display does not shorten it", () => {
-  const trailAfter = (hz: number) => {
-    presentFor(fadingFromWhite("70"), 100, hz);
-    return shown()[0];
-  };
-
-  expect(trailAfter(60)).toBeGreaterThan(10);
-  expect(Math.abs(trailAfter(120) - trailAfter(60))).toBeLessThanOrEqual(1);
-});
-
-test("even at the maximum ghost the panel lands exactly on a new frame, with no residual", () => {
-  const canvas = fadingFromWhite("100");
-  draw(canvas, 3);
-
-  presentFor(canvas, 10_000, 60);
-
-  expect([...shown()]).toEqual([3, 3, 3, 255]);
-});
-
 test("after a reset the next present shows the new frame opaque, not blended", () => {
   const canvas = fadingFromWhite("70");
   presentFor(canvas, 1000 / 60, 60);
@@ -269,78 +153,6 @@ test("after a reset the next present shows the new frame opaque, not blended", (
   presentFor(canvas, 1000 / 60, 60);
 
   expect([...shown()]).toEqual([0, 0, 0, 255]);
-});
-
-test("turning the ghost off and on again starts the panel from the current frame", () => {
-  const canvas = fadingFromWhite("70");
-  canvas.dataset.ghost = "0";
-  presentFor(canvas, 1000 / 60, 60);
-
-  canvas.dataset.ghost = "70";
-  presentFor(canvas, 1000 / 60, 60);
-
-  expect([...shown()]).toEqual([0, 0, 0, 255]);
-});
-
-test("data-ghost-rise and data-ghost-fall set the brightening and darkening response apart", () => {
-  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "70" });
-  draw(canvas, 0);
-  canvas.present();
-
-  draw(canvas, 255);
-  presentFor(canvas, 1000 / 60, 60);
-  expect(shown()[0]).toBe(255);
-
-  draw(canvas, 0);
-  presentFor(canvas, 1000 / 60, 60);
-  expect(Math.abs(shown()[0] - 255 * 0.7)).toBeLessThanOrEqual(1);
-});
-
-test("data-ghost-rise alone brightens through a partial value while darkening stays instant", () => {
-  const canvas = mountCanvas({ ghostRise: "70" });
-  draw(canvas, 0);
-  canvas.present();
-
-  draw(canvas, 255);
-  presentFor(canvas, 1000 / 60, 60);
-  expect(Math.abs(shown()[0] - 255 * 0.3)).toBeLessThanOrEqual(1);
-
-  draw(canvas, 0);
-  presentFor(canvas, 1000 / 60, 60);
-  expect(shown()[0]).toBe(0);
-});
-
-test("data-ghost-rise and data-ghost-fall each default to data-ghost", () => {
-  const canvas = mountCanvas({ ghost: "70", ghostRise: "0" });
-  draw(canvas, 255);
-  canvas.present();
-
-  draw(canvas, 0);
-  presentFor(canvas, 1000 / 60, 60);
-
-  expect(Math.abs(shown()[0] - 255 * 0.7)).toBeLessThanOrEqual(1);
-});
-
-test("a pixel brightening overall rises in every channel, even one that darkens", () => {
-  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "90" });
-  drawRow(canvas, [200, 0, 0, 255]);
-  canvas.present();
-
-  drawRow(canvas, [0, 255, 0, 255]);
-  presentFor(canvas, 1000 / 60, 60);
-
-  expect(pixelsShown()).toBe("0 255 0 255");
-});
-
-test("an instant response with no time elapsed lands on the frame, not NaN", () => {
-  const canvas = mountCanvas({ ghostRise: "0", ghostFall: "70" });
-  draw(canvas, 0);
-  canvas.present();
-
-  draw(canvas, 255);
-  canvas.present();
-
-  expect([...shown()]).toEqual([255, 255, 255, 255]);
 });
 
 test.each([
@@ -486,7 +298,7 @@ test("the echo copies the display once per present, reading nothing back and all
   }
 
   expect(echo.drawImage).toHaveBeenCalledTimes(6);
-  expect(reads).toBe(0);
+  expect(fake.reads).toBe(0);
   expect(allocations.count()).toBe(0);
 });
 
@@ -710,197 +522,6 @@ test("present reports a plain copy as settled", () => {
   expect(canvas.present()).toBe(false);
 });
 
-test("present reports a ghost fade as changing until it lands on the frame", () => {
-  const canvas = mountCanvas({ ghost: "70" });
-  draw(canvas, 255);
-  expect(canvas.present()).toBe(false);
-
-  draw(canvas, 0);
-  clock += 1000 / 60;
-  expect(canvas.present()).toBe(true);
-
-  presentFor(canvas, 1000, 60);
-  expect(shown()[0]).toBe(0);
-  clock += 1000 / 60;
-  expect(canvas.present()).toBe(false);
-});
-
-test("present reports settled once the ghost is turned off mid-fade", () => {
-  const canvas = fadingFromWhite("90");
-  clock += 1000 / 60;
-  expect(canvas.present()).toBe(true);
-
-  canvas.dataset.ghost = "0";
-  clock += 1000 / 60;
-  expect(canvas.present()).toBe(false);
-});
-
-test("a one-level step settles at once, so a slowly drifting frame lets its owner idle", () => {
-  const canvas = mountCanvas({ ghost: "100" });
-  draw(canvas, 100);
-  canvas.present();
-  draw(canvas, 101);
-  clock += 1000 / 60;
-
-  expect(canvas.present()).toBe(false);
-  expect(shown()[0]).toBe(101);
-});
-
-/** Puts these RGBA pixels, in a row, as the whole bitmap of `canvas`. */
-function drawRow(canvas: EmulatedCanvas, ...rgba: number[][]) {
-  const data = Uint8ClampedArray.from(rgba.flat());
-  canvas
-    .getContext("2d")
-    ?.putImageData({ width: rgba.length, height: 1, data } as ImageData, 0, 0);
-}
-
-const pixelsShown = () => [...shown()].join(" ");
-
-test("a palette maps each pixel's luma onto the scale from data-palette-base to data-palette-ink, opaque", () => {
-  const canvas = mountCanvas({
-    width: "5",
-    height: "1",
-    paletteBase: "#102030",
-    paletteInk: "#ffffff",
-  });
-  drawRow(
-    canvas,
-    [0, 0, 0, 255],
-    [255, 255, 255, 255],
-    [255, 255, 255, 0],
-    [128, 128, 128, 255],
-    [0, 255, 0, 255],
-  );
-
-  canvas.present();
-
-  const mix = (share: number) =>
-    [0x10, 0x20, 0x30].map((base) => Math.round(base + (255 - base) * share));
-  expect(pixelsShown()).toBe(
-    [
-      [0x10, 0x20, 0x30, 255],
-      [255, 255, 255, 255],
-      [0x10, 0x20, 0x30, 255],
-      [...mix(128 / 255), 255],
-      [...mix(182 / 255), 255],
-    ]
-      .flat()
-      .join(" "),
-  );
-});
-
-test("a palette follows its knobs, and is off without both", () => {
-  const canvas = mountCanvas({
-    width: "1",
-    height: "1",
-    paletteBase: "#000000",
-    paletteInk: "#ff0000",
-  });
-  drawRow(canvas, [255, 255, 255, 255]);
-  canvas.present();
-  expect(pixelsShown()).toBe("255 0 0 255");
-
-  canvas.dataset.paletteInk = "#00ff00";
-  canvas.present();
-  expect(pixelsShown()).toBe("0 255 0 255");
-
-  delete canvas.dataset.paletteInk;
-  display.drawImage.mockClear();
-  canvas.present();
-  expect(display.drawImage).toHaveBeenCalledTimes(1);
-});
-
-test("data-palette-levels snaps each pixel to the nearest of that many evenly spaced shades", () => {
-  const canvas = mountCanvas({
-    width: "4",
-    height: "1",
-    paletteBase: "#000000",
-    paletteInk: "#ffffff",
-    paletteLevels: "4",
-  });
-  const greys = [0, 100, 200, 255];
-  drawRow(canvas, ...greys.map((grey) => [grey, grey, grey, 255]));
-  const shades = () => [...shown()].filter((_, i) => i % 4 === 0);
-
-  canvas.present();
-  expect(shades()).toEqual([0, 85, 170, 255]);
-
-  canvas.dataset.paletteLevels = "2";
-  canvas.present();
-  expect(shades()).toEqual([0, 0, 255, 255]);
-});
-
-test.each(["1", "x", ""])(
-  "a data-palette-levels of %j leaves the palette smooth",
-  (levels) => {
-    const canvas = mountCanvas({
-      paletteBase: "#000000",
-      paletteInk: "#ffffff",
-      paletteLevels: levels,
-    });
-    drawRow(canvas, [100, 100, 100, 255]);
-
-    canvas.present();
-
-    expect(pixelsShown()).toBe("100 100 100 255");
-  },
-);
-
-/** A `size` x `size` bitmap of one opaque grey, as whole-bitmap image data. */
-function square(size: number, level: number) {
-  const data = new Uint8ClampedArray(size * size * 4);
-  for (let i = 0; i < data.length; i += 4) {
-    data.set([level, level, level, 255], i);
-  }
-  return { width: size, height: size, data } as ImageData;
-}
-
-test("data-noise lightens the frame up to a noise of that intensity, and never darkens it", () => {
-  const canvas = mountCanvas({
-    width: "32",
-    height: "32",
-    noise: "50",
-    noiseScale: "4",
-  });
-  const image = square(32, 0);
-  image.data.set([255, 255, 255, 255]);
-  canvas.getContext("2d")?.putImageData(image, 0, 0);
-
-  canvas.present();
-
-  const reds = [...shown()].filter((_, i) => i % 4 === 0);
-  expect(reds[0]).toBe(255);
-  expect(Math.max(...reds.slice(1))).toBeGreaterThan(64);
-  expect(Math.max(...reds.slice(1))).toBeLessThanOrEqual(128);
-  expect(new Set(reds).size).toBeGreaterThan(10);
-});
-
-test("noise over a transparent pixel lightens it as though over black, and makes it opaque", () => {
-  const canvas = mountCanvas({ width: "1", height: "1", noise: "100" });
-  drawRow(canvas, [255, 255, 255, 0]);
-
-  canvas.present();
-
-  expect(shown()[3]).toBe(255);
-  expect(shown()[0]).toBeLessThan(255);
-});
-
-test("noise drifts with data-noise-speed, and holds still without it", () => {
-  const canvas = mountCanvas({ width: "16", height: "16", noise: "50" });
-  canvas.getContext("2d")?.putImageData(square(16, 0), 0, 0);
-  const presentAfter = (ms: number) => {
-    clock += ms;
-    canvas.present();
-    return [...shown()].join();
-  };
-
-  const still = presentAfter(0);
-  expect(presentAfter(1000)).toBe(still);
-
-  canvas.dataset.noiseSpeed = "50";
-  expect(presentAfter(1000)).not.toBe(still);
-});
-
 /** How many of the shown pixels are white, and how many black. */
 function census() {
   const reds = [...shown()].filter((_, i) => i % 4 === 0);
@@ -922,14 +543,14 @@ test("a transition freezes the frame on show and wipes the frames after it in, b
   expect(canvas.present()).toBe(true);
   expect(census()).toEqual({ white: 1024, black: 0 });
 
-  clock += 400;
+  fake.clock += 400;
   expect(canvas.present()).toBe(true);
   const halfway = census();
   expect(halfway.white).toBeGreaterThan(100);
   expect(halfway.black).toBeGreaterThan(100);
   expect(halfway.white + halfway.black).toBe(1024);
 
-  clock += 400;
+  fake.clock += 400;
   expect(canvas.present()).toBe(false);
   expect(census()).toEqual({ white: 0, black: 1024 });
 });
@@ -952,7 +573,7 @@ test("a transition mid-dissolve freezes the mix on show, so nothing jumps", () =
   canvas.transition();
   context.putImageData(square(32, 0), 0, 0);
   canvas.present();
-  clock += 400;
+  fake.clock += 400;
   canvas.present();
   const mix = [...shown()];
 
@@ -1086,7 +707,7 @@ describe("presenting on its own", () => {
       expect(shown()[0]).toBe(level);
     }
 
-    expect(reads).toBe(0);
+    expect(fake.reads).toBe(0);
   });
 
   test("a toy editing its image after putImageData, in the same task, does not change what is shown", async () => {
@@ -1109,7 +730,7 @@ describe("presenting on its own", () => {
     context.fillRect(0, 0, 1, 1);
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(reads).toBe(1);
+    expect(fake.reads).toBe(1);
     expect(presents()).toBeGreaterThan(10);
     expect(shown()[0]).toBe(FILLED);
   });
@@ -1304,7 +925,7 @@ test("a transition after the first allocates no buffers, styled frame or not", (
   try {
     canvas.transition();
     context.putImageData(image, 0, 0);
-    clock += 400;
+    fake.clock += 400;
     canvas.present();
   } finally {
     allocations.restore();
