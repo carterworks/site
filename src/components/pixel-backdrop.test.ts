@@ -328,7 +328,7 @@ test("the canvas is coloured in the scheme's palette, and a manual flip restarts
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  const { lightBase, lightInk, darkBase, darkInk } = backdrop.options;
+  const { lightBase, lightInk, darkBase, darkInk } = backdrop.knobs;
   expect(canvas.dataset).toMatchObject({
     paletteBase: lightBase,
     paletteInk: lightInk,
@@ -354,11 +354,11 @@ test("a toy's look sets the canvas's ghost and noise, and a configured knob wins
 
   backdrop.setToy("tuned");
   expect(canvas.dataset).toMatchObject({ ghost: "55", noise: "12" });
-  expect(backdrop.look).toEqual({ ghost: 55, noise: 12 });
+  expect(backdrop.knobs).toMatchObject({ ghost: 55, noise: 12 });
 
   backdrop.configure({ ghost: 30 });
   expect(canvas.dataset.ghost).toBe("30");
-  expect(backdrop.look.ghost).toBe(30);
+  expect(backdrop.knobs.ghost).toBe(30);
 
   backdrop.reset();
   expect(canvas.dataset.ghost).toBe("55");
@@ -373,7 +373,8 @@ test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   backdrop.configure({ ghost: 70 });
   backdrop.reset();
 
-  expect(backdrop.options).toMatchObject({ ghost: 40 });
+  expect(backdrop.knobs).toMatchObject({ ghost: 40 });
+  expect(backdrop.tweaks).toEqual({});
 });
 
 test("a reconnected backdrop keeps its tweaks", () => {
@@ -383,18 +384,24 @@ test("a reconnected backdrop keeps its tweaks", () => {
   backdrop.remove();
   document.body.append(backdrop);
 
-  expect(backdrop.options.ghost).toBe(20);
+  expect(backdrop.tweaks).toEqual({ ghost: 20 });
 });
 
 const pocket = DISPLAYS[1].look!;
 
-test("on a display, the look shows the noise stopped and the toy's own ghost", () => {
+test("on a display, the knobs in effect are the display's, with the noise stopped and the toy's own ghost", () => {
   const backdrop = mount();
   backdrop.setToy("tuned");
 
   backdrop.setDisplay("pocket-lcd");
 
-  expect(backdrop.look).toEqual({ ghost: 55, noise: 0 });
+  expect(backdrop.knobs).toMatchObject({
+    gap: pocket.gap,
+    shape: "square",
+    lightBase: pocket.base,
+    ghost: 55,
+    noise: 0,
+  });
 });
 
 test("on a display, a ghost set through configure takes its rise and fall off the canvas", () => {
@@ -555,7 +562,7 @@ test.each(ids.flatMap((from) => ids.map((to) => [from, to])))(
   },
 );
 
-test.each<[string, Partial<PixelBackdrop["options"]>, number]>([
+test.each<[string, PixelBackdrop["tweaks"], number]>([
   ["a tweaked palette", { lightBase: "#123456" }, 1],
   ["an untouched palette", { gap: 5 }, 0],
 ])(

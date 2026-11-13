@@ -8,13 +8,14 @@ import {
 import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/backdrop-toy-setting";
+import { DISPLAYS } from "../components/backdrop-displays";
 import { backdropDefaults } from "../test/backdrop-defaults";
 import {
   CONTROLS,
   type Control,
   STORAGE_KEY,
   loadSaved,
-  persistChanges,
+  persistTweaks,
   default as app,
 } from "./pixel-backdrop";
 
@@ -118,17 +119,10 @@ test.each(["{not json", "null", "[1]", '"str"'])(
 
 const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
 
-test("persists only the keys that differ from the defaults", () => {
+test("persists the tweaks as given, one at its default included", () => {
   const defaults = readDefaults();
-  persistChanges({ ...defaults, gap: defaults.gap + 1 });
-  expect(stored()).toEqual({ gap: defaults.gap + 1 });
-});
-
-test("drops a key set back to its default", () => {
-  const defaults = readDefaults();
-  persistChanges({ ...defaults, gap: defaults.gap + 1 });
-  persistChanges(defaults);
-  expect(stored()).toEqual({});
+  persistTweaks({ gap: defaults.gap + 1, ghost: defaults.ghost });
+  expect(stored()).toEqual({ gap: defaults.gap + 1, ghost: defaults.ghost });
 });
 
 test("persists a knob the live backdrop has tweaked", () => {
@@ -138,7 +132,7 @@ test("persists a knob the live backdrop has tweaked", () => {
   const defaults = readDefaults();
 
   backdrop.configure({ ghost: defaults.ghost + 15 });
-  persistChanges(backdrop.options);
+  persistTweaks(backdrop.tweaks);
 
   expect(stored()).toEqual({ ghost: defaults.ghost + 15 });
   backdrop.remove();
@@ -173,7 +167,7 @@ test("init restores saved options onto the backdrop", () => {
 
   init(document.createElement("div"));
 
-  expect(backdrop.options.ghost).toBe(defaults.ghost + 15);
+  expect(backdrop.tweaks).toEqual({ ghost: defaults.ghost + 15 });
   backdrop.remove();
 });
 
@@ -190,7 +184,7 @@ test("Reset restores the defaults and clears storage", () => {
   canvas.querySelector<HTMLElement>("astro-dev-toolbar-button")!.click();
 
   expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-  expect(backdrop.options.ghost).toBe(defaults.ghost);
+  expect(backdrop.tweaks).toEqual({});
   backdrop.remove();
 });
 
@@ -354,6 +348,34 @@ test("choosing a toy moves the ghost and noise sliders to its look", () => {
   backdrop.remove();
 });
 
+test("on a display, the controls open on what the display shows", () => {
+  const backdrop = mountBackdrop();
+  backdrop.setDisplay("pocket-lcd");
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  const pocket = DISPLAYS.find(({ id }) => id === "pocket-lcd")!.look!;
+  expect(slider(canvas, "gap").value).toBe(String(pocket.gap));
+  expect(slider(canvas, "lightBase").value).toBe(pocket.base);
+  expect(slider(canvas, "noise").value).toBe("0");
+  backdrop.remove();
+});
+
+test("a tweak set back to its default still persists, so a reload shows the same", () => {
+  const backdrop = mountBackdrop();
+  backdrop.setDisplay("pocket-lcd");
+  const { ghost } = readDefaults();
+  backdrop.configure({ ghost });
+  persistTweaks(backdrop.tweaks);
+  backdrop.remove();
+
+  const reloaded = mountBackdrop();
+  init(document.createElement("div"));
+
+  expect(reloaded.tweaks).toEqual({ ghost });
+  reloaded.remove();
+});
+
 test("a slider tweak overrides the look, and is what persists", async () => {
   const backdrop = mountBackdrop();
   backdrop.setToy("silty");
@@ -365,8 +387,8 @@ test("a slider tweak overrides the look, and is what persists", async () => {
   ghost.dispatchEvent(new Event("input"));
   await new Promise(requestAnimationFrame);
 
-  expect(backdrop.look.ghost).toBe(30);
-  persistChanges(backdrop.options);
+  expect(backdrop.knobs.ghost).toBe(30);
+  persistTweaks(backdrop.tweaks);
   expect(stored()).toEqual({ ghost: 30 });
   backdrop.remove();
 });

@@ -2,7 +2,7 @@ import "./emulated-canvas/element";
 import type { EmulatedCanvas } from "./emulated-canvas/element";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
-import type { Look, Toy } from "./backdrop-toys/toy";
+import type { Toy } from "./backdrop-toys/toy";
 import { relayPointer } from "./pixel-backdrop/pointer-relay";
 import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
 import { resolveKnobs, resolveLook } from "./pixel-backdrop/look";
@@ -34,7 +34,6 @@ function prefersDark() {
 
 export class PixelBackdrop extends HTMLElement {
   #defaults?: BackdropKnobs;
-  /** Knobs set through `configure` since the last `reset`; see `look`. */
   #tweaks: Partial<BackdropKnobs> = {};
   #canvas?: EmulatedCanvas;
   /** Waits for the canvas when the element is connected before its child is parsed. */
@@ -51,18 +50,16 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /**
-   * The ghost and noise the chosen toy shows: its look's, except that a knob
-   * set through `configure()` wins for every toy. A display's own ghost rise
-   * and fall are not among them.
+   * The knobs in effect for the chosen toy on the display. A display's own
+   * ghost rise and fall are not among them.
    */
-  get look(): Look {
-    const { ghost, noise } = resolveKnobs(this.#state());
-    return { ghost, noise };
+  get knobs(): BackdropKnobs {
+    return resolveKnobs(this.#state());
   }
 
-  /** A copy of the current knobs, for the dev toolbar to read. */
-  get options(): BackdropKnobs {
-    return { ...this.#defaults, ...this.#tweaks } as BackdropKnobs;
+  /** A copy of the knobs set through `configure` since the last `reset`. */
+  get tweaks(): Partial<BackdropKnobs> {
+    return { ...this.#tweaks };
   }
 
   connectedCallback() {
@@ -118,7 +115,7 @@ export class PixelBackdrop extends HTMLElement {
 
   #repaint() {
     this.#apply();
-    if (this.options.enabled) this.#start();
+    if (this.knobs.enabled) this.#start();
     else this.#stop();
   }
 
@@ -165,7 +162,7 @@ export class PixelBackdrop extends HTMLElement {
   #start() {
     const canvas = this.#canvas;
     if (canvas === undefined || this.#stopToy !== undefined) return;
-    if (reducedMotion.matches || !this.options.enabled) return;
+    if (reducedMotion.matches || !this.knobs.enabled) return;
     this.#apply();
     delete canvas.dataset.manual;
     this.#stopToy = run(this.#chosen, canvas);
