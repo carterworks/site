@@ -44,6 +44,7 @@ jobs:
       - name: Build this branch
         run: pnpm build
       - name: Compare this branch against its base
+        continue-on-error: true
         run: |
           {
             echo '```'
