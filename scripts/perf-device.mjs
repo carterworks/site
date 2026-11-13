@@ -43,8 +43,10 @@
  * iPhone ran the shader passes 15 times slower over plain HTTP.
  *
  * `--self-test` runs it all over loopback in headless Chromium, with short
- * steps, and exits non-zero unless every step was applied, valid and
- * restored, which is how CI notices the page's knobs or methods moving.
+ * steps, from the first display and from the second, and exits non-zero
+ * unless every step was applied, valid and restored, which is how CI notices
+ * the page's knobs or methods moving. It also expects Chromium to run the
+ * probe's loops compiled, and run with `--jitless`, not.
  */
 import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -298,13 +300,21 @@ const listen = (host, port) =>
     server.listen(port, host, () => resolve(server.address().port)),
   );
 
-let origin;
+let origins;
 if (selfTest) {
-  origin = `http://127.0.0.1:${await listen("127.0.0.1", 0)}`;
+  origins = [`http://127.0.0.1:${await listen("127.0.0.1", 0)}`];
 } else if (options.http) {
   const { hostname, port } = new URL(`http://${options.http}`);
-  await listen(hostname.replace(/^\[|\]$/g, ""), Number(port || 80));
-  origin = `http://${hostname}${port ? `:${port}` : ""}`;
+  const host = hostname.replace(/^\[|\]$/g, "");
+  await listen(host, Number(port || 80));
+  // A device cannot open the unspecified address, so name each it can reach.
+  const hosts = ["0.0.0.0", "::"].includes(host)
+    ? Object.values(networkInterfaces())
+        .flat()
+        .filter(({ family, internal }) => family === "IPv4" && !internal)
+        .map(({ address }) => address)
+    : [hostname];
+  origins = hosts.map((each) => `http://${each}${port ? `:${port}` : ""}`);
   console.log(
     "WARNING: serving plain HTTP. Browsers may run JavaScript without a JIT on an insecure page, so these numbers will not reflect the real site; prefer HTTPS through Tailscale, the default.",
   );
@@ -361,7 +371,7 @@ async function runSelfTest(origin) {
       ),
     );
     await before?.(page);
-    const ended = arrival(({ type }) => type === "done" || type === "error");
+    const ended = arrival((result) => wanted(result) || ending(result));
     await page.goto(`${origin}/play/?probe`);
     const result = await Promise.race([ended, failed]);
     await page.context().close();
@@ -376,23 +386,49 @@ async function runSelfTest(origin) {
       result.steps.length === result.steps[0]?.total,
       `${name}: steps are missing`,
     );
+    expect(
+      result.env.compiled,
+      `${name}: Chromium's JavaScript looks interpreted`,
+    );
+    const idle = result.steps.find(({ kind }) => kind === "idle");
     for (const step of result.steps) {
+      const what = [step.name, step.display, step.toy]
+        .filter(Boolean)
+        .join(", ");
       for (const problem of step.problems) {
-        const what = [step.name, step.display, step.toy].filter(Boolean);
-        problems.push(`${name}: ${what.join(", ")}: ${problem}`);
+        problems.push(`${name}: ${what}: ${problem}`);
       }
+      if (step.kind !== "shipped") continue;
+      expect(step.presents > 0, `${name}: ${what}: nothing presented`);
+      expect(
+        step.script > idle.script,
+        `${name}: ${what}: no more script than idle`,
+      );
     }
   };
-  check("from the first display", await runIn());
+
+  const browser = await chromium.launch({ channel: "chromium" });
+  check("from the first display", await runIn(browser));
   // A device that has chosen another display starts every step from it.
   check(
     "from the second display",
-    await runIn(async (page) => {
+    await runIn(browser, async (page) => {
       await page.goto(`${origin}/play/`);
       await page.click("[data-display]");
     }),
   );
   await browser.close();
+
+  const jitless = await chromium.launch({
+    channel: "chromium",
+    args: ["--js-flags=--jitless"],
+  });
+  const env = await runIn(jitless, undefined, ({ type }) => type === "env");
+  await jitless.close();
+  expect(
+    env.type === "env" && !env.compiled,
+    `--jitless Chromium: ${env.type === "env" ? `its loops cost ${round(env.slowdown)} scans, read as compiled` : env.message}`,
+  );
 
   for (const problem of problems) console.error(`Self-test: ${problem}`);
   console.log(
