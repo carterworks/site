@@ -120,6 +120,8 @@ export class Presenter {
     words: Uint32Array;
   };
   #opacity = 0;
+  /** The unlit colour as configured, so only a change of it is parsed and recast. */
+  #unlitColour?: string;
   #unlit: Rgb = WHITE;
   /** The last frame shown as pixels, to recast when the shadow changes. */
   #shown?: ImageData;
@@ -149,12 +151,12 @@ export class Presenter {
     this.#style.textContent = displayStyle(this.#columns, this.#rows, geometry);
   }
 
-  /** Shows the frame: image data as its pixels, a bitmap as drawn. */
+  /** Shows the frame: image data as its pixels, a bitmap as drawn. False when the display cannot draw. */
   show(frame: ImageData | OffscreenCanvas) {
     let context = this.#context;
     if (context === undefined) {
       const created = this.#display.getContext("2d");
-      if (created === null) return;
+      if (created === null) return false;
       // `copy` replaces the display outright, so no clear is needed first.
       created.globalCompositeOperation = "copy";
       context = this.#context = created;
@@ -170,6 +172,7 @@ export class Presenter {
       this.#shown = undefined;
     }
     this.#cast();
+    return true;
   }
 
   /** Created only once a shadow is wanted, so a canvas without one pays nothing. */
@@ -179,10 +182,30 @@ export class Presenter {
       this.#echo = undefined;
       return;
     }
+    const created = this.#echo === undefined;
+    const recast =
+      created || opacity / 100 !== this.#opacity || unlit !== this.#unlitColour;
     this.#echo ??= this.#createEcho();
+    if (created) this.#readShownBitmap();
+    if (!recast) return;
     this.#opacity = opacity / 100;
+    this.#unlitColour = unlit;
     this.#unlit = unlit === undefined ? WHITE : colourRgb(unlit);
     this.#cast();
+  }
+
+  /**
+   * A bitmap shown before the shadow was on left its pixels only on the
+   * display, so they are read back from it once, as the shadow turns on:
+   * never per frame, as every frame after brings its own.
+   */
+  #readShownBitmap() {
+    const context = this.#context;
+    if (this.#echo === undefined || context === undefined) return;
+    if (this.#shown !== undefined) return;
+    const shown = context.getImageData(0, 0, this.#columns, this.#rows);
+    this.#shown = shown;
+    this.#shownWords = new Uint32Array(shown.data.buffer);
   }
 
   #createEcho() {
@@ -208,9 +231,11 @@ export class Presenter {
    */
   #cast() {
     const echo = this.#echo;
+    if (echo === undefined) return;
     const frame = this.#shown;
     const words = this.#shownWords;
-    if (echo === undefined || frame === undefined || words === undefined) {
+    if (frame === undefined || words === undefined) {
+      echo.context.clearRect(0, 0, this.#columns, this.#rows);
       return;
     }
     const pixels = frame.data;

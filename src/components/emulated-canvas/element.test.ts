@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   countAllocations,
   installSoftCanvas,
+  SoftContext,
   softStats,
 } from "../../test/toy-canvas";
 import { EmulatedCanvas } from "./element";
@@ -20,6 +21,7 @@ import {
   presentFor,
   fadingFromWhite,
   square,
+  drawRow,
 } from "../../test/emulated-canvas";
 
 useFakeCanvas();
@@ -309,6 +311,98 @@ describe("with no pass active", () => {
   });
 });
 
+describe("the shadow's cast", () => {
+  let bitmaps: ReturnType<typeof installSoftCanvas>;
+  beforeEach(() => {
+    bitmaps = installSoftCanvas();
+  });
+
+  /** Counts the images put on the shadow's canvas from now on. */
+  function countCasts() {
+    const put = SoftContext.prototype.putImageData;
+    let casts = 0;
+    vi.spyOn(SoftContext.prototype, "putImageData").mockImplementation(
+      function (this: SoftContext, ...args: Parameters<typeof put>) {
+        if (this.canvas?.className === "echo") casts += 1;
+        put.apply(this, args);
+      },
+    );
+    return () => casts;
+  }
+
+  function shownWithShadow() {
+    const canvas = mountCanvas({
+      width: "2",
+      height: "1",
+      shadow: "25",
+      ...POCKET,
+    });
+    drawRow(canvas, [0x88, 0x9d, 0x58, 255], [0x26, 0x3c, 0x2b, 255]);
+    canvas.present();
+    return canvas;
+  }
+
+  test("is untouched by a burst of writes to attributes it does not depend on", () => {
+    const canvas = shownWithShadow();
+    const casts = countCasts();
+
+    Object.assign(canvas.dataset, {
+      scale: "4",
+      gap: "2",
+      shape: "circle",
+      shadowX: "4",
+      shadowY: "4",
+      paletteInk: "#263c2b",
+      paletteLevels: "4",
+      ghost: "50",
+      ghostRise: "45",
+      noise: "10",
+      noiseSpeed: "20",
+    });
+
+    expect(casts()).toBe(0);
+  });
+
+  test("is recast once when its opacity or the unlit colour changes, and once per present", () => {
+    const canvas = shownWithShadow();
+    const casts = countCasts();
+
+    canvas.dataset.shadow = "40";
+    expect(casts()).toBe(1);
+
+    canvas.dataset.paletteBase = "#e8a33a";
+    expect(casts()).toBe(2);
+
+    canvas.present();
+    expect(casts()).toBe(3);
+  });
+
+  test("turned on after a frame was shown casts once", () => {
+    const canvas = shownWithShadow();
+    canvas.dataset.shadow = "0";
+    const casts = countCasts();
+
+    canvas.dataset.shadow = "25";
+
+    expect(casts()).toBe(1);
+  });
+
+  test("turned on for a drawn manual canvas shown as its bitmap casts what is shown at once", () => {
+    const canvas = mountCanvas({ width: "2", height: "1" });
+    drawRow(canvas, [255, 255, 255, 255], [64, 64, 64, 255]);
+    canvas.present();
+    drawRow(canvas, [0, 0, 0, 255], [0, 0, 0, 255]);
+    const echo = () =>
+      bitmaps.plain.find(
+        (bitmap) => bitmap.getContext().canvas?.className === "echo",
+      );
+
+    canvas.dataset.shadow = "25";
+
+    expect([...echo()!.pixels]).toEqual([0, 0, 0, 0, 0, 0, 0, 48]);
+  });
+});
+
 test("importing the module again does not redefine the element", async () => {
   vi.resetModules();
   await expect(import("./element")).resolves.toBeDefined();
@@ -567,6 +661,19 @@ describe("presenting on its own", () => {
     delete canvas.dataset.manual;
     await vi.advanceTimersByTimeAsync(1000);
     expect(shown()[0]).toBe(10);
+  });
+
+  test("a display with no 2D context schedules nothing, even mid-fade", async () => {
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue(null);
+    const canvas = mountLive({ ghost: "70" });
+    const context = canvas.getContext("2d")!;
+    context.putImageData(pixels(255), 0, 0);
+    await vi.advanceTimersByTimeAsync(100);
+
+    context.putImageData(pixels(0), 0, 0);
+    await Promise.resolve();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   test("a detached canvas schedules nothing", async () => {

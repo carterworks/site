@@ -3,6 +3,7 @@ import {
   countAllocations,
   installSoftCanvas,
   SoftContext,
+  softStats,
 } from "../../test/toy-canvas";
 import { type Geometry, Presenter } from "./presenter";
 
@@ -175,14 +176,16 @@ describe("a pixel shadow", () => {
     expect(canvasRule).toContain("margin");
   });
 
-  test.each([
-    ["square", 5],
-    ["circle", 0],
-    ["circle", 5],
-  ] as const)(
-    "on %s cells with gap %i is plain paint, never a blend or a layer opacity",
-    (shape, gap) => {
-      const { style } = mount({ shape, gap, shadow: SHADOW });
+  test.each(
+    (["square", "circle"] as const).flatMap((shape) =>
+      [0, 5].flatMap((gap) =>
+        [0, SHADOW.opacity].map((opacity) => [shape, gap, opacity] as const),
+      ),
+    ),
+  )(
+    "on %s cells with gap %i at opacity %i is plain paint, never a blend or a layer opacity",
+    (shape, gap, opacity) => {
+      const { style } = mount({ shape, gap, shadow: { ...SHADOW, opacity } });
 
       expect(style()).not.toContain("mix-blend-mode");
       expect(style()).not.toContain("opacity");
@@ -324,6 +327,46 @@ describe("the echo", () => {
     expect(allocations.count()).toBe(0);
   });
 
+  /**
+   * Over the base (136, 157, 88), red 200 is lighter and blue 88 the same, so
+   * only green darkens, by 0.25·57/157: that is the alpha, 23.1/255, and the
+   * paint keeps the base's red and blue, so over the base they stay as they were.
+   */
+  test("a pixel lighter than unlit in a channel casts nothing in it", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 1);
+
+    presenter.show(row([200, 100, 88, 255]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([136, 0, 88, 23]);
+  });
+
+  /**
+   * Unlit (128, 255, 0) at half opacity: red darkens by 0.5·64/128 = 0.25,
+   * green by 0.5·127/255, just under, and blue, unlit at zero, by nothing.
+   * The alpha is 0.25, 63.75/255; green keeps 255·(0.25 − 127/510)/0.25 = 1.
+   */
+  test("an unlit colour with a zero channel casts nothing in that channel", () => {
+    const unlit = { opacity: 50, x: 0, y: 0, unlit: "#80ff00" };
+    const { presenter, canvases } = mount({ shadow: unlit }, 1);
+
+    presenter.show(row([64, 128, 200, 255]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 1, 0, 64]);
+  });
+
+  /**
+   * Ink at half alpha casts at 0.25·128/255: red darkens by that times
+   * 98/136, 23.06/255 of alpha, and green and blue keep 157 and 88 times
+   * their shortfall from red over it, 22.39 and 25.55.
+   */
+  test("a translucent pixel under a palette casts by its alpha", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 1);
+
+    presenter.show(row([0x26, 0x3c, 0x2b, 128]));
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 22, 26, 23]);
+  });
+
   test("a run of one colour casts one shadow along it, wherever it starts", () => {
     const { presenter, canvases } = mount({ shadow: POCKET }, 5);
 
@@ -338,25 +381,47 @@ describe("the echo", () => {
     ]);
   });
 
-  test("turned on after a show casts the shown frame at once, and recolours when the base changes", () => {
+  /**
+   * Under a white unlit, #889d58 darkens each channel by 0.25·(255 − v)/255, blue
+   * most: the alpha is 0.25·167/255, or 41.75/255, and red and green keep
+   * 255·48/167 and 255·69/167 of the paint.
+   */
+  test("turned on after a show casts the shown frame at once, and recolours when the unlit colour changes", () => {
     const { presenter, canvases } = mount();
     presenter.show(row(UNLIT, INK));
 
     presenter.configure({ ...PLAIN, shadow: POCKET });
-    expect(pixelsOf(canvases()[1]).slice(0, 4)).toEqual([0, 0, 0, 0]);
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 22, 26, 46]);
 
     presenter.configure({ ...PLAIN, shadow: { ...POCKET, unlit: "#ffffff" } });
-    expect(pixelsOf(canvases()[1]).slice(0, 4)).not.toEqual([0, 0, 0, 0]);
+    expect(pixelsOf(canvases()[1]).slice(0, 4)).toEqual([73, 105, 0, 42]);
   });
 
-  test("turned on before anything is shown, or after a bitmap, casts nothing until pixels are shown", () => {
+  test("turned on before anything is shown casts nothing", () => {
     const { presenter, canvases } = mount();
-    presenter.configure({ ...PLAIN, shadow: POCKET });
-    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
 
-    presenter.configure(PLAIN);
-    presenter.show(bitmap(INK, INK));
     presenter.configure({ ...PLAIN, shadow: POCKET });
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  test("turned on after a bitmap casts what the display shows at once, reading it back that once", () => {
+    const { presenter, canvases } = mount();
+    presenter.show(bitmap(UNLIT, INK));
+    softStats.reads = 0;
+
+    presenter.configure({ ...PLAIN, shadow: POCKET });
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 22, 26, 46]);
+    expect(softStats.reads).toBe(1);
+  });
+
+  test("shown a bitmap, whose pixels it cannot cast from, shows no shadow rather than the last one", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET });
+    presenter.show(row(INK, INK));
+
+    presenter.show(bitmap(UNLIT, UNLIT));
+
     expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
   });
 });

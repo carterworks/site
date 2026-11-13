@@ -414,7 +414,7 @@ export class EmulatedCanvas extends HTMLElement {
       this.#dissolve(image.data, now);
 
     this.#shownImage = image !== undefined;
-    presenter.show(image ?? innerCanvas);
+    if (!presenter.show(image ?? innerCanvas)) return "still";
     return dissolving ? "active" : pace;
   }
 

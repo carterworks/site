@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../../test/backdrop-defaults";
@@ -593,11 +593,15 @@ test("reset writes each attribute it changes once", async () => {
   ]);
 });
 
-test("the backdrop's page styles blend nothing, as a blend over a changing canvas is re-blended on every present", () => {
-  const page = readFileSync(
-    join(import.meta.dirname, "../PixelBackdrop.astro"),
-    "utf8",
+test("no stylesheet that could style the backdrop blends, as a blend over a changing canvas is re-blended on every present", () => {
+  const src = join(import.meta.dirname, "../..");
+  const sheets = globSync("**/*.{css,astro}", { cwd: src });
+  const blending = sheets.filter((file) =>
+    readFileSync(join(src, file), "utf8")
+      .replace(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, "")
+      .includes("mix-blend-mode"),
   );
 
-  expect(page).not.toContain("mix-blend-mode");
+  expect(sheets).not.toHaveLength(0);
+  expect(blending).toEqual([]);
 });
