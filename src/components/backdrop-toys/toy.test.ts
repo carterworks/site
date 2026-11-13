@@ -212,6 +212,22 @@ test("a step that wakes its own loop and goes on still has one frame pending", (
   expect(frames).toHaveBeenCalledTimes(2);
 });
 
+test("a step that wakes its own loop and returns false still gets one more frame", () => {
+  spyFrames();
+  let woken = false;
+  const step = vi.fn(() => {
+    if (!woken) loop.wake();
+    woken = true;
+    return false;
+  });
+  const loop = frameLoop(step);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  expect(step).toHaveBeenCalledTimes(2);
+});
+
 test("stopping a frame loop cancels its pending frame", () => {
   spyFrames();
   const step = vi.fn(() => true);
