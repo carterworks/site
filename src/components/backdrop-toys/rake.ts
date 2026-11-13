@@ -1,6 +1,13 @@
 import { clamp } from "../../lib/clamp";
 import { line } from "./line";
-import { fixedStep, pointOn, TUNED_GRID, type Point, type Toy } from "./toy";
+import {
+  fixedStep,
+  frameLoop,
+  pointOn,
+  TUNED_GRID,
+  type Point,
+  type Toy,
+} from "./toy";
 
 const GRAVEL = 150;
 const GRAVEL_SPREAD = 14;
@@ -84,7 +91,6 @@ export const rake: Toy = {
     let raking = false;
     const across: Point = { x: 0, y: 1 };
     let dirty = true;
-    let frame: number | undefined;
 
     for (let i = 0; i < speckle.length; i += 1) {
       speckle[i] =
@@ -294,19 +300,21 @@ export const rake: Toy = {
     };
 
     const draw = (now: number) => {
-      frame = undefined;
       if (trailing || rippleCount > 0) pacer.advance(now, step);
       if (dirty) {
         context.putImageData(image, 0, 0);
         dirty = false;
       }
-      if (trailing || rippleCount > 0) frame = requestAnimationFrame(draw);
-      else pacer.restart();
+      const going = trailing || rippleCount > 0;
+      if (!going) pacer.restart();
+      return going;
     };
+
+    const loop = frameLoop(draw);
 
     const wake = () => {
       dirty = true;
-      frame ??= requestAnimationFrame(draw);
+      loop.wake();
     };
 
     const visit = (x: number, y: number) => rakeAt(x, y);
@@ -369,21 +377,19 @@ export const rake: Toy = {
       wake();
     };
 
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerup", onUp);
-    canvas.addEventListener("pointercancel", onCancel);
-    canvas.addEventListener("pointerleave", onCancel);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerup", onUp, { signal });
+    canvas.addEventListener("pointercancel", onCancel, { signal });
+    canvas.addEventListener("pointerleave", onCancel, { signal });
     smooth();
     wake();
 
     return () => {
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("pointercancel", onCancel);
-      canvas.removeEventListener("pointerleave", onCancel);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      loop.stop();
     };
   },
 };

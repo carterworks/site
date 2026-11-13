@@ -1,6 +1,7 @@
 import { line } from "./line";
 import {
   fixedStep,
+  frameLoop,
   pointOn,
   sameRect,
   visibleCells,
@@ -83,7 +84,6 @@ export const culture: Toy = {
 
     let time = 0;
     const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
-    let frame: number | undefined;
     let clock = 0;
     let population = 0;
     let previousPopulation = -1;
@@ -334,16 +334,14 @@ export const culture: Toy = {
     };
 
     const tick = (now: number) => {
-      frame = undefined;
       pace.advance(now, advanceClock);
       draw();
-      if (awake || fading) wake();
-      else pace.restart();
+      const going = awake || fading;
+      if (!going) pace.restart();
+      return going;
     };
 
-    const wake = () => {
-      frame ??= requestAnimationFrame(tick);
-    };
+    const { wake, stop } = frameLoop(tick);
 
     const touched = () => {
       lastInputAt = time;
@@ -386,22 +384,19 @@ export const culture: Toy = {
     };
 
     fit();
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointerup", onLift);
-    canvas.addEventListener("pointercancel", onLift);
-    canvas.addEventListener("pointerleave", onLeave);
-    window.addEventListener("resize", onResize);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointerup", onLift, { signal });
+    canvas.addEventListener("pointercancel", onLift, { signal });
+    canvas.addEventListener("pointerleave", onLeave, { signal });
+    window.addEventListener("resize", onResize, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointerup", onLift);
-      canvas.removeEventListener("pointercancel", onLift);
-      canvas.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      stop();
     };
   },
 };
