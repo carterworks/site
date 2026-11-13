@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { countAllocations } from "../../test/toy-canvas";
-import "./element";
-import type { EmulatedCanvas } from "./element";
-import type { ShaderFrame } from "./shader";
-import { SHADERS } from "./shaders";
+import { EmulatedCanvas } from "./element";
+import type { Shader } from "./shader";
 
 const display = {
   drawImage: vi.fn(),
@@ -171,34 +169,68 @@ test("a data-manual canvas only paints when told to present", () => {
   expect(display.drawImage).toHaveBeenCalledTimes(1);
 });
 
-test("a shader added to SHADERS recolours the logical bitmap, reading its own data-palette knob", () => {
-  const sizes: number[][] = [];
-  const twoColour = (pixels: Uint8ClampedArray, frame: ShaderFrame) => {
-    sizes.push([pixels.length, frame.width, frame.height]);
-    const [dark, light] = (frame.data.palette ?? "0,255")
-      .split(",")
-      .map(Number);
-    for (let i = 0; i < pixels.length; i += 4) {
-      pixels.fill(pixels[i] < 128 ? dark : light, i, i + 3);
-    }
-    return "still" as const;
+/** Recolours each pixel dark or light, from its own `data-two-colour` knob. */
+function twoColour(sizes: number[][]): Shader {
+  return {
+    attributes: ["data-two-colour"],
+    create() {
+      let dark = 0;
+      let light = 255;
+      return {
+        configure(data) {
+          [dark, light] = (data.twoColour ?? "0,255").split(",").map(Number);
+        },
+        active: () => true,
+        apply(pixels, frame) {
+          sizes.push([pixels.length, frame.width, frame.height]);
+          for (let i = 0; i < pixels.length; i += 4) {
+            pixels.fill(pixels[i] < 128 ? dark : light, i, i + 3);
+          }
+          return "still";
+        },
+      };
+    },
   };
-  SHADERS.push(() => ({ active: () => true, apply: twoColour }));
-  try {
-    const canvas = mountCanvas({ width: "4", height: "2", scale: "8" });
-    draw(canvas, 100);
-    canvas.present();
+}
 
-    expect(sizes).toEqual([[4 * 2 * 4, 4, 2]]);
-    expect([...shown().slice(0, 4)]).toEqual([0, 0, 0, 255]);
-
-    canvas.dataset.palette = "30,200";
-    canvas.present();
-
-    expect([...shown().slice(0, 4)]).toEqual([30, 30, 30, 255]);
-  } finally {
-    SHADERS.pop();
+test("a subclass running its own shader recolours the logical bitmap, reading the knob it declares", () => {
+  const sizes: number[][] = [];
+  class TwoColourCanvas extends EmulatedCanvas {
+    static override readonly shaders = [twoColour(sizes)];
   }
+  customElements.define("two-colour-canvas", TwoColourCanvas);
+  expect(TwoColourCanvas.observedAttributes).toContain("data-two-colour");
+
+  const canvas = new TwoColourCanvas();
+  Object.assign(canvas.dataset, {
+    width: "4",
+    height: "2",
+    scale: "8",
+    manual: "",
+  });
+  document.body.replaceChildren(canvas);
+  draw(canvas, 100);
+  canvas.present();
+
+  expect(sizes).toEqual([[4 * 2 * 4, 4, 2]]);
+  expect([...shown().slice(0, 4)]).toEqual([0, 0, 0, 255]);
+
+  canvas.dataset.twoColour = "30,200";
+  canvas.present();
+
+  expect([...shown().slice(0, 4)]).toEqual([30, 30, 30, 255]);
+});
+
+test("the element observes its own attributes and every shader's", () => {
+  const observed = EmulatedCanvas.observedAttributes;
+
+  expect(observed).toEqual(
+    expect.arrayContaining(["data-scale", "data-manual"]),
+  );
+  for (const shader of EmulatedCanvas.shaders) {
+    expect(observed).toEqual(expect.arrayContaining([...shader.attributes]));
+  }
+  expect(new Set(observed).size).toBe(observed.length);
 });
 
 test("at 60 Hz each ghost frame keeps data-ghost of the previous one", () => {

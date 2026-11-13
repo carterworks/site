@@ -41,49 +41,57 @@ const SETTLED_LEVELS = 1;
  * brighter overall follows the rise curve in every channel and one getting
  * darker the fall curve. Choosing per pixel rather than per channel keeps a
  * colour change from splitting into a fast and a slow channel.
+ *
+ * `data-ghost` (0–100, default 0) is the percentage of the previous frame the
+ * panel keeps per 60 Hz frame, capped just below 100 so the panel can never
+ * freeze. `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting
+ * to `data-ghost`) set it apart for pixels getting brighter and darker.
  */
-export const ghost: Shader = () => {
-  let panel: Float32Array | undefined;
-  let riseTau = 0;
-  let fallTau = 0;
-  let active = false;
-  return {
-    configure(data) {
-      const rise = retention(data.ghostRise ?? data.ghost);
-      const fall = retention(data.ghostFall ?? data.ghost);
-      riseTau = timeConstant(rise);
-      fallTau = timeConstant(fall);
-      active = rise > 0 || fall > 0;
-    },
-    active: () => active,
-    apply(pixels, { elapsedMs }) {
-      if (panel?.length !== pixels.length) {
-        // Seed the panel with this frame so it starts opaque; otherwise a high
-        // retention would fade in from transparent.
-        panel = Float32Array.from(pixels);
-        return "still";
-      }
-      const rise = response(riseTau, elapsedMs);
-      const fall = response(fallTau, elapsedMs);
-      let changing = false;
-      for (let pixel = 0; pixel < pixels.length; pixel += 4) {
-        const brightening =
-          pixels[pixel] + pixels[pixel + 1] + pixels[pixel + 2] >
-          panel[pixel] + panel[pixel + 1] + panel[pixel + 2];
-        const share = brightening ? rise : fall;
-        for (let i = pixel; i < pixel + 4; i += 1) {
-          const target = pixels[i];
-          const level = panel[i] + (target - panel[i]) * share;
-          if (Math.abs(target - level) < SETTLED_LEVELS) {
-            panel[i] = target;
-          } else {
-            panel[i] = level;
-            pixels[i] = level;
-            changing = true;
+export const ghost: Shader = {
+  attributes: ["data-ghost", "data-ghost-rise", "data-ghost-fall"],
+  create() {
+    let panel: Float32Array | undefined;
+    let riseTau = 0;
+    let fallTau = 0;
+    let active = false;
+    return {
+      configure(data) {
+        const rise = retention(data.ghostRise ?? data.ghost);
+        const fall = retention(data.ghostFall ?? data.ghost);
+        riseTau = timeConstant(rise);
+        fallTau = timeConstant(fall);
+        active = rise > 0 || fall > 0;
+      },
+      active: () => active,
+      apply(pixels, { elapsedMs }) {
+        if (panel?.length !== pixels.length) {
+          // Seed the panel with this frame so it starts opaque; otherwise a high
+          // retention would fade in from transparent.
+          panel = Float32Array.from(pixels);
+          return "still";
+        }
+        const rise = response(riseTau, elapsedMs);
+        const fall = response(fallTau, elapsedMs);
+        let changing = false;
+        for (let pixel = 0; pixel < pixels.length; pixel += 4) {
+          const brightening =
+            pixels[pixel] + pixels[pixel + 1] + pixels[pixel + 2] >
+            panel[pixel] + panel[pixel + 1] + panel[pixel + 2];
+          const share = brightening ? rise : fall;
+          for (let i = pixel; i < pixel + 4; i += 1) {
+            const target = pixels[i];
+            const level = panel[i] + (target - panel[i]) * share;
+            if (Math.abs(target - level) < SETTLED_LEVELS) {
+              panel[i] = target;
+            } else {
+              panel[i] = level;
+              pixels[i] = level;
+              changing = true;
+            }
           }
         }
-      }
-      return changing ? "active" : "still";
-    },
-  };
+        return changing ? "active" : "still";
+      },
+    };
+  },
 };

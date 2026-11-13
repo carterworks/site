@@ -7,4 +7,4 @@ import { palette } from "./palette";
  * Per-pixel passes over the logical bitmap, in order. To add an effect, write a
  * `Shader` and add it to this list.
  */
-export const SHADERS: Shader[] = [noise, palette, ghost];
+export const SHADERS: readonly Shader[] = [noise, palette, ghost];

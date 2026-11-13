@@ -1,6 +1,6 @@
 import { makeNoise2D } from "../backdrop-noise";
 import { colourRgb } from "./colour";
-import type { Pace, ShaderFrame, ShaderPass } from "./shader";
+import type { Pace, Shader, ShaderFrame, ShaderPass } from "./shader";
 import { SHADERS } from "./shaders";
 import { NOISE_OFFSET_X, NOISE_OFFSET_Y, NOISE_SEED } from "./shaders/noise";
 
@@ -116,6 +116,19 @@ function displayStyle({ columns, rows, scale, gap, shape, shadow }: Geometry) {
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
+/** The attributes the element reads itself; the echo reads the palette to dodge its base. */
+const ATTRIBUTES = [
+  "data-scale",
+  "data-gap",
+  "data-shape",
+  "data-shadow",
+  "data-shadow-x",
+  "data-shadow-y",
+  "data-palette-base",
+  "data-palette-ink",
+  "data-manual",
+];
+
 /**
  * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
  * keyed by the `dataset` name each one comes from. Every knob is optional: an
@@ -154,31 +167,17 @@ export type EmulatedCanvasProps = {
  * in `--emulated-canvas-gap-color` (default `Canvas`, the page's default
  * background); set it to whatever shows behind the element.
  *
- * `data-ghost` (0–100, default 0) emulates an LCD's slow pixel response: it is
- * the percentage of the previous frame the panel keeps per 60 Hz frame, so
- * moving content smears into a fading trail that lasts as long at any refresh
- * rate. It is capped just below 100 so the panel can never freeze.
- * `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting to
- * `data-ghost`) set it apart for pixels getting brighter and darker.
- *
  * `data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's
  * segments over their backplate: a copy of the display at that opacity,
  * multiplied over it and offset by `data-shadow-x` and `data-shadow-y` (whole
  * CSS pixels, default 0). It is copied on the GPU on each present. With a
  * palette, only pixels darker than the base cast a shadow.
  *
- * `data-palette-base` and `data-palette-ink` (CSS colours, both or neither)
- * recolour the frame in two colours, by each pixel's luma: black shows as the
- * base and white as the ink. `data-palette-levels` (2 or more, default
- * smooth) quantises that scale to so many evenly spaced shades.
- *
- * `data-noise` (0–100) lifts the frame to a drifting noise field, so its dark
- * pixels shimmer; `data-noise-scale` and `data-noise-speed` set its feature
- * size in pixels and its drift. The knobs are live.
- *
- * Effects like the ghost are `SHADERS`, an ordered list of per-pixel passes
- * that run on the logical bitmap, never at display resolution, so each costs
- * the same however large the cells are drawn.
+ * Effects are `SHADERS`, an ordered list of per-pixel passes (a drifting
+ * noise, a two-colour palette and an LCD's ghosting), each documenting its own
+ * live `data-*` knobs in `shaders/`. They run on the logical bitmap, never at
+ * display resolution, so each costs the same however large the cells are
+ * drawn.
  *
  * The canvas presents on its own, the way a plain `<canvas>` shows what is
  * drawn on it: drawing through the 2D context queues a present for when the
@@ -200,24 +199,17 @@ export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_SCALE = 1;
   static DEFAULT_GAP = 0;
   static DEFAULT_SHAPE: PixelShape = "square";
-  static observedAttributes = [
-    "data-scale",
-    "data-gap",
-    "data-shape",
-    "data-ghost",
-    "data-ghost-rise",
-    "data-ghost-fall",
-    "data-shadow",
-    "data-shadow-x",
-    "data-shadow-y",
-    "data-palette-base",
-    "data-palette-ink",
-    "data-palette-levels",
-    "data-noise",
-    "data-noise-scale",
-    "data-noise-speed",
-    "data-manual",
-  ];
+  /** The passes this element runs; a subclass may run others. */
+  static readonly shaders: readonly Shader[] = SHADERS;
+
+  static get observedAttributes() {
+    return [
+      ...new Set([
+        ...ATTRIBUTES,
+        ...this.shaders.flatMap((shader) => shader.attributes),
+      ]),
+    ];
+  }
 
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
@@ -236,13 +228,12 @@ export class EmulatedCanvas extends HTMLElement {
   /** When the animation frame of the last frame-driven present began; timer presents leave it. */
   #presentedFrameAt = -Infinity;
   #drewAt = -Infinity;
-  #passes = SHADERS.map((_, index) => this.#build(index));
+  #passes = this.#shaders().map((_, index) => this.#build(index));
   #wasActive = new Set<ShaderPass>();
   #frame: ShaderFrame = {
     width: 0,
     height: 0,
     elapsedMs: 0,
-    data: this.dataset,
   };
   #presentedAt?: number;
   #style?: HTMLStyleElement;
@@ -266,7 +257,7 @@ export class EmulatedCanvas extends HTMLElement {
     if (name === "data-manual") this.#cancelNext();
     else {
       this.#configure();
-      for (const pass of this.#passes) pass.configure?.(this.dataset);
+      for (const pass of this.#passes) pass.configure(this.dataset);
     }
     this.#requestPresent();
   }
@@ -337,14 +328,18 @@ export class EmulatedCanvas extends HTMLElement {
 
   /** Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn. */
   reset() {
-    this.#passes = SHADERS.map((_, index) => this.#build(index));
+    this.#passes = this.#shaders().map((_, index) => this.#build(index));
     this.#wasActive.clear();
     this.#dissolving = false;
   }
 
+  #shaders() {
+    return (this.constructor as typeof EmulatedCanvas).shaders;
+  }
+
   #build(index: number) {
-    const pass = SHADERS[index]();
-    pass.configure?.(this.dataset);
+    const pass = this.#shaders()[index].create();
+    pass.configure(this.dataset);
     return pass;
   }
 
@@ -591,7 +586,7 @@ export class EmulatedCanvas extends HTMLElement {
     let idle = false;
     for (let index = 0; index < this.#passes.length; index += 1) {
       const pass = this.#passes[index];
-      if (!pass.active(frame)) {
+      if (!pass.active()) {
         if (this.#wasActive.delete(pass))
           this.#passes[index] = this.#build(index);
         continue;
