@@ -13,7 +13,11 @@ const GRID_SIZE = 160;
 ---
 
 <pixel-backdrop aria-hidden="true" transition:persist>
-  <EmulatedCanvas data-fit="viewport" width={GRID_SIZE} height={GRID_SIZE} />
+  <EmulatedCanvas
+    data-width={GRID_SIZE}
+    data-height={GRID_SIZE}
+    data-fit="viewport"
+  />
 </pixel-backdrop>
 
 <script>
