@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { expect, test } from "vitest";
-import { DISPLAYS, type Display } from "../backdrop-displays";
+import { DISPLAYS, type Display, type DisplayLook } from "../backdrop-displays";
 import type { Toy } from "../backdrop-toys/toy";
 import { KNOBS, type BackdropKnobs } from "./knobs";
 import { resolveLook, type LookInput, type ResolvedLook } from "./look";
@@ -329,21 +329,40 @@ function withChanged(display: Display, path: string[]): Display {
   return { ...display, look: look as unknown as Display["look"] };
 }
 
-const displayFields = DISPLAYS.filter(({ look }) => look).flatMap((display) =>
-  fieldsOf(display.look as unknown as Fields).map((path) => ({
-    label: display.label,
-    field: path.join("."),
-    display,
-    path,
-  })),
+type Complete<T> = {
+  [K in keyof T]-?: Complete<NonNullable<T[K]>>;
+};
+
+/** Sets every field a display can, so a new one must be added here, and so is tested. */
+const complete: Display = {
+  id: "complete",
+  label: "Complete",
+  look: {
+    grid: "#0000000a",
+    vignette: { clear: 33, edge: "#e6d3d3" },
+    base: "#f89b03",
+    ink: "#3c070d",
+    levels: 2,
+    gap: 1,
+    ghostRise: 86,
+    ghostFall: 76,
+    shadow: { opacity: 25, x: 4, y: 4 },
+  } satisfies Complete<DisplayLook>,
+};
+
+const displayFields = fieldsOf(complete.look as unknown as Fields).map(
+  (path) => ({ field: path.join("."), path }),
 );
 
 test.each(displayFields)(
-  "$label's $field changes the look",
-  ({ display, path, field }) => {
-    const inputs = COMBINATIONS.filter((input) => input.display === display);
+  "a display's $field changes the look",
+  ({ path, field }) => {
+    const inputs = COMBINATIONS.map((input) => ({
+      ...input,
+      display: complete,
+    }));
     expect(
-      moves({ display: withChanged(display, path) }, inputs),
+      moves({ display: withChanged(complete, path) }, inputs),
       `the display field ${field} changes nothing`,
     ).toBe(true);
   },
