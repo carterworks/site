@@ -2,19 +2,28 @@ import { colourRgb } from "../colour";
 import type { Shader } from "../shader";
 
 /**
- * Recolours the frame in two colours: each pixel's luma, over black, picks its
- * place on the scale from `data-palette-base` (dark) to `data-palette-ink`
- * (light), CSS colours that are both set or the pass is off, so a consumer can
- * draw in any colour and still show in the palette.
+ * Recolours the frame: each pixel's luma, over black, picks its place on the
+ * scale from `data-palette-base` (dark) to `data-palette-ink` (light), CSS
+ * colours that are both set or the pass is off, so a consumer can draw in any
+ * colour and still show in the palette. `data-palette-stops`, colours
+ * separated by spaces, spaces more colours evenly between them, so the scale
+ * runs through each.
  * `data-palette-levels` (2 or more) snaps each pixel to the nearest of that
- * many evenly spaced shades, like a panel with few grey levels. The scale is a
- * 256-entry table, rebuilt only when a knob changes.
+ * many evenly spaced shades, like a panel with few grey levels; as many as the
+ * colours lands each shade on one. The scale is a 256-entry table, rebuilt
+ * only when a knob changes.
  */
 export const palette: Shader = {
-  attributes: ["data-palette-base", "data-palette-ink", "data-palette-levels"],
+  attributes: [
+    "data-palette-base",
+    "data-palette-ink",
+    "data-palette-stops",
+    "data-palette-levels",
+  ],
   create() {
     let base: string | undefined;
     let ink: string | undefined;
+    let stops: string | undefined;
     let steps = 0;
     let stale = true;
     const table = new Uint8ClampedArray(256 * 3);
@@ -25,28 +34,39 @@ export const palette: Shader = {
         if (
           base !== data.paletteBase ||
           ink !== data.paletteInk ||
+          stops !== data.paletteStops ||
           steps !== nextSteps
         ) {
           stale = true;
         }
         base = data.paletteBase;
         ink = data.paletteInk;
+        stops = data.paletteStops;
         steps = nextSteps;
       },
       active: () => base !== undefined && ink !== undefined,
       apply(pixels) {
         if (stale) {
           stale = false;
-          const from = colourRgb(base!);
-          const to = colourRgb(ink!);
+          const colours = [
+            base!,
+            ...(stops?.split(" ").filter(Boolean) ?? []),
+            ink!,
+          ].map(colourRgb);
+          const segments = colours.length - 1;
           for (let level = 0; level < 256; level += 1) {
             const shade =
               steps > 0
                 ? (Math.round((level * steps) / 255) * 255) / steps
                 : level;
+            const place = (shade * segments) / 255;
+            const segment = Math.min(Math.floor(place), segments - 1);
+            const from = colours[segment];
+            const to = colours[segment + 1];
             for (let channel = 0; channel < 3; channel += 1) {
               table[level * 3 + channel] =
-                from[channel] + ((to[channel] - from[channel]) * shade) / 255;
+                from[channel] +
+                (to[channel] - from[channel]) * (place - segment);
             }
           }
         }
