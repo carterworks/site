@@ -1,5 +1,12 @@
 import { clamp } from "../../lib/clamp";
-import { fixedStep, pointOn, visibleCells, type Point, type Toy } from "./toy";
+import {
+  fixedStep,
+  frameLoop,
+  pointOn,
+  visibleCells,
+  type Point,
+  type Toy,
+} from "./toy";
 
 /** The gallery tile this was tuned on; every length and speed scales from it. */
 const REFERENCE_CELLS = 64;
@@ -73,7 +80,6 @@ export const pond: Toy = {
     let flat = true;
     let lit = true;
     let visible = visibleCells(canvas);
-    let frame: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const poke = (x: number, y: number, radius: number, amount: number) => {
@@ -176,7 +182,6 @@ export const pond: Toy = {
     };
 
     const draw = (now: number) => {
-      frame = undefined;
       if (now > rainFrom() && now < rainUntil() && now > nextRain) {
         const margin = RAIN_MARGIN * scale;
         poke(
@@ -199,8 +204,7 @@ export const pond: Toy = {
 
       if (!flat) {
         if (steps > 0) paint();
-        frame = requestAnimationFrame(draw);
-        return;
+        return true;
       }
       if (dirty) {
         heights.fill(0);
@@ -216,7 +220,10 @@ export const pond: Toy = {
       }
       pace.restart();
       sleep(now);
+      return false;
     };
+
+    const loop = frameLoop(draw);
 
     /** Rests until the next raindrop is due, or for good once the rain is over. */
     const sleep = (now: number) => {
@@ -228,7 +235,7 @@ export const pond: Toy = {
     const wake = () => {
       clearTimeout(timer);
       timer = undefined;
-      frame ??= requestAnimationFrame(draw);
+      loop.wake();
     };
 
     const touched = () => {
@@ -283,22 +290,19 @@ export const pond: Toy = {
       visible = visibleCells(canvas);
     };
 
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerup", onLift);
-    canvas.addEventListener("pointercancel", onLift);
-    canvas.addEventListener("pointerleave", onLeave);
-    window.addEventListener("resize", onResize);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerup", onLift, { signal });
+    canvas.addEventListener("pointercancel", onLift, { signal });
+    canvas.addEventListener("pointerleave", onLeave, { signal });
+    window.addEventListener("resize", onResize, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onLift);
-      canvas.removeEventListener("pointercancel", onLift);
-      canvas.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      loop.stop();
       clearTimeout(timer);
     };
   },
