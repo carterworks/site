@@ -1,10 +1,9 @@
 import { defineToolbarApp } from "astro/toolbar";
 import { TOYS } from "../components/backdrop-toys";
+import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import {
-  KNOBS,
   readDefaults,
   type BackdropKnobs,
-  type Control,
 } from "../components/pixel-backdrop/knobs";
 
 /**
@@ -18,6 +17,98 @@ import {
  * re-appends itself on `astro:after-swap`. Built-in apps re-render on toggle;
  * this one does the same and also rebuilds after a swap.
  */
+
+type Knob = keyof BackdropKnobs;
+type NumericKnob = {
+  [K in Knob]: BackdropKnobs[K] extends number ? K : never;
+}[Knob];
+
+type Range = {
+  kind: "range";
+  min: number;
+  max: number;
+  step: number;
+  suffix?: string;
+};
+type Toggle = {
+  kind: "toggle";
+  /** A range knob greyed out while the toggle is on. */
+  disables?: NumericKnob;
+};
+type Select<T extends string> = { kind: "select"; choices: Record<T, string> };
+type Colour = { kind: "color" };
+
+/**
+ * The control a knob's value calls for. A colour is any string, and a choice
+ * a union of words, which the select must list exactly. The brackets stop
+ * the union from being split, so `"square" | "circle"` gets one select.
+ */
+type ControlFor<V> = {
+  label: string;
+  /** Starts a new section of the panel, under this heading. */
+  heading?: string;
+} & ([V] extends [number]
+  ? Range
+  : [V] extends [boolean]
+    ? Toggle
+    : string extends V
+      ? Colour
+      : Select<V & string>);
+
+type Controls = { [K in Knob]: ControlFor<BackdropKnobs[K]> };
+export type Control = Controls[Knob];
+
+/** One control per knob, in the panel's order. */
+export const CONTROLS: Controls = {
+  enabled: { kind: "toggle", label: "Enabled" },
+  autoFit: { kind: "toggle", label: "Fit viewport", disables: "scale" },
+  scale: { kind: "range", label: "Scale", min: 1, max: 64, step: 1 },
+  gap: { kind: "range", label: "Gap", min: 0, max: 8, step: 1 },
+  shape: {
+    kind: "select",
+    label: "Shape",
+    choices: { square: "Square", circle: "Circle" },
+  },
+  ghost: {
+    kind: "range",
+    label: "Ghost",
+    min: 0,
+    max: Math.round(MAX_GHOST * 100),
+    step: 1,
+    suffix: "%",
+  },
+  noise: {
+    kind: "range",
+    label: "Intensity",
+    heading: "Background noise",
+    min: 0,
+    max: 100,
+    step: 1,
+    suffix: "%",
+  },
+  noiseScale: {
+    kind: "range",
+    label: "Feature size",
+    min: 1,
+    max: 40,
+    step: 1,
+  },
+  noiseSpeed: {
+    kind: "range",
+    label: "Drift speed",
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  lightBase: {
+    kind: "color",
+    label: "Pixel (light)",
+    heading: "Pixel colours",
+  },
+  lightInk: { kind: "color", label: "Ink (light)" },
+  darkBase: { kind: "color", label: "Pixel (dark)" },
+  darkInk: { kind: "color", label: "Ink (dark)" },
+};
 
 type Refresher = () => void;
 
@@ -148,7 +239,7 @@ function addToy(panel: HTMLElement, refreshers: Refresher[]) {
 function addKnob(
   panel: HTMLElement,
   refreshers: Refresher[],
-  key: keyof BackdropKnobs,
+  key: Knob,
   control: Control,
 ) {
   if (control.heading) {
@@ -331,8 +422,8 @@ function renderPane(canvas: ShadowRoot) {
 
   const refreshers: Refresher[] = [];
   addToy(panel, refreshers);
-  for (const [key, { control }] of Object.entries(KNOBS)) {
-    addKnob(panel, refreshers, key as keyof BackdropKnobs, control);
+  for (const [key, control] of Object.entries(CONTROLS)) {
+    addKnob(panel, refreshers, key as Knob, control);
   }
   for (const refresh of refreshers) refresh();
   paneLife?.abort();

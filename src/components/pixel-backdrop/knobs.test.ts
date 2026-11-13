@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "vitest";
 import {
+  backdropDeclarations,
   backdropDefaults,
   installBackdropDefaults,
 } from "../../test/backdrop-defaults";
@@ -29,32 +30,32 @@ test("every knob has exactly one default in global.css, and every default is a k
   ).toEqual([]);
 });
 
-test.for(knobs)("the default for %s is a valid value", ([key, knob]) => {
-  const css = declared.get(property(key)) ?? "";
-  const value = knob.parse(css);
-  const { control } = knob;
+test("each knob has a property of its own, clear of the element's --backdrop-display-*", () => {
+  const properties = knobs.map(([key]) => property(key));
 
-  if (control.kind === "range") {
-    expect(value).toBeGreaterThanOrEqual(control.min);
-    expect(value).toBeLessThanOrEqual(control.max);
-  } else if (control.kind === "toggle") {
-    expect(["true", "false"]).toContain(css);
-  } else if (control.kind === "select") {
-    expect(Object.keys(control.choices)).toContain(value);
-  } else {
-    // The colour input accepts only this form, and shows black for any other.
-    expect(value).toMatch(/^#[\da-f]{6}$/i);
-  }
+  expect(
+    properties.filter((name) => name.startsWith("--backdrop-display-")),
+    "knobs on a property the element sets for the active display",
+  ).toEqual([]);
+  expect(
+    properties.filter((name, index) => properties.indexOf(name) !== index),
+    "knobs sharing a property",
+  ).toEqual([]);
 });
 
-test("a toggle greys out only a range knob", () => {
-  const disabled = knobs.flatMap(([, { control }]) =>
-    control.kind === "toggle" && control.disables ? [control.disables] : [],
+test("no stylesheet declares a --backdrop-* property but the knob defaults", () => {
+  const knobDefaults = defaults.map(
+    ([name]) => `src/layouts/global.css: ${name}`,
+  );
+  const strays = backdropDeclarations().filter(
+    (declaration, index, all) =>
+      !knobDefaults.includes(declaration) || all.indexOf(declaration) !== index,
   );
 
-  for (const key of disabled) {
-    expect(KNOBS[key as keyof typeof KNOBS]?.control.kind).toBe("range");
-  }
+  expect(
+    strays,
+    "declared besides the knob defaults in global.css's :root; the element sets --backdrop-display-* itself",
+  ).toEqual([]);
 });
 
 test("readDefaults parses every knob's default off :root", () => {
@@ -62,10 +63,7 @@ test("readDefaults parses every knob's default off :root", () => {
 
   expect(readDefaults()).toEqual(
     Object.fromEntries(
-      knobs.map(([key, knob]) => [
-        key,
-        knob.parse(declared.get(property(key))!),
-      ]),
+      knobs.map(([key, parse]) => [key, parse(declared.get(property(key))!)]),
     ),
   );
 });
