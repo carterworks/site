@@ -141,19 +141,14 @@ await page.context().addInitScript(() => {
   const areas = {
     putImageData: (
       image,
-      dx,
-      dy,
-      x = 0,
-      y = 0,
-      w = image.width,
-      h = image.height,
+      ...[, , x = 0, y = 0, w = image.width, h = image.height]
     ) => clip(x, w, image.width) * clip(y, h, image.height),
     // Only the three-argument form leaves the destination's size to the image.
     drawImage: (image, ...at) =>
       Math.abs(
         at.length === 2 ? image.width * image.height : at.at(-2) * at.at(-1),
       ),
-    getImageData: (x, y, w, h) => Math.abs(w * h),
+    getImageData: (...[, , w, h]) => Math.abs(w * h),
   };
   for (const Context of [
     CanvasRenderingContext2D,
