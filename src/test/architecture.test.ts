@@ -10,13 +10,13 @@ import { expect, test } from "vitest";
  * named there too, or `imports` must name "packages" to allow any.
  */
 const layers = {
-  lib: { files: ["src/lib/{clamp,cycle-setting,rgb}.ts"], imports: ["lib"] },
+  lib: { files: ["src/lib/{clamp,cycle-setting,rgb}.ts"], imports: [] },
   "canvas kit": {
     files: [
       "src/components/emulated-canvas/{shader,colour,limits}.ts",
       "src/components/backdrop-noise.ts",
     ],
-    imports: ["canvas kit", "lib"],
+    imports: ["lib"],
   },
   "shader registry": {
     files: ["src/components/emulated-canvas/shaders/index.ts"],
@@ -74,7 +74,6 @@ const layers = {
   backdrop: {
     files: ["src/components/pixel-backdrop.ts"],
     imports: [
-      "backdrop",
       "pointer relay",
       "look",
       "knobs",
@@ -82,7 +81,6 @@ const layers = {
       "toy registry",
       "toy kit",
       "displays",
-      "lib",
     ],
   },
   controls: {
@@ -100,7 +98,7 @@ const layers = {
   },
   "site lib": {
     files: ["src/lib/*.ts"],
-    imports: ["site lib", "lib", "packages"],
+    imports: ["site lib", "packages"],
   },
   // Pages reach the backdrop only through its entry points, never a single
   // toy, the toy kit or the dev toolbar.
@@ -113,7 +111,6 @@ const layers = {
     imports: [
       "site",
       "site lib",
-      "lib",
       "controls",
       "backdrop",
       "canvas",
@@ -218,6 +215,24 @@ test("each file imports only what its layer allows", () => {
           ];
     });
   expect(broken).toEqual([]);
+});
+
+test("every import a layer allows, one of its files makes", () => {
+  const uses = (layer: string, allowed: string) =>
+    edges.some(
+      (edge) =>
+        !isException(edge) &&
+        layerOf(edge.from) === layer &&
+        (edge.bare
+          ? allowed === "packages" || allowed === edge.to
+          : layerOf(edge.to) === allowed),
+    );
+  const unused = Object.entries(layers).flatMap(([layer, { imports }]) =>
+    imports
+      .filter((allowed) => !uses(layer, allowed))
+      .map((allowed) => `${layer} may import ${allowed} but does not`),
+  );
+  expect(unused, "remove these allowances").toEqual([]);
 });
 
 test("every exception still happens", () => {
