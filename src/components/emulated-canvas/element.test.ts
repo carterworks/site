@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { countAllocations } from "../../test/toy-canvas";
+import {
+  countAllocations,
+  installSoftCanvas,
+  softStats,
+} from "../../test/toy-canvas";
 import { EmulatedCanvas } from "./element";
+import { Presenter } from "./presenter";
 import { SHADERS } from "./shaders";
 import { noise } from "./shaders/noise";
 import {
@@ -130,140 +135,94 @@ test("after a reset the next present shows the new frame opaque, not blended", (
   expect([...shown()]).toEqual([0, 0, 0, 255]);
 });
 
-test.each([
-  ["scale", "x", "var(--emulated-canvas-scale, 1px)"],
-  ["scale", "0", "var(--emulated-canvas-scale, 1px)"],
-  ["gap", "", "calc(var(--scale) + 0px)"],
-  ["gap", "-4", "calc(var(--scale) + 0px)"],
-])(
-  "a data-%s of %j falls back to its default in the display style",
-  (name, value, expected) => {
-    expect(displayStyleFor({ [name]: value })).toContain(expected);
-  },
-);
+/** A canvas with these data attributes, and the geometry it last handed its presenter. */
+function geometryFor(data: Record<string, string>) {
+  const configure = vi.spyOn(Presenter.prototype, "configure");
+  const canvas = mountCanvas(data);
+  return { canvas, configure, geometry: () => configure.mock.lastCall![0] };
+}
 
 test.each([
-  ["square", "5"],
-  ["circle", "0"],
-  ["circle", "5"],
-])(
-  "a %s cell with gap %s is cut by painting over the canvas, never by masking it",
-  (shape, gap) => {
-    const style = displayStyleFor({ shape, gap });
-
-    expect(style).not.toContain("mask");
-    expect(style).toContain("var(--emulated-canvas-gap-color, Canvas)");
-  },
-);
-
-test("an ungapped square grid paints nothing over the canvas", () => {
-  expect(displayStyleFor({ shape: "square", gap: "0" })).not.toContain(
-    "--emulated-canvas-gap-color",
-  );
+  ["scale", "x", { scale: 1 }],
+  ["scale", "0", { scale: 1 }],
+  ["scale", "8", { scale: 8 }],
+  ["gap", "", { gap: 0 }],
+  ["gap", "-4", { gap: 0 }],
+  ["gap", "5", { gap: 5 }],
+  ["shape", "circle", { shape: "circle" }],
+  ["shape", "oval", { shape: "square" }],
+])("a data-%s of %j draws cells of %j", (name, value, expected) => {
+  expect(geometryFor({ [name]: value }).geometry()).toMatchObject(expected);
 });
 
-/** Opens every closed shadow root attached from now on, in attach order. */
-function openShadowRoots() {
-  const roots: ShadowRoot[] = [];
-  const attachShadow = Element.prototype.attachShadow;
-  vi.spyOn(Element.prototype, "attachShadow").mockImplementation(function (
-    this: Element,
-    init: ShadowRootInit,
-  ) {
-    const root = attachShadow.call(this, { ...init, mode: "open" });
-    roots.push(root);
-    return root;
-  });
-  return roots;
-}
+test.each([
+  [{}, { opacity: 0, x: 0, y: 0 }],
+  [
+    { shadow: "40", shadowX: "2", shadowY: "-3" },
+    { opacity: 40, x: 2, y: -3 },
+  ],
+  [{ shadow: "x" }, { opacity: 0 }],
+  [{ shadow: "-5" }, { opacity: 0 }],
+  [{ shadow: "0" }, { opacity: 0 }],
+  [{ shadow: "150" }, { opacity: 100 }],
+  [
+    { shadow: "40", shadowX: "x", shadowY: "" },
+    { x: 0, y: 0 },
+  ],
+])("%j casts a shadow of %j", (data, expected) => {
+  expect(geometryFor(data).geometry().shadow).toMatchObject(expected);
+});
 
-/** The display style a canvas with these data attributes renders with. */
-function displayStyleFor(data: Record<string, string>) {
-  const roots = openShadowRoots();
-  const canvas = document.createElement("emulated-canvas");
-  Object.assign(canvas.dataset, data);
-  document.body.replaceChildren(canvas);
-  return roots[0]?.querySelector("style")?.textContent ?? "";
-}
+const POCKET = { paletteBase: "#889d58", paletteInk: "#1f3326" };
 
-type PlainContext = typeof display & {
-  canvas: HTMLCanvasElement;
-  fillRect: ReturnType<typeof vi.fn>;
-};
+test("with a palette the shadow's unlit colour is the palette's base, and without one there is none", () => {
+  const { canvas, geometry } = geometryFor({ shadow: "40", ...POCKET });
+  expect(geometry().shadow.unlit).toBe("#889d58");
 
-/** Gives each plain canvas a context of its own, so the display and its echo can be told apart. */
-function contextPerCanvas() {
-  const contexts = new Map<HTMLCanvasElement, PlainContext>();
-  vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(
-    function (this: HTMLCanvasElement) {
-      let context = contexts.get(this);
-      if (context === undefined) {
-        context = {
-          canvas: this,
-          drawImage: vi.fn(),
-          putImageData: vi.fn(),
-          clearRect: vi.fn(),
-          fillRect: vi.fn(),
-          imageSmoothingEnabled: true,
-        };
-        contexts.set(this, context);
-      }
-      return context as unknown as CanvasRenderingContext2D;
-    },
-  );
-  return contexts;
-}
+  canvas.dataset.paletteBase = "#e8a33a";
+  expect(geometry().shadow.unlit).toBe("#e8a33a");
 
-/** A canvas with these data attributes, its open shadow root and each plain canvas's context. */
-function mountEchoed(data: Record<string, string>) {
-  const roots = openShadowRoots();
-  const contexts = contextPerCanvas();
-  const canvas = mountCanvas(data);
-  const root = roots[0];
-  const displays = () => [...root.querySelectorAll("canvas")];
-  const style = () => root.querySelector("style")?.textContent ?? "";
-  return { canvas, contexts, displays, style };
-}
+  delete canvas.dataset.paletteInk;
+  expect(geometry().shadow.unlit).toBeUndefined();
 
-test("data-shadow layers a multiplied copy of the display over it, offset by data-shadow-x and data-shadow-y", () => {
-  const { canvas, contexts, displays, style } = mountEchoed({
-    shadow: "40",
-    shadowX: "2",
-    shadowY: "-3",
-  });
+  canvas.dataset.paletteInk = "#1f3326";
+  delete canvas.dataset.paletteBase;
+  expect(geometry().shadow.unlit).toBeUndefined();
+});
+
+test("a drawn manual canvas reconfigures its shadow as soon as an attribute changes", () => {
+  const { canvas, geometry } = geometryFor({});
   draw(canvas, 100);
-
   canvas.present();
 
-  const [screen, echo] = displays();
-  expect(displays()).toHaveLength(2);
-  expect(echo).toMatchObject({ width: screen.width, height: screen.height });
-  const echoContext = contexts.get(echo)!;
-  expect(echoContext.drawImage).toHaveBeenCalledExactlyOnceWith(screen, 0, 0);
-  expect(echoContext).toMatchObject({ globalCompositeOperation: "copy" });
-  expect(
-    contexts.get(screen)!.drawImage.mock.invocationCallOrder[0],
-  ).toBeLessThan(echoContext.drawImage.mock.invocationCallOrder[0]);
-  expect(style()).toContain("isolation: isolate");
-  expect(style()).toContain("mix-blend-mode: multiply");
-  expect(style()).toContain("opacity: 0.4");
-  expect(style()).toContain("translate: 2px -3px");
+  canvas.dataset.shadow = "40";
+  expect(geometry().shadow).toMatchObject({ opacity: 40, x: 0 });
+
+  canvas.dataset.shadowX = "7";
+  expect(geometry().shadow).toMatchObject({ opacity: 40, x: 7 });
 });
 
-test("the echo copies the display once per present, reading nothing back and allocating nothing", () => {
-  const { canvas, contexts, displays } = mountEchoed({
-    shadow: "40",
-    ghost: "70",
-    paletteBase: "#889d58",
-    paletteInk: "#1f3326",
-  });
+test("presents never reconfigure, so the stylesheet changes only with an attribute", () => {
+  const { canvas, configure } = geometryFor({ shadow: "40", ghost: "70" });
+  const configured = configure.mock.calls.length;
+
+  draw(canvas, 0);
+  presentFor(canvas, 100, 60);
+  canvas.reset();
+  canvas.transition();
+  presentFor(canvas, 100, 60);
+
+  expect(configure).toHaveBeenCalledTimes(configured);
+});
+
+test("with a shadow, each present shows one frame, reading nothing back and allocating nothing", () => {
+  const canvas = mountCanvas({ shadow: "40", ghost: "70", ...POCKET });
   const context = canvas.getContext("2d")!;
   context.putImageData(pixels(255), 0, 0);
   canvas.present();
   context.putImageData(pixels(0), 0, 0);
   presentFor(canvas, 100, 60);
-  const echo = contexts.get(displays()[1])!;
-  echo.drawImage.mockClear();
+  const show = vi.spyOn(Presenter.prototype, "show");
 
   const allocations = countAllocations();
   try {
@@ -272,210 +231,63 @@ test("the echo copies the display once per present, reading nothing back and all
     allocations.restore();
   }
 
-  expect(echo.drawImage).toHaveBeenCalledTimes(6);
+  expect(show).toHaveBeenCalledTimes(6);
   expect(fake.reads).toBe(0);
   expect(allocations.count()).toBe(0);
 });
 
-test("without data-shadow there is no echo and the style has none of its rules", () => {
-  const { canvas, displays, style } = mountEchoed({});
-  canvas.present();
-
-  expect(displays()).toHaveLength(1);
-  expect(style()).not.toContain("isolation");
-  expect(style()).not.toContain("mix-blend-mode");
-});
-
-test("turning data-shadow off removes the echo, and turning it on again brings it back", () => {
-  const { canvas, contexts, displays } = mountEchoed({ shadow: "40" });
+test("a manual canvas with a shadow shows a frame on each present, and reset and transition keep it showing", () => {
+  const canvas = mountCanvas({ shadow: "40" });
+  const show = vi.spyOn(Presenter.prototype, "show");
   draw(canvas, 100);
   canvas.present();
-  const echo = contexts.get(displays()[1])!;
-
-  canvas.dataset.shadow = "0";
-  canvas.present();
-  expect(displays()).toHaveLength(1);
-  expect(echo.drawImage).toHaveBeenCalledTimes(1);
-
-  canvas.dataset.shadow = "40";
-  canvas.present();
-  expect(displays()).toHaveLength(2);
-});
-
-test("turning data-shadow on for a drawn manual canvas copies the display into the echo at once", () => {
-  const { canvas, contexts, displays } = mountEchoed({});
-  draw(canvas, 100);
-  canvas.present();
-
-  canvas.dataset.shadow = "40";
-
-  const [screen, echo] = displays();
-  expect(contexts.get(echo)!.drawImage).toHaveBeenCalledExactlyOnceWith(
-    screen,
-    0,
-    0,
-  );
-});
-
-test("the echo is stacked above the display at its corner and shares the canvas's size and margin", () => {
-  const { style } = mountEchoed({ shadow: "40" });
-  const echoRule = /\.echo \{[^}]*\}/.exec(style())![0];
-  const canvasRule = /(?:^|\s)canvas \{[^}]*\}/.exec(style())![0];
-
-  expect(echoRule).toContain("z-index: 1");
-  expect(echoRule).toContain("inset: 0 auto auto 0");
-  expect(echoRule).toContain("position: absolute");
-  expect(echoRule).not.toContain("inline-size");
-  expect(canvasRule).toContain("inline-size");
-  expect(canvasRule).toContain("margin");
-});
-
-test("a gap and scale lay out with the echo exactly as without it", () => {
-  const { canvas, style } = mountEchoed({
-    gap: "5",
-    scale: "8",
-    shape: "circle",
-  });
-  const without = style();
-  canvas.dataset.shadow = "40";
-  const withEcho = style();
-
-  expect(withEcho).toContain("var(--emulated-canvas-scale, 8px)");
-  expect(withEcho).toContain("calc(var(--scale) + 5px)");
-  expect(withEcho.startsWith(without.trimEnd())).toBe(true);
-});
-
-test("changing data-shadow-x and data-shadow-y moves the same echo", () => {
-  const { canvas, displays, style } = mountEchoed({
-    shadow: "40",
-    shadowX: "2",
-    shadowY: "-3",
-  });
-  const echo = displays()[1];
-
-  canvas.dataset.shadowX = "7";
-  canvas.dataset.shadowY = "0";
-  canvas.dataset.shadow = "60";
-
-  expect(displays()[1]).toBe(echo);
-  expect(style()).toContain("translate: 7px 0px");
-  expect(style()).toContain("opacity: 0.6");
-});
-
-test.each([
-  ["x", false, ""],
-  ["-5", false, ""],
-  ["0", false, ""],
-  ["150", true, "opacity: 1;"],
-])("data-shadow=%j gives an echo: %s", (shadow, echoed, opacity) => {
-  const { displays, style } = mountEchoed({ shadow });
-
-  expect(displays()).toHaveLength(echoed ? 2 : 1);
-  expect(style()).toContain(opacity);
-  if (!echoed) expect(style()).not.toContain("mix-blend-mode");
-});
-
-test("an invalid data-shadow-x or data-shadow-y offsets by nothing", () => {
-  const { style } = mountEchoed({ shadow: "40", shadowX: "x", shadowY: "" });
-
-  expect(style()).toContain("translate: 0px 0px");
-});
-
-test("a manual canvas copies to the echo on present, and reset and transition keep it copying", () => {
-  const { canvas, contexts, displays } = mountEchoed({ shadow: "40" });
-  const echo = contexts.get(displays()[1])!;
-  draw(canvas, 100);
-  canvas.present();
-  expect(echo.drawImage).toHaveBeenCalledTimes(1);
+  expect(show).toHaveBeenCalledTimes(1);
 
   canvas.reset();
   canvas.present();
-  expect(echo.drawImage).toHaveBeenCalledTimes(2);
+  expect(show).toHaveBeenCalledTimes(2);
 
   canvas.transition();
   canvas.present();
   canvas.present();
-  expect(echo.drawImage).toHaveBeenCalledTimes(4);
+  expect(show).toHaveBeenCalledTimes(4);
 });
 
-/** Each draw and fill on the echo, with the composite operation and fill in effect at the time. */
-function echoCalls(echo: PlainContext) {
-  const state = echo as unknown as CanvasRenderingContext2D;
-  const calls: string[] = [];
-  echo.drawImage.mockImplementation(() =>
-    calls.push(`drawImage ${state.globalCompositeOperation}`),
-  );
-  echo.fillRect.mockImplementation(() =>
-    calls.push(
-      `fillRect ${state.globalCompositeOperation} ${String(state.fillStyle)}`,
-    ),
-  );
-  return calls;
-}
-
-const POCKET = { paletteBase: "#889d58", paletteInk: "#1f3326" };
-
-test("with a palette the echo divides its copy by the base, so off pixels cast no shadow", () => {
-  const { canvas, contexts, displays } = mountEchoed({
-    shadow: "40",
-    ...POCKET,
+describe("with no pass active", () => {
+  let bitmaps: ReturnType<typeof installSoftCanvas>;
+  beforeEach(() => {
+    bitmaps = installSoftCanvas();
   });
-  const echo = contexts.get(displays()[1])!;
-  const calls = echoCalls(echo);
-  draw(canvas, 100);
 
-  canvas.present();
+  /** The display's pixels: the one plain canvas, as nothing else here makes one. */
+  function screen() {
+    expect(bitmaps.plain).toHaveLength(1);
+    return [...bitmaps.plain[0].pixels];
+  }
 
-  expect(calls).toEqual([
-    "drawImage copy",
-    "fillRect color-dodge rgb(119 98 167)",
-  ]);
-  expect(echo.fillRect).toHaveBeenCalledWith(0, 0, 1, 1);
-});
+  test("a whole-bitmap putImageData shows exactly its pixels, as the bitmap itself", () => {
+    const canvas = mountCanvas({ width: "2", height: "1" });
+    const show = vi.spyOn(Presenter.prototype, "show");
+    const drawn = Uint8ClampedArray.of(10, 200, 30, 255, 40, 50, 60, 128);
 
-test("without a palette the echo stays a plain copy, so dropping the palette stops the dodge", () => {
-  const { canvas, contexts, displays } = mountEchoed({
-    shadow: "40",
-    ...POCKET,
+    canvas.getContext("2d")!.putImageData(new ImageData(drawn, 2, 1), 0, 0);
+    canvas.present();
+
+    expect(screen()).toEqual([...drawn]);
+    expect(show.mock.lastCall?.[0]).not.toBeInstanceOf(ImageData);
+    expect(softStats.reads).toBe(0);
   });
-  const calls = echoCalls(contexts.get(displays()[1])!);
-  draw(canvas, 100);
 
-  delete canvas.dataset.paletteBase;
-  canvas.present();
+  test("drawing with fillRect shows exactly what was filled, reading nothing back", () => {
+    const canvas = mountCanvas({ width: "3", height: "1" });
+    const context = canvas.getContext("2d")!;
 
-  expect(calls).toEqual(["drawImage copy"]);
-});
+    context.fillStyle = "#336699";
+    context.fillRect(1, 0, 1, 1);
+    canvas.present();
 
-test("changing the palette base changes the echo's fill", () => {
-  const { canvas, contexts, displays } = mountEchoed({
-    shadow: "40",
-    ...POCKET,
-  });
-  const calls = echoCalls(contexts.get(displays()[1])!);
-  draw(canvas, 100);
-
-  canvas.dataset.paletteBase = "#e8a33a";
-  canvas.present();
-
-  expect(calls.at(-1)).toBe("fillRect color-dodge rgb(23 92 197)");
-});
-
-test("turning data-shadow on for a drawn manual canvas with a palette dodges the echo at once", () => {
-  const { canvas, contexts, displays } = mountEchoed(POCKET);
-  draw(canvas, 100);
-  canvas.present();
-
-  canvas.dataset.shadow = "40";
-
-  const echo = contexts.get(displays()[1])!;
-  expect(echo.fillRect).toHaveBeenCalledExactlyOnceWith(0, 0, 1, 1);
-  expect(echo.drawImage.mock.invocationCallOrder[0]).toBeLessThan(
-    echo.fillRect.mock.invocationCallOrder[0],
-  );
-  expect(echo).toMatchObject({
-    globalCompositeOperation: "color-dodge",
-    fillStyle: "rgb(119 98 167)",
+    expect(screen()).toEqual([0, 0, 0, 0, 0x33, 0x66, 0x99, 255, 0, 0, 0, 0]);
+    expect(softStats.reads).toBe(0);
   });
 });
 
