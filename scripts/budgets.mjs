@@ -48,9 +48,12 @@ export default {
    * What one frame of hover-only play on the homepage asks for, the worst
    * frame of the worst toy, per display. Work a slow phone must do 60 times a
    * second, so each is a ratchet: lower it when a change does less.
-   *   canvasPixelsWritten  area of every putImageData and drawImage, on any
-   *                        2D canvas: the toy's frame, the display's present
-   *                        and the LCDs' shadow copy
+   *   canvasPixelsWritten  area of every putImageData (its dirty rectangle)
+   *                        and drawImage (its destination), on any 2D or
+   *                        offscreen canvas: the toy's frame, the display's
+   *                        present and the Pocket LCD's shadow copy, the
+   *                        only canvas drawing the homepage does; not
+   *                        vector drawing, such as fillRect
    *   canvasPixelsRead     area of every getImageData, a read-back that can
    *                        stall a GPU canvas
    *   canvasCalls          those calls

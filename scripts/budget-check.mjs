@@ -112,15 +112,34 @@ lap("Measured bytes");
 
 await page.context().addInitScript(virtualClock, { paused: true });
 // Counts, per frame, the canvas pixels written and read and the calls that did.
+// Areas are as asked for, before clipping to the canvas.
 await page.context().addInitScript(() => {
   const work = (window.__canvasWork = []);
   let row;
+  // A dirty rectangle may run negative, and is clipped to the image.
+  const clip = (from, length, limit) => {
+    const start = Math.min(from, from + length);
+    return Math.max(
+      0,
+      Math.min(limit, start + Math.abs(length)) - Math.max(0, start),
+    );
+  };
   const areas = {
-    putImageData: (image, ...at) =>
-      at.length > 2 ? at[4] * at[5] : image.width * image.height,
+    putImageData: (
+      image,
+      dx,
+      dy,
+      x = 0,
+      y = 0,
+      w = image.width,
+      h = image.height,
+    ) => clip(x, w, image.width) * clip(y, h, image.height),
+    // Only the three-argument form leaves the destination's size to the image.
     drawImage: (image, ...at) =>
-      at.length === 2 ? image.width * image.height : at.at(-2) * at.at(-1),
-    getImageData: (x, y, width, height) => width * height,
+      Math.abs(
+        at.length === 2 ? image.width * image.height : at.at(-2) * at.at(-1),
+      ),
+    getImageData: (x, y, w, h) => Math.abs(w * h),
   };
   for (const Context of [
     CanvasRenderingContext2D,
