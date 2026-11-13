@@ -18,8 +18,13 @@ headless Chromium; its options are at the top of
 [`scripts/perf.mjs`](./scripts/perf.mjs). Install its browser once with
 `pnpm exec playwright install --no-shell chromium`. On NixOS, run it as
 `nix-shell --run "pnpm perf"`. Every pull request that touches the site runs
-it with `--against` its base, and reports how each frame cost moved, with the
-noise to read it by; it never fails.
+it with `--against` its base and reports how each frame cost moved, with the
+noise to read it by, in the job's log and summary. With `--max-ratio 1.3` it
+fails the pull request when a toy on a display costs over 1.3 times its base
+at the median and more in every round: that catches a frame grown about 1.5
+times, stayed silent on noise in every trial, and leaves smaller changes to be
+read. A base it cannot
+compare passes.
 
 `pnpm budgets` builds the site and fails if it misses a performance budget:
 script and font bytes, leaks, layouts and style recalculations during play, and

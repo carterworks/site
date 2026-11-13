@@ -44,10 +44,10 @@ jobs:
       - name: Build this branch
         run: pnpm build
       - name: Compare this branch against its base
-        continue-on-error: true
+        shell: bash
         run: |
-          {
-            echo '```'
-            node scripts/perf.mjs --against ../base/dist
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          node scripts/perf.mjs --against ../base/dist --max-ratio 1.3 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $status
