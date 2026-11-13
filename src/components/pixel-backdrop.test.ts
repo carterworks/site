@@ -343,27 +343,6 @@ test("a toy's look sets the canvas's ghost and noise, and a configured knob wins
   expect(canvas.dataset.ghost).toBe("55");
 });
 
-test("the noise's feature size reaches the canvas in its own pixels, scaled from the tuned width", () => {
-  const backdrop = mount();
-  backdrop.configure({ noiseScale: 15, noiseSpeed: 7 });
-
-  expect(canvasOf(backdrop).dataset).toMatchObject({
-    noiseScale: "30",
-    noiseSpeed: "7",
-  });
-});
-
-test("a tweaked knob sets no custom property on the canvas", () => {
-  const backdrop = mount();
-  const canvas = canvasOf(backdrop);
-
-  backdrop.configure({ ghost: 30, gap: 3, lightInk: "#123456" });
-
-  expect(
-    Array.from(canvas.style).filter((name) => name.startsWith("--backdrop-")),
-  ).toEqual([]);
-});
-
 test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   const style = document.createElement("style");
   style.textContent = ":root { --backdrop-ghost: 40%; }";
@@ -386,77 +365,31 @@ test("a reconnected backdrop keeps its tweaks", () => {
   expect(backdrop.options.ghost).toBe(20);
 });
 
-test("auto-fit tiles the viewport's larger side with whole strides of the grid, the gap taken out of each", () => {
-  const backdrop = mount();
-  backdrop.configure({ autoFit: true, gap: 2 });
-
-  expect(
-    canvasOf(backdrop).style.getPropertyValue("--emulated-canvas-scale"),
-  ).toBe("max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)");
-});
-
 const pocket = DISPLAYS[1].look!;
 
-test("a display colours the canvas and the screen behind it in its own palette, and Site restores the scheme's", () => {
+test("on a display, the look shows the noise stopped and the toy's own ghost", () => {
+  const backdrop = mount();
+  backdrop.setToy("tuned");
+
+  backdrop.setDisplay("pocket-lcd");
+
+  expect(backdrop.look).toEqual({ ghost: 55, noise: 0 });
+});
+
+test("on a display, a ghost set through configure takes its rise and fall off the canvas", () => {
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  const { lightBase, lightInk } = backdrop.options;
-
   backdrop.setDisplay("pocket-lcd");
-
   expect(canvas.dataset).toMatchObject({
-    paletteBase: pocket.base,
-    paletteInk: pocket.ink,
-    paletteLevels: String(pocket.levels),
+    ghostRise: String(pocket.ghostRise),
+    ghostFall: String(pocket.ghostFall),
   });
-  expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe(
-    pocket.base,
-  );
 
-  backdrop.setDisplay("site");
+  backdrop.configure({ ghost: 20 });
 
-  expect(canvas.dataset).toMatchObject({
-    paletteBase: lightBase,
-    paletteInk: lightInk,
-  });
-  expect(canvas.dataset.paletteLevels).toBeUndefined();
-  expect(backdrop.style.getPropertyValue("--backdrop-display-screen")).toBe("");
-});
-
-test("a display paints its grid in its own colour, and one without a grid or Site leaves the gaps the screen's", () => {
-  const backdrop = mount();
-  const grid = () => backdrop.style.getPropertyValue("--backdrop-display-grid");
-
-  backdrop.setDisplay("pocket-lcd");
-  expect(grid()).toBe(pocket.grid);
-  expect(pocket.grid).toBeDefined();
-
-  backdrop.setDisplay("amber-lcd");
-  expect(grid()).toBe("");
-
-  backdrop.setDisplay("pocket-lcd");
-  backdrop.setDisplay("site");
-  expect(grid()).toBe("");
-});
-
-test("only a display with a backlight vignette lays one over the screen", () => {
-  const backdrop = mount();
-  const vignette = () => [
-    backdrop.hasAttribute("data-vignette"),
-    backdrop.style.getPropertyValue("--backdrop-display-vignette"),
-  ];
-  const amber = DISPLAYS[2].look!;
-
-  backdrop.setDisplay("amber-lcd");
-  expect(amber.vignette).toBeDefined();
-  expect(vignette()).toEqual([true, amber.vignette]);
-
-  backdrop.setDisplay("pocket-lcd");
-  expect(vignette()).toEqual([false, ""]);
-
-  backdrop.setDisplay("amber-lcd");
-  backdrop.setDisplay("site");
-  expect(vignette()).toEqual([false, ""]);
+  expect(canvas.dataset.ghost).toBe("20");
+  expect(canvas.dataset.ghostRise).toBeUndefined();
+  expect(canvas.dataset.ghostFall).toBeUndefined();
 });
 
 test("an unknown display is ignored", () => {
@@ -480,88 +413,6 @@ test("a display restarts the canvas's passes once when its palette changes, and 
 
   expect(reset).toHaveBeenCalledTimes(1);
   expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
-});
-
-test("a palette knob set through configure outranks the display's", () => {
-  const backdrop = mount();
-  backdrop.setDisplay("pocket-lcd");
-
-  backdrop.configure({ lightBase: "#123456" });
-
-  expect(canvasOf(backdrop).dataset).toMatchObject({
-    paletteBase: "#123456",
-    paletteInk: pocket.ink,
-  });
-});
-
-test("a display's look reaches the canvas, and Site gives back the look it had", () => {
-  const backdrop = mount();
-  backdrop.setToy("tuned");
-  const canvas = canvasOf(backdrop);
-  const defaults = readDefaults();
-
-  backdrop.setDisplay("pocket-lcd");
-
-  expect(canvas.dataset).toMatchObject({
-    gap: String(pocket.gap),
-    shape: "square",
-    ghost: "55",
-    ghostRise: String(pocket.ghostRise),
-    ghostFall: String(pocket.ghostFall),
-    noise: "0",
-    shadow: String(pocket.shadow!.opacity),
-    shadowX: String(pocket.shadow!.x),
-    shadowY: String(pocket.shadow!.y),
-  });
-  expect(backdrop.look.noise).toBe(0);
-
-  backdrop.setDisplay("site");
-
-  expect(canvas.dataset).toMatchObject({
-    gap: String(defaults.gap),
-    shape: defaults.shape,
-    ghost: "55",
-    noise: "12",
-  });
-  for (const key of [
-    "ghostRise",
-    "ghostFall",
-    "shadow",
-    "shadowX",
-    "shadowY",
-  ]) {
-    expect(canvas.dataset[key]).toBeUndefined();
-  }
-});
-
-test("a knob set through configure outranks the display's", () => {
-  const backdrop = mount();
-  const canvas = canvasOf(backdrop);
-  backdrop.setDisplay("pocket-lcd");
-
-  backdrop.configure({ gap: 5, shape: "circle", noise: 30 });
-  expect(canvas.dataset).toMatchObject({
-    gap: "5",
-    shape: "circle",
-    noise: "30",
-  });
-
-  backdrop.configure({ ghost: 20 });
-  expect(canvas.dataset.ghost).toBe("20");
-  expect(canvas.dataset.ghostRise).toBeUndefined();
-  expect(canvas.dataset.ghostFall).toBeUndefined();
-});
-
-test("auto-fit takes the effective gap out of each stride", () => {
-  const backdrop = mount();
-  const scale = () =>
-    canvasOf(backdrop).style.getPropertyValue("--emulated-canvas-scale");
-  backdrop.configure({ autoFit: true });
-  backdrop.setDisplay("pocket-lcd");
-  expect(scale()).toContain(`) - ${pocket.gap}px)`);
-
-  backdrop.configure({ gap: 5 });
-  expect(scale()).toContain(") - 5px)");
 });
 
 test("a stored display is on the canvas before the toy first draws, without a restart", () => {
@@ -594,3 +445,68 @@ test("a display chosen before the backdrop attaches outranks the stored one", ()
 
   expect(canvas.dataset.paletteBase).not.toBe(pocket.base);
 });
+
+/** The attributes written on the backdrop and its canvas while `change` runs. */
+async function writesDuring(backdrop: PixelBackdrop, change: () => unknown) {
+  const records: MutationRecord[] = [];
+  const observer = new MutationObserver((batch) => records.push(...batch));
+  observer.observe(backdrop, { attributes: true, subtree: true });
+  await change();
+  await Promise.resolve();
+  records.push(...observer.takeRecords());
+  observer.disconnect();
+  return records.map(
+    ({ target, attributeName }) => `${target.nodeName} ${attributeName}`,
+  );
+}
+
+test.each<[string, (backdrop: PixelBackdrop) => unknown]>([
+  ["an empty configure", (backdrop) => backdrop.configure({})],
+  [
+    "a scheme flip",
+    async () => {
+      document.documentElement.style.colorScheme = "dark";
+      await Promise.resolve();
+    },
+  ],
+  ["the same display again", (backdrop) => backdrop.setDisplay("pocket-lcd")],
+])("on a display, %s writes nothing", async (_, change) => {
+  const backdrop = mount();
+  backdrop.setDisplay("pocket-lcd");
+
+  expect(await writesDuring(backdrop, () => change(backdrop))).toEqual([]);
+});
+
+test("a tweak writes only the attribute it changes", async () => {
+  const backdrop = mount();
+
+  expect(
+    await writesDuring(backdrop, () => backdrop.configure({ noiseSpeed: 9 })),
+  ).toEqual(["EMULATED-CANVAS data-noise-speed"]);
+});
+
+/** The attributes and inline styles on the backdrop and its canvas. */
+const markupOf = (backdrop: PixelBackdrop) =>
+  [backdrop, canvasOf(backdrop)].map((element) =>
+    Object.fromEntries(
+      Array.from(element.attributes, ({ name, value }) => [name, value]),
+    ),
+  );
+
+const ids = DISPLAYS.map(({ id }) => id);
+
+test.each(ids.flatMap((from) => ids.map((to) => [from, to])))(
+  "switching from %s to %s leaves exactly the markup of a backdrop shown %s",
+  (from, to) => {
+    const shown = mount();
+    shown.setDisplay(to);
+    const expected = markupOf(shown);
+    document.body.replaceChildren();
+    const switched = mount();
+
+    switched.setDisplay(from);
+    switched.setDisplay(to);
+
+    expect(markupOf(switched)).toEqual(expected);
+  },
+);

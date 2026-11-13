@@ -326,6 +326,7 @@ test.each(displayFields)(
 
 test("a display colours the canvas and the screen behind it, and lays its grid, shadow and ghost over a tuned toy", () => {
   const look = resolve({ toy: tuned, display: pocket });
+  expect(screen.grid).toBeDefined();
 
   expect(look.data).toMatchObject({
     gap: String(screen.gap),
