@@ -157,15 +157,20 @@ const ladders: Record<
       ],
     ],
   },
+  // The screen behind the canvas is the base too, so the gaps and the strip
+  // past the grid follow it.
   lightBase: {
-    read: (look) => look.data.paletteBase,
+    read: ({ data, hostStyle }) => [
+      data.paletteBase,
+      hostStyle["--backdrop-display-screen"],
+    ],
     rungs: [
-      ["default", {}, DEFAULTS.lightBase],
-      ["display", { display: pocket }, screen.base],
+      ["default", {}, [DEFAULTS.lightBase, undefined]],
+      ["display", { display: pocket }, [screen.base, screen.base]],
       [
         "tweak",
         { display: pocket, tweaks: { lightBase: "#123456" } },
-        "#123456",
+        ["#123456", "#123456"],
       ],
     ],
   },
@@ -182,14 +187,21 @@ const ladders: Record<
     ],
   },
   darkBase: {
-    read: (look) => look.data.paletteBase,
+    read: ({ data, hostStyle }) => [
+      data.paletteBase,
+      hostStyle["--backdrop-display-screen"],
+    ],
     rungs: [
-      ["default", { scheme: "dark" }, DEFAULTS.darkBase],
-      ["display", { scheme: "dark", display: pocket }, screen.base],
+      ["default", { scheme: "dark" }, [DEFAULTS.darkBase, undefined]],
+      [
+        "display",
+        { scheme: "dark", display: pocket },
+        [screen.base, screen.base],
+      ],
       [
         "tweak",
         { scheme: "dark", display: pocket, tweaks: { darkBase: "#123456" } },
-        "#123456",
+        ["#123456", "#123456"],
       ],
     ],
   },
@@ -392,6 +404,16 @@ test("Amber's vignette is plain paint that darkens its screen exactly as its tun
 
   expect(resolve({ display: amber }).hostStyle).toMatchObject({
     "--backdrop-display-vignette": AMBER_VIGNETTE,
+  });
+});
+
+test("a tweaked base colours the screen the vignette darkens", () => {
+  expect(
+    resolve({ display: amber, tweaks: { lightBase: "#ffffff" } }).hostStyle,
+  ).toMatchObject({
+    "--backdrop-display-screen": "#ffffff",
+    "--backdrop-display-vignette":
+      "radial-gradient(farthest-corner, transparent 33%, rgb(110 0 0 / 0.173))",
   });
 });
 

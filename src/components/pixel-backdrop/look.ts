@@ -97,9 +97,9 @@ export function resolveLook(input: LookInput): ResolvedLook {
         : undefined,
     },
     hostStyle: {
-      "--backdrop-display-screen": look?.base,
+      "--backdrop-display-screen": look && base,
       "--backdrop-display-grid": look?.grid,
-      "--backdrop-display-vignette": look && vignette(look),
+      "--backdrop-display-vignette": look && vignette({ ...look, base }),
     },
     hostFlags: {
       "data-disabled": !knobs.enabled,
