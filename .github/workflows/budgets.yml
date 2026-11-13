@@ -32,4 +32,5 @@ jobs:
       - name: Hold the build to its budgets
         run: node scripts/budget-check.mjs
       - name: Run the device probe end to end
+        if: ${{ !cancelled() }}
         run: node scripts/perf-device.mjs --self-test
