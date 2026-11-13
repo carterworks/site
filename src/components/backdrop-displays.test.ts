@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { DISPLAYS } from "./backdrop-displays";
-import { MAX_GHOST } from "./emulated-canvas-limits";
+import { MAX_GHOST } from "./emulated-canvas/limits";
 
 const looks = DISPLAYS.filter(({ look }) => look);
 

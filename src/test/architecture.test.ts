@@ -13,7 +13,8 @@ const layers = {
   lib: { files: ["src/lib/{clamp,cycle-setting}.ts"], imports: ["lib"] },
   canvas: {
     files: [
-      "src/components/{emulated-canvas,emulated-canvas-limits,backdrop-noise}.ts",
+      "src/components/emulated-canvas/*.ts",
+      "src/components/backdrop-noise.ts",
     ],
     imports: ["canvas", "lib"],
   },

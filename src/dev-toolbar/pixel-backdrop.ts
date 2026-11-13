@@ -1,6 +1,6 @@
 import { defineToolbarApp } from "astro/toolbar";
 import { TOYS } from "../components/backdrop-toys";
-import { MAX_GHOST } from "../components/emulated-canvas-limits";
+import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import {
   readDefaults,
   type PixelBackdropOptions,

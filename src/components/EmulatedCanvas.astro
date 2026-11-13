@@ -1,6 +1,6 @@
 ---
 import type { HTMLAttributes } from "astro/types";
-import type { EmulatedCanvasProps } from "./emulated-canvas";
+import type { EmulatedCanvasProps } from "./emulated-canvas/element";
 
 /**
  * `<emulated-canvas>` mirrors a hidden `OffscreenCanvas` into a sealed display
@@ -23,5 +23,5 @@ const { width, height, scale, gap, shape, ghost, ...attributes } = Astro.props;
 ></emulated-canvas>
 
 <script>
-  import "./emulated-canvas";
+  import "./emulated-canvas/element";
 </script>

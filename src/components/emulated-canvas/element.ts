@@ -1,6 +1,6 @@
-import { makeCoarseNoise, makeNoise2D } from "./backdrop-noise";
-import { clamp } from "../lib/clamp";
-import { MAX_GHOST } from "./emulated-canvas-limits";
+import { makeCoarseNoise, makeNoise2D } from "../backdrop-noise";
+import { clamp } from "../../lib/clamp";
+import { MAX_GHOST } from "./limits";
 
 /** `OffscreenCanvas.getContext` is overloaded, so calls with a union id need help. */
 function getInnerContext(

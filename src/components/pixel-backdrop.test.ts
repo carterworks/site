@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { installBackdropDefaults } from "../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
 import type { Toy } from "./backdrop-toys/toy";
-import { EmulatedCanvas } from "./emulated-canvas";
+import { EmulatedCanvas } from "./emulated-canvas/element";
 import { DISPLAYS } from "./backdrop-displays";
 import { readDefaults, type PixelBackdrop } from "./pixel-backdrop";
 

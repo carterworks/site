@@ -1,5 +1,5 @@
-import "./emulated-canvas";
-import type { EmulatedCanvas } from "./emulated-canvas";
+import "./emulated-canvas/element";
+import type { EmulatedCanvas } from "./emulated-canvas/element";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
 import { duration, TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";

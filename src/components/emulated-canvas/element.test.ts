@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { countAllocations } from "../test/toy-canvas";
-import {
-  type EmulatedCanvas,
-  SHADERS,
-  type ShaderFrame,
-} from "./emulated-canvas";
+import { countAllocations } from "../../test/toy-canvas";
+import { type EmulatedCanvas, SHADERS, type ShaderFrame } from "./element";
 
 const display = {
   drawImage: vi.fn(),
@@ -663,7 +659,7 @@ test("turning data-shadow on for a drawn manual canvas with a palette dodges the
 
 test("importing the module again does not redefine the element", async () => {
   vi.resetModules();
-  await expect(import("./emulated-canvas")).resolves.toBeDefined();
+  await expect(import("./element")).resolves.toBeDefined();
 });
 
 test("the context is available before the element is connected", () => {
