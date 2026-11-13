@@ -278,6 +278,24 @@ describe("with no pass active", () => {
     expect(softStats.reads).toBe(0);
   });
 
+  test("a shadow is cast from a whole-bitmap putImageData's own pixels, reading nothing back", () => {
+    const canvas = mountCanvas({ width: "2", height: "1", shadow: "25" });
+    const show = vi.spyOn(Presenter.prototype, "show");
+    const drawn = Uint8ClampedArray.of(255, 255, 255, 255, 64, 64, 64, 255);
+
+    canvas.getContext("2d")!.putImageData(new ImageData(drawn, 2, 1), 0, 0);
+    canvas.present();
+
+    const isEcho = (bitmap: (typeof bitmaps.plain)[number]) =>
+      bitmap.getContext().canvas?.className === "echo";
+    const display = bitmaps.plain.find((bitmap) => !isEcho(bitmap))!;
+    const echo = bitmaps.plain.find(isEcho)!;
+    expect([...display.pixels]).toEqual([...drawn]);
+    expect([...echo.pixels]).toEqual([0, 0, 0, 0, 0, 0, 0, 48]);
+    expect(show.mock.lastCall?.[0]).toBeInstanceOf(ImageData);
+    expect(softStats.reads).toBe(0);
+  });
+
   test("drawing with fillRect shows exactly what was filled, reading nothing back", () => {
     const canvas = mountCanvas({ width: "3", height: "1" });
     const context = canvas.getContext("2d")!;

@@ -1,3 +1,4 @@
+import { multiplyOverlay, type Rgb } from "../../lib/rgb";
 import { colourRgb } from "./colour";
 
 /** How the display draws its cells and their shadow, as the element's `data-*` attributes set it. */
@@ -7,17 +8,17 @@ export type Geometry = {
   gap: number;
   shape: "square" | "circle";
   /**
-   * The echo's opacity (0–100, 0 for none), its offset in CSS pixels and, when
+   * The shadow's opacity (0–100, 0 for none), its offset in CSS pixels and, when
    * a palette sets one, the colour of an unlit pixel, which casts no shadow.
    */
   shadow: { opacity: number; x: number; y: number; unlit?: string };
 };
 
 /**
- * The echo is a copy of the display, offset and multiplied over it, like the
- * shadow each lit pixel casts on an LCD's backplate. It sits above the gap
- * overlay so the shadow falls across the gaps too, and the host isolates the
- * blend so it darkens only the display, never the page behind it.
+ * The echo is the shadow each pixel casts on an LCD's backplate, offset over
+ * the display. It sits above the gap overlay so the shadow falls across the
+ * gaps too; the host is a stacking context so that lift stays inside it, never
+ * over the page or anything laid over the canvas.
  */
 function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
   if (opacity === 0) return "";
@@ -27,8 +28,6 @@ function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
     }
     .echo {
       inset: 0 auto auto 0;
-      mix-blend-mode: multiply;
-      opacity: ${opacity / 100};
       pointer-events: none;
       position: absolute;
       translate: ${x}px ${y}px;
@@ -115,8 +114,19 @@ export class Presenter {
   readonly #style: HTMLStyleElement;
   readonly #display: HTMLCanvasElement;
   #context?: CanvasRenderingContext2D;
-  #echoContext?: CanvasRenderingContext2D;
-  #echoDodge?: string;
+  #echo?: {
+    context: CanvasRenderingContext2D;
+    shadow: ImageData;
+    words: Uint32Array;
+  };
+  #opacity = 0;
+  #unlit: Rgb = WHITE;
+  /** The last frame shown as pixels, to recast when the shadow changes. */
+  #shown?: ImageData;
+  /** The same pixels a word each, kept while the frame keeps its buffer. */
+  #shownWords?: Uint32Array;
+  readonly #factor: Rgb = [1, 1, 1];
+  readonly #paint: Rgb = [0, 0, 0];
 
   constructor(root: ShadowRoot, columns: number, rows: number) {
     this.#columns = columns;
@@ -126,6 +136,11 @@ export class Presenter {
     this.#display.height = rows;
     this.#style = document.createElement("style");
     root.append(this.#style, this.#display);
+  }
+
+  /** A shadow is cast from the frame's pixels, so while one is on, `show` must be given them. */
+  get needsPixels() {
+    return this.#echo !== undefined;
   }
 
   /** Rewrites the stylesheet, so it belongs to attribute changes, never to a present. */
@@ -144,24 +159,30 @@ export class Presenter {
       created.globalCompositeOperation = "copy";
       context = this.#context = created;
     }
-    if (frame instanceof ImageData) context.putImageData(frame, 0, 0);
-    else context.drawImage(frame, 0, 0);
-    this.#copyToEcho();
+    if (frame instanceof ImageData) {
+      context.putImageData(frame, 0, 0);
+      this.#shown = frame;
+      if (this.#shownWords?.buffer !== frame.data.buffer) {
+        this.#shownWords = new Uint32Array(frame.data.buffer);
+      }
+    } else {
+      context.drawImage(frame, 0, 0);
+      this.#shown = undefined;
+    }
+    this.#cast();
   }
 
   /** Created only once a shadow is wanted, so a canvas without one pays nothing. */
   #showEcho({ opacity, unlit }: Geometry["shadow"]) {
     if (opacity === 0) {
-      this.#echoContext?.canvas.remove();
-      this.#echoContext = undefined;
+      this.#echo?.context.canvas.remove();
+      this.#echo = undefined;
       return;
     }
-    const created = this.#echoContext === undefined;
-    const context = (this.#echoContext ??= this.#createEcho());
-    if (context === undefined) return;
-    this.#echoDodge = dodgeColour(unlit);
-    if (this.#echoDodge !== undefined) context.fillStyle = this.#echoDodge;
-    if (created && this.#context !== undefined) this.#copyToEcho();
+    this.#echo ??= this.#createEcho();
+    this.#opacity = opacity / 100;
+    this.#unlit = unlit === undefined ? WHITE : colourRgb(unlit);
+    this.#cast();
   }
 
   #createEcho() {
@@ -170,34 +191,56 @@ export class Presenter {
     echo.width = this.#columns;
     echo.height = this.#rows;
     const context = echo.getContext("2d");
-    if (context !== null) this.#display.after(echo);
-    return context ?? undefined;
+    if (context === null) return undefined;
+    this.#display.after(echo);
+    const shadow = new ImageData(this.#columns, this.#rows);
+    return { context, shadow, words: new Uint32Array(shadow.data.buffer) };
   }
 
   /**
-   * One GPU-side copy of what the display just showed, with no read-back. The
-   * multiply blend composites at display resolution, but only when this runs.
+   * An LCD's shadow multiplies what it falls on by each pixel's darkening
+   * from unlit, but a multiply blend re-blends the whole viewport on every
+   * present, which costs software rendering more than all else on the page.
+   * Plain paint cast here from the pixels already in hand is exact wherever
+   * it falls on unlit, which is most of the screen; see `multiplyOverlay`.
+   * A frame is mostly runs of one colour, so a pixel the same as the one
+   * before copies its shadow, which cuts the cast to a tenth.
    */
-  #copyToEcho() {
-    const echo = this.#echoContext;
-    if (echo === undefined) return;
-    const display = this.#display;
-    echo.globalCompositeOperation = "copy";
-    echo.drawImage(display, 0, 0);
-    if (this.#echoDodge === undefined) return;
-    echo.globalCompositeOperation = "color-dodge";
-    echo.fillRect(0, 0, display.width, display.height);
+  #cast() {
+    const echo = this.#echo;
+    const frame = this.#shown;
+    const words = this.#shownWords;
+    if (echo === undefined || frame === undefined || words === undefined) {
+      return;
+    }
+    const pixels = frame.data;
+    const shadow = echo.shadow.data;
+    const shadowWords = echo.words;
+    const unlit = this.#unlit;
+    const factor = this.#factor;
+    const paint = this.#paint;
+    for (let at = 0, i = 0; at < words.length; at += 1, i += 4) {
+      if (at > 0 && words[at] === words[at - 1]) {
+        shadowWords[at] = shadowWords[at - 1];
+        continue;
+      }
+      const strength = (this.#opacity * pixels[i + 3]) / 255;
+      for (let c = 0; c < 3; c += 1) {
+        factor[c] = 1 - strength * darkening(pixels[i + c], unlit[c]);
+      }
+      const alpha = multiplyOverlay(unlit, factor, paint);
+      shadow[i] = paint[0];
+      shadow[i + 1] = paint[1];
+      shadow[i + 2] = paint[2];
+      shadow[i + 3] = alpha * 255;
+    }
+    echo.context.putImageData(echo.shadow, 0, 0);
   }
 }
 
-/**
- * A colour-dodge by the unlit colour's inverse divides the echo by it, so an
- * unlit pixel multiplies by white and casts nothing. Without a palette the
- * unlit colour is unknown, and a plain multiply is the same rule with white as
- * unlit.
- */
-function dodgeColour(unlit: string | undefined) {
-  if (unlit === undefined) return undefined;
-  const [r, g, b] = colourRgb(unlit);
-  return `rgb(${255 - r} ${255 - g} ${255 - b})`;
-}
+/** Without a palette, white is unlit, so a pixel darkens by how far it is from white. */
+const WHITE: Rgb = [255, 255, 255];
+
+/** How much darker than unlit a channel is, 0–1; nothing is darker than a channel of zero. */
+const darkening = (value: number, unlit: number) =>
+  unlit === 0 ? 0 : Math.max(0, 1 - value / unlit);

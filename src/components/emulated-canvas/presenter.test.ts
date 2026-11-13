@@ -148,7 +148,7 @@ describe("the stylesheet", () => {
 });
 
 describe("a pixel shadow", () => {
-  test("layers one echo of the display's size over it, multiplied and offset", () => {
+  test("layers one echo of the display's size over it, offset", () => {
     const { canvases, style } = mount({ shadow: SHADOW });
 
     const [display, echo] = canvases();
@@ -158,17 +158,15 @@ describe("a pixel shadow", () => {
       width: display.width,
       height: display.height,
     });
-    expect(style()).toContain("isolation: isolate");
-    expect(style()).toContain("mix-blend-mode: multiply");
-    expect(style()).toContain("opacity: 0.4");
     expect(style()).toContain("translate: 2px -3px");
   });
 
-  test("stacks the echo above the display at its corner, sharing the canvas's size and margin", () => {
+  test("stacks the echo above the display and its gaps at its corner, inside the host, sharing the canvas's size and margin", () => {
     const { style } = mount({ shadow: SHADOW });
     const echoRule = /\.echo \{[^}]*\}/.exec(style())![0];
     const canvasRule = /(?:^|\s)canvas \{[^}]*\}/.exec(style())![0];
 
+    expect(style()).toContain("isolation: isolate");
     expect(echoRule).toContain("z-index: 1");
     expect(echoRule).toContain("inset: 0 auto auto 0");
     expect(echoRule).toContain("position: absolute");
@@ -176,6 +174,20 @@ describe("a pixel shadow", () => {
     expect(canvasRule).toContain("inline-size");
     expect(canvasRule).toContain("margin");
   });
+
+  test.each([
+    ["square", 5],
+    ["circle", 0],
+    ["circle", 5],
+  ] as const)(
+    "on %s cells with gap %i is plain paint, never a blend or a layer opacity",
+    (shape, gap) => {
+      const { style } = mount({ shape, gap, shadow: SHADOW });
+
+      expect(style()).not.toContain("mix-blend-mode");
+      expect(style()).not.toContain("opacity");
+    },
+  );
 
   test("lays a gap and scale out exactly as without it", () => {
     const cells = { gap: 5, scale: 8, shape: "circle" } as const;
@@ -187,19 +199,12 @@ describe("a pixel shadow", () => {
     expect(style().startsWith(without.trimEnd())).toBe(true);
   });
 
-  test("at full opacity is opaque", () => {
-    const { style } = mount({ shadow: { opacity: 100, x: 0, y: 0 } });
-
-    expect(style()).toContain("opacity: 1;");
-    expect(style()).toContain("translate: 0px 0px");
-  });
-
   test("is absent at zero opacity, with none of its rules", () => {
     const { canvases, style } = mount();
 
     expect(canvases()).toHaveLength(1);
     expect(style()).not.toContain("isolation");
-    expect(style()).not.toContain("mix-blend-mode");
+    expect(style()).not.toContain("echo");
   });
 
   test("moving it or changing its opacity keeps the same echo", () => {
@@ -210,7 +215,6 @@ describe("a pixel shadow", () => {
 
     expect(canvases()[1]).toBe(echo);
     expect(style()).toContain("translate: 7px 0px");
-    expect(style()).toContain("opacity: 0.6");
   });
 
   test("turning it off removes the echo, and turning it on again brings one back", () => {
@@ -222,136 +226,137 @@ describe("a pixel shadow", () => {
     presenter.configure({ ...PLAIN, shadow: SHADOW });
     expect(canvases()).toHaveLength(2);
   });
+
+  test("needs the frame as pixels exactly while it is on", () => {
+    const { presenter } = mount();
+    expect(presenter.needsPixels).toBe(false);
+
+    presenter.configure({ ...PLAIN, shadow: SHADOW });
+    expect(presenter.needsPixels).toBe(true);
+
+    presenter.configure(PLAIN);
+    expect(presenter.needsPixels).toBe(false);
+  });
 });
 
-/** Each draw and fill on an echo, with the composite operation and fill in effect at the time. */
-function echoCalls() {
-  const calls: string[] = [];
-  const isEcho = (context: SoftContext) => context.canvas?.className === "echo";
-  const { drawImage, fillRect } = SoftContext.prototype;
-  vi.spyOn(SoftContext.prototype, "drawImage").mockImplementation(function (
-    this: SoftContext,
-    ...args
-  ) {
-    if (isEcho(this)) calls.push(`drawImage ${this.globalCompositeOperation}`);
-    drawImage.apply(this, args);
-  });
-  vi.spyOn(SoftContext.prototype, "fillRect").mockImplementation(function (
-    this: SoftContext,
-    ...args
-  ) {
-    if (isEcho(this)) {
-      calls.push(
-        `fillRect ${this.globalCompositeOperation} ${this.fillStyle} ${args.join(" ")}`,
-      );
-    }
-    fillRect.apply(this, args);
-  });
-  return calls;
-}
-
-const DODGE = "fillRect color-dodge rgb(119 98 167) 0 0 2 1";
+/** Pocket LCD's shadow, its palette's base unlit. */
+const POCKET = { opacity: 25, x: 4, y: 4, unlit: BASE };
+const UNLIT = [0x88, 0x9d, 0x58, 255];
+const INK = [0x26, 0x3c, 0x2b, 255];
+/** Half way from the base to the ink, as a level or a ghost leaves it. */
+const MIDWAY = [87, 109, 66, 255];
 
 describe("the echo", () => {
-  test("copies the display once per show, after the display is drawn, allocating nothing", () => {
-    const { presenter, canvases } = mount({ shadow: SHADOW });
-    const [display, echo] = canvases();
-    presenter.show(row(GREEN, BLUE));
-    const image = row(BLUE, GREEN);
-    const frames = [image, bitmap(GREEN, GREEN), image, bitmap(GREEN, GREEN)];
+  /**
+   * Multiplying by the dodged echo darkens a channel by o·(1 − pixel/base);
+   * red, darkened most, sets the alpha, o·(1 − 38/136), and green and blue
+   * the paint that leaves them as the multiply would over the base.
+   */
+  test("with a palette is the paint that darkens the base as multiplying by the pixel over the base would", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 3);
+
+    presenter.show(row(UNLIT, INK, MIDWAY));
+
+    const shadow = pixelsOf(canvases()[1]);
+    expect(shadow.slice(0, 4)).toEqual([0, 0, 0, 0]);
+    expect(shadow.slice(4, 8)).toEqual([0, 22, 26, 46]);
+    expect(shadow.slice(8)).toEqual([0, 24, 27, 23]);
+  });
+
+  test("without a palette takes white as unlit, so grey casts plain black by its darkness and transparency casts nothing", () => {
+    const { presenter, canvases } = mount(
+      { shadow: { ...POCKET, unlit: undefined } },
+      4,
+    );
+
+    presenter.show(
+      row(
+        [255, 255, 255, 255],
+        [64, 64, 64, 255],
+        [64, 64, 64, 128],
+        [0, 0, 0, 0],
+      ),
+    );
+
+    expect(pixelsOf(canvases()[1])).toEqual([
+      ...[0, 0, 0, 0],
+      ...[0, 0, 0, 48],
+      ...[0, 0, 0, 24],
+      ...[0, 0, 0, 0],
+    ]);
+  });
+
+  test("is put on its canvas once per show, after the display, with no blend or fill, allocating nothing for frames in one buffer", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET });
+    const [, echo] = canvases();
+    const frame = row(INK, UNLIT);
+    presenter.show(frame);
     const calls: string[] = [];
-    for (const name of ["putImageData", "drawImage"] as const) {
+    for (const name of ["putImageData", "drawImage", "fillRect"] as const) {
       const write = SoftContext.prototype[name] as (...args: unknown[]) => void;
       vi.spyOn(SoftContext.prototype, name).mockImplementation(function (
         this: SoftContext,
         ...args: unknown[]
       ) {
         const target = this === contextOf(echo) ? "echo" : "display";
-        const source =
-          args[0] === display
-            ? ` from the display at ${args[1]} ${args[2]}`
-            : "";
-        calls.push(`${target} ${name}${source}`);
+        calls.push(`${target} ${name}`);
         write.apply(this, args);
       });
     }
 
+    const drawn = [row(UNLIT, INK), row(INK, INK)].map(({ data }) => data);
+
     const allocations = countAllocations();
     try {
-      for (const frame of frames) presenter.show(frame);
+      for (const pixels of drawn) {
+        frame.data.set(pixels);
+        presenter.show(frame);
+        presenter.show(frame);
+      }
     } finally {
       allocations.restore();
     }
 
-    const echoCopy = "echo drawImage from the display at 0 0";
-    expect(calls).toEqual([
-      ...["display putImageData", echoCopy, "display drawImage", echoCopy],
-      ...["display putImageData", echoCopy, "display drawImage", echoCopy],
-    ]);
-    expect(pixelsOf(echo)).toEqual([...GREEN, ...GREEN]);
+    expect(calls).toEqual(
+      Array(4).fill(["display putImageData", "echo putImageData"]).flat(),
+    );
+    expect(pixelsOf(echo)).toEqual([0, 22, 26, 46, 0, 22, 26, 46]);
     expect(allocations.count()).toBe(0);
   });
 
-  test("without a palette is a plain copy of the display", () => {
-    const { presenter, canvases } = mount({ shadow: SHADOW });
-    const calls = echoCalls();
+  test("a run of one colour casts one shadow along it, wherever it starts", () => {
+    const { presenter, canvases } = mount({ shadow: POCKET }, 5);
 
-    presenter.show(row(GREEN, BLUE));
+    presenter.show(row(UNLIT, INK, INK, INK, UNLIT));
 
-    expect(calls).toEqual(["drawImage copy"]);
-    expect(pixelsOf(canvases()[1])).toEqual([...GREEN, ...BLUE]);
+    expect(pixelsOf(canvases()[1])).toEqual([
+      ...[0, 0, 0, 0],
+      ...[0, 22, 26, 46],
+      ...[0, 22, 26, 46],
+      ...[0, 22, 26, 46],
+      ...[0, 0, 0, 0],
+    ]);
   });
 
-  test("with a palette divides its copy by the base, so only pixels darker than the base cast a shadow", () => {
-    const { presenter, canvases } = mount({
-      shadow: { ...SHADOW, unlit: BASE },
-    });
-    const calls = echoCalls();
+  test("turned on after a show casts the shown frame at once, and recolours when the base changes", () => {
+    const { presenter, canvases } = mount();
+    presenter.show(row(UNLIT, INK));
 
-    presenter.show(row([0x88, 0x9d, 0x58, 255], [0x1f, 0x33, 0x26, 255]));
+    presenter.configure({ ...PLAIN, shadow: POCKET });
+    expect(pixelsOf(canvases()[1]).slice(0, 4)).toEqual([0, 0, 0, 0]);
 
-    expect(calls).toEqual(["drawImage copy", DODGE]);
-    const shadow = pixelsOf(canvases()[1]);
-    expect(shadow.slice(0, 4)).toEqual([255, 255, 255, 255]);
-    expect(shadow.slice(4)).not.toEqual([255, 255, 255, 255]);
+    presenter.configure({ ...PLAIN, shadow: { ...POCKET, unlit: "#ffffff" } });
+    expect(pixelsOf(canvases()[1]).slice(0, 4)).not.toEqual([0, 0, 0, 0]);
   });
 
-  test("dropping the palette stops the dodge, and changing its base changes the fill", () => {
-    const { presenter } = mount({ shadow: { ...SHADOW, unlit: BASE } });
-    const calls = echoCalls();
+  test("turned on before anything is shown, or after a bitmap, casts nothing until pixels are shown", () => {
+    const { presenter, canvases } = mount();
+    presenter.configure({ ...PLAIN, shadow: POCKET });
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
 
-    presenter.configure({ ...PLAIN, shadow: SHADOW });
-    presenter.show(row(GREEN, BLUE));
-    expect(calls).toEqual(["drawImage copy"]);
-
-    presenter.configure({ ...PLAIN, shadow: { ...SHADOW, unlit: "#e8a33a" } });
-    presenter.show(row(GREEN, BLUE));
-    expect(calls.at(-1)).toBe("fillRect color-dodge rgb(23 92 197) 0 0 2 1");
-  });
-
-  test.each([
-    ["without a palette", undefined, ["drawImage copy"]],
-    ["with a palette", BASE, ["drawImage copy", DODGE]],
-  ])(
-    "turned on %s after a show copies the display at once",
-    (_, unlit, expected) => {
-      const { presenter, canvases } = mount();
-      presenter.show(row(GREEN, BLUE));
-      const calls = echoCalls();
-
-      presenter.configure({ ...PLAIN, shadow: { ...SHADOW, unlit } });
-
-      expect(calls).toEqual(expected);
-      expect(canvases()).toHaveLength(2);
-    },
-  );
-
-  test("turned on before anything is shown copies nothing", () => {
-    const { presenter } = mount();
-    const calls = echoCalls();
-
-    presenter.configure({ ...PLAIN, shadow: { ...SHADOW, unlit: BASE } });
-
-    expect(calls).toEqual([]);
+    presenter.configure(PLAIN);
+    presenter.show(bitmap(INK, INK));
+    presenter.configure({ ...PLAIN, shadow: POCKET });
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
   });
 });

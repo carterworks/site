@@ -52,12 +52,6 @@ const sourceOver: Blend = (_, source) => source;
 /** The modes the canvas draws with, from Compositing and Blending Level 1. */
 const BLENDS: Partial<Record<string, Blend>> = {
   "source-over": sourceOver,
-  "color-dodge": (backdrop, source) =>
-    backdrop === 0
-      ? 0
-      : source === 1
-        ? 1
-        : Math.min(1, backdrop / (1 - source)),
 };
 
 export class SoftContext {

@@ -10,7 +10,7 @@ import { expect, test } from "vitest";
  * named there too, or `imports` must name "packages" to allow any.
  */
 const layers = {
-  lib: { files: ["src/lib/{clamp,cycle-setting}.ts"], imports: ["lib"] },
+  lib: { files: ["src/lib/{clamp,cycle-setting,rgb}.ts"], imports: ["lib"] },
   "canvas kit": {
     files: [
       "src/components/emulated-canvas/{shader,colour,limits}.ts",
@@ -34,7 +34,7 @@ const layers = {
   },
   presenter: {
     files: ["src/components/emulated-canvas/presenter.ts"],
-    imports: ["canvas kit"],
+    imports: ["canvas kit", "lib"],
   },
   // Other layers reach the canvas through the element and the kit, never the
   // pipeline, the presenter or the passes.
@@ -69,7 +69,7 @@ const layers = {
   // What the backdrop shows is decided from data alone, never the elements.
   look: {
     files: ["src/components/pixel-backdrop/look.ts"],
-    imports: ["knobs", "toy kit", "displays"],
+    imports: ["knobs", "toy kit", "displays", "lib"],
   },
   backdrop: {
     files: ["src/components/pixel-backdrop.ts"],

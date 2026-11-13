@@ -7,7 +7,7 @@ exports[`bubblewrap on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -116,8 +116,6 @@ exports[`bubblewrap on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -127,7 +125,7 @@ exports[`bubblewrap on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`bubblewrap on Pocket LCD 1`] = `"f7cab7c89dcf3fe0b2c2869923763747e59bae4bcec89c06abf92c8a60ffcd6a over 62 changed frames"`;
+exports[`bubblewrap on Pocket LCD 1`] = `"fa2b3969c5d1b2426e55c73e1ddd03d5fac528c1c6f90d91075b122f4d2f5a90 over 62 changed frames"`;
 
 exports[`bubblewrap on Site in dark > markup 1`] = `
 {
@@ -236,7 +234,7 @@ exports[`cradle on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -345,8 +343,6 @@ exports[`cradle on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -356,7 +352,7 @@ exports[`cradle on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`cradle on Pocket LCD 1`] = `"f24c4c31829261230876270d700d8c8fefe2d862b70e09f210e8729dab27e8db over 500 changed frames"`;
+exports[`cradle on Pocket LCD 1`] = `"16154194b3256677edf05a9c876244de9c3ad7069a36375ec304a51bf6ead685 over 500 changed frames"`;
 
 exports[`cradle on Site in dark > markup 1`] = `
 {
@@ -465,7 +461,7 @@ exports[`culture on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -574,8 +570,6 @@ exports[`culture on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -585,7 +579,7 @@ exports[`culture on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`culture on Pocket LCD 1`] = `"b3947f415306369fe8cf794b9b10969626289c23c69912b1482bd074413ff883 over 497 changed frames"`;
+exports[`culture on Pocket LCD 1`] = `"3451e5953a6a0d69092c5b85028d8b739f20173677b8e4eaabbfbb3148ad3e48 over 497 changed frames"`;
 
 exports[`culture on Site in dark > markup 1`] = `
 {
@@ -694,7 +688,7 @@ exports[`curtain on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -803,8 +797,6 @@ exports[`curtain on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -814,7 +806,7 @@ exports[`curtain on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`curtain on Pocket LCD 1`] = `"58b0d386b87f840320b9e8302a7edca8c728199485740cc9950019c24b3ecc62 over 498 changed frames"`;
+exports[`curtain on Pocket LCD 1`] = `"fe8369c329889242bba0b4fc020a5d0c8d866aca89f7f5da87cd9109b214a804 over 498 changed frames"`;
 
 exports[`curtain on Site in dark > markup 1`] = `
 {
@@ -923,7 +915,7 @@ exports[`dominoes on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1032,8 +1024,6 @@ exports[`dominoes on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -1043,7 +1033,7 @@ exports[`dominoes on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`dominoes on Pocket LCD 1`] = `"2bb4648a390d0ec78fde3b4c760db2bdfd4c9a4b7d1f6cd5505225a4ff868be1 over 164 changed frames"`;
+exports[`dominoes on Pocket LCD 1`] = `"e15888f92a7a8e62d4a4b9e39c8c7216409db4079223b5aad229c56de984c5ef over 164 changed frames"`;
 
 exports[`dominoes on Site in dark > markup 1`] = `
 {
@@ -1152,7 +1142,7 @@ exports[`filings on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1261,8 +1251,6 @@ exports[`filings on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -1272,7 +1260,7 @@ exports[`filings on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`filings on Pocket LCD 1`] = `"cb7331fcb8849b245cd07ddb9a365b3e2551f2cfaed1e6b09534938b6cc54af5 over 213 changed frames"`;
+exports[`filings on Pocket LCD 1`] = `"ef9f4703eedbd56d3e50a5ccfb9168926e65a6ab8d134890f4a3cf4064aba99d over 213 changed frames"`;
 
 exports[`filings on Site in dark > markup 1`] = `
 {
@@ -1381,7 +1369,7 @@ exports[`fireflies on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1490,8 +1478,6 @@ exports[`fireflies on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -1501,7 +1487,7 @@ exports[`fireflies on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`fireflies on Pocket LCD 1`] = `"0e7d5f8e8faa4e0ec271490184ff98925bede36bff1bc3ae5feafea3af6d58d4 over 500 changed frames"`;
+exports[`fireflies on Pocket LCD 1`] = `"12e1630f5dc253dbdfad7a90cff80f869bfbfa4cc25ee76d4c927716e55f517e over 500 changed frames"`;
 
 exports[`fireflies on Site in dark > markup 1`] = `
 {
@@ -1610,7 +1596,7 @@ exports[`flipdots on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1719,8 +1705,6 @@ exports[`flipdots on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -1730,7 +1714,7 @@ exports[`flipdots on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`flipdots on Pocket LCD 1`] = `"234103bfdbb618c4b988d52535bfcd39efe5f4a513de3b2541c54404380c175c over 194 changed frames"`;
+exports[`flipdots on Pocket LCD 1`] = `"37675d4b9270195c3b8c7a076cf93272119c72dabc54ce654d0689f47f995a08 over 194 changed frames"`;
 
 exports[`flipdots on Site in dark > markup 1`] = `
 {
@@ -1839,7 +1823,7 @@ exports[`mote on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -1948,8 +1932,6 @@ exports[`mote on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -1959,7 +1941,7 @@ exports[`mote on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`mote on Pocket LCD 1`] = `"3ff0aa5d71c3a86e13d3e706442e7b3d76ef01e299351e4672fef5f1400e9516 over 439 changed frames"`;
+exports[`mote on Pocket LCD 1`] = `"bad54e71bf5a7c74d40e458156b357bf5c6f6f2a906a7244bd5562a0d8b97ce4 over 439 changed frames"`;
 
 exports[`mote on Site in dark > markup 1`] = `
 {
@@ -2068,7 +2050,7 @@ exports[`pendulums on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2177,8 +2159,6 @@ exports[`pendulums on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -2188,7 +2168,7 @@ exports[`pendulums on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`pendulums on Pocket LCD 1`] = `"9e33c544c7a30a96b34b95035e16051a3cd4cad67a4f69058e0e36376a02028b over 443 changed frames"`;
+exports[`pendulums on Pocket LCD 1`] = `"5b37e4b1255a1a98313274ca2d23fea11aab18021b8a8359e94bb392a7358c8c over 443 changed frames"`;
 
 exports[`pendulums on Site in dark > markup 1`] = `
 {
@@ -2297,7 +2277,7 @@ exports[`pinbed on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2406,8 +2386,6 @@ exports[`pinbed on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -2417,7 +2395,7 @@ exports[`pinbed on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`pinbed on Pocket LCD 1`] = `"8ca76d3aebac6d64b74c0d78971dad15c2b37a04a1c5c14a4dfee7b56772ceff over 328 changed frames"`;
+exports[`pinbed on Pocket LCD 1`] = `"26c750f551845a8dfda2965fa9ad3acfbf01e3497fdab2748265b9c01be59ae8 over 328 changed frames"`;
 
 exports[`pinbed on Site in dark > markup 1`] = `
 {
@@ -2526,7 +2504,7 @@ exports[`pond on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2635,8 +2613,6 @@ exports[`pond on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -2646,7 +2622,7 @@ exports[`pond on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`pond on Pocket LCD 1`] = `"719af2d306a37c6ce6894c09f249b5a33dead10525f51a0b2badce17522c1aba over 418 changed frames"`;
+exports[`pond on Pocket LCD 1`] = `"5329715325be565781f29d98d641c02fdd4d8fddbf6934c3c37e671cf47792ee over 418 changed frames"`;
 
 exports[`pond on Site in dark > markup 1`] = `
 {
@@ -2755,7 +2731,7 @@ exports[`rake on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -2864,8 +2840,6 @@ exports[`rake on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -2875,7 +2849,7 @@ exports[`rake on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`rake on Pocket LCD 1`] = `"e329e894b067bf895c01ff13f47bdaf13b26dfb0eff7044c15900c038199992b over 180 changed frames"`;
+exports[`rake on Pocket LCD 1`] = `"eb795ea85f376668f321036375326f116d4648ba8fd6dc845e2aee624433d1d7 over 180 changed frames"`;
 
 exports[`rake on Site in dark > markup 1`] = `
 {
@@ -2984,7 +2958,7 @@ exports[`shimmer on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3093,8 +3067,6 @@ exports[`shimmer on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -3104,7 +3076,7 @@ exports[`shimmer on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`shimmer on Pocket LCD 1`] = `"80955a2c13d60887d69a1bf4b91381baa001a3aa29e6c3b15480bfaf347bfe97 over 184 changed frames"`;
+exports[`shimmer on Pocket LCD 1`] = `"c246c04a3970e4867fe47858f72d38fff8eb6ccc597aedbb287b8b5421bafd9b over 184 changed frames"`;
 
 exports[`shimmer on Site in dark > markup 1`] = `
 {
@@ -3213,7 +3185,7 @@ exports[`silt on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3322,8 +3294,6 @@ exports[`silt on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -3333,7 +3303,7 @@ exports[`silt on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`silt on Pocket LCD 1`] = `"85b1794940a35da32c4741243f61e4b125cffb94a83741955dafa4ae6ca49657 over 320 changed frames"`;
+exports[`silt on Pocket LCD 1`] = `"b376091d310383c891e3c0e8de97be6a7d82914980b5844352f12c29f8bbbb15 over 320 changed frames"`;
 
 exports[`silt on Site in dark > markup 1`] = `
 {
@@ -3442,7 +3412,7 @@ exports[`tray on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3551,8 +3521,6 @@ exports[`tray on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -3562,7 +3530,7 @@ exports[`tray on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`tray on Pocket LCD 1`] = `"22159ba3e184a6d5c35d98ce7325fc55eed03deaa049bd781a3d47d278b4b15f over 265 changed frames"`;
+exports[`tray on Pocket LCD 1`] = `"de9e044391e9aac82d1b542e96088f3529a3cb8877afe8c72331998a30089282 over 265 changed frames"`;
 
 exports[`tray on Site in dark > markup 1`] = `
 {
@@ -3671,7 +3639,7 @@ exports[`wax on Amber LCD > markup 1`] = `
   },
   "backdropStyle": {
     "--backdrop-display-screen": "#f89b03",
-    "--backdrop-display-vignette": "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
   },
   "canvasData": {
     "data-fit": "viewport",
@@ -3780,8 +3748,6 @@ exports[`wax on Pocket LCD > markup 1`] = `
     "}",
     ".echo {",
     "inset: 0 auto auto 0;",
-    "mix-blend-mode: multiply;",
-    "opacity: 0.25;",
     "pointer-events: none;",
     "position: absolute;",
     "translate: 4px 4px;",
@@ -3791,7 +3757,7 @@ exports[`wax on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`wax on Pocket LCD 1`] = `"c38a750629124ba8120ebe013c5225de2e2d18ff49d15738b6ce83698e0e71f8 over 499 changed frames"`;
+exports[`wax on Pocket LCD 1`] = `"eb549fb1f0abbfef2a60a9cbdcabc6c983399d92bb53018f3acc57d2c27dc64f over 499 changed frames"`;
 
 exports[`wax on Site in dark > markup 1`] = `
 {

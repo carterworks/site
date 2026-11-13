@@ -58,12 +58,10 @@ const GRID_SIZE = 160;
     translate: round(-50%, 1px) round(-50%, 1px);
   }
 
-  /* Multiplied over a canvas that changes, so it is re-blended on each present. */
   pixel-backdrop[data-vignette]::after {
     background: var(--backdrop-display-vignette);
     content: "";
     inset: 0;
-    mix-blend-mode: multiply;
     position: absolute;
   }
 
