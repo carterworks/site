@@ -1,5 +1,5 @@
-import { nextInRotation, storeChoice } from "../lib/cycle-setting";
-import { DISPLAYS, DISPLAY_KEY, storedDisplay } from "./backdrop-displays";
+import { nextInRotation, storeChoice } from "../../lib/cycle-setting";
+import { DISPLAYS, DISPLAY_KEY, storedDisplay } from "../backdrop-displays";
 
 const [SITE] = DISPLAYS;
 const IDS = DISPLAYS.map((display) => display.id);

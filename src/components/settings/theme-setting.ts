@@ -1,4 +1,4 @@
-import { osScheme, saveScheme, type Scheme } from "../lib/color-scheme";
+import { osScheme, saveScheme, type Scheme } from "../../lib/color-scheme";
 
 /**
  * A two-state toggle over three states, per

@@ -2,8 +2,8 @@ import {
   nextInRotation,
   storedChoice,
   storeChoice,
-} from "../lib/cycle-setting";
-import { TOYS } from "./backdrop-toys";
+} from "../../lib/cycle-setting";
+import { TOYS } from "../backdrop-toys";
 
 export const TOY_KEY = "backdrop-mode";
 

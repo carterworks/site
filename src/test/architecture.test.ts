@@ -85,7 +85,7 @@ const layers = {
   },
   controls: {
     files: [
-      "src/components/{site-settings,backdrop-toy-setting,backdrop-display-setting,theme-setting}.ts",
+      "src/components/settings/*.ts",
       "src/components/{play-toolbar,command-bar,frame-rate}.ts",
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
