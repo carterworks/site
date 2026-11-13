@@ -34,8 +34,8 @@
  * runs until `--minutes` is up, and `--json` saves every run's results,
  * frame gaps included.
  *
- * Tailscale's HTTPS ports are 443, 8443 and 10000; it refuses to start on one
- * already serving, and removes only its own entry when it exits. `--http`
+ * Tailscale serves the page for exactly as long as this runs, however it
+ * ends, and refuses a port it already serves. `--http`
  * serves plain HTTP on that host instead, for a network without Tailscale,
  * but an insecure page may run its JavaScript without a JIT: Safari on an
  * iPhone ran the shader passes 15 times slower over plain HTTP.
@@ -44,7 +44,7 @@
  * steps, and exits non-zero unless every step was applied, valid and
  * restored, which is how CI notices the page's knobs or methods moving.
  */
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -232,43 +232,39 @@ function report(result) {
   for (const listener of listeners) listener(result);
 }
 
-const tailscale = (...args) =>
-  execFileSync("tailscale", args, { encoding: "utf8" });
-const served = () => JSON.parse(tailscale("serve", "status", "--json") || "{}");
-
-/** Publishes `target` on this machine's Tailscale name; refuses a port already in use. */
-function publish(port, target) {
-  const name = JSON.parse(tailscale("status", "--json")).Self.DNSName.replace(
-    /\.$/,
-    "",
-  );
-  const host = `${name}:${port}`;
-  const before = served();
-  if (before.TCP?.[port] || before.Web?.[host]) {
-    throw new Error(
-      `Tailscale already serves port ${port} (\`tailscale serve status\`); pick another of 443, 8443 and 10000 with --https.`,
+/**
+ * Publishes `target` on this machine's Tailscale name until this process
+ * ends. A foreground `tailscale serve` holds its entry only while it runs,
+ * and tailscaled refuses a port any entry holds. Killing this process alone,
+ * even by SIGKILL, would leave it running as an orphan, so the shell around it
+ * stops it when this process's end closes the shell's stdin.
+ */
+const publish = (port, target) =>
+  new Promise((resolve) => {
+    const serve = spawn(
+      "sh",
+      [
+        "-c",
+        'exec 3<&0; tailscale serve --https="$1" "$2" & t=$!; { read line <&3; kill $t; } & wait $t',
+        "sh",
+        port,
+        target,
+      ],
+      { stdio: ["pipe", "pipe", "pipe"] },
     );
-  }
-  // Exit handlers run on process.exit, an uncaught error and the signals
-  // below; only synchronous work completes there.
-  process.on("exit", () => {
-    try {
-      if (served().Web?.[host]?.Handlers?.["/"]?.Proxy === target) {
-        tailscale("serve", `--https=${port}`, "off");
-        console.log(`Removed https://${host} from Tailscale.`);
-      }
-    } catch (error) {
+    let errors = "";
+    serve.stderr.on("data", (chunk) => (errors += chunk));
+    serve.stdout.on("data", (chunk) => {
+      const url = /https:\/\/[^\s/]+/.exec(chunk)?.[0];
+      if (url) resolve(url);
+    });
+    serve.on("exit", () => {
       console.error(
-        `Could not remove https://${host}: ${error.message}. Run \`tailscale serve --https=${port} off\`.`,
+        `tailscale serve --https=${port} ended, so the page is no longer published: ${errors.trim()}`,
       );
-    }
+      process.exit(1);
+    });
   });
-  tailscale("serve", "--bg", `--https=${port}`, target);
-  return `https://${host}`;
-}
-
-process.on("SIGINT", () => process.exit(130));
-process.on("SIGTERM", () => process.exit(143));
 
 const listen = (host, port) =>
   new Promise((resolve) =>
@@ -287,7 +283,7 @@ if (selfTest) {
   );
 } else {
   const port = await listen("127.0.0.1", 0);
-  origin = publish(options.https, `http://127.0.0.1:${port}`);
+  origin = await publish(options.https, `http://127.0.0.1:${port}`);
 }
 console.log(
   `Serving ${options.dist} for ${minutes} min. Open ${origin}/play/?probe on the device.`,
