@@ -66,7 +66,7 @@ beforeEach(() => {
     }),
   );
   vi.spyOn(window, "setTimeout");
-  // The probe `visibleCells` measures; jsdom has no layout to size it.
+  // The probe `visibleCells` measures; happy-dom has no layout to size it.
   vi.spyOn(HTMLDivElement.prototype, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, innerWidth, innerHeight),
   );

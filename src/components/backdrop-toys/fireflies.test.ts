@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import {
   installSoftCanvas,
   place,

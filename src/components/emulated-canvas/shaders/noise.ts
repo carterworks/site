@@ -4,7 +4,7 @@ import {
   NOISE_OFFSET_X,
   NOISE_OFFSET_Y,
   NOISE_SEED,
-} from "../../backdrop-noise";
+} from "../../../lib/backdrop-noise";
 import { clamp } from "../../../lib/clamp";
 import type { Shader } from "../shader";
 

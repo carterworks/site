@@ -1,6 +1,6 @@
 import { hexRgb, multiplyOverlay, type Rgb } from "../../lib/rgb";
 import type { Display, DisplayLook } from "../backdrop-displays";
-import { TUNED_GRID, type Toy } from "../backdrop-toys/toy";
+import { type Look, TUNED_GRID, type Toy } from "../backdrop-toys/toy";
 import type { BackdropKnobs } from "./knobs";
 
 export type LookInput = {
@@ -55,7 +55,8 @@ export const resolveKnobs = ({
   display,
 }: Omit<LookInput, "scheme" | "columns">): BackdropKnobs => ({
   ...defaults,
-  ...toy.look,
+  // A key that is not a knob, or not of its type, would be spread in and never read.
+  ...(toy.look satisfies Pick<BackdropKnobs, keyof Look> | undefined),
   ...displayed(display.look),
   ...tweaks,
 });

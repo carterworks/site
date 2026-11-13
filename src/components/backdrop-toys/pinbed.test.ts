@@ -7,7 +7,7 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import { pinbed } from "./pinbed";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });

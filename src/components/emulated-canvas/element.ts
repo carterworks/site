@@ -3,7 +3,7 @@ import {
   NOISE_OFFSET_X,
   NOISE_OFFSET_Y,
   NOISE_SEED,
-} from "../backdrop-noise";
+} from "../../lib/backdrop-noise";
 import { Pipeline } from "./pipeline";
 import { type Geometry, Presenter } from "./presenter";
 import type { Pace, ShaderFrame } from "./shader";
@@ -22,6 +22,12 @@ function getInnerContext(
 
 type PixelShape = Geometry["shape"];
 
+const DEFAULT_WIDTH = 64;
+const DEFAULT_HEIGHT = 64;
+const DEFAULT_SCALE = 1;
+const DEFAULT_GAP = 0;
+const DEFAULT_SHAPE: PixelShape = "square";
+
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
 /** The attributes the element reads itself; the shadow reads the palette's base as its unlit colour. */
@@ -36,26 +42,6 @@ const ATTRIBUTES = [
   "data-palette-ink",
   "data-manual",
 ];
-
-/**
- * The render knobs `<emulated-canvas>` reads from its `data-*` attributes,
- * keyed by the `dataset` name each one comes from. Every knob is optional: an
- * omitted one falls back to the matching `EmulatedCanvas.DEFAULT_*`.
- */
-export type EmulatedCanvasProps = {
-  /** Logical width of the source bitmap, in pixels. Defaults to 64. */
-  width?: number;
-  /** Logical height of the source bitmap, in pixels. Defaults to 64. */
-  height?: number;
-  /** Cell size, in CSS pixels. Defaults to 1. */
-  scale?: number;
-  /** Space between cells, in CSS pixels. Defaults to 0. */
-  gap?: number;
-  /** Cell form. Defaults to "square". */
-  shape?: PixelShape;
-  /** Share of the previous frame the panel keeps, 0–100. Defaults to 0. */
-  ghost?: number;
-};
 
 /**
  * A canvas stand-in that hides its display surface. Consumers draw into an
@@ -105,11 +91,6 @@ export type EmulatedCanvasProps = {
  * drawing is read back once, on the present after it.
  */
 export class EmulatedCanvas extends HTMLElement {
-  static DEFAULT_WIDTH = 64;
-  static DEFAULT_HEIGHT = 64;
-  static DEFAULT_SCALE = 1;
-  static DEFAULT_GAP = 0;
-  static DEFAULT_SHAPE: PixelShape = "square";
   static readonly observedAttributes = [
     ...new Set([
       ...ATTRIBUTES,
@@ -182,16 +163,12 @@ export class EmulatedCanvas extends HTMLElement {
 
   /** The bitmap's real width, readable before the element is connected. */
   get width() {
-    return (
-      this.#innerCanvas?.width ??
-      this.#integer("width", EmulatedCanvas.DEFAULT_WIDTH, 1)
-    );
+    return this.#innerCanvas?.width ?? this.#integer("width", DEFAULT_WIDTH, 1);
   }
 
   get height() {
     return (
-      this.#innerCanvas?.height ??
-      this.#integer("height", EmulatedCanvas.DEFAULT_HEIGHT, 1)
+      this.#innerCanvas?.height ?? this.#integer("height", DEFAULT_HEIGHT, 1)
     );
   }
 
@@ -357,12 +334,9 @@ export class EmulatedCanvas extends HTMLElement {
     const { paletteBase, paletteInk } = this.dataset;
     const palette = paletteBase !== undefined && paletteInk !== undefined;
     presenter.configure({
-      scale: this.#integer("scale", EmulatedCanvas.DEFAULT_SCALE, 1),
-      gap: this.#integer("gap", EmulatedCanvas.DEFAULT_GAP, 0),
-      shape:
-        this.dataset.shape === "circle"
-          ? "circle"
-          : EmulatedCanvas.DEFAULT_SHAPE,
+      scale: this.#integer("scale", DEFAULT_SCALE, 1),
+      gap: this.#integer("gap", DEFAULT_GAP, 0),
+      shape: this.dataset.shape === "circle" ? "circle" : DEFAULT_SHAPE,
       shadow: {
         opacity: Math.min(this.#integer("shadow", 0, 0), 100),
         x: this.#integer("shadowX", 0, -Infinity),

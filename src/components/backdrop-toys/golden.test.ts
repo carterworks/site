@@ -8,7 +8,8 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
+import { DISPLAYS } from "../backdrop-displays";
 import "../pixel-backdrop/element";
 import { TOYS } from ".";
 
@@ -37,12 +38,16 @@ import { TOYS } from ".";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
-const LOOKS = [
-  { name: "Site in light", display: "site", scheme: "light" },
-  { name: "Site in dark", display: "site", scheme: "dark" },
-  { name: "Pocket LCD", display: "pocket-lcd", scheme: "light" },
-  { name: "Amber LCD", display: "amber-lcd", scheme: "light" },
-];
+/** Every display; one with a screen of its own looks the same in either scheme. */
+const LOOKS = DISPLAYS.flatMap(({ id, label, look }) =>
+  look
+    ? [{ name: label, display: id, scheme: "light" }]
+    : ["light", "dark"].map((scheme) => ({
+        name: `${label} in ${scheme}`,
+        display: id,
+        scheme,
+      })),
+);
 
 /** One frame at 60 Hz, the step the screen is sampled at. */
 const FRAME_MS = 16;

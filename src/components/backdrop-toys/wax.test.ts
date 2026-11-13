@@ -1,7 +1,7 @@
 import { setFlagsFromString } from "node:v8";
 import { runInNewContext } from "node:vm";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import {
   installSoftCanvas,
   place,

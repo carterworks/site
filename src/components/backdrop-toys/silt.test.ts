@@ -6,7 +6,7 @@ import {
   type SoftBitmap,
   useFakeFrames,
 } from "../../test/toy-canvas";
-import { mulberry32 } from "../backdrop-noise";
+import { mulberry32 } from "../../lib/backdrop-noise";
 import { silt } from "./silt";
 
 vi.setConfig({ testTimeout: 60_000 });

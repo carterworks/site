@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { expect, test } from "vitest";
 import { DISPLAYS, type Display, type DisplayLook } from "../backdrop-displays";
 import type { Toy } from "../backdrop-toys/toy";
+import { EmulatedCanvas } from "../emulated-canvas/element";
 import { KNOBS, type BackdropKnobs } from "./knobs";
 import { resolveLook, type LookInput, type ResolvedLook } from "./look";
 
@@ -523,4 +524,19 @@ test("the same input gives the same look, and is left as it was", () => {
   });
 
   expect(resolveLook(input)).toEqual(resolveLook(input));
+});
+
+const attribute = (key: string) =>
+  `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+
+test("the canvas observes every attribute a look writes, so a live switch of display reaches it", () => {
+  const written = new Set(
+    COMBINATIONS.flatMap((input) =>
+      Object.keys(resolve(input).data).map(attribute),
+    ),
+  );
+  const unobserved = [...written].filter(
+    (name) => !EmulatedCanvas.observedAttributes.includes(name),
+  );
+  expect(unobserved, "observe these on <emulated-canvas>").toEqual([]);
 });
