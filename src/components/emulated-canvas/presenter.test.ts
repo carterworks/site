@@ -339,15 +339,20 @@ describe("the echo", () => {
     ]);
   });
 
-  test("turned on after a show casts the shown frame at once, and recolours when the base changes", () => {
+  /**
+   * Under a white unlit, #889d58 darkens each channel by 0.25·(255 − v)/255, blue
+   * most: the alpha is 0.25·167/255, or 41.75/255, and red and green keep
+   * 255·48/167 and 255·69/167 of the paint.
+   */
+  test("turned on after a show casts the shown frame at once, and recolours when the unlit colour changes", () => {
     const { presenter, canvases } = mount();
     presenter.show(row(UNLIT, INK));
 
     presenter.configure({ ...PLAIN, shadow: POCKET });
-    expect(pixelsOf(canvases()[1]).slice(0, 4)).toEqual([0, 0, 0, 0]);
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 22, 26, 46]);
 
     presenter.configure({ ...PLAIN, shadow: { ...POCKET, unlit: "#ffffff" } });
-    expect(pixelsOf(canvases()[1]).slice(0, 4)).not.toEqual([0, 0, 0, 0]);
+    expect(pixelsOf(canvases()[1]).slice(0, 4)).toEqual([73, 105, 0, 42]);
   });
 
   test("turned on before anything is shown casts nothing", () => {
