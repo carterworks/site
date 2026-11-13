@@ -189,8 +189,6 @@ export const CONTROLS: Control[] = [
     choices: { square: "Square", circle: "Circle" },
   },
   range("ghost", "Ghost", 0, Math.round(MAX_GHOST * 100), 1, "%"),
-  range("rippleSize", "Ripple size", 1, 60, 1),
-  range("rippleSpeed", "Ripple speed", 100, 2000, 50, "ms"),
   { kind: "heading", label: "Background noise" },
   range("noise", "Intensity", 0, 100, 1, "%"),
   range("noiseScale", "Feature size", 1, 40, 1),

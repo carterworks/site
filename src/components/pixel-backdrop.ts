@@ -2,7 +2,7 @@ import "./emulated-canvas";
 import type { EmulatedCanvas } from "./emulated-canvas";
 import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
-import { duration, TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
+import { TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
 import { isToyPress } from "./backdrop-press";
 
 /**
@@ -32,10 +32,6 @@ export type PixelBackdropOptions = {
   shape: "square" | "circle";
   /** Share of each previous frame the panel keeps, 0–100. */
   ghost: number;
-  /** Shimmer's maximum ripple radius, in canvas pixels at the tuned width. */
-  rippleSize: number;
-  /** Shimmer's ripple lifetime, in milliseconds. */
-  rippleSpeed: number;
   /** Opacity of the drifting background noise field, 0–100. */
   noise: number;
   /** Feature size of the noise field, in pixels at the tuned width; it scales with the real one. Larger is softer. */
@@ -69,8 +65,6 @@ const PARSERS: {
   gap: number,
   shape: text,
   ghost: number,
-  rippleSize: number,
-  rippleSpeed: duration,
   noise: number,
   noiseScale: number,
   noiseSpeed: number,

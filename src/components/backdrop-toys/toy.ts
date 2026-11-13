@@ -83,14 +83,6 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
   };
 }
 
-/**
- * A CSS time in milliseconds. The minifier rewrites durations to their
- * shortest form (`900ms` -> `.9s`), so the unit must be honoured, not
- * stripped.
- */
-export const duration = (value: string) =>
-  Number.parseFloat(value) * (/\ds$/.test(value) ? 1000 : 1);
-
 export type Point = { x: number; y: number };
 
 /** A span of the canvas in pixels; `right` and `bottom` are exclusive. */

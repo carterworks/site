@@ -38,7 +38,6 @@ beforeEach(() => {
   style.textContent = `:root {
     --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
     --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
-    --backdrop-ripple-size: 10; --backdrop-ripple-speed: 100ms;
     --backdrop-noise: 0;
     --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
     --backdrop-light-base: #fff; --backdrop-light-ink: #000;
@@ -63,6 +62,14 @@ test("drops unknown keys and mismatched types", () => {
     JSON.stringify({ gap: "4", enabled: 1, legacy: 3, shape: "circle" }),
   );
   expect(loadSaved(options)).toEqual({ shape: "circle" });
+});
+
+test("drops the removed ripple settings from saved tweaks", () => {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ rippleSize: 9, rippleSpeed: 300, gap: 4 }),
+  );
+  expect(loadSaved(readDefaults())).toEqual({ gap: 4 });
 });
 
 test.each(["{not json", "null", "[1]", '"str"'])(

@@ -83,8 +83,6 @@
   --backdrop-gap: 2;
   --backdrop-shape: square;
   --backdrop-ghost: 70%;
-  --backdrop-ripple-size: 25;
-  --backdrop-ripple-speed: 900ms;
   --backdrop-noise: 18%;
   --backdrop-noise-scale: 15;
   --backdrop-noise-speed: 5;
