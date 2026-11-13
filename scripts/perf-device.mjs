@@ -50,6 +50,7 @@ import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
 import { extname, join, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright";
@@ -309,10 +310,10 @@ if (selfTest) {
   );
 } else {
   const port = await listen("127.0.0.1", 0);
-  origin = await publish(options.https, `http://127.0.0.1:${port}`);
+  origins = [await publish(options.https, `http://127.0.0.1:${port}`)];
 }
 console.log(
-  `Serving ${options.dist} for ${minutes} min. Open ${origin}/play/?probe on the device.`,
+  `Serving ${options.dist} for ${minutes} min. Open ${origins.map((origin) => `${origin}/play/?probe`).join(" or ")} on the device.`,
 );
 setTimeout(() => {
   console.error(
@@ -321,7 +322,7 @@ setTimeout(() => {
   process.exit(runs.length > 0 ? 0 : 1);
 }, minutes * 60_000).unref();
 
-if (selfTest) process.exit((await runSelfTest(origin)) ? 0 : 1);
+if (selfTest) process.exit((await runSelfTest(origins[0])) ? 0 : 1);
 if (!options.stay) {
   await arrival(({ type }) => type === "done");
   process.exit(0);
@@ -350,9 +351,9 @@ async function runSelfTest(origin) {
     "/play/?probe does not open its <head> with the probe",
   );
 
-  const browser = await chromium.launch({ channel: "chromium" });
+  const ending = ({ type }) => type === "done" || type === "error";
   /** A run in a fresh context, after `before` has used the page as a visitor might. */
-  const runIn = async (before) => {
+  const runIn = async (browser, before, wanted = ending) => {
     const page = await (await browser.newContext()).newPage();
     const failed = new Promise((resolve) =>
       page.on("pageerror", (error) =>
