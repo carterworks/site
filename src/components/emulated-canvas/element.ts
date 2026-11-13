@@ -1,7 +1,7 @@
 import { makeNoise2D } from "../backdrop-noise";
 import { colourRgb } from "./colour";
 import { Pipeline } from "./pipeline";
-import type { Pace, Shader, ShaderFrame } from "./shader";
+import type { Pace, ShaderFrame } from "./shader";
 import { SHADERS } from "./shaders";
 import { NOISE_OFFSET_X, NOISE_OFFSET_Y, NOISE_SEED } from "./shaders/noise";
 
@@ -200,17 +200,12 @@ export class EmulatedCanvas extends HTMLElement {
   static DEFAULT_SCALE = 1;
   static DEFAULT_GAP = 0;
   static DEFAULT_SHAPE: PixelShape = "square";
-  /** The passes this element runs; a subclass may run others. */
-  static readonly shaders: readonly Shader[] = SHADERS;
-
-  static get observedAttributes() {
-    return [
-      ...new Set([
-        ...ATTRIBUTES,
-        ...this.shaders.flatMap((shader) => shader.attributes),
-      ]),
-    ];
-  }
+  static readonly observedAttributes = [
+    ...new Set([
+      ...ATTRIBUTES,
+      ...SHADERS.flatMap((shader) => shader.attributes),
+    ]),
+  ];
 
   #innerCanvas?: OffscreenCanvas;
   #outerCanvas?: HTMLCanvasElement;
@@ -229,10 +224,7 @@ export class EmulatedCanvas extends HTMLElement {
   /** When the animation frame of the last frame-driven present began; timer presents leave it. */
   #presentedFrameAt = -Infinity;
   #drewAt = -Infinity;
-  #pipeline = new Pipeline(
-    (this.constructor as typeof EmulatedCanvas).shaders,
-    this.dataset,
-  );
+  #pipeline = new Pipeline(SHADERS, this.dataset);
   #frame: ShaderFrame = {
     width: 0,
     height: 0,
