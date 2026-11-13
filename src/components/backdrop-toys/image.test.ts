@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { installSoftCanvas, SoftContext } from "../../test/toy-canvas";
+import {
+  installSoftCanvas,
+  recordListeners,
+  SoftContext,
+} from "../../test/toy-canvas";
 import { imageToy } from "./image";
 
 const calls: string[] = [];
@@ -54,6 +58,23 @@ test("a resize redraws the picture, and stopping ends that", () => {
   calls.length = 0;
   window.dispatchEvent(new Event("resize"));
   expect(calls).toEqual([]);
+});
+
+test("it listens only with a signal, which its stop aborts", () => {
+  const listeners = recordListeners();
+  try {
+    startWith({ width: 200, height: 100 }).stop();
+  } finally {
+    listeners.restore();
+  }
+
+  expect(listeners.added).toEqual([
+    {
+      target: window,
+      type: "resize",
+      signal: expect.objectContaining({ aborted: true }),
+    },
+  ]);
 });
 
 test("the toy has its own id and label and no look", () => {
