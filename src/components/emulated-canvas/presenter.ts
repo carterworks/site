@@ -1,12 +1,25 @@
 import { multiplyOverlay, type Rgb } from "../../lib/rgb";
 import { colourRgb } from "./colour";
 
+/** Every cell form, the default first. */
+export const SHAPES = [
+  "square",
+  "circle",
+  "ring",
+  "diamond",
+  "dash",
+  "slash",
+  "cross",
+] as const;
+
+export type PixelShape = (typeof SHAPES)[number];
+
 /** How the display draws its cells and their shadow, as the element's `data-*` attributes set it. */
 export type Geometry = {
   /** Cell size and the space between cells, in CSS pixels. */
   scale: number;
   gap: number;
-  shape: "square" | "circle";
+  shape: PixelShape;
   /**
    * The shadow's opacity (0–100, 0 for none), its offset in CSS pixels and, when
    * a palette sets one, the colour of an unlit pixel, which casts no shadow.
@@ -36,6 +49,101 @@ function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
   `;
 }
 
+const INK = "var(--emulated-canvas-gap-color, Canvas)";
+const CELL = "var(--scale)";
+const STRIDE = "var(--stride)";
+
+/**
+ * `inside` within `half` of the line through the tile's centre across
+ * `angle`, `outside` beyond. Edges fade over one CSS pixel, as a hard stop
+ * would alias.
+ */
+const band = (angle: string, half: string, inside: string, outside: string) =>
+  `linear-gradient(${angle}, ${outside} calc(50% - ${half} - 0.5px), ${inside} calc(50% - ${half} + 0.5px) calc(50% + ${half} - 0.5px), ${outside} calc(50% + ${half} + 0.5px))`;
+
+const disc = (x: string, radius: string) =>
+  `radial-gradient(circle at ${x} 50%, #000 calc(${radius} - 0.5px), transparent calc(${radius} + 0.5px))`;
+
+/** Ink beyond the corner at x, y of the tile, toward the quadrant that starts `from`. */
+const corner = (from: number, x: string, y: string) =>
+  `conic-gradient(from ${from}deg at calc(50% ${x}) calc(50% ${y}), ${INK} 0 90deg, transparent 0)`;
+
+/**
+ * The overlay's paint, which leaves each cell's shape clear. Shapes are sized
+ * by the cell, which the page may set in CSS, so they are gradients that
+ * read it, each in a tile one stride square centred on its cell. Most are
+ * paint alone; a capsule has no gradients whose ink adds up to its outside,
+ * so the dash masks the overlay instead, which never changes, so it costs
+ * once.
+ */
+function cutOut(shape: PixelShape, gap: number, lead: number) {
+  const stripes = (direction: string) =>
+    `repeating-linear-gradient(${direction}, ${INK} 0 ${lead}px, transparent 0 calc(${lead}px + ${CELL}), ${INK} 0 ${STRIDE})`;
+  const gaps = gap > 0 ? [stripes("to right"), stripes("to bottom")] : [];
+  // An odd gap leaves the cell half a pixel off the tile's centre.
+  const offset = lead - gap / 2;
+  const tile = (image: string) =>
+    `${image} ${offset}px ${offset}px / ${STRIDE} ${STRIDE}`;
+  const paint = (...layers: string[]) =>
+    `background: ${layers.join(", ") || "none"};`;
+  const outside = (angle: string, half: string) =>
+    tile(band(angle, half, "transparent", INK));
+  const thin = `max(1px, ${CELL} * 0.22)`;
+  switch (shape) {
+    case "square":
+      return paint(...gaps);
+    case "circle":
+      return paint(
+        tile(
+          `radial-gradient(circle calc(${CELL} / 2), transparent calc(100% - 0.5px), ${INK} calc(100% + 0.5px))`,
+        ),
+      );
+    case "ring": {
+      const outer = `calc(${CELL} / 2)`;
+      const inner = `calc(${CELL} / 2 - max(1px, ${CELL} * 0.2))`;
+      return paint(
+        tile(
+          `radial-gradient(circle, ${INK} calc(${inner} - 0.5px), transparent calc(${inner} + 0.5px) calc(${outer} - 0.5px), ${INK} calc(${outer} + 0.5px))`,
+        ),
+      );
+    }
+    case "diamond": {
+      // Corner to corner 1.24 cells, as half diagonals of 0.62 / √2.
+      const half = `calc(${CELL} * 0.4384)`;
+      return paint(outside("45deg", half), outside("135deg", half));
+    }
+    case "slash":
+      return paint(
+        outside("135deg", `calc(${thin} / 2)`),
+        outside("45deg", `calc(${CELL} * 0.7071)`),
+      );
+    case "cross": {
+      const arm = `calc(${thin} / 2)`;
+      return paint(
+        ...gaps,
+        tile(corner(0, `+ ${arm}`, `- ${arm}`)),
+        tile(corner(90, `+ ${arm}`, `+ ${arm}`)),
+        tile(corner(180, `- ${arm}`, `+ ${arm}`)),
+        tile(corner(270, `- ${arm}`, `- ${arm}`)),
+      );
+    }
+    case "dash": {
+      const radius = `calc(${CELL} * 0.2)`;
+      const reach = `calc(${CELL} * 0.3)`;
+      const opaque = (angle: string, half: string) =>
+        tile(band(angle, half, "#000", "transparent"));
+      return `
+        background: ${INK};
+        mask:
+          linear-gradient(#000 0 0) subtract,
+          ${tile(disc(`calc(50% + ${reach})`, radius))} add,
+          ${tile(disc(`calc(50% - ${reach})`, radius))} add,
+          ${opaque("90deg", reach)} intersect,
+          ${opaque("0deg", radius)};`;
+    }
+  }
+}
+
 /**
  * Cells are enlarged and cut out in CSS, so the display's backing store stays
  * the bitmap's size and a frame costs one tiny copy instead of a full-screen
@@ -62,20 +170,6 @@ function displayStyle(
 ) {
   const lead = Math.floor(gap / 2);
   const overhang = `${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px`;
-  const cell = "var(--scale)";
-  const stride = "var(--stride)";
-  const ink = "var(--emulated-canvas-gap-color, Canvas)";
-  const stripes = (direction: string) =>
-    `repeating-linear-gradient(${direction}, ${ink} 0 ${lead}px, transparent 0 calc(${lead}px + ${cell}), ${ink} 0 ${stride})`;
-  const centre = `calc(${lead}px + ${cell} / 2)`;
-  // The circle's edge fades over one CSS pixel, as a hard stop would alias.
-  const circle = `radial-gradient(circle calc(${cell} / 2) at ${centre} ${centre}, transparent calc(100% - 0.5px), ${ink} calc(100% + 0.5px)) 0 0 / ${stride} ${stride}`;
-  const overlay =
-    shape === "circle"
-      ? circle
-      : gap > 0
-        ? `${stripes("to right")}, ${stripes("to bottom")}`
-        : "none";
 
   return `
     :host {
@@ -94,7 +188,7 @@ function displayStyle(
       vertical-align: top;
     }
     :host::after {
-      background: ${overlay};
+      ${cutOut(shape, gap, lead)}
       content: "";
       inset: ${overhang};
       pointer-events: none;

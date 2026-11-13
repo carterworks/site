@@ -5,7 +5,7 @@ import {
   SoftContext,
   softStats,
 } from "../../test/toy-canvas";
-import { type Geometry, Presenter } from "./presenter";
+import { type Geometry, Presenter, SHAPES } from "./presenter";
 
 const PLAIN: Geometry = {
   scale: 1,
@@ -145,6 +145,39 @@ describe("the stylesheet", () => {
 
     expect(style()).toContain("var(--emulated-canvas-scale, 4px)");
     expect(style()).not.toContain("3px");
+  });
+});
+
+/** The rules whose selector names a canvas, which a frame changes every present. */
+const canvasRules = (style: string) =>
+  [...style.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter(([, selector]) => /canvas|\.layer/.test(selector))
+    .map(([, , body]) => body);
+
+describe("a cell shape", () => {
+  test.each(["ring", "diamond", "slash", "cross"] as const)(
+    "%s is cut by painting over the canvas alone, never by masking",
+    (shape) => {
+      const { canvases, style } = mount({ shape, gap: 2 });
+
+      expect(canvases()).toHaveLength(1);
+      expect(style()).not.toContain("mask");
+      expect(style()).toContain("var(--emulated-canvas-gap-color, Canvas)");
+    },
+  );
+
+  test("dash is cut by masking the paint over the canvas, which never changes, and never the canvas", () => {
+    const { canvases, style } = mount({ shape: "dash", gap: 2 });
+
+    expect(canvases()).toHaveLength(1);
+    expect(style()).toContain("mask");
+    expect(canvasRules(style()).join()).not.toContain("mask");
+  });
+
+  test.each(SHAPES)("%s is sized by the cell, not a fixed length", (shape) => {
+    const { style } = mount({ shape, scale: 9, gap: 2 });
+
+    expect(style()).toContain("var(--scale)");
   });
 });
 

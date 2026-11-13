@@ -6,7 +6,7 @@ import {
   softStats,
 } from "../../test/toy-canvas";
 import { EmulatedCanvas } from "./element";
-import { Presenter } from "./presenter";
+import { Presenter, SHAPES } from "./presenter";
 import { SHADERS } from "./shaders";
 import { noise } from "./shaders/noise";
 import {
@@ -151,10 +151,13 @@ test.each([
   ["gap", "", { gap: 0 }],
   ["gap", "-4", { gap: 0 }],
   ["gap", "5", { gap: 5 }],
-  ["shape", "circle", { shape: "circle" }],
   ["shape", "oval", { shape: "square" }],
 ])("a data-%s of %j draws cells of %j", (name, value, expected) => {
   expect(geometryFor({ [name]: value }).geometry()).toMatchObject(expected);
+});
+
+test.each(SHAPES)("a data-shape of %j draws cells of that shape", (shape) => {
+  expect(geometryFor({ shape }).geometry()).toMatchObject({ shape });
 });
 
 test.each([

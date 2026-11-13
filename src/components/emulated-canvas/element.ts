@@ -5,7 +5,7 @@ import {
   NOISE_SEED,
 } from "../../lib/backdrop-noise";
 import { Pipeline } from "./pipeline";
-import { type Geometry, Presenter } from "./presenter";
+import { type PixelShape, Presenter, SHAPES } from "./presenter";
 import type { Pace, ShaderFrame } from "./shader";
 import { SHADERS } from "./shaders";
 
@@ -20,13 +20,10 @@ function getInnerContext(
   ).call(canvas, contextId, options);
 }
 
-type PixelShape = Geometry["shape"];
-
 const DEFAULT_WIDTH = 64;
 const DEFAULT_HEIGHT = 64;
 const DEFAULT_SCALE = 1;
 const DEFAULT_GAP = 0;
-const DEFAULT_SHAPE: PixelShape = "square";
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
@@ -51,13 +48,16 @@ const ATTRIBUTES = [
  * `data-width` and `data-height` size the inner (logical) canvas. The outer
  * canvas can magnify each logical pixel into a cell: `data-scale` sets the
  * cell size in CSS pixels (default 1), `data-gap` the space between cells
- * (default 0), and `data-shape` the cell form — `"square"` (default) or
- * `"circle"`, a circle inscribed in the cell. With the defaults the outer
+ * (default 0), and `data-shape` the cell form, inscribed in the cell:
+ * `"square"` (default), `"circle"`, `"ring"`, `"diamond"`, `"dash"` (a
+ * horizontal capsule), `"slash"` (bottom left to top right) or `"cross"`.
+ * With the defaults the outer
  * canvas is a straight 1:1 mirror. A page can instead size cells from CSS by
  * setting `--emulated-canvas-scale` to a length on the element, which then
  * follows viewport changes without any script.
  *
- * Gaps and a circle's corners are painted over the cells rather than cut out,
+ * Gaps and the rest of each cell outside its shape are painted over the cells
+ * rather than cut out,
  * in `--emulated-canvas-gap-color` (default `Canvas`, the page's default
  * background); set it to whatever shows behind the element.
  *
@@ -336,7 +336,9 @@ export class EmulatedCanvas extends HTMLElement {
     presenter.configure({
       scale: this.#integer("scale", DEFAULT_SCALE, 1),
       gap: this.#integer("gap", DEFAULT_GAP, 0),
-      shape: this.dataset.shape === "circle" ? "circle" : DEFAULT_SHAPE,
+      shape: SHAPES.includes(this.dataset.shape as PixelShape)
+        ? (this.dataset.shape as PixelShape)
+        : SHAPES[0],
       shadow: {
         opacity: Math.min(this.#integer("shadow", 0, 0), 100),
         x: this.#integer("shadowX", 0, -Infinity),

@@ -24,7 +24,7 @@ export type DisplayLook = {
   levels: number;
   gap: number;
   /** The cells' form; without one, the shape knob decides. */
-  shape?: "square" | "circle";
+  shape?: "square" | "circle" | "ring" | "diamond" | "dash" | "slash" | "cross";
   ghostRise: number;
   ghostFall: number;
   shadow?: { opacity: number; x: number; y: number };
