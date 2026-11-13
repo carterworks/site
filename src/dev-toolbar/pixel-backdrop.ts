@@ -3,8 +3,8 @@ import { TOYS } from "../components/backdrop-toys";
 import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
   readDefaults,
-  type PixelBackdropOptions,
-} from "../components/pixel-backdrop";
+  type BackdropKnobs,
+} from "../components/pixel-backdrop/knobs";
 
 /**
  * A small tweakpane for the site's `<pixel-backdrop>`. Each control reads the
@@ -27,7 +27,7 @@ const backdrop = () => document.querySelector("pixel-backdrop");
  * the shown toy's look. Saving reads the raw options instead, so only a
  * tweak persists, not a look.
  */
-const current = (): PixelBackdropOptions => {
+const current = (): BackdropKnobs => {
   const element = backdrop();
   return element === null
     ? readDefaults()
@@ -40,7 +40,7 @@ export const STORAGE_KEY = "pixel-backdrop";
  * Only keys the element still has, with the type it expects: storage outlives
  * schema changes, and a stale key must not leak into the options.
  */
-export function loadSaved(options: object): Partial<PixelBackdropOptions> {
+export function loadSaved(options: object): Partial<BackdropKnobs> {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "");
     if (typeof saved !== "object" || saved === null) return {};
@@ -55,7 +55,7 @@ export function loadSaved(options: object): Partial<PixelBackdropOptions> {
   }
 }
 
-let pending: Partial<PixelBackdropOptions> = {};
+let pending: Partial<BackdropKnobs> = {};
 let updateQueued = false;
 let saveTimeout: number | undefined;
 
@@ -63,11 +63,11 @@ let saveTimeout: number | undefined;
  * Store only what differs from the defaults, so later changes to the CSS
  * defaults still reach keys the user never touched.
  */
-export function persistChanges(options: PixelBackdropOptions) {
+export function persistChanges(options: BackdropKnobs) {
   const defaults = readDefaults();
   const changes = Object.fromEntries(
     Object.entries(options).filter(
-      ([key, value]) => value !== defaults[key as keyof PixelBackdropOptions],
+      ([key, value]) => value !== defaults[key as keyof BackdropKnobs],
     ),
   );
   try {
@@ -99,7 +99,7 @@ const clearSaved = () => {
  * Sliders fire many `input` events per drag; merge them and apply once a frame
  * so the canvas isn't reconfigured and repainted several times per frame.
  */
-const update = (partial: Partial<PixelBackdropOptions>) => {
+const update = (partial: Partial<BackdropKnobs>) => {
   pending = { ...pending, ...partial };
   if (updateQueued) return;
   updateQueued = true;
@@ -127,16 +127,12 @@ function makeRow(text: string) {
 }
 
 type KeyOf<T> = {
-  [K in keyof PixelBackdropOptions]: PixelBackdropOptions[K] extends T
-    ? K
-    : never;
-}[keyof PixelBackdropOptions];
+  [K in keyof BackdropKnobs]: BackdropKnobs[K] extends T ? K : never;
+}[keyof BackdropKnobs];
 
 type ColorKey = {
-  [K in keyof PixelBackdropOptions]: string extends PixelBackdropOptions[K]
-    ? K
-    : never;
-}[keyof PixelBackdropOptions];
+  [K in keyof BackdropKnobs]: string extends BackdropKnobs[K] ? K : never;
+}[keyof BackdropKnobs];
 
 type Control =
   | { kind: "heading"; label: string }
@@ -300,7 +296,7 @@ function addControl(
     });
     select.addEventListener("change", () => {
       update({
-        [control.key]: select.value as PixelBackdropOptions["shape"],
+        [control.key]: select.value as BackdropKnobs["shape"],
       });
     });
   }

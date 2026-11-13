@@ -33,10 +33,15 @@ const layers = {
     files: ["src/components/backdrop-displays.ts"],
     imports: ["lib"],
   },
+  knobs: {
+    files: ["src/components/pixel-backdrop/knobs.ts"],
+    imports: ["canvas"],
+  },
   backdrop: {
     files: ["src/components/{pixel-backdrop,backdrop-press}.ts"],
     imports: [
       "backdrop",
+      "knobs",
       "canvas",
       "toy registry",
       "toy kit",
@@ -55,7 +60,7 @@ const layers = {
   },
   "dev toolbar": {
     files: ["src/dev-toolbar/*.ts"],
-    imports: ["toy registry", "canvas", "astro/toolbar"],
+    imports: ["knobs", "toy registry", "canvas", "astro/toolbar"],
   },
   "site lib": {
     files: ["src/lib/*.ts"],
@@ -93,11 +98,6 @@ const exceptions = [
     from: "src/components/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
-  },
-  {
-    from: "src/dev-toolbar/pixel-backdrop.ts",
-    to: "src/components/pixel-backdrop.ts",
-    why: "reads the element's defaults from its module, not through the DOM",
   },
 ];
 

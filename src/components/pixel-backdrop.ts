@@ -4,6 +4,7 @@ import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
 import { TUNED_GRID, type Look, type Toy } from "./backdrop-toys/toy";
 import { isToyPress } from "./backdrop-press";
+import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
@@ -18,74 +19,6 @@ import { isToyPress } from "./backdrop-press";
  * attributes, its public API. A toy's `look` stands in for `ghost` and
  * `noise` unless they are tweaked; see `look`.
  */
-
-export type PixelBackdropOptions = {
-  /** Whether the backdrop renders at all. */
-  enabled: boolean;
-  /** Size the cells to cover the viewport; when off, `scale` is used as-is. */
-  autoFit: boolean;
-  /** Cell size in display pixels, when `autoFit` is off. */
-  scale: number;
-  /** Space between cells, in display pixels. */
-  gap: number;
-  /** Cell form. */
-  shape: "square" | "circle";
-  /** Share of each previous frame the panel keeps, 0–100. */
-  ghost: number;
-  /** Opacity of the drifting background noise field, 0–100. */
-  noise: number;
-  /** Feature size of the noise field, in pixels at the tuned width; it scales with the real one. Larger is softer. */
-  noiseScale: number;
-  /** Drift speed of the noise field, 0–100. */
-  noiseSpeed: number;
-  /** Colour of the "off" pixels in light mode. */
-  lightBase: string;
-  /** Colour of the lit pixels in light mode, across every toy and the noise. */
-  lightInk: string;
-  /** Colour of the "off" pixels in dark mode. */
-  darkBase: string;
-  /** Colour of the lit pixels in dark mode, across every toy and the noise. */
-  darkInk: string;
-};
-
-const number = Number.parseFloat;
-const flag = (value: string) => value === "true";
-const text = <T extends string>(value: string) => value as T;
-
-/** `--backdrop-*`, the custom property each knob's default is read from. */
-const property = (key: string) =>
-  `--backdrop-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
-
-const PARSERS: {
-  [K in keyof PixelBackdropOptions]: (value: string) => PixelBackdropOptions[K];
-} = {
-  enabled: flag,
-  autoFit: flag,
-  scale: number,
-  gap: number,
-  shape: text,
-  ghost: number,
-  noise: number,
-  noiseScale: number,
-  noiseSpeed: number,
-  lightBase: text,
-  lightInk: text,
-  darkBase: text,
-  darkInk: text,
-};
-
-/**
- * The defaults live only as `--backdrop-*` custom properties on `:root` (see
- * `global.css`), so there is a single source of truth for them.
- */
-export function readDefaults(): PixelBackdropOptions {
-  const styles = getComputedStyle(document.documentElement);
-  return Object.fromEntries(
-    Object.entries(PARSERS).map(([key, parse]) => {
-      return [key, parse(styles.getPropertyValue(property(key)).trim())];
-    }),
-  ) as PixelBackdropOptions;
-}
 
 /**
  * Set on `<html>` for the length of a hold; the stylesheet turns off text
@@ -121,7 +54,7 @@ const forwarded = (type: string, event: PointerEvent) =>
   });
 
 export class PixelBackdrop extends HTMLElement {
-  #options!: PixelBackdropOptions;
+  #options!: BackdropKnobs;
   /** Knobs set through `configure` since the last `reset`: they outrank a toy's look. */
   #tweaked = new Set<string>();
   #canvas?: EmulatedCanvas;
@@ -160,7 +93,7 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /** A copy of the current knobs, for the dev toolbar to read. */
-  get options(): PixelBackdropOptions {
+  get options(): BackdropKnobs {
     return { ...this.#options };
   }
 
@@ -232,7 +165,7 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /** Merge a partial set of knobs, and repaint. */
-  configure(partial: Partial<PixelBackdropOptions>) {
+  configure(partial: Partial<BackdropKnobs>) {
     for (const key of Object.keys(partial)) this.#tweaked.add(key);
     this.#options = { ...(this.#options ?? readDefaults()), ...partial };
     this.#apply();
@@ -284,15 +217,15 @@ export class PixelBackdrop extends HTMLElement {
    * display fixes the cells square and stops the noise, so a screen stays a
    * plain grid whatever toy runs on it.
    */
-  #knob<K extends keyof PixelBackdropOptions>(
+  #knob<K extends keyof BackdropKnobs>(
     key: K,
-    toy?: PixelBackdropOptions[K],
-  ): PixelBackdropOptions[K] {
+    toy?: BackdropKnobs[K],
+  ): BackdropKnobs[K] {
     if (this.#tweaked.has(key)) return this.#options[key];
     return this.#displayed[key] ?? toy ?? this.#options[key];
   }
 
-  get #displayed(): Partial<PixelBackdropOptions> {
+  get #displayed(): Partial<BackdropKnobs> {
     const look = this.#display?.look;
     if (look === undefined) return {};
     return {

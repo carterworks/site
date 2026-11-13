@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { PixelBackdropOptions } from "../components/pixel-backdrop";
+import type { BackdropKnobs } from "../components/pixel-backdrop/knobs";
 import { place } from "./toy-canvas";
 
 /**
@@ -33,7 +33,7 @@ export const SIZE = 160;
 /** A 4:3 viewport over the square grid, which overhangs it top and bottom. */
 export function mount(
   id: string,
-  knobs: Partial<PixelBackdropOptions> = {},
+  knobs: Partial<BackdropKnobs> = {},
   display = "site",
 ) {
   const backdrop = document.createElement("pixel-backdrop");

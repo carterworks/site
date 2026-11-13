@@ -4,7 +4,9 @@ import { installSoftCanvas, useFakeFrames } from "../test/toy-canvas";
 import type { Toy } from "./backdrop-toys/toy";
 import { EmulatedCanvas } from "./emulated-canvas";
 import { DISPLAYS } from "./backdrop-displays";
-import { readDefaults, type PixelBackdrop } from "./pixel-backdrop";
+import "./pixel-backdrop";
+import type { PixelBackdrop } from "./pixel-backdrop";
+import { readDefaults } from "./pixel-backdrop/knobs";
 
 const motion = vi.hoisted(() => {
   const listeners = new Set<() => void>();
