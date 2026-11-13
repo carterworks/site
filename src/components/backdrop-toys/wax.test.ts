@@ -376,3 +376,20 @@ test("shrinking the glass wipes the wax drawn where it used to be", async () => 
   );
   expect(outside).toHaveLength(0);
 });
+
+test("pressed after a long rest, it moves on just as after a short one, not by the pause's worth", async () => {
+  const pressedAfter = async (pauseMs: number) => {
+    while (vi.getTimerCount() > 0) await run(1);
+    await vi.advanceTimersByTimeAsync(pauseMs);
+    pointerAt(canvas, "pointerdown", 10, 10);
+    await run(30);
+    return bitmap().pixels.slice();
+  };
+  const afterLong = await pressedAfter(60_000);
+  stop();
+  canvas.remove();
+  vi.spyOn(Math, "random").mockImplementation(mulberry32(3));
+  mount();
+
+  expect(await pressedAfter(0)).toEqual(afterLong);
+});

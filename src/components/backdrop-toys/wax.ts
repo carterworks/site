@@ -249,17 +249,15 @@ export const wax: Toy = {
         }
       }
       context.putImageData(image, 0, 0);
+      if (settled) pace.restart();
       return !settled;
     };
 
     const loop = frameLoop(draw);
 
     const wake = () => {
-      if (!loop.wake()) return;
-      if (settled) {
-        settled = false;
-        pace.restart();
-      }
+      settled = false;
+      loop.wake();
     };
 
     const touch = () => {

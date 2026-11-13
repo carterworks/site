@@ -19,6 +19,8 @@ const visible = { left: 0, top: 35, right: SIZE, bottom: 125 };
 const FLASHING = 128;
 /** Only a flash in its first frame or two is this bright. */
 const FLASH_START = 230;
+/** A resting firefly one fade-in step out of sleep: 70 / 30, rounded. */
+const ONE_STEP_IN = 2;
 
 let canvas: HTMLCanvasElement;
 let bitmap: () => SoftBitmap;
@@ -196,4 +198,19 @@ test("stop cancels its frame and ignores the pointer from then on", () => {
   pointerAt(canvas, "pointerdown", 80, 80);
   expect(vi.getTimerCount()).toBe(0);
   expect(flashing()).toBe(0);
+});
+
+test("woken after a long sleep, they fade in from one step, not from the pause", async () => {
+  mount();
+  await run(60 * 25);
+  await run(60 * 60);
+
+  pointerAt(canvas, "pointerleave", 0, 0);
+  await run(1);
+
+  const { pixels } = bitmap();
+  const alphas = cells(() => true).map(
+    ({ x, y }) => pixels[(y * SIZE + x) * 4 + 3],
+  );
+  expect(Math.max(...alphas)).toBe(ONE_STEP_IN);
 });

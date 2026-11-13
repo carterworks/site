@@ -398,18 +398,16 @@ export const mote: Toy = {
       now = performance.now();
       pace.advance(now, step);
       render();
-      return moving();
+      const going = moving();
+      if (!going) pace.restart();
+      return going;
     };
 
     const loop = frameLoop(tick);
 
-    const wakeLoop = () => {
-      if (loop.wake()) pace.restart();
-    };
-
     const touched = () => {
       lastInputAt = performance.now();
-      wakeLoop();
+      loop.wake();
     };
 
     const onMove = (event: PointerEvent) => {
@@ -439,7 +437,7 @@ export const mote: Toy = {
 
     const onResize = () => {
       layout();
-      wakeLoop();
+      loop.wake();
     };
 
     layout();
@@ -451,7 +449,7 @@ export const mote: Toy = {
     canvas.addEventListener("pointercancel", onLift, { signal });
     canvas.addEventListener("pointerleave", onLeave, { signal });
     window.addEventListener("resize", onResize, { signal });
-    wakeLoop();
+    loop.wake();
 
     return () => {
       listening.abort();

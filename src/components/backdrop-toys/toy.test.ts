@@ -185,16 +185,17 @@ test("a frame loop's step gets the frame's time", () => {
   expect(times).toEqual([16]);
 });
 
-test("waking a frame loop with a frame pending asks for no other, and says so", () => {
+test("waking a frame loop with a frame pending asks for no other", () => {
   const frames = spyFrames();
   const loop = frameLoop(() => false);
 
-  expect(loop.wake()).toBe(true);
-  expect(loop.wake()).toBe(false);
+  loop.wake();
+  loop.wake();
   expect(frames).toHaveBeenCalledTimes(1);
 
   vi.advanceTimersByTime(16);
-  expect(loop.wake()).toBe(true);
+  loop.wake();
+  expect(frames).toHaveBeenCalledTimes(2);
 });
 
 test("a step that wakes its own loop and goes on still has one frame pending", () => {
@@ -211,6 +212,37 @@ test("a step that wakes its own loop and goes on still has one frame pending", (
   expect(frames).toHaveBeenCalledTimes(2);
 });
 
+test("a step that wakes its own loop and returns false still gets one more frame", () => {
+  spyFrames();
+  let woken = false;
+  const step = vi.fn(() => {
+    if (!woken) loop.wake();
+    woken = true;
+    return false;
+  });
+  const loop = frameLoop(step);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  expect(step).toHaveBeenCalledTimes(2);
+});
+
+test("a stop inside a step has no frame to cancel, so the step's return still decides", () => {
+  spyFrames();
+  let left = 3;
+  const step = vi.fn(() => {
+    loop.stop();
+    return (left -= 1) > 0;
+  });
+  const loop = frameLoop(step);
+
+  loop.wake();
+  vi.advanceTimersByTime(1000);
+
+  expect(step).toHaveBeenCalledTimes(3);
+});
+
 test("stopping a frame loop cancels its pending frame", () => {
   spyFrames();
   const step = vi.fn(() => true);
@@ -223,14 +255,14 @@ test("stopping a frame loop cancels its pending frame", () => {
   expect(step).not.toHaveBeenCalled();
 });
 
-test("a stopped frame loop starts again when woken, so a leaked listener still shows", () => {
+test("a stopped frame loop starts again when woken", () => {
   const frames = spyFrames();
   const loop = frameLoop(() => false);
 
   loop.wake();
   loop.stop();
+  loop.wake();
 
-  expect(loop.wake()).toBe(true);
   expect(frames).toHaveBeenCalledTimes(2);
 });
 

@@ -286,14 +286,16 @@ export const fireflies: Toy = {
     const tick = (now: number) => {
       pace.advance(now, step);
       render();
-      return moving();
+      const going = moving();
+      if (!going) pace.restart();
+      return going;
     };
 
     const loop = frameLoop(tick);
 
     const wake = () => {
       idle = 0;
-      if (loop.wake()) pace.restart();
+      loop.wake();
     };
 
     const onMove = (event: PointerEvent) => {

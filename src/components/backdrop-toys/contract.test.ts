@@ -5,6 +5,7 @@ import {
   litPixels,
   place,
   pointerAt,
+  recordListeners,
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
@@ -67,6 +68,7 @@ const KINDS = {
 };
 
 let bitmaps: ReturnType<typeof installSoftCanvas>;
+const stops: (() => void)[] = [];
 
 beforeEach(() => {
   useFakeFrames();
@@ -75,18 +77,20 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  stops.splice(0).forEach((stop) => stop());
   document.body.replaceChildren();
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-/** Mounts `kind` as a 16:9 viewport over the square canvas, and starts `toy` on it. */
+/** Mounts `kind` as a 16:9 viewport over the square canvas, and runs `toy` on it until the test ends. */
 function run(toy: Toy, kind: keyof typeof KINDS) {
   const { canvas, bitmap } = KINDS[kind](bitmaps);
   place(canvas, new DOMRect(0, -280, 1280, 1280));
   document.body.append(canvas);
   const stop = toy.start(canvas as ToyCanvas);
+  stops.push(stop);
   return { canvas: canvas as ToyCanvas, bitmap, stop };
 }
 
@@ -142,6 +146,59 @@ test("the allocation count catches a toy that copies a buffer every frame", asyn
   }
   stop();
   expect(allocations.count()).toBeGreaterThanOrEqual(18);
+});
+
+/**
+ * Starts `toy`, gives it input and stops it, and lists each listener it added
+ * without a signal or whose signal its stop left unaborted.
+ */
+function listenersLeftBy(toy: Toy, kind: keyof typeof KINDS) {
+  const listeners = recordListeners();
+  let canvas: ToyCanvas;
+  try {
+    const started = run(toy, kind);
+    canvas = started.canvas;
+    pointerAt(canvas, "pointermove", 10, 60);
+    pointerAt(canvas, "pointerdown", 20, 60);
+    started.stop();
+  } finally {
+    listeners.restore();
+  }
+  const name = (target: EventTarget) =>
+    target === window
+      ? "window"
+      : target === document
+        ? "document"
+        : target === canvas
+          ? "canvas"
+          : target.constructor.name;
+  return listeners.added.flatMap(({ target, type, signal }) =>
+    signal === undefined
+      ? [
+          `${toy.id} listens for ${type} on the ${name(target)} without a signal`,
+        ]
+      : signal.aborted
+        ? []
+        : [
+            `${toy.id} still listens for ${type} on the ${name(target)} once stopped`,
+          ],
+  );
+}
+
+test("the listener check catches a toy that listens without a signal", () => {
+  const deaf: Toy = {
+    id: "deaf",
+    label: "Deaf",
+    start() {
+      const onResize = () => {};
+      window.addEventListener("resize", onResize);
+      return () => {};
+    },
+  };
+
+  expect(listenersLeftBy(deaf, "plain")).toEqual([
+    "deaf listens for resize on the window without a signal",
+  ]);
 });
 
 test("only registered toys are allowed to rest idle", () => {
@@ -248,6 +305,10 @@ describe.each(TOYS.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
         expect(allocations.count()).toBe(0);
       });
 
+      test("listens only with a signal, which its stop aborts", () => {
+        expect(listenersLeftBy(toy, kind)).toEqual([]);
+      });
+
       test("stop cancels its frames and stops listening", async () => {
         const { canvas, stop } = run(toy, kind);
         pointerAt(canvas, "pointermove", 10, 60);
@@ -257,6 +318,7 @@ describe.each(TOYS.map((toy) => [toy.id, toy] as const))("%s", (id, toy) => {
         const frames = vi.spyOn(window, "requestAnimationFrame");
 
         await play(canvas);
+        window.dispatchEvent(new Event("resize"));
 
         expect(frames).not.toHaveBeenCalled();
         expect(vi.getTimerCount()).toBe(0);

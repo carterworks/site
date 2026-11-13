@@ -30,8 +30,9 @@ export function imageToy(source: ImageBitmap): Toy {
         );
       };
       draw();
-      window.addEventListener("resize", draw);
-      return () => window.removeEventListener("resize", draw);
+      const listening = new AbortController();
+      window.addEventListener("resize", draw, { signal: listening.signal });
+      return () => listening.abort();
     },
   };
 }
