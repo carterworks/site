@@ -312,8 +312,9 @@ describe("with no pass active", () => {
 });
 
 describe("the shadow's cast", () => {
+  let bitmaps: ReturnType<typeof installSoftCanvas>;
   beforeEach(() => {
-    installSoftCanvas();
+    bitmaps = installSoftCanvas();
   });
 
   /** Counts the images put on the shadow's canvas from now on. */
@@ -384,6 +385,21 @@ describe("the shadow's cast", () => {
     canvas.dataset.shadow = "25";
 
     expect(casts()).toBe(1);
+  });
+
+  test("turned on for a drawn manual canvas shown as its bitmap casts what is shown at once", () => {
+    const canvas = mountCanvas({ width: "2", height: "1" });
+    drawRow(canvas, [255, 255, 255, 255], [64, 64, 64, 255]);
+    canvas.present();
+    drawRow(canvas, [0, 0, 0, 255], [0, 0, 0, 255]);
+    const echo = () =>
+      bitmaps.plain.find(
+        (bitmap) => bitmap.getContext().canvas?.className === "echo",
+      );
+
+    canvas.dataset.shadow = "25";
+
+    expect([...echo()!.pixels]).toEqual([0, 0, 0, 0, 0, 0, 0, 48]);
   });
 });
 

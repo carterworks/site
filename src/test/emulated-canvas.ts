@@ -12,6 +12,8 @@ export const display = {
   putImageData: vi.fn(),
   clearRect: vi.fn(),
   fillRect: vi.fn(),
+  getImageData: (x: number, y: number, width: number, height: number) =>
+    new ImageData(width, height),
   imageSmoothingEnabled: true,
 };
 

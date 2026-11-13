@@ -182,16 +182,30 @@ export class Presenter {
       this.#echo = undefined;
       return;
     }
+    const created = this.#echo === undefined;
     const recast =
-      this.#echo === undefined ||
-      opacity / 100 !== this.#opacity ||
-      unlit !== this.#unlitColour;
+      created || opacity / 100 !== this.#opacity || unlit !== this.#unlitColour;
     this.#echo ??= this.#createEcho();
+    if (created) this.#readShownBitmap();
     if (!recast) return;
     this.#opacity = opacity / 100;
     this.#unlitColour = unlit;
     this.#unlit = unlit === undefined ? WHITE : colourRgb(unlit);
     this.#cast();
+  }
+
+  /**
+   * A bitmap shown before the shadow was on left its pixels only on the
+   * display, so they are read back from it once, as the shadow turns on:
+   * never per frame, as every frame after brings its own.
+   */
+  #readShownBitmap() {
+    const context = this.#context;
+    if (this.#echo === undefined || context === undefined) return;
+    if (this.#shown !== undefined) return;
+    const shown = context.getImageData(0, 0, this.#columns, this.#rows);
+    this.#shown = shown;
+    this.#shownWords = new Uint32Array(shown.data.buffer);
   }
 
   #createEcho() {

@@ -3,6 +3,7 @@ import {
   countAllocations,
   installSoftCanvas,
   SoftContext,
+  softStats,
 } from "../../test/toy-canvas";
 import { type Geometry, Presenter } from "./presenter";
 
@@ -355,6 +356,17 @@ describe("the echo", () => {
     presenter.configure({ ...PLAIN, shadow: POCKET });
 
     expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  test("turned on after a bitmap casts what the display shows at once, reading it back that once", () => {
+    const { presenter, canvases } = mount();
+    presenter.show(bitmap(UNLIT, INK));
+    softStats.reads = 0;
+
+    presenter.configure({ ...PLAIN, shadow: POCKET });
+
+    expect(pixelsOf(canvases()[1])).toEqual([0, 0, 0, 0, 0, 22, 26, 46]);
+    expect(softStats.reads).toBe(1);
   });
 
   test("shown a bitmap, whose pixels it cannot cast from, shows no shadow rather than the last one", () => {
