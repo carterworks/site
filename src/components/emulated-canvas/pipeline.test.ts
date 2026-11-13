@@ -123,6 +123,15 @@ test("a fade over a drifting pass, which never settles, holds full rate only for
   expect(run(pipeline, 1000)).toBe("idle");
 });
 
+test.each([0, 1000, Infinity])(
+  "a fade with no drifting pass holds full rate %s ms after a draw",
+  (sinceDrawMs) => {
+    const pipeline = new Pipeline([fake("fade", [], "active")], { fade: "" });
+
+    expect(run(pipeline, sinceDrawMs)).toBe("active");
+  },
+);
+
 test("a pass edits the logical bitmap it is handed, reading its knob through configure", () => {
   const seen: number[][] = [];
   const twoColour: Shader = {
