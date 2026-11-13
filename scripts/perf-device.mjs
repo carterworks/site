@@ -11,26 +11,28 @@
  *   pnpm perf:device:test
  *
  * `--toy` and `--display` match names as `pnpm perf` does, and the matrix of
- * every match is measured; `--toy ""` takes every toy. Each step settles,
- * then measures for `--seconds` while the pointer `pnpm perf` uses plays with
- * the toy:
+ * every match is measured; `--toy ""` takes every toy, though Bubblewrap and
+ * Dominoes come out invalid, as the scripted pointer leaves each still for
+ * longer than a step allows. Each step settles, then measures for `--seconds`
+ * while the pointer `pnpm perf` uses plays with the toy:
  *   environment   the device, whether the page is a secure context, the
  *                 timer, the frame interval idle, and whether its JavaScript
- *                 runs compiled: tight loops' cost per iteration, cold and
- *                 warm, over a native scan's per element, which a JIT does
- *                 not change
+ *                 runs compiled: tight loops' cost per iteration over a
+ *                 native scan's per element, which a JIT does not change
  *   idle          the backdrop off, at the start and the end
  *   as shipped    each display with each toy, and the first again at the end,
  *                 so thermal drift shows
- *   ... off       the first display with its noise, ghost or palette pass off
- *                 through the backdrop's own `configure`; `saves` is the
- *                 script time that saves against as shipped, the pass's cost
+ *   ... off       the first display with each pass it ships with switched
+ *                 off through the backdrop's own `configure`; `saves` is the
+ *                 script time that saves against the first and last as
+ *                 shipped, roughly the pass's cost
  * Per step: fps and its 1% low as the /play meter shows them; `script`, ms of
- * script per frame, the canvas's present included; `presents` per frame; and
- * `ticks`, the frame gaps in idle frame intervals to the nearest half. A step
- * that did not change what it claims is "not applied", one during which the
- * page was hidden or the toy stopped drawing is "invalid", and one that left
- * the page other than it found it is "not restored". `--stay` serves more
+ * script per frame, the canvas's frame-driven presents included; `presents`
+ * per frame; and `ticks`, the frame gaps in idle frame intervals to the
+ * nearest half. A step that did not change what it claims is "not applied",
+ * one during which the page was hidden, a frame stalled or the toy stopped
+ * drawing is "invalid", and one that left the page other than it found it is
+ * "not restored". `--stay` serves more
  * runs until `--minutes` is up, and `--json` saves every run's results,
  * frame gaps included.
  *
@@ -75,7 +77,16 @@ const seconds = Number(options.seconds ?? (selfTest ? 0.5 : 8));
 const minutes = Number(options.minutes ?? (selfTest ? 2 : 30));
 const root = resolve(options.dist);
 const PLAY = join(root, "play", "index.html");
-const PROBE = `<script>(${probe})(${JSON.stringify({ seconds, toy: options.toy, display: options.display })}, ${onePercentLow}, ${play});</script>`;
+// A shared runner can stall for a second, which the self-test forgives: it is
+// there for the page's internals, not for timing.
+const PROBE = `<script>(${probe})(${JSON.stringify({
+  seconds,
+  toy: options.toy,
+  display: options.display,
+  quietMs: selfTest ? 2000 : 250,
+  stallMs: selfTest ? 2000 : 1000,
+})}, ${onePercentLow}, ${play});</script>`;
+const MAX_RESULT_BYTES = 1_000_000;
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -196,6 +207,11 @@ function report(result) {
     console.log(
       `Pixel ratio ${result.devicePixelRatio}, viewport ${result.viewport}, frame interval ${round(result.frameMs)} ms idle, timer resolution ${round(result.timerMs)} ms.`,
     );
+    if (result.frameMs > 20) {
+      console.log(
+        `Note: frames come every ${round(result.frameMs)} ms idle, so the display or browser paces below 60 Hz; Low Power Mode is a common cause.`,
+      );
+    }
     console.log(
       `Secure context: ${result.secure ? "yes" : "NO"}; screen wake lock ${result.wakeLock}.`,
     );
@@ -206,18 +222,19 @@ function report(result) {
   } else if (result.type === "step") {
     const row = rowOf(result);
     console.log(
-      `${result.index}/${result.total} ${[row.step, row.display, row.toy].filter(Boolean).join(", ")}: ${row.fps} fps, low ${row.low}, script ${row.script} ms${row.saves === "" ? "" : ` (saves ${row.saves})`}, ${row.presents} presents, ticks ${row.ticks}: ${row.result}`,
+      `${result.run} ${result.index}/${result.total} ${[row.step, row.display, row.toy].filter(Boolean).join(", ")}: ${row.fps} fps, low ${row.low}, script ${row.script} ms${row.saves === "" ? "" : ` (saves ${row.saves})`}, ${row.presents} presents, ticks ${row.ticks}: ${row.result}`,
     );
   } else if (result.type === "done") {
     const { env, steps } = result;
     console.table(steps.map(rowOf));
+    console.log(SAVES);
     console.log(
       `Device: ${env.userAgent}. Secure context: ${env.secure ? "yes" : "NO"}. JavaScript ${env.compiled ? "compiled" : "INTERPRETED"}.`,
     );
     for (const step of steps.filter(({ kind }) => kind === "shipped")) {
       const row = rowOf(step);
       console.log(
-        `${row.step}, ${row.display}, ${row.toy}: ${row.fps} fps, low ${row.low}, script ${row.script} ms a frame.`,
+        `${row.step}, ${row.display}, ${row.toy}: ${row.fps} fps, low ${row.low}, script ${row.script} ms a frame: ${row.result}.`,
       );
     }
     for (const warning of warnings(env)) console.log(warning);

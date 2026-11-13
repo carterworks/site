@@ -8,16 +8,27 @@
  *
  * Script time is the span of each animation frame's callbacks, from the first
  * one's start to the end of the microtasks the last one queued, which is
- * where the canvas presents. Timers and input events are not counted. Its
- * hooks run inside what it measures: in desktop Chromium about 1.2 µs per
- * callback, mostly two `performance.now()` calls, and 0.2 µs per toy draw,
- * some 5 µs a frame in all.
+ * where the canvas presents when a frame drives it. Timers, so the canvas's
+ * idle presents at 8 fps, and input events are not counted. Its hooks run
+ * inside what it measures: in desktop Chromium about 1.2 µs per callback,
+ * mostly two `performance.now()` calls, and 0.2 µs per toy draw, some 5 µs a
+ * frame in all.
+ *
+ * A step is invalid if the toy stopped drawing for `quietMs`, longer than any
+ * toy's frame on a struggling device and far shorter than a sleep, or if a
+ * frame took `stallMs`, which only a paused page takes.
  */
-export function probe({ seconds, toy, display }, onePercentLow, play) {
+export function probe(
+  { seconds, toy, display, quietMs, stallMs },
+  onePercentLow,
+  play,
+) {
   const SETTLE_MS = Math.min(1500, seconds * 1000);
-  // Longer than any toy's frame on a struggling device, far shorter than a sleep.
-  const QUIET_MS = 250;
   const CALIBRATE_MS = 400;
+  const SAVES =
+    "saves: ms of script per frame against as shipped, first and last averaged; approximate, as each pass changes the pixels the next works on";
+  const SLOW_FRAMES = (ms) =>
+    `frames ${round(ms)} ms idle: the display or browser paces below 60 Hz; Low Power Mode is a common cause`;
   const PALETTE_OFF = {
     lightBase: undefined,
     lightInk: undefined,
@@ -142,14 +153,16 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
     quietest = 0;
     const gaps = await play({ ms });
     quietest = Math.max(quietest, now() - lastDraw);
+    const frames = gaps.length + 1;
     return {
       gaps,
       fps: (gaps.length * 1000) / gaps.reduce((sum, gap) => sum + gap, 0),
       low: onePercentLow(gaps),
-      script: (scriptSoFar() - before.script) / gaps.length,
-      presents: (presents - before.presents) / gaps.length,
+      script: (scriptSoFar() - before.script) / frames,
+      presents: (presents - before.presents) / frames,
       draws: draws - before.draws,
-      quietMs: quietest,
+      longestQuietMs: quietest,
+      longestGapMs: Math.max(...gaps),
       hidden,
     };
   };
@@ -363,11 +376,11 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
         offSteps.push([knobs, off]);
       }
     }
-    const animating = ({ quietMs, draws }) =>
+    const animating = ({ longestQuietMs, draws }) =>
       draws === 0
         ? "invalid: the toy never drew"
-        : quietMs > QUIET_MS
-          ? `invalid: the toy stopped drawing for ${Math.round(quietMs)} ms`
+        : longestQuietMs > quietMs
+          ? `invalid: the toy stopped drawing for ${Math.round(longestQuietMs)} ms`
           : undefined;
     const idle = (name) => ({
       name,
@@ -442,6 +455,12 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
     const ran = step.ran(measured);
     if (ran) problems.push(ran);
     if (hidden) problems.push("invalid: the page was hidden");
+    // A backstop for a visibilitychange the browser never sent.
+    if (measured.longestGapMs > stallMs) {
+      problems.push(
+        `invalid: a frame took ${Math.round(measured.longestGapMs)} ms, as a paused page's does`,
+      );
+    }
     step.undo();
     if (snapshot() !== homeSnapshot)
       problems.push(`not restored: ${snapshot()}`);
@@ -456,7 +475,7 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
       ...measured,
       ticks: ticks(gaps, frameMs),
       problems,
-      gaps,
+      gaps: gaps.map(round),
     };
   };
 
@@ -473,6 +492,7 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
       ...(env.compiled
         ? []
         : ["JAVASCRIPT INTERPRETED: these numbers are not the real site's"]),
+      ...(env.frameMs > 20 ? [SLOW_FRAMES(env.frameMs)] : []),
       `secure context ${env.secure}, JavaScript ${env.compiled ? "compiled" : "interpreted"} (loops ${round(env.slowdown)}× a native scan), frame ${round(env.frameMs)} ms`,
       ...(unsent ? [`${unsent} results did not reach the server`] : []),
       "",
@@ -481,20 +501,37 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
         (step) =>
           `${step.name.padEnd(18)}${(step.display ?? "").slice(0, 10).padEnd(11)}${cell(step.fps, 5)}${cell(step.low, 6)}${cell(step.script, 7)}${cell(step.saves, 6)}${cell(step.presents, 5)}${step.problems.length ? ` ${step.problems.join("; ")}` : ""}`,
       ),
+      "",
+      SAVES,
     ].join("\n");
   };
 
   const start = async () => {
     await setUp();
     const original = { toy: backdrop.toy, display: label() };
-    // A phone that locks its screen mid-run hides the page and voids the step.
-    const lock = !isSecureContext
-      ? "unavailable on an insecure page"
-      : await navigator.wakeLock
-          ?.request("screen")
-          .catch((error) => `refused: ${error.message}`);
+    // A phone that locks its screen mid-run hides the page and voids the
+    // step. A page that hides loses its lock, so it asks again on its return.
+    let lock;
+    let holding = isSecureContext && navigator.wakeLock !== undefined;
+    const hold = async () => {
+      lock = await navigator.wakeLock
+        .request("screen")
+        .catch((error) => `refused: ${error.message}`);
+    };
+    if (holding) {
+      await hold();
+      document.addEventListener("visibilitychange", () => {
+        if (holding && !document.hidden) hold();
+      });
+    }
     const env = await environment(
-      typeof lock === "string" ? lock : lock ? "held" : "unsupported",
+      !isSecureContext
+        ? "unavailable on an insecure page"
+        : typeof lock === "string"
+          ? lock
+          : lock
+            ? "held"
+            : "unsupported",
     );
     await post(env);
 
@@ -539,14 +576,22 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
         homeSnapshot,
         env.frameMs,
       );
-      if (step.kind === "passes") {
-        result.saves =
-          results.find(({ kind }) => kind === "shipped").script - result.script;
-      }
       results.push(result);
       await post(result);
     }
+    // Against the mean of the first and last as shipped, so drift cancels.
+    const ends = [
+      results.find(({ kind }) => kind === "shipped"),
+      results.findLast(({ kind }) => kind === "shipped"),
+    ];
+    if (ends.every(({ problems }) => problems.length === 0)) {
+      const shipped = (ends[0].script + ends[1].script) / 2;
+      for (const result of results.filter(({ kind }) => kind === "passes")) {
+        result.saves = shipped - result.script;
+      }
+    }
     choose(original.toy, original.display);
+    holding = false;
     lock?.release?.();
     await post({ type: "done", env, steps: results });
     show(table(env, results));
