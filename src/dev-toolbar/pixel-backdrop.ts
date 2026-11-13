@@ -56,7 +56,7 @@ type ControlFor<V> = {
       : Select<V & string>);
 
 type Controls = { [K in Knob]: ControlFor<BackdropKnobs[K]> };
-type Control = Controls[Knob];
+export type Control = Controls[Knob];
 
 /** One control per knob, in the panel's order. */
 export const CONTROLS: Controls = {

@@ -11,6 +11,7 @@ import { TOY_KEY } from "../components/backdrop-toy-setting";
 import { backdropDefaults } from "../test/backdrop-defaults";
 import {
   CONTROLS,
+  type Control,
   STORAGE_KEY,
   loadSaved,
   persistChanges,
@@ -57,17 +58,27 @@ test.for(Object.entries(CONTROLS))(
   },
 );
 
+/**
+ * One per control, so no knob can be left out, and fixed per kind rather than
+ * the shipped defaults, so tuning global.css can't move these tests. A toggle
+ * starts off, for the Fit viewport test to switch on.
+ */
+const testDefault = (control: Control) =>
+  control.kind === "range"
+    ? control.min
+    : control.kind === "toggle"
+      ? false
+      : control.kind === "select"
+        ? Object.keys(control.choices)[0]
+        : "#000000";
+
 beforeEach(() => {
   localStorage.clear();
   const style = document.createElement("style");
-  style.textContent = `:root {
-    --backdrop-enabled: true; --backdrop-auto-fit: false; --backdrop-scale: 8;
-    --backdrop-gap: 1; --backdrop-shape: square; --backdrop-ghost: 0;
-    --backdrop-noise: 0;
-    --backdrop-noise-scale: 4; --backdrop-noise-speed: 0;
-    --backdrop-light-base: #fff; --backdrop-light-ink: #000;
-    --backdrop-dark-base: #000; --backdrop-dark-ink: #fff;
-  }`;
+  const declarations = Object.entries(CONTROLS).map(
+    ([key, control]) => `${property(key)}: ${testDefault(control)};`,
+  );
+  style.textContent = `:root { ${declarations.join(" ")} }`;
   document.head.append(style);
 });
 
@@ -273,21 +284,21 @@ test("the panel lists every control in order, with its label, id, range and show
   expect(rows).toMatchInlineSnapshot(`
     [
       "Toy: select plain=PLAIN,silty=SILTY,cultured=CULTURED",
-      "Enabled: toggle on",
+      "Enabled: toggle off",
       "Fit viewport: toggle off",
-      "Scale: range #pixel-backdrop-scale 1..64/1 -> 8",
-      "Gap: range #pixel-backdrop-gap 0..8/1 -> 1",
+      "Scale: range #pixel-backdrop-scale 1..64/1 -> 1",
+      "Gap: range #pixel-backdrop-gap 0..8/1 -> 0",
       "Shape: select square=Square,circle=Circle",
       "Ghost: range #pixel-backdrop-ghost 0..98/1 -> 0%",
       "## Background noise",
       "Intensity: range #pixel-backdrop-noise 0..100/1 -> 0%",
-      "Feature size: range #pixel-backdrop-noiseScale 1..40/1 -> 4",
+      "Feature size: range #pixel-backdrop-noiseScale 1..40/1 -> 1",
       "Drift speed: range #pixel-backdrop-noiseSpeed 0..100/1 -> 0",
       "## Pixel colours",
-      "Pixel (light): color #pixel-backdrop-lightBase -> #fff",
-      "Ink (light): color #pixel-backdrop-lightInk -> #000",
-      "Pixel (dark): color #pixel-backdrop-darkBase -> #000",
-      "Ink (dark): color #pixel-backdrop-darkInk -> #fff",
+      "Pixel (light): color #pixel-backdrop-lightBase -> #000000",
+      "Ink (light): color #pixel-backdrop-lightInk -> #000000",
+      "Pixel (dark): color #pixel-backdrop-darkBase -> #000000",
+      "Ink (dark): color #pixel-backdrop-darkInk -> #000000",
       "[Reset]",
     ]
   `);
