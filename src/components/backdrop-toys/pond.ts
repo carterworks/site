@@ -227,7 +227,7 @@ export const pond: Toy = {
 
     /** Rests until the next raindrop is due, or for good once the rain is over. */
     const sleep = (now: number) => {
-      const due = Math.max(rainFrom(), nextRain);
+      const due = Math.max(rainFrom(), nextRain, now);
       if (due >= rainUntil()) return;
       timer = setTimeout(wake, Math.max(1, due - now));
     };
