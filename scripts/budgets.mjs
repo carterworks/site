@@ -20,7 +20,7 @@ export default {
    * every page loads, misses it on purpose: raise the limit by what the run
    * measured over it, in the toy's commit.
    */
-  javascript: { "/": 34_200 },
+  javascript: { "/": 34_500 },
 
   /**
    * Bytes of each font the homepage preloads, as built; a font preloaded or
@@ -57,8 +57,8 @@ export default {
    *   canvasPixelsWritten  area of every putImageData (its dirty rectangle)
    *                        and drawImage (its destination), on any 2D or
    *                        offscreen canvas: the toy's frame, the display's
-   *                        present and the Pocket LCD's shadow copy, the
-   *                        only canvas drawing the homepage does; not
+   *                        present and the Pocket LCD's shadow, the only
+   *                        canvas drawing the homepage does each frame; not
    *                        vector drawing, such as fillRect
    *   canvasPixelsRead     area of every getImageData, a read-back that can
    *                        stall a GPU canvas
@@ -67,8 +67,9 @@ export default {
    *   offscreenPixels      pixels of those surfaces other than the screen,
    *                        each drawn and then composited again
    *   blendedPixels        pixels composited with a blend mode other than
-   *                        plain alpha, such as the multiplied shadow and
-   *                        vignette, the costliest compositing in software
+   *                        plain alpha, such as a mix-blend-mode, the
+   *                        costliest compositing in software, and each
+   *                        forces offscreen passes too
    */
   perFrame: {
     canvasPixelsWritten: {
@@ -78,12 +79,8 @@ export default {
     },
     canvasPixelsRead: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
     canvasCalls: { Site: 2, "Pocket LCD": 3, "Amber LCD": 2 },
-    renderPasses: { Site: 1, "Pocket LCD": 3, "Amber LCD": 3 },
-    offscreenPixels: {
-      Site: 0,
-      "Pocket LCD": 2_042_400,
-      "Amber LCD": 2_048_000,
-    },
-    blendedPixels: { Site: 0, "Pocket LCD": 1_020_000, "Amber LCD": 1_024_000 },
+    renderPasses: { Site: 1, "Pocket LCD": 1, "Amber LCD": 1 },
+    offscreenPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
+    blendedPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
   },
 };

@@ -22,13 +22,15 @@ it with `--against` its base, and reports how each frame cost moved, with the
 noise to read it by; it never fails.
 
 `pnpm budgets` builds the site and fails if it misses a performance budget:
-script bytes, leaks, layouts and style recalculations during play, and the
-canvas pixels, render passes and blended pixels each frame asks for, each limit
-in [`scripts/budgets.mjs`](./scripts/budgets.mjs) with what it covers. Each is
-an exact count for the pinned Chromium, never a time, so a busy machine cannot
-move it. Every pull request runs it. It needs the same browser; on NixOS, run it
-as `nix-shell --run "pnpm budgets"`. A change that does less lowers its limit
-too.
+script and font bytes, leaks, layouts and style recalculations during play, and
+the canvas pixels, render passes, offscreen pixels and blended pixels each frame
+asks for, each limit in [`scripts/budgets.mjs`](./scripts/budgets.mjs) with what
+it covers. Each is an exact count for the pinned Chromium, never a time, so a
+busy machine cannot move it; time is `pnpm perf --against`'s to report. Every
+pull request runs it. It needs the same browser; on NixOS, run it as
+`nix-shell --run "pnpm budgets"`. A change that does less lowers its limit too;
+one that must do more raises it to the value the run printed, with the reason in
+its commit.
 
 ## Deployment
 
