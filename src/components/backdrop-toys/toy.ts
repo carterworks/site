@@ -90,16 +90,14 @@ export function fixedStep(stepMs: number, maxCatchUpMs: number) {
 /**
  * A toy's animation loop. `step` runs on an animation frame with its time,
  * and the loop asks for the next frame only while `step` returns true, so it
- * sleeps once nothing moves. `wake` asks for a frame unless one is pending and
- * says whether it did, so a toy can restart its pacer only when the loop
- * starts again. `stop` cancels a pending frame, and a later `wake` starts the
- * loop again: a loop that refused it would hide, from the contract test, a
- * listener the toy's stop forgot.
+ * sleeps once nothing moves. `wake` asks for a frame unless one is pending.
+ * `stop` cancels a pending frame, and a later `wake` starts the loop again: a
+ * loop that refused it would hide, from the contract test, a listener the
+ * toy's stop forgot.
  *
- * A toy paced by `fixedStep` restarts it where its step returns false, or,
- * if its loop also stops from outside the step, as `if (loop.wake())
- * pace.restart()`. A toy that sleeps on a timer sets it where its step
- * returns false, and clears it in its own wake before `loop.wake()`.
+ * A toy paced by `fixedStep` restarts it where its step returns false. A toy
+ * that sleeps on a timer sets it where its step returns false, and clears it
+ * in its own wake before `loop.wake()`.
  */
 export function frameLoop(step: (now: number) => boolean) {
   let frame: number | undefined;
@@ -108,9 +106,7 @@ export function frameLoop(step: (now: number) => boolean) {
     if (step(now)) wake();
   };
   const wake = () => {
-    if (frame !== undefined) return false;
-    frame = requestAnimationFrame(tick);
-    return true;
+    if (frame === undefined) frame = requestAnimationFrame(tick);
   };
   return {
     wake,

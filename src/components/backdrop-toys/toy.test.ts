@@ -185,16 +185,17 @@ test("a frame loop's step gets the frame's time", () => {
   expect(times).toEqual([16]);
 });
 
-test("waking a frame loop with a frame pending asks for no other, and says so", () => {
+test("waking a frame loop with a frame pending asks for no other", () => {
   const frames = spyFrames();
   const loop = frameLoop(() => false);
 
-  expect(loop.wake()).toBe(true);
-  expect(loop.wake()).toBe(false);
+  loop.wake();
+  loop.wake();
   expect(frames).toHaveBeenCalledTimes(1);
 
   vi.advanceTimersByTime(16);
-  expect(loop.wake()).toBe(true);
+  loop.wake();
+  expect(frames).toHaveBeenCalledTimes(2);
 });
 
 test("a step that wakes its own loop and goes on still has one frame pending", () => {
@@ -229,8 +230,8 @@ test("a stopped frame loop starts again when woken, so a leaked listener still s
 
   loop.wake();
   loop.stop();
+  loop.wake();
 
-  expect(loop.wake()).toBe(true);
   expect(frames).toHaveBeenCalledTimes(2);
 });
 
