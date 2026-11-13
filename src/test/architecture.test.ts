@@ -32,11 +32,15 @@ const layers = {
     files: ["src/components/emulated-canvas/pipeline.ts"],
     imports: ["canvas kit"],
   },
+  presenter: {
+    files: ["src/components/emulated-canvas/presenter.ts"],
+    imports: ["canvas kit"],
+  },
   // Other layers reach the canvas through the element and the kit, never the
-  // pipeline or the passes.
+  // pipeline, the presenter or the passes.
   canvas: {
     files: ["src/components/emulated-canvas/element.ts"],
-    imports: ["pipeline", "shader registry", "canvas kit"],
+    imports: ["pipeline", "presenter", "shader registry", "canvas kit"],
   },
   "toy kit": {
     files: ["src/components/backdrop-toys/{toy,line}.ts"],

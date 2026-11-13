@@ -11,6 +11,7 @@ export const display = {
   drawImage: vi.fn(),
   putImageData: vi.fn(),
   clearRect: vi.fn(),
+  fillRect: vi.fn(),
   imageSmoothingEnabled: true,
 };
 
@@ -66,6 +67,7 @@ export function useFakeCanvas() {
     display.drawImage.mockClear();
     display.putImageData.mockClear();
     display.clearRect.mockClear();
+    display.fillRect.mockClear();
   });
 
   afterEach(() => {
