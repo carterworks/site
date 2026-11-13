@@ -3,7 +3,8 @@
  * Chromium, while a scripted pointer plays with it.
  *
  *   pnpm perf [--toy pond] [--display pocket] [--throttle 4] [--seconds 2]
- *             [--against ../base/dist] [--rounds 5] [--dist dist] [--gpu]
+ *             [--against ../base/dist] [--rounds 5] [--max-ratio 1.3]
+ *             [--dist dist] [--gpu]
  *
  * Chromium renders in software unless `--gpu` asks for the machine's GPU,
  * which fails rather than fall back. The first line printed says which.
@@ -30,8 +31,18 @@
  * `virtualClock` so both do the same work in every frame. The shared machine
  * slows a whole pair alike far more often than one half of it, so each pair
  * gives a ratio, head cpu over base cpu, and the row reports their median and
- * range. It reports; it never fails. The last lines name the costliest rows
- * and give the noise: how far each row's ratios stray from its median.
+ * range. The last lines name the costliest rows and give the noise: how far
+ * each row's ratios stray from its median.
+ *
+ * With `--max-ratio`, it also exits 1 when any row's median is over that ratio
+ * and the head was slower in every round, and prints which; without it, or
+ * when the base cannot be compared, it exits 0. A median ignores the odd pair
+ * a busy machine throws out, which reached ×1.52 with the same build on both
+ * sides, and requiring every round slower ignores a median noise pushed up.
+ * CI uses ×1.3: on the i7-8700K below, 5 rounds of 1 s, the same build on both
+ * sides had row medians of at most ×1.12, idle or with 12 busy loops; a pass
+ * slowed to cost each frame about 1.5× failed 5 of its 7 rows, one 1.2× none,
+ * its worst row ×1.26. It catches gross regressions, not small ones.
  *
  * With the same build on both sides, on an i7-8700K shared with other work,
  * 5 rounds of 1 s: idle, the LCD rows' medians stayed in 0.96–1.03 and the
@@ -63,6 +74,7 @@ const { values: options } = parseArgs({
     seconds: { type: "string" },
     against: { type: "string" },
     rounds: { type: "string", default: "5" },
+    "max-ratio": { type: "string" },
     dist: { type: "string", default: "dist" },
     gpu: { type: "boolean" },
   },
@@ -242,4 +254,20 @@ if (!options.against) {
   console.log(
     `Noise: within a row, the paired ratios stray from its median by ±${percent(median(strays))} typically and ±${percent(widest.strays)} at most (${named(widest)}). Medians of ${rows.length} rows run ${byRatio.at(-1).ratio.toFixed(2)}–${byRatio[0].ratio.toFixed(2)}.`,
   );
+  if (options["max-ratio"]) {
+    const limit = Number(options["max-ratio"]);
+    const over = byRatio.filter(
+      ({ ratio, lowest }) => ratio > limit && lowest > 1,
+    );
+    if (over.length === 0) {
+      console.log(
+        `Passed: no row was over ×${limit} at its median and slower in every round; the costliest was ${named(byRatio[0])}.`,
+      );
+    } else {
+      console.log(
+        `Failed: ${over.length} of ${rows.length} rows were over ×${limit} at their median and slower in every round: ${over.map(named).join("; ")}.`,
+      );
+      process.exitCode = 1;
+    }
+  }
 }
