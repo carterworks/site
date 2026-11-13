@@ -1,5 +1,5 @@
 import { culture } from "./culture";
-import { horizon, peaks } from "./landscape";
+import { crags, horizon, peaks } from "./landscape";
 import { mote } from "./mote";
 import { pinbed } from "./pinbed";
 import { pond } from "./pond";
@@ -21,4 +21,5 @@ export const TOYS: Toy[] = [
   mote,
   peaks,
   horizon,
+  crags,
 ];

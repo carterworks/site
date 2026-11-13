@@ -2,7 +2,10 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
 import { DISPLAYS, DISPLAY_KEY } from "../pixel-backdrop/backdrop-displays";
 
-const [site, pocket, amber] = DISPLAYS;
+const [site, pocket] = DISPLAYS;
+const last = DISPLAYS.at(-1)!;
+const cycleToLast = (display: { cycle(): void }) =>
+  DISPLAYS.slice(1).forEach(() => display.cycle());
 const setDisplay = vi.fn();
 
 beforeEach(() => {
@@ -33,10 +36,9 @@ test("the first activation stores and applies the first screen", () => {
 test("rotates through the screens, then back to the site's look", () => {
   const display = createBackdropDisplay();
 
-  display.cycle();
-  display.cycle();
-  expect(display.label()).toBe(amber.label);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBe(amber.id);
+  cycleToLast(display);
+  expect(display.label()).toBe(last.label);
+  expect(localStorage.getItem(DISPLAY_KEY)).toBe(last.id);
 
   display.cycle();
   expect(display.label()).toBe(site.label);
@@ -45,10 +47,10 @@ test("rotates through the screens, then back to the site's look", () => {
 });
 
 test("a display stored before load is shown and offers the reset", () => {
-  localStorage.setItem(DISPLAY_KEY, amber.id);
+  localStorage.setItem(DISPLAY_KEY, last.id);
   const display = createBackdropDisplay();
 
-  expect(display.label()).toBe(amber.label);
+  expect(display.label()).toBe(last.label);
   display.cycle();
   expect(display.label()).toBe(site.label);
   expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
@@ -74,9 +76,8 @@ test("keeps cycling when storage is blocked", () => {
   });
   const display = createBackdropDisplay();
 
-  display.cycle();
-  display.cycle();
-  expect(display.label()).toBe(amber.label);
+  cycleToLast(display);
+  expect(display.label()).toBe(last.label);
   display.cycle();
   expect(display.label()).toBe(site.label);
 });

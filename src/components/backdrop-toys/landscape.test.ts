@@ -5,7 +5,7 @@ import {
   type SoftBitmap,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../../lib/backdrop-noise";
-import { horizon, peaks } from "./landscape";
+import { crags, horizon, peaks } from "./landscape";
 import type { Toy } from "./toy";
 
 const SIZE = 160;
@@ -53,7 +53,7 @@ function skyline(bitmap: SoftBitmap) {
   return SIZE;
 }
 
-test.each([peaks, horizon])(
+test.each([peaks, horizon, crags])(
   "$id lays its ground along the bottom of the visible cells",
   (toy) => {
     const bitmap = start(toy);
@@ -78,4 +78,11 @@ test("a resize redraws the same range", () => {
 
 test("peaks rise higher than the horizon", () => {
   expect(skyline(start(peaks))).toBeLessThan(skyline(start(horizon)));
+});
+
+test("crags shades its rock in more than one level", () => {
+  const { pixels } = start(crags);
+  const shades = new Set(pixels.filter((_, i) => i % 4 === 3 && _ > 0));
+
+  expect(shades.size).toBeGreaterThan(10);
 });

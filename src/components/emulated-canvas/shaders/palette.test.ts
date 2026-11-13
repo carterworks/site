@@ -99,3 +99,49 @@ test.each(["1", "x", ""])(
     expect(pixelsShown()).toBe("100 100 100 255");
   },
 );
+
+test("data-palette-stops spaces its colours evenly between the base and the ink", () => {
+  const canvas = mountCanvas({
+    width: "5",
+    height: "1",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+    paletteStops: "#ff0000 #0000ff",
+  });
+  drawRow(
+    canvas,
+    ...[0, 85, 128, 170, 255].map((grey) => [grey, grey, grey, 255]),
+  );
+
+  canvas.present();
+
+  const between = (share: number) =>
+    [255 * (1 - share), 0, 255 * share].map(Math.round);
+  expect(pixelsShown()).toBe(
+    [[0, 0, 0], [255, 0, 0], between(43 / 85), [0, 0, 255], [255, 255, 255]]
+      .map((rgb) => [...rgb, 255])
+      .flat()
+      .join(" "),
+  );
+});
+
+test("data-palette-levels as many as the colours snaps each pixel to one of them", () => {
+  const canvas = mountCanvas({
+    width: "4",
+    height: "1",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+    paletteStops: "#ff0000 #0000ff",
+    paletteLevels: "4",
+  });
+  drawRow(
+    canvas,
+    ...[30, 100, 150, 240].map((grey) => [grey, grey, grey, 255]),
+  );
+
+  canvas.present();
+
+  expect(pixelsShown()).toBe(
+    "0 0 0 255 255 0 0 255 0 0 255 255 255 255 255 255",
+  );
+});

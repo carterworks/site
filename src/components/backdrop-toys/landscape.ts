@@ -1,11 +1,24 @@
-import { HORIZON, landscape, PEAKS, type Terrain } from "../../lib/landscape";
+import {
+  crags as cragsScene,
+  type Grid,
+  HORIZON,
+  landscape,
+  PEAKS,
+} from "../../lib/landscape";
 import { TUNED_GRID, visibleCells, type Toy } from "./toy";
 
+type Scene = (
+  seed: number,
+  columns: number,
+  rows: number,
+  scale: number,
+) => Grid;
+
 /**
- * A still range, as the link previews draw it, on the bottom of the visible
- * cells. Each start picks a new range, which a resize redraws unchanged.
+ * A still scene on the bottom of the visible cells. Each start picks a new
+ * one, which a resize redraws unchanged.
  */
-function still(id: string, label: string, terrain: Terrain): Toy {
+function still(id: string, label: string, scene: Scene): Toy {
   return {
     id,
     label,
@@ -21,13 +34,7 @@ function still(id: string, label: string, terrain: Terrain): Toy {
         const columns = Math.ceil(visible.right) - left;
         const rows = Math.ceil(visible.bottom) - top;
         if (columns === 0 || rows === 0) return;
-        const { cells } = landscape(
-          seed,
-          terrain,
-          columns,
-          rows,
-          canvas.width / TUNED_GRID,
-        );
+        const { cells } = scene(seed, columns, rows, canvas.width / TUNED_GRID);
         const image = context.createImageData(columns, rows);
         cells.forEach((value, i) => {
           image.data.fill(255, i * 4, i * 4 + 3);
@@ -43,5 +50,11 @@ function still(id: string, label: string, terrain: Terrain): Toy {
   };
 }
 
-export const peaks = still("peaks", "Peaks", PEAKS);
-export const horizon = still("horizon", "Horizon", HORIZON);
+/** The link previews' ranges. */
+export const peaks = still("peaks", "Peaks", (seed, ...size) =>
+  landscape(seed, PEAKS, ...size),
+);
+export const horizon = still("horizon", "Horizon", (seed, ...size) =>
+  landscape(seed, HORIZON, ...size),
+);
+export const crags = still("crags", "Crags", cragsScene);

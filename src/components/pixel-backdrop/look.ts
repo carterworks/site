@@ -90,6 +90,7 @@ export function resolveLook(input: LookInput): ResolvedLook {
       shadowY: text(look?.shadow?.y),
       paletteBase: base,
       paletteInk: ink,
+      paletteStops: look?.stops?.join(" "),
       paletteLevels: text(look?.levels),
     },
     canvasStyle: {

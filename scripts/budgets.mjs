@@ -15,12 +15,11 @@ export default {
    * included, each compressed on its own at quality 11, window 22. A stable
    * proxy for what is sent: the CDN picks its own compression. Not covered:
    * inline scripts, which count as the document's, and anything fetched after
-   * the page settles; /play loads the same but for its toolbar. Margin: 2%,
-   * about 500 bytes, under the 1 KB a toy averages, so a new toy, which
-   * every page loads, misses it on purpose: raise the limit by what the run
-   * measured over it, in the toy's commit.
+   * the page settles; /play loads the same but for its toolbar. Margin: the
+   * owner set 30 KB, about 5.5 KB over the 24,455 measured, room for several
+   * toys at about 1 KB each.
    */
-  javascript: { "/": 24_600 },
+  javascript: { "/": 30_000 },
 
   /**
    * Bytes of each font the homepage preloads, as built; a font preloaded or
@@ -76,11 +75,12 @@ export default {
       Site: 51_200,
       "Pocket LCD": 76_800,
       "Amber LCD": 51_200,
+      Thermal: 51_200,
     },
-    canvasPixelsRead: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
-    canvasCalls: { Site: 2, "Pocket LCD": 3, "Amber LCD": 2 },
-    renderPasses: { Site: 1, "Pocket LCD": 1, "Amber LCD": 1 },
-    offscreenPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
-    blendedPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
+    canvasPixelsRead: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0, Thermal: 0 },
+    canvasCalls: { Site: 2, "Pocket LCD": 3, "Amber LCD": 2, Thermal: 2 },
+    renderPasses: { Site: 1, "Pocket LCD": 1, "Amber LCD": 1, Thermal: 1 },
+    offscreenPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0, Thermal: 0 },
+    blendedPixels: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0, Thermal: 0 },
   },
 };
