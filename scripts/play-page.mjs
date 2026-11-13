@@ -96,6 +96,76 @@ export function playControls(page) {
   };
 }
 
+/**
+ * An init script, `context.addInitScript(virtualClock, { paused })`, that
+ * makes a page do the same work on every run however fast the machine draws.
+ * It seeds `Math.random`, and runs `performance.now()`, animation frames and
+ * timeouts on virtual time that moves exactly 1/60 s per frame. Timeouts are
+ * virtual too because toys and the canvas wait on them, and a real one would
+ * fire after however many frames the machine drew meanwhile. `paused` holds
+ * every frame and timeout until `__clock.run(true)`, so the time between two
+ * measurements, which the machine decides, never reaches the page.
+ * `__clock.frame` counts frames.
+ */
+export function virtualClock({ paused }) {
+  let seed = 1;
+  Math.random = () =>
+    (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+  const realFrame = window.requestAnimationFrame.bind(window);
+  const frames = new Map();
+  const timeouts = new Map();
+  let id = 0;
+  let ticking = false;
+  const clock = { now: 0, frame: 0, running: !paused };
+  const call = (callback, ...args) => {
+    try {
+      callback(...args);
+    } catch (error) {
+      reportError(error);
+    }
+  };
+  const schedule = () => {
+    if (ticking || !clock.running || frames.size + timeouts.size === 0) return;
+    ticking = true;
+    realFrame(tick);
+  };
+  const tick = () => {
+    ticking = false;
+    if (!clock.running) return;
+    clock.now += 1000 / 60;
+    clock.frame += 1;
+    const due = [...timeouts]
+      .filter(([, { at }]) => at <= clock.now)
+      .sort(([, a], [, b]) => a.at - b.at);
+    for (const [key, { callback, args }] of due) {
+      timeouts.delete(key);
+      call(callback, ...args);
+    }
+    const callbacks = [...frames.values()];
+    frames.clear();
+    for (const callback of callbacks) call(callback, clock.now);
+    schedule();
+  };
+  clock.run = (running) => {
+    clock.running = running;
+    schedule();
+  };
+  window.__clock = clock;
+  performance.now = () => clock.now;
+  window.requestAnimationFrame = (callback) => {
+    frames.set(++id, callback);
+    schedule();
+    return id;
+  };
+  window.cancelAnimationFrame = (key) => frames.delete(key);
+  window.setTimeout = (callback, ms, ...args) => {
+    timeouts.set(++id, { callback, args, at: clock.now + (Number(ms) || 0) });
+    schedule();
+    return id;
+  };
+  window.clearTimeout = (key) => timeouts.delete(key);
+}
+
 /** Holds every CPU core's clock high while it runs; see the callers for why. */
 export const holdClockHigh = () =>
   new Worker("for (;;);", { eval: true }).unref();
