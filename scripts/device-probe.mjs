@@ -25,15 +25,11 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
     darkInk: undefined,
   };
   const PASSES_OFF = [
-    ["noise off", { noise: 0 }, ["noise"]],
-    ["ghost off", { ghost: 0 }, ["ghost"]],
-    ["noise, ghost off", { noise: 0, ghost: 0 }, ["noise", "ghost"]],
-    ["palette off", PALETTE_OFF, ["palette"]],
-    [
-      "all passes off",
-      { noise: 0, ghost: 0, ...PALETTE_OFF },
-      ["noise", "palette", "ghost"],
-    ],
+    [{ noise: 0 }, ["noise"]],
+    [{ ghost: 0 }, ["ghost"]],
+    [{ noise: 0, ghost: 0 }, ["noise", "ghost"]],
+    [PALETTE_OFF, ["palette"]],
+    [{ noise: 0, ghost: 0, ...PALETTE_OFF }, ["noise", "palette", "ghost"]],
   ];
 
   const now = () => performance.now();
@@ -346,6 +342,18 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
 
   const steps = (home) => {
     const shippedPasses = passesOn();
+    // A display may ship with a pass off already: only those on are switched
+    // off, and a step left with nothing new to switch off is dropped.
+    const offSteps = [];
+    for (const [knobs, passes] of PASSES_OFF) {
+      const off = passes.filter((pass) => shippedPasses.includes(pass));
+      if (
+        off.length > 0 &&
+        !offSteps.some(([, seen]) => seen.join() === off.join())
+      ) {
+        offSteps.push([knobs, off]);
+      }
+    }
     const animating = ({ quietMs, draws }) =>
       draws === 0
         ? "invalid: the toy never drew"
@@ -383,17 +391,16 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
       ran: animating,
       undo: () => choose(home.toy, home.display),
     });
-    const passesOff = ([name, knobs, off]) => ({
-      name,
+    const passesOff = ([knobs, off]) => ({
+      name:
+        off.length === shippedPasses.length
+          ? "all passes off"
+          : `${off.join(", ")} off`,
       kind: "passes",
       toy: home.toy,
       display: home.display,
       apply: () => backdrop.configure(knobs),
       applied() {
-        const already = off.filter((pass) => !shippedPasses.includes(pass));
-        if (already.length > 0) {
-          return `${already.join(", ")} already off as shipped`;
-        }
         const expected = shippedPasses.filter((pass) => !off.includes(pass));
         const running = passesOn();
         return running.join() === expected.join()
@@ -408,7 +415,7 @@ export function probe({ seconds, toy, display }, onePercentLow, play) {
       ...home.displays.flatMap((displayLabel) =>
         home.toys.map((toyId) => shipped("as shipped", toyId, displayLabel)),
       ),
-      ...PASSES_OFF.map(passesOff),
+      ...offSteps.map(passesOff),
       shipped("as shipped, again", home.toy, home.display),
       idle("idle, again"),
     ];
