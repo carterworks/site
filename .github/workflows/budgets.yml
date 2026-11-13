@@ -3,6 +3,9 @@ name: Budgets
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   CI: true
 
