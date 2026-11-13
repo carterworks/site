@@ -95,6 +95,33 @@ export const DISPLAYS: Display[] = [
       ghostFall: 40,
     },
   },
+  // On a dark screen clearing darkens, so the fall is the trail.
+  {
+    id: "tet",
+    label: "Tet",
+    look: {
+      base: "#0b1218",
+      stops: ["#12384a", "#2a8fb0", "#9fe9ff"],
+      ink: "#ff6a3d",
+      levels: 5,
+      gap: 2,
+      ghostRise: 40,
+      ghostFall: 55,
+    },
+  },
+  {
+    id: "grid",
+    label: "Grid",
+    look: {
+      base: "#04070a",
+      stops: ["#0a3346", "#11a6d8", "#7fe6ff"],
+      ink: "#f2fdff",
+      levels: 5,
+      gap: 2,
+      ghostRise: 40,
+      ghostFall: 65,
+    },
+  },
 ];
 
 export const DISPLAY_KEY = "backdrop-display";
