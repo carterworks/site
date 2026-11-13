@@ -1,6 +1,9 @@
 import { RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
-import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import {
+  DISPLAYS,
+  type DisplayLook,
+} from "../pixel-backdrop/backdrop-displays";
 import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "../settings/site-settings";
@@ -10,6 +13,23 @@ const option = (label: string, value: string) =>
     textContent: label,
     value,
   });
+
+type Shape = NonNullable<DisplayLook["shape"]>;
+
+/** The canvas's shapes, default first; a test holds it to the canvas's own list. */
+const SHAPES: Shape[] = [
+  "square",
+  "circle",
+  "ring",
+  "diamond",
+  "hex",
+  "triangle",
+  "dash",
+  "slash",
+  "cross",
+];
+
+const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 
 const SAMPLE_MS = 500;
 const HISTORY_MS = 30_000;
@@ -87,11 +107,23 @@ class PlayToolbarElement extends HTMLElement {
     const toy = this.querySelector<HTMLSelectElement>("[data-toy]");
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
     const display = this.querySelector<HTMLSelectElement>("[data-display]");
+    const shape = this.querySelector<HTMLSelectElement>("[data-shape]");
+    const shapeNote = this.querySelector<HTMLElement>("[data-shape-note]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
     const fps = this.querySelector<HTMLElement>("[data-fps]");
-    if (!toy || !theme || !display || !pick || !input || !status || !fps) {
+    if (
+      !toy ||
+      !theme ||
+      !display ||
+      !shape ||
+      !shapeNote ||
+      !pick ||
+      !input ||
+      !status ||
+      !fps
+    ) {
       return;
     }
 
@@ -104,11 +136,24 @@ class PlayToolbarElement extends HTMLElement {
     display.replaceChildren(
       ...DISPLAYS.map(({ id, label }) => option(label, id)),
     );
+    shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
 
     let playing: ImageBitmap | undefined;
     let request = 0;
+    let chosenShape: Shape | undefined;
 
     const backdrop = () => document.querySelector("pixel-backdrop");
+    const shownDisplay = () =>
+      DISPLAYS.find(({ id }) => id === settings.display.value())!;
+
+    // A tweak outranks a display's look, so a display that draws its own
+    // shape is handed it back as one, and the chosen shape returns after.
+    const applyShape = () => {
+      if (chosenShape === undefined) return;
+      backdrop()?.configure({
+        shape: shownDisplay().look?.shape ?? chosenShape,
+      });
+    };
 
     const render = () => {
       toy.value =
@@ -119,6 +164,10 @@ class PlayToolbarElement extends HTMLElement {
         `${theme.textContent}. Activate to change.`,
       );
       display.value = settings.display.value();
+      const { label, look } = shownDisplay();
+      shape.disabled = look?.shape !== undefined;
+      shape.value = look?.shape ?? backdrop()?.knobs.shape ?? SHAPES[0];
+      shapeNote.textContent = shape.disabled ? `${label} sets the shape.` : "";
     };
 
     const release = () => {
@@ -139,6 +188,12 @@ class PlayToolbarElement extends HTMLElement {
     });
     display.addEventListener("change", () => {
       settings.display.choose(display.value);
+      applyShape();
+      render();
+    });
+    shape.addEventListener("change", () => {
+      chosenShape = shape.value as Shape;
+      applyShape();
       render();
     });
     pick.addEventListener("click", () => input.click());

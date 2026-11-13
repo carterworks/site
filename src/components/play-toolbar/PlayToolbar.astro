@@ -2,12 +2,14 @@
   <label>Toy: <select data-toy></select></label>
   <button type="button" data-theme>Theme</button>
   <label>Display: <select data-display></select></label>
+  <label>Shape: <select data-shape aria-describedby="shape-note"></select></label>
   <button type="button" data-image>Image…</button>
   <input type="file" accept="image/*" hidden />
   <a href="/">Home</a>
   <div class="notes">
     <p class="paused-notice">Toys are paused for reduced motion.</p>
     <p role="status" data-status></p>
+    <p id="shape-note" data-shape-note></p>
   </div>
   <div class="fps" data-fps hidden>
     <p data-fps-rate></p>

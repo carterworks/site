@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "../settings/backdrop-display-setting";
 import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import { SHAPES } from "../emulated-canvas/presenter";
 import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import "./play-toolbar";
@@ -16,10 +17,12 @@ const markup = `
     <label>Toy <select data-toy></select></label>
     <button type="button" data-theme></button>
     <label>Display <select data-display></select></label>
+    <label>Shape <select data-shape></select></label>
     <button type="button" data-image>Image…</button>
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
     <p role="status" data-status></p>
+    <p data-shape-note></p>
     <div data-fps hidden>
       <p data-fps-rate></p>
       <p data-fps-low></p>
@@ -35,6 +38,8 @@ const setToy = vi.fn((id: string) => {
   toyId = id;
 });
 const setDisplay = vi.fn();
+let tweaks: { shape?: string } = {};
+const configure = vi.fn((partial: object) => Object.assign(tweaks, partial));
 const play = vi.fn((toy: { id: string }) => {
   toyId = toy.id;
 });
@@ -92,7 +97,10 @@ function mount() {
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
   Object.defineProperty(backdrop, "toy", { get: () => toyId });
-  Object.assign(backdrop, { setToy, setDisplay, play });
+  Object.defineProperty(backdrop, "knobs", {
+    get: () => ({ shape: tweaks.shape ?? "square" }),
+  });
+  Object.assign(backdrop, { setToy, setDisplay, play, configure });
   document.body.append(backdrop);
 }
 
@@ -103,6 +111,8 @@ beforeEach(() => {
   setToy.mockClear();
   play.mockClear();
   setDisplay.mockClear();
+  configure.mockClear();
+  tweaks = {};
   vi.stubGlobal("matchMedia", (query: string) => ({
     get matches() {
       return query.includes("dark") === (osScheme === "dark");
@@ -397,4 +407,58 @@ test("the frame counter stops when the toolbar leaves", () => {
   get("play-toolbar").remove();
 
   expect(cancel).toHaveBeenCalledWith(frames.length);
+});
+
+const shape = () => get<HTMLSelectElement>("[data-shape]");
+const chooseShape = (id: string) => {
+  shape().value = id;
+  shape().dispatchEvent(new Event("change"));
+};
+const shapeNote = () => get("[data-shape-note]").textContent;
+const fixing = DISPLAYS.find((display) => display.look?.shape)!;
+const leaving = DISPLAYS.find(
+  (display) => display.look && !display.look.shape,
+)!;
+
+test("the shape menu offers every shape the canvas draws", () => {
+  const offered = [...shape().options];
+
+  expect(offered.map((option) => option.value)).toEqual(SHAPES);
+  expect(offered[0].textContent).toBe("Square");
+});
+
+test("choosing a shape draws the cells in it and stores nothing", () => {
+  chooseShape("hex");
+
+  expect(configure).toHaveBeenLastCalledWith({ shape: "hex" });
+  expect(shape().value).toBe("hex");
+  expect(localStorage.length).toBe(0);
+});
+
+test("a display that fixes the shape disables the menu and says why", () => {
+  chooseDisplay(fixing.id);
+
+  expect(shape().disabled).toBe(true);
+  expect(shape().value).toBe(fixing.look!.shape);
+  expect(shapeNote()).toBe(`${fixing.label} sets the shape.`);
+});
+
+test("a display that fixes nothing leaves the menu alone", () => {
+  chooseDisplay(leaving.id);
+
+  expect(shape().disabled).toBe(false);
+  expect(shapeNote()).toBe("");
+  expect(configure).not.toHaveBeenCalled();
+});
+
+test("a chosen shape gives way to a display's own, and returns after it", () => {
+  chooseShape("hex");
+
+  chooseDisplay(fixing.id);
+  expect(configure).toHaveBeenLastCalledWith({ shape: fixing.look!.shape });
+
+  chooseDisplay(leaving.id);
+  expect(configure).toHaveBeenLastCalledWith({ shape: "hex" });
+  expect(shape().value).toBe("hex");
+  expect(shape().disabled).toBe(false);
 });
