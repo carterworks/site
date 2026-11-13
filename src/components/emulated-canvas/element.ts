@@ -4,8 +4,8 @@ import {
   NOISE_OFFSET_Y,
   NOISE_SEED,
 } from "../backdrop-noise";
-import { colourRgb } from "./colour";
 import { Pipeline } from "./pipeline";
+import { type Geometry, Presenter } from "./presenter";
 import type { Pace, ShaderFrame } from "./shader";
 import { SHADERS } from "./shaders";
 
@@ -20,108 +20,11 @@ function getInnerContext(
   ).call(canvas, contextId, options);
 }
 
-type PixelShape = "square" | "circle";
-
-type Geometry = {
-  columns: number;
-  rows: number;
-  scale: number;
-  gap: number;
-  shape: PixelShape;
-  /** The echo's opacity (0–100, 0 for none) and its offset in CSS pixels. */
-  shadow: { opacity: number; x: number; y: number };
-};
-
-/**
- * The echo is a copy of the display, offset and multiplied over it, like the
- * shadow each lit pixel casts on an LCD's backplate. It sits above the gap
- * overlay so the shadow falls across the gaps too, and the host isolates the
- * blend so it darkens only the display, never the page behind it.
- */
-function echoStyle({ opacity, x, y }: Geometry["shadow"]) {
-  if (opacity === 0) return "";
-  return `
-    :host {
-      isolation: isolate;
-    }
-    .echo {
-      inset: 0 auto auto 0;
-      mix-blend-mode: multiply;
-      opacity: ${opacity / 100};
-      pointer-events: none;
-      position: absolute;
-      translate: ${x}px ${y}px;
-      z-index: 1;
-    }
-  `;
-}
-
-/**
- * Cells are enlarged and cut out in CSS, so the display's backing store stays
- * the bitmap's size and a frame costs one tiny copy instead of a full-screen
- * repaint. Each logical pixel is stretched over a whole stride (cell + gap) and
- * a static overlay paints the gaps (and a circle's corners) over it in
- * `--emulated-canvas-gap-color`. A mask would cut the same shapes, but the
- * compositor re-applies a mask to content that changes every frame, while the
- * overlay never changes, so it is rasterised once and reused.
- *
- * The canvas is shifted back by half a gap so each pixel's edges fall inside
- * the gaps around its cell: at a fractional devicePixelRatio the browser rounds
- * the canvas's pixel edges and the overlay's edges differently, and an edge on
- * the cell boundary would show a sliver of the neighbouring cell. The margins
- * also take the leftover half gaps out of layout, so the box ends at the last
- * cell, and the host clips the half gaps that overhang it.
- *
- * The canvas is inline rather than block so those negative margins can't
- * collapse through a block-level host and change its height.
- */
-function displayStyle({ columns, rows, scale, gap, shape, shadow }: Geometry) {
-  const lead = Math.floor(gap / 2);
-  const overhang = `${-lead}px ${lead - gap}px ${lead - gap}px ${-lead}px`;
-  const cell = "var(--scale)";
-  const stride = "var(--stride)";
-  const ink = "var(--emulated-canvas-gap-color, Canvas)";
-  const stripes = (direction: string) =>
-    `repeating-linear-gradient(${direction}, ${ink} 0 ${lead}px, transparent 0 calc(${lead}px + ${cell}), ${ink} 0 ${stride})`;
-  const centre = `calc(${lead}px + ${cell} / 2)`;
-  // The circle's edge fades over one CSS pixel, as a hard stop would alias.
-  const circle = `radial-gradient(circle calc(${cell} / 2) at ${centre} ${centre}, transparent calc(100% - 0.5px), ${ink} calc(100% + 0.5px)) 0 0 / ${stride} ${stride}`;
-  const overlay =
-    shape === "circle"
-      ? circle
-      : gap > 0
-        ? `${stripes("to right")}, ${stripes("to bottom")}`
-        : "none";
-
-  return `
-    :host {
-      --scale: var(--emulated-canvas-scale, ${scale}px);
-      --stride: calc(var(--scale) + ${gap}px);
-      display: inline-block;
-      line-height: 0;
-      overflow: clip;
-      position: relative;
-    }
-    canvas {
-      image-rendering: pixelated;
-      inline-size: calc(${columns} * var(--stride));
-      block-size: calc(${rows} * var(--stride));
-      margin: ${overhang};
-      vertical-align: top;
-    }
-    :host::after {
-      background: ${overlay};
-      content: "";
-      inset: ${overhang};
-      pointer-events: none;
-      position: absolute;
-    }
-    ${echoStyle(shadow)}`;
-}
+type PixelShape = Geometry["shape"];
 
 const SIXTY_HZ_FRAME_MS = 1000 / 60;
 
-/** The attributes the element reads itself; the echo reads the palette to dodge its base. */
+/** The attributes the element reads itself; the shadow reads the palette's base as its unlit colour. */
 const ATTRIBUTES = [
   "data-scale",
   "data-gap",
@@ -212,10 +115,7 @@ export class EmulatedCanvas extends HTMLElement {
   ];
 
   #innerCanvas?: OffscreenCanvas;
-  #outerCanvas?: HTMLCanvasElement;
-  #outerContext?: CanvasRenderingContext2D;
-  #echoContext?: CanvasRenderingContext2D;
-  #echoDodge?: string;
+  #presenter?: Presenter;
   #readback?: OffscreenCanvasRenderingContext2D | null;
   #watched?: OffscreenCanvasRenderingContext2D;
   /** The consumer's pixels as last drawn, kept for presents with nothing new drawn. */
@@ -235,7 +135,6 @@ export class EmulatedCanvas extends HTMLElement {
     elapsedMs: 0,
   };
   #presentedAt?: number;
-  #style?: HTMLStyleElement;
   #nextFrame?: number;
   #idleTimer?: number;
   /** Whether the last present showed `#output`, rather than the bitmap as is. */
@@ -439,97 +338,35 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   #initialize() {
-    if (this.#outerCanvas !== undefined) return;
-
-    const { width, height } = this;
-
-    const outerCanvas = document.createElement("canvas");
-    outerCanvas.width = width;
-    outerCanvas.height = height;
-    this.#outerCanvas = outerCanvas;
-
-    this.#style = document.createElement("style");
-    this.attachShadow({ mode: "closed" }).append(this.#style, outerCanvas);
+    if (this.#presenter !== undefined) return;
+    const { width, height } = this.#bitmap();
+    this.#presenter = new Presenter(
+      this.attachShadow({ mode: "closed" }),
+      width,
+      height,
+    );
     this.#configure();
   }
 
   #configure() {
-    const style = this.#style;
-    if (style === undefined) return;
-    const innerCanvas = this.#bitmap();
-    const shadow = {
-      opacity: Math.min(this.#integer("shadow", 0, 0), 100),
-      x: this.#integer("shadowX", 0, -Infinity),
-      y: this.#integer("shadowY", 0, -Infinity),
-    };
-    this.#showEcho(shadow.opacity > 0);
-
-    style.textContent = displayStyle({
-      columns: innerCanvas.width,
-      rows: innerCanvas.height,
+    const presenter = this.#presenter;
+    if (presenter === undefined) return;
+    const { paletteBase, paletteInk } = this.dataset;
+    const palette = paletteBase !== undefined && paletteInk !== undefined;
+    presenter.configure({
       scale: this.#integer("scale", EmulatedCanvas.DEFAULT_SCALE, 1),
       gap: this.#integer("gap", EmulatedCanvas.DEFAULT_GAP, 0),
       shape:
         this.dataset.shape === "circle"
           ? "circle"
           : EmulatedCanvas.DEFAULT_SHAPE,
-      shadow,
+      shadow: {
+        opacity: Math.min(this.#integer("shadow", 0, 0), 100),
+        x: this.#integer("shadowX", 0, -Infinity),
+        y: this.#integer("shadowY", 0, -Infinity),
+        unlit: palette ? paletteBase : undefined,
+      },
     });
-  }
-
-  /**
-   * A colour-dodge by the base's inverse divides the echo by the base, so an
-   * off pixel multiplies by white and casts nothing. Without a palette the off
-   * colour is unknown, and a plain multiply is the same rule with white as off.
-   */
-  #dodgeColour() {
-    const { paletteBase, paletteInk } = this.dataset;
-    if (paletteBase === undefined || paletteInk === undefined) return undefined;
-    const [r, g, b] = colourRgb(paletteBase);
-    return `rgb(${255 - r} ${255 - g} ${255 - b})`;
-  }
-
-  /** Created only once a shadow is wanted, so a canvas without one pays nothing. */
-  #showEcho(shown: boolean) {
-    if (!shown) {
-      this.#echoContext?.canvas.remove();
-      this.#echoContext = undefined;
-      return;
-    }
-    const outerCanvas = this.#outerCanvas;
-    if (outerCanvas === undefined) return;
-    const created = this.#echoContext === undefined;
-    const context = (this.#echoContext ??= this.#createEcho(outerCanvas));
-    if (context === undefined) return;
-    this.#echoDodge = this.#dodgeColour();
-    if (this.#echoDodge !== undefined) context.fillStyle = this.#echoDodge;
-    if (created && this.#outerContext !== undefined) {
-      this.#copyToEcho(outerCanvas);
-    }
-  }
-
-  #createEcho(outerCanvas: HTMLCanvasElement) {
-    const echo = document.createElement("canvas");
-    echo.className = "echo";
-    echo.width = this.width;
-    echo.height = this.height;
-    const context = echo.getContext("2d");
-    if (context !== null) outerCanvas.after(echo);
-    return context ?? undefined;
-  }
-
-  /**
-   * One GPU-side copy of what the display just showed, with no read-back. The
-   * multiply blend composites at display resolution, but only when this runs.
-   */
-  #copyToEcho(outerCanvas: HTMLCanvasElement) {
-    const echo = this.#echoContext;
-    if (echo === undefined) return;
-    echo.globalCompositeOperation = "copy";
-    echo.drawImage(outerCanvas, 0, 0);
-    if (this.#echoDodge === undefined) return;
-    echo.globalCompositeOperation = "color-dodge";
-    echo.fillRect(0, 0, outerCanvas.width, outerCanvas.height);
   }
 
   #integer(
@@ -549,18 +386,9 @@ export class EmulatedCanvas extends HTMLElement {
   }
 
   #blit(): Pace {
-    const outerCanvas = this.#outerCanvas;
-    if (outerCanvas === undefined) return "still";
+    const presenter = this.#presenter;
+    if (presenter === undefined) return "still";
     const innerCanvas = this.#bitmap();
-
-    let context = this.#outerContext;
-    if (context === undefined) {
-      const created = outerCanvas.getContext("2d");
-      if (created === null) return "still";
-      // `copy` replaces the display outright, so no clear is needed first.
-      created.globalCompositeOperation = "copy";
-      context = this.#outerContext = created;
-    }
 
     const frame = this.#frame;
     const now = performance.now();
@@ -581,9 +409,7 @@ export class EmulatedCanvas extends HTMLElement {
       this.#dissolve(image.data, now);
 
     this.#shownImage = image !== undefined;
-    if (image === undefined) context.drawImage(innerCanvas, 0, 0);
-    else context.putImageData(image, 0, 0);
-    this.#copyToEcho(outerCanvas);
+    presenter.show(image ?? innerCanvas);
     return dissolving ? "active" : pace;
   }
 
