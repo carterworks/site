@@ -18,7 +18,7 @@ import {
 import { DISPLAYS } from "./backdrop-displays";
 import { TOYS } from "./backdrop-toys";
 import { Presenter } from "./emulated-canvas/presenter";
-import "./pixel-backdrop";
+import "./pixel-backdrop/element";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
