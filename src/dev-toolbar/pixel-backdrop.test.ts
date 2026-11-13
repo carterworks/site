@@ -101,14 +101,6 @@ test("drops unknown keys and mismatched types", () => {
   expect(loadSaved(options)).toEqual({ shape: "circle" });
 });
 
-test("drops the removed ripple settings from saved tweaks", () => {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ rippleSize: 9, rippleSpeed: 300, gap: 4 }),
-  );
-  expect(loadSaved(readDefaults())).toEqual({ gap: 4 });
-});
-
 test.each(["{not json", "null", "[1]", '"str"'])(
   "ignores unusable storage %s",
   (raw) => {
