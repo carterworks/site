@@ -15,6 +15,7 @@
  */
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { setTimeout as wait } from "node:timers/promises";
 import { parseArgs } from "node:util";
 import { brotliCompressSync, constants } from "node:zlib";
 import budgets from "./budgets.mjs";
@@ -158,7 +159,7 @@ for (const [name, limits] of Object.entries(budgets.perFrame)) {
 
 /**
  * Live DOM nodes and event listeners after garbage collection. Leftovers of a
- * first pass, such as a cache filled once, are not leaks, so the tour runs
+ * first pass, such as a cache filled once, are not leaks, so each tour runs
  * once before it is measured.
  */
 const live = async () => {
@@ -194,7 +195,34 @@ await leaks("touring every toy and display on /play", async () => {
   }
   await controls.chooseToy(toys[0]);
 });
+/** Follows a link, or history, with the clock running for the swap's timeouts. */
+const navigate = async (go) => {
+  const loaded = page.evaluate(() => {
+    __clock.run(true);
+    return new Promise((resolve) =>
+      document.addEventListener("astro:page-load", resolve, { once: true }),
+    );
+  });
+  const from = page.url();
+  await go();
+  await Promise.race([
+    loaded,
+    wait(10_000, undefined, { ref: false }).then(() => {
+      throw new Error(`Navigating away from ${from} never finished.`);
+    }),
+  ]);
+  await playFor({ ms: 500, press: false });
+};
 lap("Toured /play");
+await page.goto(`${ORIGIN}/`);
+await leaks("navigating home, blog, a post, back, home", async () => {
+  await navigate(() =>
+    page.locator('a[href="/blog/"]:visible').first().click(),
+  );
+  await navigate(() => page.locator("main h2 a").first().click());
+  await navigate(() => page.goBack());
+  await navigate(() => page.locator('a[href="/"]:visible').first().click());
+});
 
 /** The renderer's compositor frames drawn during a play. */
 const traceFrames = async (options) => {
@@ -252,6 +280,7 @@ const compositorWork = (passes) => ({
   ),
 });
 
+lap("Toured pages");
 const rows = [];
 for (const display of displays) {
   for (const toy of toys) {

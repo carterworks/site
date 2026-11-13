@@ -25,7 +25,9 @@ export default {
 
   /**
    * Live DOM nodes and event listeners gained, after garbage collection, by a
-   * second tour of every toy and display on /play.
+   * second run of each tour: every toy and display on /play, and client-side
+   * navigation from the homepage to the blog, a post, back, and home, which
+   * swaps the page around the backdrop that persists across it.
    */
   leaks: { nodes: 0, listeners: 0 },
 
