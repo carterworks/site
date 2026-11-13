@@ -1,8 +1,8 @@
-import { RANDOM } from "./backdrop-toy-setting";
-import { TOYS } from "./backdrop-toys";
-import { imageToy } from "./backdrop-toys/image";
+import { RANDOM } from "../settings/backdrop-toy-setting";
+import { TOYS } from "../backdrop-toys";
+import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
-import { settings } from "./site-settings";
+import { settings } from "../settings/site-settings";
 
 const option = (label: string, value: string) =>
   Object.assign(document.createElement("option"), {

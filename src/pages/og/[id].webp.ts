@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { render, type Node } from "takumi-js";
-import { DISPLAYS, type DisplayLook } from "../../components/backdrop-displays";
+import {
+  DISPLAYS,
+  type DisplayLook,
+} from "../../components/pixel-backdrop/backdrop-displays";
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import { formatDateLong } from "../../lib/date";
 import {

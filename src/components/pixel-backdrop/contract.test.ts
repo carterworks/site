@@ -15,7 +15,7 @@ import {
   useFakeFrames,
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
-import { DISPLAYS } from "../backdrop-displays";
+import { DISPLAYS } from "./backdrop-displays";
 import { TOYS } from "../backdrop-toys";
 import { Presenter } from "../emulated-canvas/presenter";
 import "./element";

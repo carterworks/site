@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { createBackdropDisplay } from "./backdrop-display-setting";
-import { DISPLAYS } from "./backdrop-displays";
-import { createBackdropToy, RANDOM } from "./backdrop-toy-setting";
-import { TOYS } from "./backdrop-toys";
+import { createBackdropDisplay } from "../settings/backdrop-display-setting";
+import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
+import { TOYS } from "../backdrop-toys";
 import "./play-toolbar";
-import { settings } from "./site-settings";
-import { createThemeSetting } from "./theme-setting";
+import { settings } from "../settings/site-settings";
+import { createThemeSetting } from "../settings/theme-setting";
 
-vi.mock("./backdrop-toys", () => ({
+vi.mock("../backdrop-toys", () => ({
   TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 

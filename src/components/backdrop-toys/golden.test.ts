@@ -9,7 +9,7 @@ import {
   SLOW_TEST_MS,
 } from "../../test/toy-canvas";
 import { mulberry32 } from "../../lib/backdrop-noise";
-import { DISPLAYS } from "../backdrop-displays";
+import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
 import "../pixel-backdrop/element";
 import { TOYS } from ".";
 

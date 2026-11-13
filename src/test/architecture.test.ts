@@ -55,7 +55,7 @@ const layers = {
     imports: ["toy kit", "lib"],
   },
   displays: {
-    files: ["src/components/backdrop-displays.ts"],
+    files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
     imports: ["lib"],
   },
   knobs: {
@@ -85,8 +85,7 @@ const layers = {
   },
   controls: {
     files: [
-      "src/components/{site-settings,backdrop-toy-setting,backdrop-display-setting,theme-setting}.ts",
-      "src/components/{play-toolbar,command-bar,frame-rate}.ts",
+      "src/components/{settings,command-bar,play-toolbar}/*.ts",
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
     ],
@@ -106,7 +105,7 @@ const layers = {
     files: [
       "src/*.ts",
       "src/{pages,layouts,integrations}/**",
-      "src/components/*.astro",
+      "src/components/**/*.astro",
     ],
     imports: [
       "site",
@@ -123,7 +122,7 @@ const layers = {
 
 const exceptions = [
   {
-    from: "src/components/play-toolbar.ts",
+    from: "src/components/play-toolbar/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
   },

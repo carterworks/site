@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
-import { DISPLAYS, DISPLAY_KEY } from "./backdrop-displays";
+import { DISPLAYS, DISPLAY_KEY } from "../pixel-backdrop/backdrop-displays";
 
 const [site, pocket, amber] = DISPLAYS;
 const setDisplay = vi.fn();

@@ -5,7 +5,7 @@ import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../../test/toy-canvas";
 import type { Toy } from "../backdrop-toys/toy";
 import { EmulatedCanvas } from "../emulated-canvas/element";
-import { DISPLAYS } from "../backdrop-displays";
+import { DISPLAYS } from "./backdrop-displays";
 import "./element";
 import type { PixelBackdrop } from "./element";
 import { readDefaults } from "./knobs";

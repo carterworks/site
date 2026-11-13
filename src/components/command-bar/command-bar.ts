@@ -1,4 +1,4 @@
-import { settings } from "./site-settings";
+import { settings } from "../settings/site-settings";
 
 const reducedMotion = "(prefers-reduced-motion: reduce)";
 const colorScheme = "(prefers-color-scheme: dark)";

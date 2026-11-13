@@ -55,7 +55,7 @@ import { networkInterfaces } from "node:os";
 import { extname, join, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright";
-import { onePercentLow } from "../src/components/frame-rate.ts";
+import { onePercentLow } from "../src/components/play-toolbar/frame-rate.ts";
 import { probe } from "./device-probe.mjs";
 import { play } from "./play-page.mjs";
 
