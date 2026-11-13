@@ -25,8 +25,6 @@ export type ResolvedLook = {
   hostStyle: Record<string, string | undefined>;
   /** Boolean attributes on the backdrop. */
   hostFlags: Record<string, boolean>;
-  /** Changes exactly when the colours do; the element then restarts the canvas's passes. */
-  palette: string;
 };
 
 /**
@@ -107,7 +105,6 @@ export function resolveLook(input: LookInput): ResolvedLook {
       "data-disabled": !knobs.enabled,
       "data-vignette": look?.vignette !== undefined,
     },
-    palette: `${base} ${ink}`,
   };
 }
 

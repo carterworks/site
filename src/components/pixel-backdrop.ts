@@ -5,11 +5,7 @@ import { TOYS } from "./backdrop-toys";
 import type { Look, Toy } from "./backdrop-toys/toy";
 import { relayPointer } from "./pixel-backdrop/pointer-relay";
 import { readDefaults, type BackdropKnobs } from "./pixel-backdrop/knobs";
-import {
-  resolveKnobs,
-  resolveLook,
-  type ResolvedLook,
-} from "./pixel-backdrop/look";
+import { resolveKnobs, resolveLook } from "./pixel-backdrop/look";
 
 /**
  * `<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>` and
@@ -44,8 +40,6 @@ export class PixelBackdrop extends HTMLElement {
   /** Waits for the canvas when the element is connected before its child is parsed. */
   #canvasObserver = new MutationObserver(() => this.#attach());
   #schemeObserver = new MutationObserver(() => this.#apply());
-  /** What is on the canvas and the element, so a change writes only what it alters. */
-  #applied?: ResolvedLook;
   #display?: Display;
   #chosen = TOYS[0];
   /** Stops the running toy and its pointer relay; set exactly while one runs. */
@@ -84,7 +78,6 @@ export class PixelBackdrop extends HTMLElement {
     this.#canvasObserver.disconnect();
     // Parents upgrade before children, so the child may still be a bare element.
     customElements.upgrade(canvas);
-    if (canvas !== this.#canvas) this.#applied = undefined;
     this.#canvas = canvas;
     this.#defaults ??= readDefaults();
     this.#display ??= DISPLAYS.find(({ id }) => id === storedDisplay());
@@ -186,8 +179,9 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   /**
-   * Writes what changed since the last look, as every write to the canvas
-   * reconfigures its passes and re-presents it.
+   * Writes only what differs from the markup, as every write to the canvas
+   * reconfigures its passes and re-presents it, and so restores anything
+   * else changed.
    *
    * The ghost would otherwise cross-fade the old palette through grey while
    * the page colour changes at once, so a change of palette starts the passes
@@ -197,27 +191,26 @@ export class PixelBackdrop extends HTMLElement {
   #apply = () => {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const last = this.#applied;
     const look = resolveLook({
       ...this.#state(),
       scheme: prefersDark() ? "dark" : "light",
       columns: canvas.width,
     });
-    this.#applied = look;
-    for (const [key, value] of changed(look.data, last?.data)) {
+    const { paletteBase, paletteInk } = canvas.dataset;
+    for (const [key, value] of Object.entries(look.data)) {
+      if (canvas.dataset[key] === value) continue;
       if (value === undefined) delete canvas.dataset[key];
       else canvas.dataset[key] = value;
     }
-    for (const [name, value] of changed(look.canvasStyle, last?.canvasStyle)) {
-      setStyle(canvas, name, value);
-    }
-    for (const [name, value] of changed(look.hostStyle, last?.hostStyle)) {
-      setStyle(this, name, value);
-    }
-    for (const [name, on] of changed(look.hostFlags, last?.hostFlags)) {
+    setStyles(canvas, look.canvasStyle);
+    setStyles(this, look.hostStyle);
+    for (const [name, on] of Object.entries(look.hostFlags)) {
       this.toggleAttribute(name, on);
     }
-    if (last !== undefined && last.palette !== look.palette) canvas.reset();
+    const repainted =
+      paletteBase !== look.data.paletteBase ||
+      paletteInk !== look.data.paletteInk;
+    if (paletteBase !== undefined && repainted) canvas.reset();
   };
 
   #onMotionChange = () => {
@@ -241,15 +234,15 @@ function run(toy: Toy, canvas: EmulatedCanvas) {
   };
 }
 
-/** The entries of `next` that differ from `last`; all of them when nothing was written yet. */
-const changed = <T>(next: Record<string, T>, last?: Record<string, T>) =>
-  Object.entries(next).filter(
-    ([key, value]) => last === undefined || last[key] !== value,
-  );
-
-function setStyle(element: HTMLElement, name: string, value?: string) {
-  if (value === undefined) element.style.removeProperty(name);
-  else element.style.setProperty(name, value);
+function setStyles(
+  element: HTMLElement,
+  styles: Record<string, string | undefined>,
+) {
+  for (const [name, value] of Object.entries(styles)) {
+    if (element.style.getPropertyValue(name) === (value ?? "")) continue;
+    if (value === undefined) element.style.removeProperty(name);
+    else element.style.setProperty(name, value);
+  }
 }
 
 if (!customElements.get("pixel-backdrop")) {

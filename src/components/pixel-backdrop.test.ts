@@ -479,6 +479,29 @@ test.each<[string, (backdrop: PixelBackdrop) => unknown]>([
   expect(await writesDuring(backdrop, () => change(backdrop))).toEqual([]);
 });
 
+test("an apply restores an attribute someone else changed on the canvas", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  const ghost = canvas.dataset.ghost;
+  canvas.dataset.ghost = "99";
+
+  backdrop.configure({});
+
+  expect(canvas.dataset.ghost).toBe(ghost);
+});
+
+test("a reconnect restores an attribute changed while the backdrop was away", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+  const gap = canvas.dataset.gap;
+  backdrop.remove();
+  canvas.dataset.gap = "7";
+
+  document.body.append(backdrop);
+
+  expect(canvas.dataset.gap).toBe(gap);
+});
+
 test("a tweak writes only the attribute it changes", async () => {
   const backdrop = mount();
 

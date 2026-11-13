@@ -418,13 +418,18 @@ test("Site sets none of a display's attributes or properties, and shows the toy'
 });
 
 test("the palette is the scheme's on Site, and a display's in either scheme", () => {
-  expect(resolve().palette).not.toBe(resolve({ scheme: "dark" }).palette);
-  expect(resolve({ scheme: "dark" }).data).toMatchObject({
-    paletteBase: DEFAULTS.darkBase,
-    paletteInk: DEFAULTS.darkInk,
-  });
-  expect(resolve({ display: pocket }).palette).toBe(
-    resolve({ display: pocket, scheme: "dark" }).palette,
+  const palette = (input: Partial<LookInput>) => {
+    const { paletteBase, paletteInk } = resolve(input).data;
+    return [paletteBase, paletteInk];
+  };
+
+  expect(palette({})).toEqual([DEFAULTS.lightBase, DEFAULTS.lightInk]);
+  expect(palette({ scheme: "dark" })).toEqual([
+    DEFAULTS.darkBase,
+    DEFAULTS.darkInk,
+  ]);
+  expect(palette({ display: pocket, scheme: "dark" })).toEqual(
+    palette({ display: pocket }),
   );
 });
 
