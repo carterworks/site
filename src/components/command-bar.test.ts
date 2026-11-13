@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
 import { DISPLAYS } from "./backdrop-displays";
-import { createBackdropMode } from "./backdrop-mode-setting";
-import { MODES } from "./backdrop-modes";
+import { createBackdropToy } from "./backdrop-toy-setting";
+import { TOYS } from "./backdrop-toys";
 import "./command-bar";
 import { settings } from "./site-settings";
 import { createThemeSetting } from "./theme-setting";
 
-vi.mock("./backdrop-modes", () => ({
-  MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
+vi.mock("./backdrop-toys", () => ({
+  TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
 const markup = `
@@ -46,24 +46,24 @@ const markup = `
 let osScheme: "light" | "dark" = "light";
 let reducedMotion = false;
 let osListeners: (() => void)[] = [];
-const setMode = vi.fn();
+const setToy = vi.fn();
 const setDisplay = vi.fn();
 
 function setupCommandBar() {
   document.documentElement.style.colorScheme = "";
   localStorage.clear();
-  setMode.mockClear();
+  setToy.mockClear();
   setDisplay.mockClear();
   Object.assign(settings, {
     theme: createThemeSetting(),
-    backdrop: createBackdropMode(() => 0, new EventTarget()),
+    backdrop: createBackdropToy(() => 0, new EventTarget()),
     display: createBackdropDisplay(),
   });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
-  Object.assign(backdrop, { setMode, setDisplay });
+  Object.assign(backdrop, { setToy, setDisplay });
   document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
@@ -173,7 +173,7 @@ describe("command bar", () => {
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
     expect(value("theme")).toBe("Light");
-    expect(value("backdrop")).toBe(MODES[0].label);
+    expect(value("backdrop")).toBe(TOYS[0].label);
     expect(row("theme").getAttribute("aria-label")).toBe(
       "Theme: Light. Activate to change.",
     );
@@ -216,14 +216,14 @@ describe("command bar", () => {
     expect(localStorage.getItem("color-scheme")).toBeNull();
   });
 
-  test("activating the backdrop row stores and applies the next mode", () => {
+  test("activating the backdrop row stores and applies the next toy", () => {
     openSettings();
 
     row("backdrop").click();
 
-    expect(localStorage.getItem("backdrop-mode")).toBe(MODES[1].id);
-    expect(setMode).toHaveBeenLastCalledWith(MODES[1].id);
-    expect(value("backdrop")).toBe(MODES[1].label);
+    expect(localStorage.getItem("backdrop-mode")).toBe(TOYS[1].id);
+    expect(setToy).toHaveBeenLastCalledWith(TOYS[1].id);
+    expect(value("backdrop")).toBe(TOYS[1].label);
   });
 
   test("activating the display row stores and applies the next display", () => {
@@ -242,7 +242,7 @@ describe("command bar", () => {
     openSettings();
 
     const labels = {
-      backdrop: MODES[0].label,
+      backdrop: TOYS[0].label,
       display: DISPLAYS[0].label,
     };
     for (const name of ["backdrop", "display"] as const) {

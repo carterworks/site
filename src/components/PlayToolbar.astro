@@ -1,5 +1,5 @@
 <play-toolbar role="group" aria-label="Playground">
-  <button type="button" data-toy>Toy</button>
+  <label>Toy: <select data-toy></select></label>
   <button type="button" data-theme>Theme</button>
   <button type="button" data-display>Display</button>
   <button type="button" data-image>Image…</button>
@@ -8,6 +8,13 @@
   <div class="notes">
     <p class="paused-notice">Toys are paused for reduced motion.</p>
     <p role="status" data-status></p>
+  </div>
+  <div class="fps" data-fps hidden>
+    <p data-fps-rate></p>
+    <p data-fps-low></p>
+    <svg viewBox="0 0 60 1" preserveAspectRatio="none" aria-hidden="true">
+      <polyline data-fps-history></polyline>
+    </svg>
   </div>
 </play-toolbar>
 
@@ -35,6 +42,7 @@
   }
 
   button,
+  label,
   a {
     align-items: center;
     background: transparent;
@@ -51,7 +59,7 @@
     white-space: nowrap;
   }
 
-  [data-toy],
+  label,
   [data-theme],
   [data-display] {
     align-content: center;
@@ -62,7 +70,63 @@
     text-overflow: ellipsis;
   }
 
-  :is(button, a):focus-visible {
+  label {
+    display: flex;
+    gap: 0.25em;
+    padding-block: 0;
+  }
+
+  select {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    flex: 1;
+    font: inherit;
+    min-inline-size: 0;
+    outline: none;
+    text-overflow: ellipsis;
+  }
+
+  .fps {
+    background: var(--color-bg);
+    border-radius: var(--size-xs);
+    display: grid;
+    font-variant-numeric: tabular-nums;
+    gap: 0.125rem;
+    inset: max(var(--size-sm), env(safe-area-inset-top)) var(--size-sm) auto
+      auto;
+    justify-items: end;
+    padding: var(--size-2xs) var(--size-xs);
+    position: fixed;
+  }
+
+  .fps[hidden] {
+    display: none;
+  }
+
+  .fps p {
+    margin: 0;
+  }
+
+  .fps svg {
+    background: color-mix(in oklch, currentColor 12%, transparent);
+    block-size: 1.25rem;
+    inline-size: 6rem;
+    margin-block-start: 0.25rem;
+    overflow: visible;
+  }
+
+  polyline {
+    fill: none;
+    shape-rendering: crispEdges;
+    stroke: currentColor;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  :is(button, a):focus-visible,
+  label:has(:focus-visible) {
     outline: 2px solid currentColor;
     outline-offset: 2px;
   }

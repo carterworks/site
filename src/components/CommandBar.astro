@@ -1,6 +1,6 @@
 ---
 import { DISPLAYS } from "./backdrop-displays";
-import { MODES } from "./backdrop-modes";
+import { TOYS } from "./backdrop-toys";
 import { getPostTitle, getPublishedPosts } from "../lib/blog";
 
 const posts = await getPublishedPosts();
@@ -107,7 +107,7 @@ const sitemapPages = [
               data-command
               data-cycle-setting="backdrop"
               data-title="Backdrop"
-              data-search={`backdrop background random ${MODES.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
+              data-search={`backdrop background random ${TOYS.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
             >
               <span>Backdrop</span><span class="command-detail"></span>
             </button>

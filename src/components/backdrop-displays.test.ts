@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { DISPLAYS } from "./backdrop-displays";
-import { MAX_GHOST } from "./emulated-canvas-limits";
+import { MAX_GHOST } from "./emulated-canvas/limits";
 
 const looks = DISPLAYS.filter(({ look }) => look);
 
@@ -16,7 +16,11 @@ test("ids are unique", () => {
 test.each(looks)(
   "$label's colours are hex, since any other form needs a helper canvas to parse",
   ({ look }) => {
-    for (const colour of [look!.base, look!.ink]) {
+    for (const colour of [
+      look!.base,
+      look!.ink,
+      look!.vignette?.edge ?? "#000000",
+    ]) {
       expect(colour).toMatch(/^#[0-9a-f]{6}$/);
     }
   },

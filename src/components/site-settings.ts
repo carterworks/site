@@ -1,12 +1,12 @@
 import { createBackdropDisplay } from "./backdrop-display-setting";
-import { createBackdropMode } from "./backdrop-mode-setting";
+import { createBackdropToy } from "./backdrop-toy-setting";
 import { createThemeSetting } from "./theme-setting";
 
 // Module-level so a ClientRouter swap, which recreates the element, keeps
 // which reset entries are on offer; only a full reload forgets them.
 export const settings = {
   theme: createThemeSetting(),
-  backdrop: createBackdropMode(),
+  backdrop: createBackdropToy(),
   display: createBackdropDisplay(),
 };
 

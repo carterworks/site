@@ -13,11 +13,15 @@ const GRID_SIZE = 160;
 ---
 
 <pixel-backdrop aria-hidden="true" transition:persist>
-  <EmulatedCanvas data-fit="viewport" width={GRID_SIZE} height={GRID_SIZE} />
+  <EmulatedCanvas
+    data-width={GRID_SIZE}
+    data-height={GRID_SIZE}
+    data-fit="viewport"
+  />
 </pixel-backdrop>
 
 <script>
-  import "./pixel-backdrop";
+  import "./pixel-backdrop/element";
 </script>
 
 <style>
@@ -58,12 +62,10 @@ const GRID_SIZE = 160;
     translate: round(-50%, 1px) round(-50%, 1px);
   }
 
-  /* Multiplied over a canvas that changes, so it is re-blended on each present. */
   pixel-backdrop[data-vignette]::after {
     background: var(--backdrop-display-vignette);
     content: "";
     inset: 0;
-    mix-blend-mode: multiply;
     position: absolute;
   }
 

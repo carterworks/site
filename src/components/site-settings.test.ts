@@ -1,8 +1,8 @@
 import { afterEach, expect, test, vi } from "vitest";
 import "./site-settings";
 
-vi.mock("./backdrop-modes", () => ({
-  MODES: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
+vi.mock("./backdrop-toys", () => ({
+  TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
 afterEach(() => {

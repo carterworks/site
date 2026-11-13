@@ -1,7 +1,7 @@
 import { storedChoice } from "../lib/cycle-setting";
 
 /**
- * The screen a display theme gives the backdrop, as the canvas knobs that
+ * The screen a display gives the backdrop, as the canvas knobs that
  * draw it. Colours are hex only: any other form makes the palette pass parse
  * it through a helper canvas.
  */
@@ -11,7 +11,12 @@ export type DisplayLook = {
    * pixel show through, so dark neighbours merge and the grid stays faint.
    */
   grid?: string;
-  vignette?: string;
+  /**
+   * A backlight fading toward the corners: the screen multiplied by white out
+   * to `clear` percent of the way to the farthest corner, then by a colour
+   * falling to `edge` there.
+   */
+  vignette?: { clear: number; edge: string };
   base: string;
   ink: string;
   levels: number;
@@ -28,14 +33,16 @@ export type Display = {
 };
 
 /**
- * Every display theme, in menu order; the first is the site's own look. The
+ * Every display, in menu order; the first is the site's own look. The
  * screens' numbers are tuned against reference photos. The ghost runs after
  * the palette, so ink appearing darkens a pixel and clearing brightens it: an
  * STN panel switches on faster than it relaxes, so it rises slower than it
  * falls.
  *
  * Pocket's ink is lighter than the photo's #1f3326 because its own shadow
- * darkens solid ink to ink·(1 − o + o·ink/base). The shadow is kept to the
+ * darkens solid ink to ink·(1 − o + o·ink/base). The shadow is paint exact
+ * over the base, so on ink that holds in red and leaves green and blue 2–3/255
+ * lighter, #1f3528 for #1f3326. The shadow is kept to the
  * reference render's ~16% rather than a reflective panel's full double pass,
  * which darkens the backing beside every shape by 45%.
  */
@@ -59,7 +66,7 @@ export const DISPLAYS: Display[] = [
     id: "amber-lcd",
     label: "Amber LCD",
     look: {
-      vignette: "radial-gradient(farthest-corner, #fff 33%, #e6d3d3)",
+      vignette: { clear: 33, edge: "#e6d3d3" },
       base: "#f89b03",
       ink: "#3c070d",
       levels: 2,

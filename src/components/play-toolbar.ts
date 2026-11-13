@@ -1,5 +1,79 @@
-import { imageToy } from "./backdrop-modes/image";
+import { RANDOM } from "./backdrop-toy-setting";
+import { TOYS } from "./backdrop-toys";
+import { imageToy } from "./backdrop-toys/image";
+import { onePercentLow } from "./frame-rate";
 import { settings } from "./site-settings";
+
+const option = (label: string, value: string) =>
+  Object.assign(document.createElement("option"), {
+    textContent: label,
+    value,
+  });
+
+const SAMPLE_MS = 500;
+const HISTORY_MS = 30_000;
+const SLOTS = HISTORY_MS / SAMPLE_MS;
+
+/** U+2007 is a figure space, as wide as a tabular digit. */
+const pad = (rate: number) => String(Math.round(rate)).padStart(3, " ");
+
+/**
+ * Shows the frame rate each half second, with the 1% low and a sparkline of
+ * the last 30s. Returns a function that stops it.
+ */
+const meterFrames = (meter: HTMLElement) => {
+  const rate = meter.querySelector("[data-fps-rate]");
+  const low = meter.querySelector("[data-fps-low]");
+  const history = meter.querySelector("[data-fps-history]");
+  if (!rate || !low || !history) return () => {};
+
+  const recent: { at: number; ms: number }[] = [];
+  const rates: number[] = [];
+  let counted = 0;
+  let since: number | undefined;
+  let last: number | undefined;
+
+  const show = (now: number, elapsed: number) => {
+    while (recent[0] && recent[0].at <= now - HISTORY_MS) recent.shift();
+    rates.push((counted * 1000) / elapsed);
+    if (rates.length > SLOTS) rates.shift();
+
+    const slowest = onePercentLow(recent.map(({ ms }) => ms));
+    const peak = Math.max(...rates);
+
+    rate.textContent = `FPS: ${pad(rates.at(-1) ?? 0)}`;
+    low.textContent = `1% low: ${pad(slowest)}`;
+    history.setAttribute(
+      "points",
+      rates
+        .flatMap((value, index) => {
+          const x = SLOTS - rates.length + index;
+          const y = (peak - value) / peak;
+          return [`${x},${y}`, `${x + 1},${y}`];
+        })
+        .join(" "),
+    );
+    meter.hidden = false;
+  };
+
+  let frame = 0;
+  const count = (now: number) => {
+    if (last !== undefined && now > last) {
+      recent.push({ at: now, ms: now - last });
+      counted += 1;
+    }
+    last = now;
+    since ??= now;
+    if (now - since >= SAMPLE_MS) {
+      show(now, now - since);
+      counted = 0;
+      since = now;
+    }
+    frame = requestAnimationFrame(count);
+  };
+  frame = requestAnimationFrame(count);
+  return () => cancelAnimationFrame(frame);
+};
 
 class PlayToolbarElement extends HTMLElement {
   cleanup?: () => void;
@@ -9,13 +83,23 @@ class PlayToolbarElement extends HTMLElement {
   }
 
   connectedCallback() {
-    const toy = this.querySelector<HTMLButtonElement>("[data-toy]");
+    const toy = this.querySelector<HTMLSelectElement>("[data-toy]");
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
     const display = this.querySelector<HTMLButtonElement>("[data-display]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
-    if (!toy || !theme || !display || !pick || !input || !status) return;
+    const fps = this.querySelector<HTMLElement>("[data-fps]");
+    if (!toy || !theme || !display || !pick || !input || !status || !fps) {
+      return;
+    }
+
+    toy.replaceChildren(
+      ...[...TOYS, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
+        option(label, id),
+      ),
+      Object.assign(option("Image", "image"), { hidden: true }),
+    );
 
     let playing: ImageBitmap | undefined;
     let request = 0;
@@ -35,8 +119,8 @@ class PlayToolbarElement extends HTMLElement {
     };
 
     const render = () => {
-      const picture = backdrop()?.mode === "image";
-      describe(toy, "Toy", picture ? "Image" : settings.backdrop.label());
+      toy.value =
+        backdrop()?.toy === "image" ? "image" : settings.backdrop.value();
       describe(theme, "Theme", settings.theme.label());
       describe(display, "Display", settings.display.label());
     };
@@ -46,10 +130,10 @@ class PlayToolbarElement extends HTMLElement {
       playing = undefined;
     };
 
-    toy.addEventListener("click", () => {
+    toy.addEventListener("change", () => {
       request += 1;
       status.textContent = "";
-      settings.backdrop.cycle();
+      settings.backdrop.choose(toy.value);
       release();
       render();
     });
@@ -84,12 +168,15 @@ class PlayToolbarElement extends HTMLElement {
       render();
     });
 
+    const stopMeter = meterFrames(fps);
+
     // The label alone follows the OS; storage is never touched by it. The
     // toy is chosen on page load, after this connects.
     const osScheme = matchMedia("(prefers-color-scheme: dark)");
     osScheme.addEventListener("change", render);
     document.addEventListener("astro:page-load", render);
     this.cleanup = () => {
+      stopMeter();
       osScheme.removeEventListener("change", render);
       document.removeEventListener("astro:page-load", render);
       // The backdrop keeps redrawing the picture on resize until the next
