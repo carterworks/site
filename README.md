@@ -20,12 +20,13 @@ headless Chromium; its options are at the top of
 `nix-shell --run "pnpm perf"`.
 
 `pnpm budgets` builds the site and fails if it misses a performance budget:
-script bytes, layouts and style recalculations during play, leaks, render
-passes and frame cost, each limit in
-[`scripts/budgets.mjs`](./scripts/budgets.mjs) with what it covers. Every pull
-request runs it. It needs the same browser, and Linux; on NixOS, run it as
-`nix-shell --run "pnpm budgets"`. A change that makes something cheaper lowers
-its limit too.
+script bytes, leaks, layouts and style recalculations during play, and the
+canvas pixels, render passes and blended pixels each frame asks for, each limit
+in [`scripts/budgets.mjs`](./scripts/budgets.mjs) with what it covers. Each is
+an exact count for the pinned Chromium, never a time, so a busy machine cannot
+move it. Every pull request runs it. It needs the same browser; on NixOS, run it
+as `nix-shell --run "pnpm budgets"`. A change that does less lowers its limit
+too.
 
 ## Deployment
 

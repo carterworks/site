@@ -1,19 +1,22 @@
 /**
  * The limits `pnpm budgets` holds the built site to; `scripts/budget-check.mjs`
- * measures them and fails when any is exceeded. Every limit is a ratchet:
- * today's value plus the margin stated beside it. A change that makes
- * something cheaper lowers its limit to the new value plus the same margin; a
- * limit is raised only on purpose, with the reason in that commit.
+ * measures them and fails when any is exceeded. Every value is a count, exact
+ * for the pinned Chromium, so each limit is today's value with no margin
+ * unless one is stated. A change that does less lowers its limit to the new
+ * value in the same commit; a limit is raised only on purpose, with the
+ * reason in that commit. A Playwright upgrade can move the compositor counts;
+ * reset them from its first run's log, in the upgrade's own commit.
  */
 export default {
   /**
-   * Brotli bytes (quality 11) of every script a fresh load of the page
-   * fetches, imports included, each compressed on its own as it is served.
-   * Brotli because every browser that runs the site accepts it, so it is what
-   * a visitor downloads. Exact: a build always compresses to the same bytes.
-   * Not covered: inline scripts, which count as the document's, and anything
-   * fetched after the page settles. /play loads the same but for its toolbar,
-   * so only the homepage is held. Margin: 2%.
+   * Brotli bytes of every script a fresh load of the page fetches, imports
+   * included, each compressed on its own at quality 11, window 22. A stable
+   * proxy for what is sent: the CDN picks its own compression. Not covered:
+   * inline scripts, which count as the document's, and anything fetched after
+   * the page settles; /play loads the same but for its toolbar. Margin: 2%,
+   * about 700 bytes, under the 1.2 KB a toy averages, so a new toy, which
+   * every page loads, misses it on purpose: raise the limit by what the run
+   * measured over it, in the toy's commit.
    */
   javascript: { "/": 34_200 },
 
@@ -21,69 +24,55 @@ export default {
   font: { "/InterVariable-latin.woff2": 102_000 },
 
   /**
-   * Per frame of hover-only play on the homepage, the worst toy on the worst
-   * display: layouts and style recalculations. Exact, and zero: drawing a
-   * frame writes nothing the page must restyle. Not covered: the frames that
-   * switch toy or display.
-   */
-  hover: { layouts: 0, styleRecalcs: 0 },
-
-  /**
-   * Per press and release on the homepage, the worst toy on the worst
-   * display. Exact: the press sets an attribute on `<html>` and the release
-   * removes it, a style recalculation each, and neither lays out.
-   */
-  press: { layouts: 0, styleRecalcs: 2 },
-
-  /**
-   * Live DOM nodes and JavaScript event listeners gained on /play, after
-   * garbage collection, from before to after switching to every toy and every
-   * display and back. Exact once warmed up. Not covered: memory held by other
-   * means, such as an array that grows.
+   * Live DOM nodes and event listeners gained, after garbage collection, by a
+   * second tour of every toy and display on /play.
    */
   leaks: { nodes: 0, listeners: 0 },
 
   /**
-   * The most render passes the compositor draws in one frame of hover-only
-   * play on the homepage, in software, the worst toy per display. Each pass
-   * past the first is another full-viewport surface composited every frame:
-   * the LCD displays' blended layers draw two. Exact for the pinned
-   * Chromium. Not covered: what each pass costs, which the compositor's
-   * frame cost measures.
+   * On the homepage, the worst toy on the worst display: layouts and style
+   * recalculations in 30 frames of hover-only play, which writes nothing the
+   * page must restyle, and in one press and release, which set and remove an
+   * attribute on `<html>`, a style recalculation each.
    */
-  renderPasses: { Site: 1, "Pocket LCD": 3, "Amber LCD": 3 },
+  play: {
+    hoverLayouts: 0,
+    hoverStyleRecalcs: 0,
+    pressLayouts: 0,
+    pressStyleRecalcs: 2,
+  },
 
   /**
-   * CPU a frame of hover-only play costs on the homepage, as a multiple of
-   * what `scripts/budget-reference.html` costs in the same rounds, so a slower
-   * or busier machine scales both:
-   *   mainThread   the page's main thread: the toy, the display's per-pixel
-   *                passes, and everything else in script, style and paint
-   *   compositor   every other thread of the renderer and GPU processes:
-   *                raster and compositing, all in software
-   * The main thread is held on the three toys that cost it most, on Site,
-   * where every toy costs it most, and on each LCD display, whose palette
-   * pass runs only there. The compositor is held once per display, with a
-   * toy that draws every frame. Not covered: the other toys and pairings,
-   * frame rate, and cost with a GPU.
-   *
-   * Margin: 15% over the highest of 5 runs, 3 idle and 2 with eight cores
-   * busy and a build looping, on an i7-8700K. A slower CPU, or one of another
-   * design, can shift a ratio, so the first runs on a new kind of machine
-   * reset these from its log.
+   * What one frame of hover-only play on the homepage asks for, the worst
+   * frame of the worst toy, per display. Work a slow phone must do 60 times a
+   * second, so each is a ratchet: lower it when a change does less.
+   *   canvasPixelsWritten  area of every putImageData and drawImage, on any
+   *                        2D canvas: the toy's frame, the display's present
+   *                        and the LCDs' shadow copy
+   *   canvasPixelsRead     area of every getImageData, a read-back that can
+   *                        stall a GPU canvas
+   *   canvasCalls          those calls
+   *   renderPasses         surfaces the compositor draws, the screen included
+   *   offscreenPixels      pixels of those surfaces other than the screen,
+   *                        each drawn and then composited again
+   *   blendedPixels        pixels composited with a blend mode other than
+   *                        plain alpha, such as the multiplied shadow and
+   *                        vignette, the costliest compositing in software
    */
-  frameCost: {
-    mainThread: {
-      "pond on Site": 2.6,
-      "filings on Site": 2.45,
-      "curtain on Site": 2.45,
-      "pond on Pocket LCD": 2.17,
-      "pond on Amber LCD": 2.02,
+  perFrame: {
+    canvasPixelsWritten: {
+      Site: 51_200,
+      "Pocket LCD": 76_800,
+      "Amber LCD": 51_200,
     },
-    compositor: {
-      "pond on Site": 1.35,
-      "pond on Pocket LCD": 6.1,
-      "pond on Amber LCD": 6.17,
+    canvasPixelsRead: { Site: 0, "Pocket LCD": 0, "Amber LCD": 0 },
+    canvasCalls: { Site: 2, "Pocket LCD": 3, "Amber LCD": 2 },
+    renderPasses: { Site: 1, "Pocket LCD": 3, "Amber LCD": 3 },
+    offscreenPixels: {
+      Site: 0,
+      "Pocket LCD": 2_042_400,
+      "Amber LCD": 2_048_000,
     },
+    blendedPixels: { Site: 0, "Pocket LCD": 1_020_000, "Amber LCD": 1_024_000 },
   },
 };

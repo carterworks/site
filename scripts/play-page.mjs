@@ -213,3 +213,9 @@ export const play = ({ ms, press = true }) =>
     };
     requestAnimationFrame(frame);
   });
+
+/** Plays as `play` does on a page with a paused `virtualClock`, running it only meanwhile. */
+export const playOnClock = (page, options) =>
+  page.evaluate(
+    `__clock.run(true), (${play})(${JSON.stringify(options)}).finally(() => __clock.run(false))`,
+  );
