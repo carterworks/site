@@ -8,6 +8,7 @@
  *   pnpm perf:device [--toy fireflies] [--display pocket] [--seconds 8]
  *                    [--https 8443 | --http 192.168.1.20:8080] [--minutes 30]
  *                    [--stay] [--json results.json] [--dist dist]
+ *   pnpm perf:device:test
  *
  * `--toy` and `--display` match names as `pnpm perf` does, and the matrix of
  * every match is measured; `--toy ""` takes every toy. Each step settles,
@@ -38,6 +39,10 @@
  * serves plain HTTP on that host instead, for a network without Tailscale,
  * but an insecure page may run its JavaScript without a JIT: Safari on an
  * iPhone ran the shader passes 15 times slower over plain HTTP.
+ *
+ * `--self-test` runs it all over loopback in headless Chromium, with short
+ * steps, and exits non-zero unless every step was applied, valid and
+ * restored, which is how CI notices the page's knobs or methods moving.
  */
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -45,6 +50,7 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
+import { chromium } from "playwright";
 import { onePercentLow } from "../src/components/frame-rate.ts";
 import { probe } from "./device-probe.mjs";
 import { play } from "./play-page.mjs";
@@ -60,11 +66,13 @@ const { values: options } = parseArgs({
     stay: { type: "boolean" },
     json: { type: "string" },
     dist: { type: "string", default: "dist" },
+    "self-test": { type: "boolean" },
   },
 });
 
-const seconds = Number(options.seconds ?? 8);
-const minutes = Number(options.minutes ?? 30);
+const selfTest = options["self-test"];
+const seconds = Number(options.seconds ?? (selfTest ? 0.5 : 8));
+const minutes = Number(options.minutes ?? (selfTest ? 2 : 30));
 const root = resolve(options.dist);
 const PLAY = join(root, "play", "index.html");
 const PROBE = `<script>(${probe})(${JSON.stringify({ seconds, toy: options.toy, display: options.display })}, ${onePercentLow}, ${play});</script>`;
@@ -212,6 +220,7 @@ function report(result) {
     console.error(
       `Run ${result.run} failed: ${result.stack ?? result.message}`,
     );
+    if (selfTest) finished(result);
   }
 }
 
@@ -259,7 +268,9 @@ const listen = (host, port) =>
   );
 
 let origin;
-if (options.http) {
+if (selfTest) {
+  origin = `http://127.0.0.1:${await listen("127.0.0.1", 0)}`;
+} else if (options.http) {
   const { hostname, port } = new URL(`http://${options.http}`);
   await listen(hostname.replace(/^\[|\]$/g, ""), Number(port || 80));
   origin = `http://${hostname}${port ? `:${port}` : ""}`;
@@ -280,5 +291,58 @@ setTimeout(() => {
   process.exit(runs.length > 0 ? 0 : 1);
 }, minutes * 60_000).unref();
 
+if (selfTest) {
+  process.exitCode = (await runSelfTest(origin)) ? 0 : 1;
+  process.exit();
+}
 await complete;
 process.exit(0);
+
+/** Plays the device in headless Chromium; true if the run was complete and clean. */
+async function runSelfTest(origin) {
+  const problems = [];
+  const expect = (ok, problem) => ok || problems.push(problem);
+  for (const path of ["/", "/play/"]) {
+    const response = await fetch(origin + path);
+    const body = Buffer.from(await response.arrayBuffer());
+    expect(
+      body.equals(await readFile(join(root, path, "index.html"))),
+      `${path} is not served as built`,
+    );
+    expect(
+      response.headers.get("cache-control") === "no-store",
+      `${path} is cached`,
+    );
+  }
+  const injected = await (await fetch(`${origin}/play/?probe`)).text();
+  expect(
+    /^<!DOCTYPE html><html[^>]*>\s*<head[^>]*><script>/.test(injected) &&
+      injected.replace(PROBE, "") === String(await readFile(PLAY)),
+    "/play/?probe does not open its <head> with the probe",
+  );
+
+  const browser = await chromium.launch({ channel: "chromium" });
+  const page = await browser.newPage();
+  page.on("pageerror", (error) => problems.push(`page error: ${error}`));
+  await page.goto(`${origin}/play/?probe`);
+  const result = await complete;
+  await browser.close();
+
+  if (result.type !== "done") {
+    problems.push("no complete run arrived");
+  } else {
+    expect(result.steps.length === result.steps[0]?.total, "steps are missing");
+    for (const step of result.steps) {
+      for (const problem of step.problems) {
+        problems.push(`${step.name}, ${step.display ?? ""}: ${problem}`);
+      }
+    }
+  }
+  for (const problem of problems) console.error(`Self-test: ${problem}`);
+  console.log(
+    problems.length === 0
+      ? "Self-test passed: every step applied, valid and restored."
+      : `Self-test failed with ${problems.length} problem(s).`,
+  );
+  return problems.length === 0;
+}

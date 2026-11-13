@@ -31,6 +31,7 @@
     "perf": "astro build && node scripts/perf.mjs",
     "budgets": "astro build && node scripts/budget-check.mjs",
     "perf:device": "astro build && node scripts/perf-device.mjs",
+    "perf:device:test": "astro build && node scripts/perf-device.mjs --self-test",
     "verify": "oxfmt --check . && pnpm check && pnpm test",
     "deploy": "alchemy deploy"
   },
