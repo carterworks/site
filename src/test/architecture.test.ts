@@ -60,7 +60,7 @@ const layers = {
   },
   "dev toolbar": {
     files: ["src/dev-toolbar/*.ts"],
-    imports: ["knobs", "toy registry", "canvas", "astro/toolbar"],
+    imports: ["knobs", "toy registry", "astro/toolbar"],
   },
   "site lib": {
     files: ["src/lib/*.ts"],

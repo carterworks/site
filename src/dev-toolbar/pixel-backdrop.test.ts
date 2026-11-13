@@ -5,7 +5,6 @@ import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/backdrop-toy-setting";
 import {
-  CONTROLS,
   STORAGE_KEY,
   loadSaved,
   persistChanges,
@@ -27,9 +26,6 @@ vi.mock("../components/backdrop-toys", () => {
     ],
   };
 });
-
-const range = (key: string) =>
-  CONTROLS.find((control) => control.kind === "range" && control.key === key);
 
 const options = { gap: 2, shape: "square", enabled: true };
 
@@ -80,10 +76,6 @@ test.each(["{not json", "null", "[1]", '"str"'])(
     expect(loadSaved(options)).toEqual({});
   },
 );
-
-test("ghost slider stops at the emulated canvas's retention cap", () => {
-  expect(range("ghost")).toMatchObject({ max: Math.round(MAX_GHOST * 100) });
-});
 
 const stored = () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
 
@@ -289,6 +281,13 @@ test("the Fit viewport toggle greys out the scale slider", async () => {
   ).toBe(true);
   // Flush the queued write, or it lands on the next test's backdrop.
   await new Promise(requestAnimationFrame);
+});
+
+test("ghost slider stops at the emulated canvas's retention cap", () => {
+  const canvas = document.createElement("div");
+  init(canvas);
+
+  expect(slider(canvas, "ghost").max).toBe(String(Math.round(MAX_GHOST * 100)));
 });
 
 test("the ghost and noise sliders open on the shown toy's look", () => {

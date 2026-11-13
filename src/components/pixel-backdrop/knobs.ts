@@ -7,7 +7,7 @@ import { MAX_GHOST } from "../emulated-canvas-limits";
  * truth for them; the order here is the panel's.
  */
 
-type Control = {
+export type Control = {
   label: string;
   /** Starts a new section of the panel, under this heading. */
   heading?: string;

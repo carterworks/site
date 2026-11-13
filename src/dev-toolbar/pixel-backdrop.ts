@@ -1,9 +1,10 @@
 import { defineToolbarApp } from "astro/toolbar";
 import { TOYS } from "../components/backdrop-toys";
-import { MAX_GHOST } from "../components/emulated-canvas-limits";
 import {
+  KNOBS,
   readDefaults,
   type BackdropKnobs,
+  type Control,
 } from "../components/pixel-backdrop/knobs";
 
 /**
@@ -112,7 +113,7 @@ const update = (partial: Partial<BackdropKnobs>) => {
   });
 };
 
-function makeRow(text: string) {
+function makeRow(panel: HTMLElement, text: string) {
   const row = document.createElement("div");
   row.className = "row";
   const label = document.createElement("label");
@@ -123,94 +124,42 @@ function makeRow(text: string) {
   row.appendChild(label);
   row.appendChild(control);
   row.appendChild(output);
-  return { row, label, control, output };
+  panel.appendChild(row);
+  return { label, control, output };
 }
-
-type KeyOf<T> = {
-  [K in keyof BackdropKnobs]: BackdropKnobs[K] extends T ? K : never;
-}[keyof BackdropKnobs];
-
-type ColorKey = {
-  [K in keyof BackdropKnobs]: string extends BackdropKnobs[K] ? K : never;
-}[keyof BackdropKnobs];
-
-type Control =
-  | { kind: "heading"; label: string }
-  | {
-      kind: "toggle";
-      key: KeyOf<boolean>;
-      label: string;
-      /** Number control greyed out while this toggle is on. */
-      disables?: KeyOf<number>;
-    }
-  | {
-      kind: "range";
-      key: KeyOf<number>;
-      label: string;
-      min: number;
-      max: number;
-      step: number;
-      suffix?: string;
-    }
-  | {
-      kind: "select";
-      key: Exclude<KeyOf<string>, ColorKey>;
-      label: string;
-      choices: Record<string, string>;
-    }
-  | { kind: "color"; key: ColorKey; label: string }
-  | { kind: "toy"; label: string };
-
-const range = (
-  key: KeyOf<number>,
-  label: string,
-  min: number,
-  max: number,
-  step: number,
-  suffix?: string,
-): Control => ({ kind: "range", key, label, min, max, step, suffix });
 
 const toyChoices = Object.fromEntries(TOYS.map((toy) => [toy.id, toy.label]));
 
-export const CONTROLS: Control[] = [
-  { kind: "toy", label: "Toy" },
-  { kind: "toggle", key: "enabled", label: "Enabled" },
-  { kind: "toggle", key: "autoFit", label: "Fit viewport", disables: "scale" },
-  range("scale", "Scale", 1, 64, 1),
-  range("gap", "Gap", 0, 8, 1),
-  {
-    kind: "select",
-    key: "shape",
-    label: "Shape",
-    choices: { square: "Square", circle: "Circle" },
-  },
-  range("ghost", "Ghost", 0, Math.round(MAX_GHOST * 100), 1, "%"),
-  { kind: "heading", label: "Background noise" },
-  range("noise", "Intensity", 0, 100, 1, "%"),
-  range("noiseScale", "Feature size", 1, 40, 1),
-  range("noiseSpeed", "Drift speed", 0, 100, 1),
-  { kind: "heading", label: "Pixel colours" },
-  { kind: "color", key: "lightBase", label: "Pixel (light)" },
-  { kind: "color", key: "lightInk", label: "Ink (light)" },
-  { kind: "color", key: "darkBase", label: "Pixel (dark)" },
-  { kind: "color", key: "darkInk", label: "Ink (dark)" },
-];
+function addToy(panel: HTMLElement, refreshers: Refresher[]) {
+  const { control: cell, output } = makeRow(panel, "Toy");
+  output.remove();
+  // Not persisted: the dev picker is for tuning, not a user preference.
+  const select = addSelect(cell, "Toy", toyChoices);
+  // Toys are random per navigation, so the select must not assume one.
+  refreshers.push(() => {
+    select.value = backdrop()?.toy ?? select.value;
+  });
+  select.addEventListener("change", () => {
+    backdrop()?.setToy(select.value);
+    for (const refresh of refreshers) refresh();
+  });
+}
 
-function addControl(
+function addKnob(
   panel: HTMLElement,
   refreshers: Refresher[],
+  key: keyof BackdropKnobs,
   control: Control,
 ) {
-  if (control.kind === "heading") {
+  if (control.heading) {
     const heading = document.createElement("div");
     heading.className = "heading";
-    heading.textContent = control.label;
+    heading.textContent = control.heading;
     panel.appendChild(heading);
-    return;
   }
 
-  const { row, label, control: cell, output } = makeRow(control.label);
-  panel.appendChild(row);
+  const { label, control: cell, output } = makeRow(panel, control.label);
+  const value = () => current()[key];
 
   if (control.kind === "range") {
     const input = document.createElement("input");
@@ -218,7 +167,7 @@ function addControl(
     input.min = String(control.min);
     input.max = String(control.max);
     input.step = String(control.step);
-    input.id = `pixel-backdrop-${control.key}`;
+    input.id = `pixel-backdrop-${key}`;
     label.htmlFor = input.id;
     cell.appendChild(input);
 
@@ -226,28 +175,27 @@ function addControl(
       output.textContent = `${value}${control.suffix ?? ""}`;
     };
     refreshers.push(() => {
-      const value = current()[control.key];
-      input.value = String(value);
-      show(value);
+      input.value = String(value());
+      show(value() as number);
     });
     input.addEventListener("input", () => {
       const value = Number(input.value);
       show(value);
-      update({ [control.key]: value });
+      update({ [key]: value });
     });
   } else if (control.kind === "color") {
     const input = document.createElement("input");
     input.type = "color";
-    input.id = `pixel-backdrop-${control.key}`;
+    input.id = `pixel-backdrop-${key}`;
     label.htmlFor = input.id;
     cell.appendChild(input);
 
     refreshers.push(() => {
-      input.value = output.textContent = current()[control.key];
+      input.value = output.textContent = value() as string;
     });
     input.addEventListener("input", () => {
       output.textContent = input.value;
-      update({ [control.key]: input.value });
+      update({ [key]: input.value });
     });
   } else if (control.kind === "toggle") {
     output.remove();
@@ -269,35 +217,21 @@ function addControl(
         ?.toggleAttribute("data-disabled", toggle.input.checked);
     };
     refreshers.push(() => {
-      toggle.input.checked = current()[control.key];
+      toggle.input.checked = value() as boolean;
       syncDisabled();
     });
     toggle.input.addEventListener("change", () => {
-      update({ [control.key]: toggle.input.checked });
+      update({ [key]: toggle.input.checked });
       syncDisabled();
-    });
-  } else if (control.kind === "toy") {
-    output.remove();
-    // Not persisted: the dev picker is for tuning, not a user preference.
-    const select = addSelect(cell, control.label, toyChoices);
-    // Toys are random per navigation, so the select must not assume one.
-    refreshers.push(() => {
-      select.value = backdrop()?.toy ?? select.value;
-    });
-    select.addEventListener("change", () => {
-      backdrop()?.setToy(select.value);
-      for (const refresh of refreshers) refresh();
     });
   } else {
     output.remove();
     const select = addSelect(cell, control.label, control.choices);
     refreshers.push(() => {
-      select.value = current()[control.key];
+      select.value = value() as string;
     });
     select.addEventListener("change", () => {
-      update({
-        [control.key]: select.value as BackdropKnobs["shape"],
-      });
+      update({ [key]: select.value });
     });
   }
 }
@@ -396,7 +330,10 @@ function renderPane(canvas: ShadowRoot) {
   canvas.appendChild(pane);
 
   const refreshers: Refresher[] = [];
-  for (const control of CONTROLS) addControl(panel, refreshers, control);
+  addToy(panel, refreshers);
+  for (const [key, { control }] of Object.entries(KNOBS)) {
+    addKnob(panel, refreshers, key as keyof BackdropKnobs, control);
+  }
   for (const refresh of refreshers) refresh();
   paneLife?.abort();
   paneLife = new AbortController();
