@@ -1,4 +1,11 @@
-import { fixedStep, pointOn, TUNED_GRID, visibleCells, type Toy } from "./toy";
+import {
+  fixedStep,
+  frameLoop,
+  pointOn,
+  TUNED_GRID,
+  visibleCells,
+  type Toy,
+} from "./toy";
 
 const MAX_DOMINOES = 2048;
 /** Footprint sizes in cells of the tuned width: across the path, along it, and standing height. */
@@ -83,7 +90,6 @@ export const dominoes: Toy = {
     let emptyTapAt = -Infinity;
     let emptyTapX = 0;
     let emptyTapY = 0;
-    let frame: number | undefined;
     const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
 
     const place = (px: number, py: number, dx: number, dy: number) => {
@@ -239,16 +245,13 @@ export const dominoes: Toy = {
     };
 
     const draw = (now: number) => {
-      frame = undefined;
       pace.advance(now, simulate);
       paint();
-      if (moving > 0) wake();
-      else pace.restart();
+      if (moving === 0) pace.restart();
+      return moving > 0;
     };
 
-    const wake = () => {
-      frame ??= requestAnimationFrame(draw);
-    };
+    const { wake, stop } = frameLoop(draw);
 
     const standingAt = (px: number, py: number) => {
       let nearest = -1;
@@ -342,20 +345,18 @@ export const dominoes: Toy = {
     };
 
     layCurve();
-    canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerup", onUp);
-    canvas.addEventListener("pointercancel", onCancel);
-    window.addEventListener("resize", onResize);
+    const listening = new AbortController();
+    const { signal } = listening;
+    canvas.addEventListener("pointerdown", onDown, { signal });
+    canvas.addEventListener("pointermove", onMove, { signal });
+    canvas.addEventListener("pointerup", onUp, { signal });
+    canvas.addEventListener("pointercancel", onCancel, { signal });
+    window.addEventListener("resize", onResize, { signal });
     wake();
 
     return () => {
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("pointercancel", onCancel);
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(frame ?? 0);
+      listening.abort();
+      stop();
     };
   },
 };
