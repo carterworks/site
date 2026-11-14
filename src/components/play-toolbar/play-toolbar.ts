@@ -1,3 +1,4 @@
+import { SHAPES } from "../settings/backdrop-shape-setting";
 import { RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import { imageToy } from "../backdrop-toys/image";
@@ -9,19 +10,6 @@ const option = (label: string, value: string) =>
     textContent: label,
     value,
   });
-
-/** The canvas's shapes, default first; a test holds it to the canvas's own list. */
-const SHAPES = [
-  "square",
-  "circle",
-  "ring",
-  "diamond",
-  "hex",
-  "triangle",
-  "dash",
-  "slash",
-  "cross",
-] as const;
 
 const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 

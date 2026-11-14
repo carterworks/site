@@ -3,10 +3,24 @@ import {
   storedChoice,
   storeChoice,
 } from "../../lib/cycle-setting";
-import { type PixelShape, SHAPES } from "../emulated-canvas/presenter";
 import { RANDOM } from "./backdrop-toy-setting";
 
 export const SHAPE_KEY = "backdrop-shape";
+
+/** The canvas's shapes, default first; a test holds it to the canvas's own list. */
+export const SHAPES = [
+  "square",
+  "circle",
+  "ring",
+  "diamond",
+  "hex",
+  "triangle",
+  "dash",
+  "slash",
+  "cross",
+] as const;
+
+type PixelShape = (typeof SHAPES)[number];
 
 const stored = () => storedChoice(SHAPE_KEY, SHAPES);
 const visits = () => storedChoice(SHAPE_KEY, SHAPES, "sessionStorage");
