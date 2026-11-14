@@ -2482,7 +2482,7 @@ exports[`planet on Grid > markup 1`] = `
 }
 `;
 
-exports[`planet on Grid 1`] = `"2c76a93199f8d258af0db78eaee8575339e92c94586c5fad2f38457d8ce4faa6 over 261 changed frames"`;
+exports[`planet on Grid 1`] = `"6c560fbc02c4f05ac27e8b50a76f5bc25344a7f7f1a2f876987c435403eae52e over 500 changed frames"`;
 
 exports[`planet on Pocket LCD > markup 1`] = `
 {
@@ -2551,7 +2551,7 @@ exports[`planet on Pocket LCD > markup 1`] = `
 }
 `;
 
-exports[`planet on Pocket LCD 1`] = `"d996eb71860bc0402eb78cac928fe5d34563cae7711aad387d535e1036d2ba96 over 256 changed frames"`;
+exports[`planet on Pocket LCD 1`] = `"824db5f21c1f43913aef766760d7d38f268160262c4679d8418735bff0642a59 over 500 changed frames"`;
 
 exports[`planet on Site in dark > markup 1`] = `
 {
@@ -2601,7 +2601,7 @@ exports[`planet on Site in dark > markup 1`] = `
 }
 `;
 
-exports[`planet on Site in dark 1`] = `"e16c8a88f1a359231ab1d2d64a8e226a157eae512e43e6735f3e9adcaf32de2d over 291 changed frames"`;
+exports[`planet on Site in dark 1`] = `"666d8e8352a5fe0feec2cb08dcec53b0a27ba05472093c91c62deaeac9385a61 over 501 changed frames"`;
 
 exports[`planet on Site in light > markup 1`] = `
 {
@@ -2651,7 +2651,7 @@ exports[`planet on Site in light > markup 1`] = `
 }
 `;
 
-exports[`planet on Site in light 1`] = `"025485127e164e54bf27904e32c9a9985f57fa160820235a9006c73a0fbe7888 over 291 changed frames"`;
+exports[`planet on Site in light 1`] = `"6df772720f3a44c10e4a316831caec69ca61c379d42fd7b3b86a7df5b9935132 over 501 changed frames"`;
 
 exports[`planet on Tet > markup 1`] = `
 {
@@ -2707,7 +2707,7 @@ exports[`planet on Tet > markup 1`] = `
 }
 `;
 
-exports[`planet on Tet 1`] = `"0d4707746f5f7a29288b2ccf4c5bd408559f2e681e0121ef05c646d1cea942c8 over 258 changed frames"`;
+exports[`planet on Tet 1`] = `"5d1882731c89f98a0fbc50b8e851404205abfca059ea53b5cbe7d2821ab96eec over 500 changed frames"`;
 
 exports[`planet on Thermal > markup 1`] = `
 {
@@ -2763,7 +2763,7 @@ exports[`planet on Thermal > markup 1`] = `
 }
 `;
 
-exports[`planet on Thermal 1`] = `"df0a6a8d10d15b150925476310506edc5c69098d9ab515f2b9f5f0dba869da75 over 257 changed frames"`;
+exports[`planet on Thermal 1`] = `"d0fea2d3d9a444ec61dddcbcaba05a346a5cfd821e138c3cc413d51631a287ce over 500 changed frames"`;
 
 exports[`pond on Amber LCD > markup 1`] = `
 {

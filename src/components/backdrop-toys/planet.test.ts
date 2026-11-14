@@ -16,6 +16,8 @@ const FRAME = 16;
 /** The visible rows, as on a 16:9 viewport over the square grid. */
 const TOP = 35;
 const BOTTOM = 125;
+/** Past the drift and its ease-out, inside the contract's 30 s. */
+const SETTLED_MS = 25_000;
 
 let canvas: HTMLCanvasElement;
 let bitmap: () => SoftBitmap;
@@ -44,6 +46,7 @@ afterEach(() => {
 });
 
 const run = (frames: number) => vi.advanceTimersByTimeAsync(frames * FRAME);
+const settle = () => vi.advanceTimersByTimeAsync(SETTLED_MS);
 
 const alpha = (x: number, y: number) => bitmap().pixels[(y * SIZE + x) * 4 + 3];
 
@@ -61,6 +64,13 @@ function brightest() {
   return peak;
 }
 
+/** How many pixels change over `frames` frames. */
+async function motion(frames: number) {
+  const before = bitmap().pixels.slice();
+  await run(frames);
+  return bitmap().pixels.filter((value, i) => value !== before[i]).length;
+}
+
 const still = () => vi.getTimerCount() === 0;
 const at = (type: string, x: number, init: PointerEventInit = {}) =>
   pointerAt(canvas, type, x, 100, init);
@@ -76,7 +86,7 @@ async function drag(from: number, to: number, init: PointerEventInit = {}) {
   await run(1);
 }
 
-test("rises dimly from the lower right of the visible cells, and sleeps", async () => {
+test("rises dimly from the lower right of the visible cells", async () => {
   await run(2);
 
   const middle = (TOP + BOTTOM) / 2;
@@ -84,24 +94,30 @@ test("rises dimly from the lower right of the visible cells, and sleeps", async 
   expect(lit(0, TOP, SIZE / 3, middle)).toBe(0);
   expect(lit(0, 0, SIZE, TOP)).toBe(0);
   expect(brightest()).toBeLessThanOrEqual(0.45 * 255);
+});
+
+test("drifts on its own from the start, then settles and sleeps", async () => {
+  await run(1);
+  expect(await motion(120)).toBeGreaterThan(0);
+  await vi.advanceTimersByTimeAsync(12_000);
+  expect(still()).toBe(false);
+
+  await settle();
+  expect(await motion(120)).toBe(0);
   expect(still()).toBe(true);
 });
 
-test("holds still under a hovering pointer", async () => {
+test("a hovering pointer does not restart the drift", async () => {
+  await settle();
+
+  for (let x = 40; x < 140; x += 2) at("pointermove", x);
   await run(1);
-  const before = bitmap().pixels.slice();
 
-  for (let x = 40; x < 140; x += 2) {
-    at("pointermove", x);
-    await run(1);
-  }
-
-  expect(bitmap().pixels).toEqual(before);
   expect(still()).toBe(true);
 });
 
 test("turns with a drag, and back again when it returns", async () => {
-  await run(1);
+  await settle();
   const before = bitmap().pixels.slice();
 
   await drag(60, 90);
@@ -113,53 +129,23 @@ test("turns with a drag, and back again when it returns", async () => {
   expect(bitmap().pixels).toEqual(before);
 });
 
-test("a fling keeps turning after release, slows, and sleeps", async () => {
-  await run(1);
+test("a fling slows to the drift, not to a stop, then settles", async () => {
+  await settle();
   await drag(60, 120);
   at("pointerup", 120);
-  await run(1);
-  const released = bitmap().pixels.slice();
+  const flung = await motion(10);
 
-  await run(10);
-  expect(bitmap().pixels).not.toEqual(released);
-  expect(still()).toBe(false);
+  await vi.advanceTimersByTimeAsync(5000);
+  const drifting = await motion(10);
+  expect(drifting).toBeGreaterThan(0);
+  expect(drifting).toBeLessThan(flung);
 
-  await vi.advanceTimersByTimeAsync(10_000);
+  await settle();
   expect(still()).toBe(true);
 });
 
-test("a release after holding still does not fling", async () => {
-  await run(1);
-  await drag(60, 120);
-  await run(20);
-  at("pointerup", 120);
-  await run(1);
-  const released = bitmap().pixels.slice();
-
-  await run(10);
-
-  expect(bitmap().pixels).toEqual(released);
-  expect(still()).toBe(true);
-});
-
-test("a touch turns it only by dragging", async () => {
-  await run(1);
-  const before = bitmap().pixels.slice();
-  at("pointermove", 60, { pointerType: "touch" });
-  at("pointermove", 90, { pointerType: "touch" });
-  await run(2);
-  expect(bitmap().pixels).toEqual(before);
-
-  await drag(60, 90, { pointerType: "touch" });
-  at("pointercancel", 90, { pointerType: "touch" });
-  await vi.advanceTimersByTimeAsync(10_000);
-
-  expect(bitmap().pixels).not.toEqual(before);
-  expect(still()).toBe(true);
-});
-
-test("a tap leaves a fling turning, but a held press catches it", async () => {
-  await run(1);
+test("a held press catches it, and the release restarts the drift", async () => {
+  await settle();
   await drag(60, 120);
   at("pointerup", 120);
   await run(5);
@@ -172,11 +158,26 @@ test("a tap leaves a fling turning, but a held press catches it", async () => {
 
   at("pointerdown", 80, { buttons: 1 });
   await run(10);
-  at("pointerup", 80);
-  await run(1);
-  const caught = bitmap().pixels.slice();
-  await run(10);
+  expect(await motion(10)).toBe(0);
 
-  expect(bitmap().pixels).toEqual(caught);
+  at("pointerup", 80);
+  expect(await motion(120)).toBeGreaterThan(0);
+  await settle();
+  expect(still()).toBe(true);
+});
+
+test("a touch turns it only by dragging", async () => {
+  await settle();
+  const before = bitmap().pixels.slice();
+  at("pointermove", 60, { pointerType: "touch" });
+  at("pointermove", 90, { pointerType: "touch" });
+  await run(2);
+  expect(bitmap().pixels).toEqual(before);
+
+  await drag(60, 90, { pointerType: "touch" });
+  at("pointercancel", 90, { pointerType: "touch" });
+  await settle();
+
+  expect(bitmap().pixels).not.toEqual(before);
   expect(still()).toBe(true);
 });

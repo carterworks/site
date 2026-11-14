@@ -34,9 +34,17 @@ const SPHERE_POINTS = 16_000;
 const CITIES = 80;
 const SPIRE = 1.015;
 const TILT = 0.55;
-/** The share of a fling's speed kept each step. */
+/** Radians per ms it drifts at untouched: a turn in about three and a half minutes. */
+const DRIFT = 0.00003;
+/**
+ * How long it drifts after the start or the last press, then how long the
+ * drift eases out over, together well inside the 30 s the contract allows.
+ */
+const DRIFT_MS = 15_000;
+const EASE_OUT_MS = 8000;
+/** The share of the gap to the drift kept each step, so a fling slows to it. */
 const FRICTION = 0.96;
-/** Radians per ms below which a fling has died out. */
+/** Radians per ms within which the speed has reached the drift. */
 const STILL_SPEED = 1e-6;
 /**
  * A press held this long without moving catches a fling, and a release this
@@ -49,9 +57,10 @@ const MAX_CATCH_UP_MS = 100;
 /**
  * A planet of points rising from the lower right of the visible cells, its
  * land a Fibonacci sphere masked by a coarse map, shaded by depth behind a
- * dashed limb, with short spires for cities. A horizontal drag turns it, and
- * a fling keeps turning until friction or a held press stops it; then the
- * loop sleeps.
+ * dashed limb, with short spires for cities. It drifts slowly on its own, and
+ * a horizontal drag turns it; a fling slows back to the drift, and a held
+ * press stops it. A while after the start or the last press the drift eases
+ * to a stop and the loop sleeps.
  *
  * It draws white on transparent, each shade as alpha, into its own image
  * data put whole each frame.
@@ -96,7 +105,10 @@ export const planet: Toy = {
     fit();
 
     let angle = 0;
-    let speed = 0;
+    let speed = DRIFT;
+    let direction = 1;
+    let touchedAt = performance.now();
+    let now = touchedAt;
     let held = false;
     let dragging = false;
     let dragX = 0;
@@ -163,17 +175,28 @@ export const planet: Toy = {
       context.putImageData(image, 0, 0);
     };
 
+    const drift = () => {
+      if (held) return 0;
+      const easing = (now - touchedAt - DRIFT_MS) / EASE_OUT_MS;
+      if (easing >= 1) return 0;
+      if (easing <= 0) return DRIFT * direction;
+      return ((DRIFT * direction) / 2) * (1 + Math.cos(Math.PI * easing));
+    };
+
     const coast = () => {
+      const target = drift();
       angle += speed * STEP_MS;
-      speed = Math.abs(speed) < STILL_SPEED ? 0 : speed * FRICTION;
+      speed = target + (speed - target) * FRICTION;
+      if (Math.abs(speed - target) < STILL_SPEED) speed = target;
     };
     const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS);
 
-    const { wake, stop } = frameLoop((now) => {
+    const { wake, stop } = frameLoop((time) => {
+      now = time;
       if (held && now - movedAt > FLING_MS) speed = 0;
       if (!dragging) pace.advance(now, coast);
       draw();
-      if (!dragging && speed !== 0) return true;
+      if (!dragging && (speed !== 0 || drift() !== 0)) return true;
       pace.restart();
       return false;
     });
@@ -183,7 +206,7 @@ export const planet: Toy = {
       if (event.isTrusted) canvas.setPointerCapture(event.pointerId);
       held = true;
       dragX = pointOn(canvas, event).x;
-      movedAt = performance.now();
+      movedAt = touchedAt = performance.now();
     };
 
     const onMove = (event: PointerEvent) => {
@@ -203,7 +226,9 @@ export const planet: Toy = {
     const onLift = () => {
       if (!held) return;
       held = dragging = false;
-      if (performance.now() - movedAt > FLING_MS) speed = 0;
+      touchedAt = performance.now();
+      if (speed !== 0) direction = Math.sign(speed);
+      if (touchedAt - movedAt > FLING_MS) speed = 0;
       wake();
     };
 
