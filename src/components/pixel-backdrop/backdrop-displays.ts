@@ -22,6 +22,8 @@ export type DisplayLook = {
   stops?: string[];
   ink: string;
   levels: number;
+  /** Mixes neighbouring levels in an ordered pattern, so shades between them still show. */
+  dither?: boolean;
   gap: number;
   ghostRise: number;
   ghostFall: number;
@@ -64,6 +66,8 @@ export const DISPLAYS: Display[] = [
       shadow: { opacity: 25, x: 4, y: 4 },
     },
   },
+  // Two plain levels round every shade under half away, which blanked dim
+  // toys like Planet and the mountains' shading; four dithered keep them.
   {
     id: "amber-lcd",
     label: "Amber LCD",
@@ -71,7 +75,8 @@ export const DISPLAYS: Display[] = [
       vignette: { clear: 33, edge: "#e6d3d3" },
       base: "#f89b03",
       ink: "#3c070d",
-      levels: 2,
+      levels: 4,
+      dither: true,
       gap: 1,
       ghostRise: 86,
       ghostFall: 76,
