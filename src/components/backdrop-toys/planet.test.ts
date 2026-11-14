@@ -96,6 +96,28 @@ test("rises dimly from the lower right of the visible cells", async () => {
   expect(brightest()).toBeLessThanOrEqual(0.45 * 255);
 });
 
+test("in portrait, shows most of the globe above the bottom edge", async () => {
+  stop();
+  const [left, top, right, bottom] = [55, 20, 105, 140];
+  vi.mocked(HTMLDivElement.prototype.getBoundingClientRect).mockReturnValue(
+    new DOMRect(left, top, right - left, bottom - top),
+  );
+  stop = planet.start(canvas);
+  await run(2);
+
+  const columns: number[] = [];
+  const rows: number[] = [];
+  for (let y = 0; y < SIZE; y += 1)
+    for (let x = 0; x < SIZE; x += 1)
+      if (alpha(x, y) > 0) (columns.push(x), rows.push(y));
+  const diameter = Math.max(...columns) - Math.min(...columns);
+  const shown = (bottom - Math.min(...rows)) / diameter;
+
+  expect(shown).toBeGreaterThan(0.65);
+  expect(shown).toBeLessThan(0.75);
+  expect(Math.min(...columns)).toBeGreaterThanOrEqual(left);
+});
+
 test("drifts on its own from the start, then settles and sleeps", async () => {
   await run(1);
   expect(await motion(120)).toBeGreaterThan(0);

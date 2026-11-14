@@ -1,4 +1,5 @@
 import { mulberry32 } from "../../lib/backdrop-noise";
+import { clamp } from "../../lib/clamp";
 import { line } from "./line";
 import {
   fixedStep,
@@ -97,9 +98,13 @@ export const planet: Toy = {
     let radius = 1;
     const fit = () => {
       const { right, bottom, left, top } = visibleCells(canvas);
-      const size = Math.min(bottom - top, ((right - left) * 9) / 16);
+      const across = right - left;
+      const tall = bottom - top;
+      const size = Math.min(tall, (across * 9) / 16);
+      // Eases from square to 9:16 rather than switching, so a near-square window doesn't jump.
+      const portrait = clamp(((1 - across / tall) * 16) / 7, 0, 1);
       cx = right - 0.46 * size;
-      cy = bottom + 0.42 * size;
+      cy = bottom + (0.42 - 0.88 * portrait) * size;
       radius = 1.15 * size;
     };
     fit();
