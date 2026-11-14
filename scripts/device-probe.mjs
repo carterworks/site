@@ -288,10 +288,12 @@ export function probe(
   const label = () => menu.selectedOptions[0].textContent;
   /**
    * The menu shows a display on <html>, which the backdrop observes, so it
-   * applies it a microtask later.
+   * applies it a microtask later. Random, offered once a display is stored,
+   * would draw any of them, so it is stepped over.
    */
   const nextDisplay = async () => {
-    menu.selectedIndex = (menu.selectedIndex + 1) % menu.length;
+    do menu.selectedIndex = (menu.selectedIndex + 1) % menu.length;
+    while (menu.value === "random");
     menu.dispatchEvent(new Event("change"));
     await Promise.resolve();
   };
