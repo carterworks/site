@@ -106,10 +106,6 @@ class PlayToolbarElement extends HTMLElement {
       return;
     }
 
-    toy.replaceChildren(
-      ...TOYS.map(({ id, label }) => option(label, id)),
-      Object.assign(option("Image", "image"), { hidden: true }),
-    );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
 
     let playing: ImageBitmap | undefined;
@@ -118,6 +114,14 @@ class PlayToolbarElement extends HTMLElement {
     const backdrop = () => document.querySelector("pixel-backdrop");
 
     const render = () => {
+      toy.replaceChildren(
+        ...settings.backdrop
+          .choices()
+          .map((id) =>
+            option(TOYS.find((toy) => toy.id === id)?.label ?? "Random", id),
+          ),
+        Object.assign(option("Image", "image"), { hidden: true }),
+      );
       toy.value =
         backdrop()?.toy === "image" ? "image" : settings.backdrop.value();
       theme.textContent = `Theme: ${settings.theme.label()}`;

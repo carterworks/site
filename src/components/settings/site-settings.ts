@@ -5,7 +5,7 @@ import { createThemeSetting } from "./theme-setting";
 import { displayAttribute } from "../pixel-backdrop/backdrop-displays";
 
 // Module-level so a ClientRouter swap, which recreates the element, keeps
-// the random toy each choice is measured against.
+// the toy each navigation draws a different one from.
 export const settings = {
   theme: createThemeSetting(),
   backdrop: createBackdropToy(),

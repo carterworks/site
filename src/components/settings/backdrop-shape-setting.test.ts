@@ -1,5 +1,6 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropShape, SHAPE_KEY } from "./backdrop-shape-setting";
+import { RANDOM } from "./backdrop-toy-setting";
 import { SHAPES } from "../emulated-canvas/presenter";
 
 const configure = vi.fn();
@@ -74,49 +75,48 @@ test("activating stores the next shape and draws it", () => {
   expect(shape.label()).toBe("Circle");
 });
 
-test("cycling onto the visit's shape clears storage instead of storing it", () => {
-  sessionStorage.setItem(SHAPE_KEY, SHAPES[1]);
+test("Random follows the last shape only while a shape is stored", () => {
+  sessionStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0), events);
   load(events);
 
-  for (let step = 0; step < SHAPES.length - 1; step++) shape.cycle();
+  shape.cycle();
   expect(shape.value()).toBe(SHAPES[0]);
   expect(localStorage.getItem(SHAPE_KEY)).toBe(SHAPES[0]);
 
+  shape.choose(SHAPES.at(-1)!);
   shape.cycle();
 
-  expect(shape.value()).toBe(SHAPES[1]);
-  expect(shown()).toBe(SHAPES[1]);
   expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
 });
 
-test("a stored shape still leaves a visit's shape to return to", () => {
+test("choosing Random clears storage and draws a different shape for the visit", () => {
   localStorage.setItem(SHAPE_KEY, SHAPES[0]);
+  sessionStorage.setItem(SHAPE_KEY, SHAPES[0]);
+  const events = new EventTarget();
+  const shape = createBackdropShape(fixedRandom(0), events);
+  load(events);
+
+  shape.choose(RANDOM);
+
+  expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
+  expect(shown()).toBe(SHAPES[1]);
+  expect(sessionStorage.getItem(SHAPE_KEY)).toBe(SHAPES[1]);
+});
+
+test("with nothing stored, the row reads the shape on show, never Random", () => {
+  localStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0.5), events);
   load(events);
 
-  expect(sessionStorage.getItem(SHAPE_KEY)).toBe(SHAPES[4]);
-  shape.choose(SHAPES[4]);
+  shape.cycle();
 
-  expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
-  expect(shape.label()).toBe("Hex");
-});
-
-test("offers only shapes, never a Random entry", () => {
-  const events = new EventTarget();
-  const shape = createBackdropShape(fixedRandom(0), events);
-  load(events);
-
-  const labels = Array.from({ length: SHAPES.length * 2 }, () => {
-    shape.cycle();
-    return shape.label();
-  });
-
-  expect(labels).not.toContain("Random");
-  shape.choose("random");
-  expect(shape.value()).toBe(SHAPES[0]);
+  expect(shape.value()).toBe(shown());
+  expect(shape.label()).not.toBe("Random");
+  shape.cycle();
+  expect(localStorage.getItem(SHAPE_KEY)).not.toBeNull();
 });
 
 test("ignores a stored id that is no longer a shape", () => {

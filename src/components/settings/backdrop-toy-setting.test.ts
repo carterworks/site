@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import { createBackdropToy, TOY_KEY } from "./backdrop-toy-setting";
+import { createBackdropToy, RANDOM, TOY_KEY } from "./backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 
 vi.mock("../backdrop-toys", () => ({
@@ -74,50 +74,43 @@ test("a stored toy replaces random on load and navigation", () => {
   expect(backdrop.label()).toBe(TOYS[2].label);
 });
 
-test("cycling onto the page's random toy clears storage instead of storing it", () => {
+test("Random follows the last toy only while a toy is stored", () => {
   const events = new EventTarget();
-  const backdrop = createBackdropToy(fixedRandom(0.5), events);
+  const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
-  expect(backdrop.value()).toBe(TOYS[1].id);
+  expect(backdrop.choices()).not.toContain(RANDOM);
+
+  backdrop.choose(TOYS.at(-1)!.id);
+  expect(backdrop.choices()).toEqual([...TOYS.map((toy) => toy.id), RANDOM]);
 
   backdrop.cycle();
-  backdrop.cycle();
-  expect(localStorage.getItem("backdrop-mode")).toBe(TOYS[0].id);
 
-  backdrop.cycle();
-
-  expect(backdrop.label()).toBe(TOYS[1].label);
-  expect(setToy).toHaveBeenLastCalledWith(TOYS[1].id);
   expect(localStorage.getItem("backdrop-mode")).toBeNull();
-  events.dispatchEvent(new Event("astro:page-load"));
-  expect(setToy).not.toHaveBeenLastCalledWith(TOYS[1].id);
+  expect(backdrop.choices()).not.toContain(RANDOM);
 });
 
-test("a stored toy still leaves the page's random toy to return to", () => {
-  localStorage.setItem("backdrop-mode", TOYS[2].id);
+test("choosing Random clears storage and applies a different toy", () => {
+  localStorage.setItem("backdrop-mode", TOYS[0].id);
+  const events = new EventTarget();
+  const backdrop = createBackdropToy(fixedRandom(0), events);
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  backdrop.choose(RANDOM);
+
+  expect(localStorage.getItem("backdrop-mode")).toBeNull();
+  expect(setToy).toHaveBeenLastCalledWith(TOYS[1].id);
+  expect(backdrop.value()).toBe(TOYS[1].id);
+  expect(backdrop.label()).toBe(TOYS[1].label);
+});
+
+test("choosing the page's random toy stores it", () => {
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
 
   backdrop.choose(TOYS[0].id);
 
-  expect(localStorage.getItem("backdrop-mode")).toBeNull();
-  expect(setToy).toHaveBeenLastCalledWith(TOYS[0].id);
-});
-
-test("offers only toys, never a Random entry", () => {
-  const events = new EventTarget();
-  const backdrop = createBackdropToy(fixedRandom(0), events);
-  events.dispatchEvent(new Event("astro:page-load"));
-
-  const labels = Array.from({ length: TOYS.length * 2 }, () => {
-    backdrop.cycle();
-    return backdrop.label();
-  });
-
-  expect(labels).not.toContain("Random");
-  backdrop.choose("random");
-  expect(backdrop.value()).toBe(TOYS[0].id);
+  expect(localStorage.getItem("backdrop-mode")).toBe(TOYS[0].id);
 });
 
 test("keeps cycling when storage is blocked", () => {

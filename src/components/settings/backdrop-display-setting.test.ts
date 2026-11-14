@@ -1,5 +1,6 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
+import { RANDOM } from "./backdrop-toy-setting";
 import {
   displayKey,
   displaysFor,
@@ -15,6 +16,7 @@ let root: HTMLElement;
 beforeEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
+  sessionStorage.clear();
   root = document.createElement("html");
   root.style.colorScheme = "light";
 });
@@ -41,17 +43,21 @@ test("the first activation stores and shows the scheme's first screen", () => {
   expect(display.label()).toBe(pocket.label);
 });
 
-test("rotates through the shown scheme's screens only, then back to the site's look", () => {
-  const display = createBackdropDisplay({ root });
+test("after the last screen comes Random, which clears storage and draws a different screen for the visit", () => {
+  const display = createBackdropDisplay({ root, random: () => 0 });
 
   cycleTimes(display, displaysFor("light").length - 1);
   expect(display.value()).toBe(lastLight.id);
-  expect(localStorage.getItem(displayKey("light"))).toBe(lastLight.id);
+  expect(display.choices().at(-1)?.id).toBe(RANDOM);
 
   display.cycle();
+
   expect(display.value()).toBe(site.id);
+  expect(display.label()).toBe(site.label);
   expect(shownDisplay(root, "light")).toBe(site);
   expect(localStorage.getItem(displayKey("light"))).toBeNull();
+  expect(sessionStorage.getItem(displayKey("light"))).toBe(site.id);
+  expect(display.choices()).toBe(displaysFor("light"));
 });
 
 test("offers the shown scheme's displays, and follows a scheme flip", () => {
@@ -87,14 +93,14 @@ test("choosing a screen stores and shows it", () => {
   expect(shownDisplay(root, "light")).toBe(lastLight);
 });
 
-test("choosing the site's look shows it and clears the store", () => {
+test("choosing the site's look stores it like any other screen", () => {
   const display = createBackdropDisplay({ root });
   display.choose(lastLight.id);
 
   display.choose(site.id);
 
   expect(display.value()).toBe(site.id);
-  expect(localStorage.getItem(displayKey("light"))).toBeNull();
+  expect(localStorage.getItem(displayKey("light"))).toBe(site.id);
 });
 
 test("an unknown id changes nothing", () => {
