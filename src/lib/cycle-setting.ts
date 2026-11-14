@@ -11,18 +11,28 @@ export function nextInRotation<T>(
   return rotation[(rotation.indexOf(current) + 1) % rotation.length];
 }
 
-export function storedChoice(key: string, ids: readonly string[]) {
+type Store = "localStorage" | "sessionStorage";
+
+export function storedChoice<T extends string>(
+  key: string,
+  ids: readonly T[],
+  store: Store = "localStorage",
+) {
   try {
-    const id = localStorage.getItem(key);
-    return id !== null && ids.includes(id) ? id : undefined;
+    const id = globalThis[store].getItem(key);
+    return ids.find((known) => known === id);
   } catch {
     return undefined;
   }
 }
 
-export function storeChoice(key: string, id?: string) {
+export function storeChoice(
+  key: string,
+  id?: string,
+  store: Store = "localStorage",
+) {
   try {
-    if (id) localStorage.setItem(key, id);
-    else localStorage.removeItem(key);
+    if (id) globalThis[store].setItem(key, id);
+    else globalThis[store].removeItem(key);
   } catch {}
 }
