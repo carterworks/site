@@ -20,8 +20,9 @@ exports[`crags on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -56,7 +57,7 @@ exports[`crags on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`crags on Amber LCD 1`] = `"923793f7eb907b542b3cf3dee274b05fb0c27f573bfd241ff2d10a52ebcf4724 over 1 changed frames"`;
+exports[`crags on Amber LCD 1`] = `"e3ea095d0a7f3dab6ce7cb149954c74a8adec8450968cbd25746cccf49a04350 over 1 changed frames"`;
 
 exports[`crags on Grid > markup 1`] = `
 {
@@ -359,8 +360,9 @@ exports[`culture on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -395,7 +397,7 @@ exports[`culture on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`culture on Amber LCD 1`] = `"91649bd3d904f937a1ef65f0db485686d441985cd3c2c111f02aa17eca6482fa over 500 changed frames"`;
+exports[`culture on Amber LCD 1`] = `"370b3f402ab5f89c60ee08a906a770396acd3d0d50302502577910cf5f6d5783 over 500 changed frames"`;
 
 exports[`culture on Grid > markup 1`] = `
 {
@@ -698,8 +700,9 @@ exports[`horizon on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -734,7 +737,7 @@ exports[`horizon on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`horizon on Amber LCD 1`] = `"2779647ba165cd6b39f9c0f46c8a6f7e0d514f0b4a1cac939127bd6a86cd9f74 over 1 changed frames"`;
+exports[`horizon on Amber LCD 1`] = `"aa854c97749c3722d42cdca6b5928434a756fc2bece31bf56b3b36c2c02b2e30 over 1 changed frames"`;
 
 exports[`horizon on Grid > markup 1`] = `
 {
@@ -1037,8 +1040,9 @@ exports[`mote on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -1073,7 +1077,7 @@ exports[`mote on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`mote on Amber LCD 1`] = `"6d57a9df28b2364758fa8c15d4f57498ce39ba5934853d954b037f1c551e5fc3 over 439 changed frames"`;
+exports[`mote on Amber LCD 1`] = `"ae035132d1c680be60703ce81bc146738a985fac0e1dd9a718882dc3bc8adadb over 439 changed frames"`;
 
 exports[`mote on Grid > markup 1`] = `
 {
@@ -1376,8 +1380,9 @@ exports[`peaks on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -1412,7 +1417,7 @@ exports[`peaks on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`peaks on Amber LCD 1`] = `"2d904d3bbea111b91c9e2564a6ed616f2601eb547cbefcbae7333a6dc7aeb1ee over 1 changed frames"`;
+exports[`peaks on Amber LCD 1`] = `"d7a9dffe90cc565215cbfdc42af989039a709f97bf8959fbc10fd59a0a3b1f26 over 1 changed frames"`;
 
 exports[`peaks on Grid > markup 1`] = `
 {
@@ -1715,8 +1720,9 @@ exports[`pinbed on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -1751,7 +1757,7 @@ exports[`pinbed on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`pinbed on Amber LCD 1`] = `"eb8eb5f0d7a35c1b58ebe90fdc84e576df73ccecb11c51ffb2078905ed876d2a over 242 changed frames"`;
+exports[`pinbed on Amber LCD 1`] = `"96ffabd672b752ff73569a3e835e5f91c5a4122ee5ad655d96f5c57383d9dca9 over 374 changed frames"`;
 
 exports[`pinbed on Grid > markup 1`] = `
 {
@@ -2054,8 +2060,9 @@ exports[`planet on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -2090,7 +2097,7 @@ exports[`planet on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`planet on Amber LCD 1`] = `"d2a5d29ff6d82bed8146b158acbc13f30f65e0c8f6d8d99c343ba7030d2065c5 over 1 changed frames"`;
+exports[`planet on Amber LCD 1`] = `"678569dbf0b878bd524d60426f75c6c1e4f36df0f20f283350314b8a5129e136 over 500 changed frames"`;
 
 exports[`planet on Grid > markup 1`] = `
 {
@@ -2393,8 +2400,9 @@ exports[`pond on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -2429,7 +2437,7 @@ exports[`pond on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`pond on Amber LCD 1`] = `"91863cb2586e450f70f39e2b6bac7e17e789440c35f8d87018b4c962bdff2764 over 325 changed frames"`;
+exports[`pond on Amber LCD 1`] = `"6ffa201ae47e359d8e6777b3aa30eda0825420e45b181a2382352ce0034a46ac over 501 changed frames"`;
 
 exports[`pond on Grid > markup 1`] = `
 {
@@ -2732,8 +2740,9 @@ exports[`shimmer on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -2768,7 +2777,7 @@ exports[`shimmer on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`shimmer on Amber LCD 1`] = `"5fdec8c65637ff516a5448686060d43d63c296739e982ebec04ec6779fe2c239 over 196 changed frames"`;
+exports[`shimmer on Amber LCD 1`] = `"f603ae2311479eaf3d7d23a7075ecbc1b13606a406f5d3a1016105c852f21700 over 220 changed frames"`;
 
 exports[`shimmer on Grid > markup 1`] = `
 {
@@ -3071,8 +3080,9 @@ exports[`silt on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -3107,7 +3117,7 @@ exports[`silt on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`silt on Amber LCD 1`] = `"c47040658260dbca61f1bda8faeab032b3c04a50911d613ddc448803655a7ba6 over 401 changed frames"`;
+exports[`silt on Amber LCD 1`] = `"c35ae5752c7eba7d28f816350fc36d0cef6a3168b085a5fc8f0d325245b95fa5 over 401 changed frames"`;
 
 exports[`silt on Grid > markup 1`] = `
 {
@@ -3410,8 +3420,9 @@ exports[`wax on Amber LCD > markup 1`] = `
     "data-noise-scale": "30",
     "data-noise-speed": "5",
     "data-palette-base": "#f89b03",
+    "data-palette-dither": "",
     "data-palette-ink": "#3c070d",
-    "data-palette-levels": "2",
+    "data-palette-levels": "4",
     "data-scale": "7",
     "data-shape": "square",
     "data-width": "160",
@@ -3446,7 +3457,7 @@ exports[`wax on Amber LCD > markup 1`] = `
 }
 `;
 
-exports[`wax on Amber LCD 1`] = `"305ae11c06c63f271aab07a3dd888868df47e28cfe6ff5766d2697958ad94fbe over 499 changed frames"`;
+exports[`wax on Amber LCD 1`] = `"d3924a55e5b4e74ed7e3b3f7071dd6de5ccfc01ed0b76dfc75266014c70231f6 over 499 changed frames"`;
 
 exports[`wax on Grid > markup 1`] = `
 {
