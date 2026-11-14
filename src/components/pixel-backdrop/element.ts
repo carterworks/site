@@ -3,7 +3,7 @@ import type { EmulatedCanvas } from "../emulated-canvas/element";
 import {
   displayAttribute,
   shownDisplay,
-  type Display,
+  shownScheme,
 } from "./backdrop-displays";
 import { TOYS } from "../backdrop-toys";
 import type { Toy } from "../backdrop-toys/toy";
@@ -27,13 +27,6 @@ import { resolveKnobs, resolveLook } from "./look";
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
-
-/** Light/dark follows the site's manual override first, then the OS. */
-function shownScheme(): Display["scheme"] {
-  const override = document.documentElement.style.colorScheme;
-  if (override === "dark" || override === "light") return override;
-  return darkScheme.matches ? "dark" : "light";
-}
 
 /**
  * What the backdrop shows follows these on `<html>`. The theme toggle and the
@@ -153,7 +146,10 @@ export class PixelBackdrop extends HTMLElement {
       defaults: this.#defaults ?? readDefaults(),
       tweaks: this.#tweaks,
       toy: this.#chosen,
-      display: shownDisplay(document.documentElement, shownScheme()),
+      display: shownDisplay(
+        document.documentElement,
+        shownScheme(document.documentElement),
+      ),
     };
   }
 

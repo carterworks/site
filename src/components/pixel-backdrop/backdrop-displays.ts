@@ -161,6 +161,16 @@ export const displayKey = (scheme: Scheme) => `backdrop-display-${scheme}`;
  */
 export const displayAttribute = (scheme: Scheme) => `data-display-${scheme}`;
 
+/**
+ * The scheme on show: the theme toggle's override, set on `<html>`'s inline
+ * colorScheme, else the OS's.
+ */
+export function shownScheme(root: HTMLElement): Scheme {
+  const override = root.style.colorScheme;
+  if (override === "light" || override === "dark") return override;
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 /** An id missing, unknown or from the other scheme shows the site's own look. */
 export function shownDisplay(root: Element, scheme: Scheme) {
   const [site, ...screens] = BY_SCHEME[scheme];

@@ -1,4 +1,5 @@
-import { osScheme, saveScheme, shownScheme } from "../../lib/color-scheme";
+import { osScheme, saveScheme } from "../../lib/color-scheme";
+import { shownScheme } from "../pixel-backdrop/backdrop-displays";
 
 /**
  * A two-state toggle over three states, per

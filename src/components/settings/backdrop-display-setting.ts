@@ -1,4 +1,3 @@
-import { shownScheme } from "../../lib/color-scheme";
 import { nextInRotation, storeChoice } from "../../lib/cycle-setting";
 import {
   DISPLAYS,
@@ -6,6 +5,7 @@ import {
   displaysFor,
   showDisplay,
   shownDisplay,
+  shownScheme,
 } from "../pixel-backdrop/backdrop-displays";
 
 /**

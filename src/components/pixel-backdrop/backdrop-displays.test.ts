@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import {
   DISPLAYS,
   displayAttribute,
@@ -6,6 +6,7 @@ import {
   displaysFor,
   showDisplay,
   shownDisplay,
+  shownScheme,
 } from "./backdrop-displays";
 import { MAX_GHOST } from "../emulated-canvas/limits";
 import { hexRgb } from "../../lib/rgb";
@@ -137,6 +138,28 @@ test.each(["light", "dark"] as const)(
     } finally {
       style.remove();
       root.removeAttribute(displayAttribute(scheme));
+    }
+  },
+);
+
+test.each([
+  ["light", "dark", "light"],
+  ["dark", "light", "dark"],
+  ["", "dark", "dark"],
+  ["normal", "dark", "dark"],
+] as const)(
+  "with %j on <html> and a %s OS, %s is shown: the toggle's override wins, anything else follows the OS",
+  (override, os, shown) => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("dark") === (os === "dark"),
+    }));
+    const root = document.createElement("html");
+    root.style.colorScheme = override;
+
+    try {
+      expect(shownScheme(root)).toBe(shown);
+    } finally {
+      vi.unstubAllGlobals();
     }
   },
 );
