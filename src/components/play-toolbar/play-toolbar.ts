@@ -1,5 +1,4 @@
 import { SHAPES } from "../settings/backdrop-shape-setting";
-import { RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
@@ -108,9 +107,7 @@ class PlayToolbarElement extends HTMLElement {
     }
 
     toy.replaceChildren(
-      ...[...TOYS, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
-        option(label, id),
-      ),
+      ...TOYS.map(({ id, label }) => option(label, id)),
       Object.assign(option("Image", "image"), { hidden: true }),
     );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
