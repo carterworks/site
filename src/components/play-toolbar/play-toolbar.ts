@@ -1,4 +1,4 @@
-import { RANDOM } from "../settings/backdrop-toy-setting";
+import { SHAPES } from "../settings/backdrop-shape-setting";
 import { TOYS } from "../backdrop-toys";
 import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
@@ -9,19 +9,6 @@ const option = (label: string, value: string) =>
     textContent: label,
     value,
   });
-
-/** The canvas's shapes, default first; a test holds it to the canvas's own list. */
-const SHAPES = [
-  "square",
-  "circle",
-  "ring",
-  "diamond",
-  "hex",
-  "triangle",
-  "dash",
-  "slash",
-  "cross",
-] as const;
 
 const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 
@@ -120,9 +107,7 @@ class PlayToolbarElement extends HTMLElement {
     }
 
     toy.replaceChildren(
-      ...[...TOYS, { id: RANDOM, label: "Random" }].map(({ id, label }) =>
-        option(label, id),
-      ),
+      ...TOYS.map(({ id, label }) => option(label, id)),
       Object.assign(option("Image", "image"), { hidden: true }),
     );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));

@@ -1,7 +1,13 @@
 ---
-import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import { displaysFor } from "../pixel-backdrop/backdrop-displays";
+import { SHAPES } from "../settings/backdrop-shape-setting";
 import { TOYS } from "../backdrop-toys";
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
+
+const choices = (scheme: "light" | "dark") =>
+  displaysFor(scheme)
+    .map(({ id, label }) => `${id} ${label}`)
+    .join(" ");
 
 const posts = await getPublishedPosts();
 const sitemapPages = [
@@ -38,7 +44,7 @@ const sitemapPages = [
               type="button"
               data-command
               data-settings
-              data-search="settings appearance theme light dark backdrop"
+              data-search="settings appearance theme light dark backdrop shape"
             >
               <span>Settings</span><span
                 class="command-detail"
@@ -116,11 +122,33 @@ const sitemapPages = [
             <button
               type="button"
               data-command
-              data-cycle-setting="display"
-              data-title="Display"
-              data-search={`display screen ${DISPLAYS.map(({ id, label }) => `${id} ${label}`).join(" ")}`}
+              data-cycle-setting="lightDisplay"
+              data-title="Light theme"
+              data-search={`light theme display screen ${choices("light")}`}
             >
-              <span>Display</span><span class="command-detail"></span>
+              <span>Light theme</span><span class="command-detail"></span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-command
+              data-cycle-setting="darkDisplay"
+              data-title="Dark theme"
+              data-search={`dark theme display screen ${choices("dark")}`}
+            >
+              <span>Dark theme</span><span class="command-detail"></span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-command
+              data-cycle-setting="shape"
+              data-title="Shape"
+              data-search={`shape pixel cell random ${SHAPES.join(" ")}`}
+            >
+              <span>Shape</span><span class="command-detail"></span>
             </button>
           </li>
         </ul>

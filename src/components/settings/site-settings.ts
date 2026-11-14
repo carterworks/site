@@ -1,14 +1,18 @@
 import { createBackdropDisplay } from "./backdrop-display-setting";
+import { createBackdropShape } from "./backdrop-shape-setting";
 import { createBackdropToy } from "./backdrop-toy-setting";
 import { createThemeSetting } from "./theme-setting";
 import { displayAttribute } from "../pixel-backdrop/backdrop-displays";
 
 // Module-level so a ClientRouter swap, which recreates the element, keeps
-// which reset entries are on offer; only a full reload forgets them.
+// the random toy each choice is measured against.
 export const settings = {
   theme: createThemeSetting(),
   backdrop: createBackdropToy(),
   display: createBackdropDisplay(),
+  lightDisplay: createBackdropDisplay({ scheme: "light" }),
+  darkDisplay: createBackdropDisplay({ scheme: "dark" }),
+  shape: createBackdropShape(),
 };
 
 // ClientRouter resets <html>'s attributes (inline style included) on every

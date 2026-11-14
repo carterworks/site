@@ -5,6 +5,10 @@ import {
   displayKey,
   displaysFor,
 } from "../pixel-backdrop/backdrop-displays";
+import {
+  createBackdropShape,
+  SHAPE_KEY,
+} from "../settings/backdrop-shape-setting";
 import { createBackdropToy } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import "./command-bar";
@@ -39,7 +43,9 @@ const markup = `
         <section data-group>
           <button type="button" data-command data-cycle-setting="theme" data-title="Theme" data-search="theme dark light system"><span>Theme</span><span class="command-detail"></span></button>
           <button type="button" data-command data-cycle-setting="backdrop" data-title="Backdrop" data-search="backdrop shimmer"><span>Backdrop</span><span class="command-detail"></span></button>
-          <button type="button" data-command data-cycle-setting="display" data-title="Display" data-search="display screen lcd"><span>Display</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="lightDisplay" data-title="Light theme" data-search="light theme lcd"><span>Light theme</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="darkDisplay" data-title="Dark theme" data-search="dark theme grid"><span>Dark theme</span><span class="command-detail"></span></button>
+          <button type="button" data-command data-cycle-setting="shape" data-title="Shape" data-search="shape pixel"><span>Shape</span><span class="command-detail"></span></button>
         </section>
         <output class="empty" hidden>No matching commands</output>
       </div>
@@ -51,6 +57,7 @@ let osScheme: "light" | "dark" = "light";
 let reducedMotion = false;
 let osListeners: (() => void)[] = [];
 const setToy = vi.fn();
+const configure = vi.fn();
 
 function setupCommandBar() {
   const root = document.documentElement;
@@ -59,16 +66,20 @@ function setupCommandBar() {
   root.removeAttribute(displayAttribute("dark"));
   localStorage.clear();
   setToy.mockClear();
+  configure.mockClear();
+  sessionStorage.clear();
   Object.assign(settings, {
     theme: createThemeSetting(),
     backdrop: createBackdropToy(() => 0, new EventTarget()),
-    display: createBackdropDisplay(),
+    lightDisplay: createBackdropDisplay({ scheme: "light" }),
+    darkDisplay: createBackdropDisplay({ scheme: "dark" }),
+    shape: createBackdropShape(() => 0, new EventTarget()),
   });
   const template = document.createElement("template");
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
-  Object.assign(backdrop, { setToy });
+  Object.assign(backdrop, { setToy, configure });
   document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
@@ -87,11 +98,13 @@ function setupCommandBar() {
   };
 }
 
-function row(name: "theme" | "backdrop" | "display") {
+type Row = "theme" | "backdrop" | "lightDisplay" | "darkDisplay" | "shape";
+
+function row(name: Row) {
   return getElement<HTMLButtonElement>(`[data-cycle-setting="${name}"]`);
 }
 
-const value = (name: "theme" | "backdrop" | "display") =>
+const value = (name: Row) =>
   row(name).querySelector(".command-detail")?.textContent;
 
 function osPrefers(scheme: "light" | "dark") {
@@ -140,6 +153,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 const light = displaysFor("light");
+const dark = displaysFor("dark");
 
 describe("command bar", () => {
   test("opens with links from the current page and omits sitemap duplicates", () => {
@@ -233,28 +247,48 @@ describe("command bar", () => {
     expect(value("backdrop")).toBe(TOYS[1].label);
   });
 
-  test("activating the display row stores and shows the shown scheme's next display", () => {
+  test("the light and dark theme rows each store and show their own scheme's next display", () => {
     openSettings();
-    expect(value("display")).toBe(light[0].label);
+    expect(value("lightDisplay")).toBe(light[0].label);
+    expect(value("darkDisplay")).toBe(dark[0].label);
 
-    row("display").click();
+    row("darkDisplay").click();
+
+    expect(localStorage.getItem(displayKey("dark"))).toBe(dark[1].id);
+    expect(
+      document.documentElement.getAttribute(displayAttribute("dark")),
+    ).toBe(dark[1].id);
+    expect(value("darkDisplay")).toBe(dark[1].label);
+    expect(value("lightDisplay")).toBe(light[0].label);
+
+    row("lightDisplay").click();
 
     expect(localStorage.getItem(displayKey("light"))).toBe(light[1].id);
-    expect(
-      document.documentElement.getAttribute(displayAttribute("light")),
-    ).toBe(light[1].id);
-    expect(value("display")).toBe(light[1].label);
+    expect(value("lightDisplay")).toBe(light[1].label);
   });
 
-  test("the backdrop and display rows note that reduced motion pauses it", () => {
+  test("activating the shape row stores and draws the next shape", () => {
+    openSettings();
+    expect(value("shape")).toBe("Square");
+
+    row("shape").click();
+
+    expect(localStorage.getItem(SHAPE_KEY)).toBe("circle");
+    expect(configure).toHaveBeenLastCalledWith({ shape: "circle" });
+    expect(value("shape")).toBe("Circle");
+  });
+
+  test("the backdrop, theme and shape rows note that reduced motion pauses it", () => {
     reducedMotion = true;
     openSettings();
 
     const labels = {
       backdrop: TOYS[0].label,
-      display: light[0].label,
+      lightDisplay: light[0].label,
+      darkDisplay: dark[0].label,
+      shape: "Square",
     };
-    for (const name of ["backdrop", "display"] as const) {
+    for (const name of Object.keys(labels) as (keyof typeof labels)[]) {
       expect(value(name)).toBe(`${labels[name]} (paused)`);
       expect(row(name).getAttribute("aria-label")).toContain(
         "paused for reduced motion",
