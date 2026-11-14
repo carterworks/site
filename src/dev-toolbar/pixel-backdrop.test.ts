@@ -8,7 +8,11 @@ import {
 import { MAX_GHOST } from "../components/emulated-canvas/limits";
 import { TOYS } from "../components/backdrop-toys";
 import { TOY_KEY } from "../components/settings/backdrop-toy-setting";
-import { DISPLAYS } from "../components/pixel-backdrop/backdrop-displays";
+import {
+  DISPLAYS,
+  displayAttribute,
+  showDisplay,
+} from "../components/pixel-backdrop/backdrop-displays";
 import { backdropDefaults } from "../test/backdrop-defaults";
 import {
   CONTROLS,
@@ -83,7 +87,10 @@ beforeEach(() => {
   document.head.append(style);
 });
 
-afterEach(() => document.head.replaceChildren());
+afterEach(() => {
+  document.head.replaceChildren();
+  document.documentElement.removeAttribute(displayAttribute("light"));
+});
 
 test("keeps stored keys whose type matches the current options", () => {
   localStorage.setItem(
@@ -340,13 +347,15 @@ test("choosing a toy moves the ghost and noise sliders to its look", () => {
   backdrop.remove();
 });
 
+const pocketLcd = DISPLAYS.find(({ id }) => id === "pocket-lcd")!;
+
 test("on a display, the controls open on what the display shows", () => {
+  showDisplay(document.documentElement, pocketLcd);
   const backdrop = mountBackdrop();
-  backdrop.setDisplay("pocket-lcd");
   const canvas = document.createElement("div");
   init(canvas);
 
-  const pocket = DISPLAYS.find(({ id }) => id === "pocket-lcd")!.look!;
+  const pocket = pocketLcd.look!;
   expect(slider(canvas, "gap").value).toBe(String(pocket.gap));
   expect(slider(canvas, "lightBase").value).toBe(pocket.base);
   expect(slider(canvas, "noise").value).toBe("0");
@@ -354,8 +363,8 @@ test("on a display, the controls open on what the display shows", () => {
 });
 
 test("a tweak set back to its default still persists, so a reload shows the same", () => {
+  showDisplay(document.documentElement, pocketLcd);
   const backdrop = mountBackdrop();
-  backdrop.setDisplay("pocket-lcd");
   const { ghost } = readDefaults();
   backdrop.configure({ ghost });
   persistTweaks(backdrop.tweaks);

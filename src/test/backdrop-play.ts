@@ -1,4 +1,8 @@
 import { vi } from "vitest";
+import {
+  DISPLAYS,
+  showDisplay,
+} from "../components/pixel-backdrop/backdrop-displays";
 import type { BackdropKnobs } from "../components/pixel-backdrop/knobs";
 import { place } from "./toy-canvas";
 
@@ -30,15 +34,21 @@ export const motion = (() => {
 
 export const SIZE = 160;
 
-/** A 4:3 viewport over the square grid, which overhangs it top and bottom. */
+/**
+ * A 4:3 viewport over the square grid, which overhangs it top and bottom. The
+ * page is put in the display's scheme, as only there does it show.
+ */
 export function mount(
   id: string,
   knobs: Partial<BackdropKnobs> = {},
-  display = "site",
+  display = "site-light",
 ) {
+  const shown = DISPLAYS.find((candidate) => candidate.id === display)!;
+  const root = document.documentElement;
+  root.style.colorScheme = shown.scheme;
+  showDisplay(root, shown);
   const backdrop = document.createElement("pixel-backdrop");
   backdrop.setToy(id);
-  backdrop.setDisplay(display);
   backdrop.configure(knobs);
   const canvas = document.createElement("emulated-canvas");
   Object.assign(canvas.dataset, {

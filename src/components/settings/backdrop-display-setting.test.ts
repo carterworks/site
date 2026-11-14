@@ -1,68 +1,109 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "./backdrop-display-setting";
-import { DISPLAYS, DISPLAY_KEY } from "../pixel-backdrop/backdrop-displays";
+import {
+  displayKey,
+  displaysFor,
+  shownDisplay,
+} from "../pixel-backdrop/backdrop-displays";
 
-const [site, pocket] = DISPLAYS;
-const last = DISPLAYS.at(-1)!;
-const cycleToLast = (display: { cycle(): void }) =>
-  DISPLAYS.slice(1).forEach(() => display.cycle());
-const setDisplay = vi.fn();
+const [site, pocket] = displaysFor("light");
+const lastLight = displaysFor("light").at(-1)!;
+const [, grid] = displaysFor("dark");
+
+let root: HTMLElement;
 
 beforeEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
-  setDisplay.mockClear();
-  document.body.innerHTML = "<pixel-backdrop></pixel-backdrop>";
-  Object.assign(document.querySelector("pixel-backdrop")!, { setDisplay });
+  root = document.createElement("html");
+  root.style.colorScheme = "light";
 });
+
+const cycleTimes = (display: { cycle(): void }, times: number) => {
+  for (let i = 0; i < times; i += 1) display.cycle();
+};
 
 test("shows the site's own look and stores nothing by default", () => {
-  const display = createBackdropDisplay();
+  const display = createBackdropDisplay(root);
 
   expect(display.label()).toBe(site.label);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
+  expect(display.value()).toBe(site.id);
+  expect(localStorage.getItem(displayKey("light"))).toBeNull();
 });
 
-test("the first activation stores and applies the first screen", () => {
-  const display = createBackdropDisplay();
+test("the first activation stores and shows the scheme's first screen", () => {
+  const display = createBackdropDisplay(root);
 
   display.cycle();
 
-  expect(localStorage.getItem(DISPLAY_KEY)).toBe(pocket.id);
-  expect(setDisplay).toHaveBeenLastCalledWith(pocket.id);
+  expect(localStorage.getItem(displayKey("light"))).toBe(pocket.id);
+  expect(shownDisplay(root, "light")).toBe(pocket);
   expect(display.label()).toBe(pocket.label);
 });
 
-test("rotates through the screens, then back to the site's look", () => {
-  const display = createBackdropDisplay();
+test("rotates through the shown scheme's screens only, then back to the site's look", () => {
+  const display = createBackdropDisplay(root);
 
-  cycleToLast(display);
-  expect(display.label()).toBe(last.label);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBe(last.id);
+  cycleTimes(display, displaysFor("light").length - 1);
+  expect(display.value()).toBe(lastLight.id);
+  expect(localStorage.getItem(displayKey("light"))).toBe(lastLight.id);
 
   display.cycle();
-  expect(display.label()).toBe(site.label);
-  expect(setDisplay).toHaveBeenLastCalledWith(site.id);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
+  expect(display.value()).toBe(site.id);
+  expect(shownDisplay(root, "light")).toBe(site);
+  expect(localStorage.getItem(displayKey("light"))).toBeNull();
 });
 
-test("a display stored before load is shown and offers the reset", () => {
-  localStorage.setItem(DISPLAY_KEY, last.id);
-  const display = createBackdropDisplay();
+test("offers the shown scheme's displays, and follows a scheme flip", () => {
+  const display = createBackdropDisplay(root);
+  expect(display.choices()).toBe(displaysFor("light"));
 
-  expect(display.label()).toBe(last.label);
-  display.cycle();
-  expect(display.label()).toBe(site.label);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
+  root.style.colorScheme = "dark";
+
+  expect(display.choices()).toBe(displaysFor("dark"));
 });
 
-test("ignores a stored id that is no longer a display", () => {
-  localStorage.setItem(DISPLAY_KEY, "gone");
-  const display = createBackdropDisplay();
+test("light and dark each keep their own choice", () => {
+  const display = createBackdropDisplay(root);
+  display.choose(pocket.id);
+  root.style.colorScheme = "dark";
 
-  expect(display.label()).toBe(site.label);
   display.cycle();
-  expect(display.label()).toBe(pocket.label);
+
+  expect(display.value()).toBe(grid.id);
+  expect(localStorage.getItem(displayKey("dark"))).toBe(grid.id);
+  expect(localStorage.getItem(displayKey("light"))).toBe(pocket.id);
+  root.style.colorScheme = "light";
+  expect(display.value()).toBe(pocket.id);
+});
+
+test("choosing a screen stores and shows it", () => {
+  const display = createBackdropDisplay(root);
+
+  display.choose(lastLight.id);
+
+  expect(display.value()).toBe(lastLight.id);
+  expect(localStorage.getItem(displayKey("light"))).toBe(lastLight.id);
+  expect(shownDisplay(root, "light")).toBe(lastLight);
+});
+
+test("choosing the site's look shows it and clears the store", () => {
+  const display = createBackdropDisplay(root);
+  display.choose(lastLight.id);
+
+  display.choose(site.id);
+
+  expect(display.value()).toBe(site.id);
+  expect(localStorage.getItem(displayKey("light"))).toBeNull();
+});
+
+test("an unknown id changes nothing", () => {
+  const display = createBackdropDisplay(root);
+  display.choose(pocket.id);
+
+  display.choose("gone");
+
+  expect(display.value()).toBe(pocket.id);
 });
 
 test("keeps cycling when storage is blocked", () => {
@@ -74,31 +115,10 @@ test("keeps cycling when storage is blocked", () => {
     setItem: blocked,
     removeItem: blocked,
   });
-  const display = createBackdropDisplay();
+  const display = createBackdropDisplay(root);
 
-  cycleToLast(display);
-  expect(display.label()).toBe(last.label);
+  cycleTimes(display, displaysFor("light").length - 1);
+  expect(display.value()).toBe(lastLight.id);
   display.cycle();
-  expect(display.label()).toBe(site.label);
-});
-
-test("choosing a screen stores and applies it", () => {
-  const display = createBackdropDisplay();
-
-  display.choose(last.id);
-
-  expect(display.value()).toBe(last.id);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBe(last.id);
-  expect(setDisplay).toHaveBeenLastCalledWith(last.id);
-});
-
-test("choosing the site's look applies it and clears the store", () => {
-  localStorage.setItem(DISPLAY_KEY, last.id);
-  const display = createBackdropDisplay();
-
-  display.choose(site.id);
-
   expect(display.value()).toBe(site.id);
-  expect(localStorage.getItem(DISPLAY_KEY)).toBeNull();
-  expect(setDisplay).toHaveBeenLastCalledWith(site.id);
 });

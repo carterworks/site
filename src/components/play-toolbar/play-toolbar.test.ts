@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "../settings/backdrop-display-setting";
-import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import {
+  displayAttribute,
+  displaysFor,
+} from "../pixel-backdrop/backdrop-displays";
+
+const light = displaysFor("light");
+const dark = displaysFor("dark");
 import { SHAPES } from "../emulated-canvas/presenter";
 import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
@@ -36,7 +42,6 @@ let toyId = "";
 const setToy = vi.fn((id: string) => {
   toyId = id;
 });
-const setDisplay = vi.fn();
 let tweaks: { shape?: string } = {};
 const configure = vi.fn((partial: object) => Object.assign(tweaks, partial));
 const play = vi.fn((toy: { id: string }) => {
@@ -84,7 +89,10 @@ function choosePicture() {
 }
 
 function mount() {
-  document.documentElement.style.colorScheme = "";
+  const root = document.documentElement;
+  root.style.colorScheme = "";
+  root.removeAttribute(displayAttribute("light"));
+  root.removeAttribute(displayAttribute("dark"));
   localStorage.clear();
   Object.assign(settings, {
     theme: createThemeSetting(),
@@ -99,7 +107,7 @@ function mount() {
   Object.defineProperty(backdrop, "knobs", {
     get: () => ({ shape: tweaks.shape ?? "square" }),
   });
-  Object.assign(backdrop, { setToy, setDisplay, play, configure });
+  Object.assign(backdrop, { setToy, play, configure });
   document.body.append(backdrop);
 }
 
@@ -109,7 +117,6 @@ beforeEach(() => {
   toyId = TOYS[0].id;
   setToy.mockClear();
   play.mockClear();
-  setDisplay.mockClear();
   configure.mockClear();
   tweaks = {};
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -131,7 +138,7 @@ afterEach(() => {
 test("the controls show the current values and nothing is stored on load", () => {
   expect(shownToy()).toBe(TOYS[0].label);
   expect(theme().textContent).toBe("Theme: Light");
-  expect(shownDisplay()).toBe(DISPLAYS[0].label);
+  expect(shownDisplay()).toBe(light[0].label);
   expect(localStorage.length).toBe(0);
   expect(document.documentElement.style.colorScheme).toBe("");
 });
@@ -310,22 +317,34 @@ test("a page load re-renders, as the toy is chosen after the bar connects", () =
   expect(shownToy()).toBe(TOYS[1].label);
 });
 
-test("the display menu offers every display", () => {
-  const offered = [...display().options];
+/** What the display menu offers, as `[id, label]` pairs. */
+const offered = () =>
+  [...display().options].map(({ value, textContent }) => [value, textContent]);
+const pairs = (displays: readonly { id: string; label: string }[]) =>
+  displays.map(({ id, label }) => [id, label]);
 
-  expect(offered.map((option) => option.value)).toEqual(
-    DISPLAYS.map((display) => display.id),
-  );
-  expect(offered.map((option) => option.textContent)).toEqual(
-    DISPLAYS.map((display) => display.label),
-  );
+test("the display menu offers only the shown scheme's displays", () => {
+  expect(offered()).toEqual(pairs(light));
+
+  theme().click();
+
+  expect(offered()).toEqual(pairs(dark));
 });
 
-test("choosing a display from the menu shows it and keeps it shown", () => {
-  chooseDisplay(DISPLAYS[2].id);
+test("an OS colour scheme change re-lists the display menu", () => {
+  osScheme = "dark";
+  osListeners.forEach((listener) => listener());
 
-  expect(setDisplay).toHaveBeenCalledWith(DISPLAYS[2].id);
-  expect(shownDisplay()).toBe(DISPLAYS[2].label);
+  expect(offered()).toEqual(pairs(dark));
+});
+
+test("choosing a display from the menu shows it on the page and keeps it shown", () => {
+  chooseDisplay(light[2].id);
+
+  expect(document.documentElement.getAttribute(displayAttribute("light"))).toBe(
+    light[2].id,
+  );
+  expect(shownDisplay()).toBe(light[2].label);
 });
 
 const runFrames = () => {
@@ -432,7 +451,7 @@ test("choosing a shape draws the cells in it and stores nothing", () => {
 test("every display leaves the chosen shape alone", () => {
   chooseShape("hex");
 
-  for (const { id } of DISPLAYS) {
+  for (const { id } of light) {
     chooseDisplay(id);
     expect(shape().value).toBe("hex");
     expect(shape().disabled).toBe(false);

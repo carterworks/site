@@ -38,16 +38,11 @@ import { TOYS } from ".";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
-/** Every display; one with a screen of its own looks the same in either scheme. */
-const LOOKS = DISPLAYS.flatMap(({ id, label, look }) =>
-  look
-    ? [{ name: label, display: id, scheme: "light" }]
-    : ["light", "dark"].map((scheme) => ({
-        name: `${label} in ${scheme}`,
-        display: id,
-        scheme,
-      })),
-);
+/** Every display, in the one scheme it shows in. */
+const LOOKS = DISPLAYS.map(({ id, label, look, scheme }) => ({
+  name: look ? label : `${label} in ${scheme}`,
+  display: id,
+}));
 
 /** One frame at 60 Hz, the step the screen is sampled at. */
 const FRAME_MS = 16;
@@ -157,10 +152,8 @@ function markup(canvas: HTMLElement, shadow: ShadowRoot) {
 }
 
 for (const { id } of TOYS) {
-  for (const { name, display, scheme } of LOOKS) {
+  for (const { name, display } of LOOKS) {
     test(`${id} on ${name}`, async () => {
-      // As the theme toggle sets it; the stubbed OS scheme is light.
-      document.documentElement.style.colorScheme = scheme;
       const { canvas, shadow } = mountWithShadow(id, {}, display);
       const recording = recorder();
       await play(recording.advance);

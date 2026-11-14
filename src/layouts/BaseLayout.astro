@@ -5,6 +5,10 @@ import CommandBar from "../components/command-bar/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/pixel-backdrop/PixelBackdrop.astro";
 import { SCHEME_KEY } from "../lib/color-scheme";
+import {
+  displayAttribute,
+  displayKey,
+} from "../components/pixel-backdrop/backdrop-displays";
 import { getPageMetadata, pages, type PageMetadata } from "../lib/pages";
 interface Props {
   bare?: boolean;
@@ -20,6 +24,10 @@ const ogImage = new URL(`/og/${metadata.id}.webp`, Astro.site);
 const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
+const displays = (["light", "dark"] as const).map((scheme) => [
+  displayAttribute(scheme),
+  displayKey(scheme),
+]);
 ---
 
 <!doctype html>
@@ -48,12 +56,16 @@ const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
       media="(prefers-color-scheme: dark)"
       content="#121212"
     />
-    <script is:inline define:vars={{ key: SCHEME_KEY }}>
-      // Runs before first paint, which a bundled module can't; the key is
-      // injected so it can't drift from the one saveScheme writes.
+    <script is:inline define:vars={{ key: SCHEME_KEY, displays }}>
+      // Runs before first paint, which a bundled module can't; the keys are
+      // injected so they can't drift from the ones the settings write.
       try {
-        document.documentElement.style.colorScheme =
-          localStorage.getItem(key) ?? "";
+        const root = document.documentElement;
+        root.style.colorScheme = localStorage.getItem(key) ?? "";
+        for (const [attribute, storeKey] of displays) {
+          const id = localStorage.getItem(storeKey);
+          if (id) root.setAttribute(attribute, id);
+        }
       } catch {}
     </script>
 

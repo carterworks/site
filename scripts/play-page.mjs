@@ -70,24 +70,63 @@ export function playControls(page) {
   const displayOptions = page.locator("select[data-display] option");
   const shownDisplay = async () =>
     (await displayControl.textContent()).replace("Display: ", "");
+  const themeControl = page.locator("[data-theme]");
+  /** Flips the theme with its button, as someone would, so the choice carries across reloads. */
+  const showScheme = async (scheme) => {
+    const shown = /dark/i.test(await themeControl.textContent())
+      ? "dark"
+      : "light";
+    if (shown !== scheme) await themeControl.click();
+  };
+  /** Display names, to where each is offered: `{ scheme, label }`. */
+  const offered = new Map();
   return {
     open: (host) => page.goto(`http://${host}.localhost/play/`),
     toys: () =>
       toyOptions.evaluateAll((all) =>
         all.map((option) => option.value).filter((id) => id !== "random"),
       ),
-    /** Every display's name, in menu order. */
-    displays: () => displayOptions.allTextContents(),
+    /**
+     * Every display's name, light's menu then dark's. A label both menus offer
+     * is named for its scheme, as the golden tests name them, unless the menus
+     * match, as on a base build from before displays had a scheme.
+     */
+    async displays() {
+      const menus = {};
+      for (const scheme of ["light", "dark"]) {
+        await showScheme(scheme);
+        menus[scheme] = await displayOptions.allTextContents();
+      }
+      const split = menus.light.join() !== menus.dark.join();
+      offered.clear();
+      for (const scheme of split ? ["light", "dark"] : ["light"]) {
+        for (const label of menus[scheme]) {
+          const both =
+            split && menus.light.includes(label) && menus.dark.includes(label);
+          offered.set(both ? `${label} in ${scheme}` : label, {
+            scheme,
+            label,
+          });
+        }
+      }
+      return [...offered.keys()];
+    },
     hasToy: async (toy) =>
       (await toyOptions.and(page.locator(`[value="${toy}"]`)).count()) > 0,
     chooseToy: (toy) => page.selectOption("[data-toy]", toy),
-    /** Chooses `display` by name; false if the page does not offer it. */
+    /**
+     * Chooses `display` by a name `displays` gave, in its scheme; false if the
+     * page does not offer it.
+     */
     async chooseDisplay(display, displayCount) {
       if ((await displayOptions.count()) > 0) {
-        if (!(await displayOptions.allTextContents()).includes(display)) {
+        const where = offered.get(display);
+        if (where === undefined) return false;
+        await showScheme(where.scheme);
+        if (!(await displayOptions.allTextContents()).includes(where.label)) {
           return false;
         }
-        await displayControl.selectOption({ label: display });
+        await displayControl.selectOption({ label: where.label });
         return true;
       }
       // A base build from before the menu, which `perf --against` compares

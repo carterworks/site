@@ -35,7 +35,7 @@ const tuned = toy("tuned", { ghost: 55, noise: 12 });
 
 const displayOf = (id: string) =>
   DISPLAYS.find((display) => display.id === id)!;
-const site = displayOf("site");
+const site = displayOf("site-light");
 const pocket = displayOf("pocket-lcd");
 const amber = displayOf("amber-lcd");
 const screen = pocket.look!;
@@ -355,6 +355,7 @@ type Complete<T> = {
 const complete: Display = {
   id: "complete",
   label: "Complete",
+  scheme: "light",
   look: {
     grid: "#0000000a",
     vignette: { clear: 33, edge: "#e6d3d3" },

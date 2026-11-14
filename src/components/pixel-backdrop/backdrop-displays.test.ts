@@ -1,11 +1,30 @@
 import { expect, test } from "vitest";
-import { DISPLAYS } from "./backdrop-displays";
+import {
+  DISPLAYS,
+  displayAttribute,
+  displaysFor,
+  showDisplay,
+  shownDisplay,
+} from "./backdrop-displays";
 import { MAX_GHOST } from "../emulated-canvas/limits";
 
 const looks = DISPLAYS.filter(({ look }) => look);
 
-test("the site's own look comes first and has no look", () => {
-  expect(DISPLAYS[0].look).toBeUndefined();
+test.each(["light", "dark"] as const)(
+  "%s mode offers the site's own look first, then screens of its own",
+  (scheme) => {
+    const [site, ...screens] = displaysFor(scheme);
+    expect(site).toMatchObject({ label: "Site", scheme });
+    expect(site.look).toBeUndefined();
+    expect(screens).not.toHaveLength(0);
+    expect(screens.every(({ look }) => look)).toBe(true);
+  },
+);
+
+test("every display belongs to exactly one scheme", () => {
+  expect([...displaysFor("light"), ...displaysFor("dark")]).toHaveLength(
+    DISPLAYS.length,
+  );
 });
 
 test("ids are unique", () => {
@@ -35,3 +54,36 @@ test.each(looks)(
     }
   },
 );
+
+test.each(["light", "dark"] as const)(
+  "with nothing on <html>, %s mode shows the site's own look",
+  (scheme) => {
+    const root = document.createElement("html");
+
+    expect(shownDisplay(root, scheme)).toBe(displaysFor(scheme)[0]);
+  },
+);
+
+test("each scheme shows its own display, and never one from the other scheme", () => {
+  const root = document.createElement("html");
+  const [, pocket] = displaysFor("light");
+  const [, grid] = displaysFor("dark");
+
+  showDisplay(root, pocket);
+  showDisplay(root, grid);
+
+  expect(shownDisplay(root, "light")).toBe(pocket);
+  expect(shownDisplay(root, "dark")).toBe(grid);
+  root.setAttribute(displayAttribute("light"), grid.id);
+  expect(shownDisplay(root, "light")).toBe(displaysFor("light")[0]);
+});
+
+test("showing a scheme's own site look clears its attribute", () => {
+  const root = document.createElement("html");
+  const [site, pocket] = displaysFor("light");
+
+  showDisplay(root, pocket);
+  showDisplay(root, site);
+
+  expect(root.hasAttribute(displayAttribute("light"))).toBe(false);
+});

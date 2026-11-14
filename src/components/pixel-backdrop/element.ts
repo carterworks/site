@@ -1,6 +1,10 @@
 import "../emulated-canvas/element";
 import type { EmulatedCanvas } from "../emulated-canvas/element";
-import { DISPLAYS, storedDisplay, type Display } from "./backdrop-displays";
+import {
+  displayAttribute,
+  shownDisplay,
+  type Display,
+} from "./backdrop-displays";
 import { TOYS } from "../backdrop-toys";
 import type { Toy } from "../backdrop-toys/toy";
 import { relayPointer } from "./pointer-relay";
@@ -25,12 +29,18 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const darkScheme = matchMedia("(prefers-color-scheme: dark)");
 
 /** Light/dark follows the site's manual override first, then the OS. */
-function prefersDark() {
+function shownScheme(): Display["scheme"] {
   const override = document.documentElement.style.colorScheme;
-  if (override === "dark") return true;
-  if (override === "light") return false;
-  return darkScheme.matches;
+  if (override === "dark" || override === "light") return override;
+  return darkScheme.matches ? "dark" : "light";
 }
+
+/**
+ * What the backdrop shows follows these on `<html>`. The theme toggle and the
+ * display setting emit no event, and ClientRouter navigations reset `<html>`'s
+ * attributes, so the attributes are the one reliable signal.
+ */
+const WATCHED = ["style", displayAttribute("light"), displayAttribute("dark")];
 
 export class PixelBackdrop extends HTMLElement {
   #defaults?: BackdropKnobs;
@@ -38,8 +48,7 @@ export class PixelBackdrop extends HTMLElement {
   #canvas?: EmulatedCanvas;
   /** Waits for the canvas when the element is connected before its child is parsed. */
   #canvasObserver = new MutationObserver(() => this.#attach());
-  #schemeObserver = new MutationObserver(() => this.#apply());
-  #display?: Display;
+  #pageObserver = new MutationObserver(() => this.#apply());
   #chosen = TOYS[0];
   /** Stops the running toy and its pointer relay; set exactly while one runs. */
   #stopToy?: () => void;
@@ -77,15 +86,12 @@ export class PixelBackdrop extends HTMLElement {
     customElements.upgrade(canvas);
     this.#canvas = canvas;
     this.#defaults ??= readDefaults();
-    this.#display ??= DISPLAYS.find(({ id }) => id === storedDisplay());
     this.#apply();
 
     reducedMotion.addEventListener("change", this.#onMotionChange);
     darkScheme.addEventListener("change", this.#apply);
-    // The theme toggle emits no event, and ClientRouter navigations reset
-    // <html>'s inline style, so the style attribute is the one reliable signal.
-    this.#schemeObserver.observe(document.documentElement, {
-      attributeFilter: ["style"],
+    this.#pageObserver.observe(document.documentElement, {
+      attributeFilter: WATCHED,
     });
 
     this.#start();
@@ -96,7 +102,7 @@ export class PixelBackdrop extends HTMLElement {
     this.#stop();
     reducedMotion.removeEventListener("change", this.#onMotionChange);
     darkScheme.removeEventListener("change", this.#apply);
-    this.#schemeObserver.disconnect();
+    this.#pageObserver.disconnect();
   }
 
   /** Merge a partial set of knobs, and repaint. */
@@ -117,14 +123,6 @@ export class PixelBackdrop extends HTMLElement {
     this.#apply();
     if (this.knobs.enabled) this.#start();
     else this.#stop();
-  }
-
-  /** Show the canvas as a registered display; an unknown id is ignored. */
-  setDisplay(id: string) {
-    const display = DISPLAYS.find((candidate) => candidate.id === id);
-    if (display === undefined || display === this.#display) return;
-    this.#display = display;
-    this.#apply();
   }
 
   /**
@@ -151,11 +149,13 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   #state() {
+    const scheme = shownScheme();
     return {
       defaults: this.#defaults ?? readDefaults(),
       tweaks: this.#tweaks,
       toy: this.#chosen,
-      display: this.#display ?? DISPLAYS[0],
+      scheme,
+      display: shownDisplay(document.documentElement, scheme),
     };
   }
 
@@ -182,17 +182,12 @@ export class PixelBackdrop extends HTMLElement {
    *
    * The ghost would otherwise cross-fade the old palette through grey while
    * the page colour changes at once, so a change of palette starts the passes
-   * afresh. A display's palette is the same in both schemes, so a flip under
-   * one changes nothing.
+   * afresh.
    */
   #apply = () => {
     const canvas = this.#canvas;
     if (canvas === undefined) return;
-    const look = resolveLook({
-      ...this.#state(),
-      scheme: prefersDark() ? "dark" : "light",
-      columns: canvas.width,
-    });
+    const look = resolveLook({ ...this.#state(), columns: canvas.width });
     const { paletteBase, paletteInk } = canvas.dataset;
     for (const [key, value] of Object.entries(look.data)) {
       if (canvas.dataset[key] === value) continue;

@@ -56,7 +56,7 @@ const layers = {
   },
   displays: {
     files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
-    imports: ["lib"],
+    imports: [],
   },
   knobs: {
     files: ["src/components/pixel-backdrop/knobs.ts"],

@@ -1,5 +1,3 @@
-import { storedChoice } from "../../lib/cycle-setting";
-
 /**
  * The screen a display gives the backdrop, as the canvas knobs that
  * draw it. Colours are hex only: any other form makes the palette pass parse
@@ -33,11 +31,14 @@ export type DisplayLook = {
 export type Display = {
   id: string;
   label: string;
+  /** The only scheme it shows in, the one whose page panels suit its screen. */
+  scheme: "light" | "dark";
   look?: DisplayLook;
 };
 
 /**
- * Every display, in menu order; the first is the site's own look. The
+ * Every display, in menu order, light then dark; each scheme's first is the
+ * site's own look in it, and its default. The
  * screens' numbers are tuned against reference photos. The ghost runs after
  * the palette, so ink appearing darkens a pixel and clearing brightens it: an
  * STN panel switches on faster than it relaxes, so it rises slower than it
@@ -51,10 +52,11 @@ export type Display = {
  * which darkens the backing beside every shape by 45%.
  */
 export const DISPLAYS: Display[] = [
-  { id: "site", label: "Site" },
+  { id: "site-light", label: "Site", scheme: "light" },
   {
     id: "pocket-lcd",
     label: "Pocket LCD",
+    scheme: "light",
     look: {
       grid: "#0000000a",
       base: "#889d58",
@@ -71,6 +73,7 @@ export const DISPLAYS: Display[] = [
   {
     id: "amber-lcd",
     label: "Amber LCD",
+    scheme: "light",
     look: {
       vignette: { clear: 33, edge: "#e6d3d3" },
       base: "#f89b03",
@@ -85,6 +88,7 @@ export const DISPLAYS: Display[] = [
   {
     id: "thermal",
     label: "Thermal",
+    scheme: "light",
     look: {
       base: "#cdd8ee",
       stops: ["#2bd96b", "#e3f01c", "#ff4a0a"],
@@ -95,10 +99,12 @@ export const DISPLAYS: Display[] = [
       ghostFall: 40,
     },
   },
+  { id: "site-dark", label: "Site", scheme: "dark" },
   // On a dark screen clearing darkens, so the fall is the trail.
   {
     id: "grid",
     label: "Grid",
+    scheme: "dark",
     look: {
       base: "#04070a",
       stops: ["#0a3346", "#11a6d8", "#7fe6ff"],
@@ -111,8 +117,34 @@ export const DISPLAYS: Display[] = [
   },
 ];
 
-export const DISPLAY_KEY = "backdrop-display";
+type Scheme = Display["scheme"];
 
-const IDS = DISPLAYS.map((display) => display.id);
+/** Built once, as the backdrop looks a display up on every apply. */
+const BY_SCHEME: Record<Scheme, readonly Display[]> = {
+  light: DISPLAYS.filter((display) => display.scheme === "light"),
+  dark: DISPLAYS.filter((display) => display.scheme === "dark"),
+};
 
-export const storedDisplay = () => storedChoice(DISPLAY_KEY, IDS);
+export const displaysFor = (scheme: Scheme) => BY_SCHEME[scheme];
+
+/** Each scheme keeps its own choice, so a light screen never shows in dark. */
+export const displayKey = (scheme: Scheme) => `backdrop-display-${scheme}`;
+
+/**
+ * Where the page holds each scheme's display: the head script sets it from
+ * storage before first paint, so CSS and the backdrop read one source.
+ */
+export const displayAttribute = (scheme: Scheme) => `data-display-${scheme}`;
+
+/** An id missing, unknown or from the other scheme shows the site's own look. */
+export function shownDisplay(root: Element, scheme: Scheme) {
+  const [site, ...screens] = BY_SCHEME[scheme];
+  const id = root.getAttribute(displayAttribute(scheme));
+  return screens.find((display) => display.id === id) ?? site;
+}
+
+export function showDisplay(root: Element, display: Display) {
+  const name = displayAttribute(display.scheme);
+  if (display === BY_SCHEME[display.scheme][0]) root.removeAttribute(name);
+  else root.setAttribute(name, display.id);
+}
