@@ -44,6 +44,11 @@ export async function launch(builds, { gpu = false } = {}) {
     );
   }
   const context = await browser.newContext({ viewport: VIEWPORT });
+  // A visit draws its pixel shape at random, and shapes cost differently, so
+  // every build is measured on the default square, as builds before the draw.
+  await context.addInitScript(() =>
+    sessionStorage.setItem("backdrop-shape", "square"),
+  );
   await context.route("**/*", (route) => {
     const { hostname, pathname } = new URL(route.request().url());
     const root = roots[hostname.split(".")[0]];
