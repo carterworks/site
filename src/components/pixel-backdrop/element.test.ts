@@ -377,6 +377,20 @@ test("reset restores the stylesheet defaults after a knob was tweaked", () => {
   expect(backdrop.tweaks).toEqual({});
 });
 
+test("configure merges into earlier tweaks, and reset clears them all", () => {
+  const backdrop = mount();
+  const canvas = canvasOf(backdrop);
+
+  backdrop.configure({ shape: "hex" });
+  backdrop.configure({ scale: 7 });
+
+  expect(backdrop.tweaks).toEqual({ shape: "hex", scale: 7 });
+  expect(canvas.dataset).toMatchObject({ shape: "hex", scale: "7" });
+
+  backdrop.reset();
+  expect(backdrop.tweaks).toEqual({});
+});
+
 test("a reconnected backdrop keeps its tweaks", () => {
   const backdrop = mount();
   backdrop.configure({ ghost: 20 });
