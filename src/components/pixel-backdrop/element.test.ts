@@ -5,7 +5,12 @@ import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import { installSoftCanvas, useFakeFrames } from "../../test/toy-canvas";
 import type { Toy } from "../backdrop-toys/toy";
 import { EmulatedCanvas } from "../emulated-canvas/element";
-import { DISPLAYS } from "./backdrop-displays";
+import {
+  DISPLAYS,
+  displayAttribute,
+  displaysFor,
+  showDisplay,
+} from "./backdrop-displays";
 import "./element";
 import type { PixelBackdrop } from "./element";
 import { readDefaults } from "./knobs";
@@ -78,7 +83,9 @@ afterEach(() => {
   getSelection()?.removeAllRanges();
   document.body.replaceChildren();
   document.head.replaceChildren();
-  document.documentElement.removeAttribute("style");
+  for (const name of ["style", "data-display-light", "data-display-dark"]) {
+    document.documentElement.removeAttribute(name);
+  }
   localStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -93,6 +100,9 @@ function mount() {
   document.body.append(backdrop);
   return backdrop;
 }
+
+const displayOf = (id: string) =>
+  DISPLAYS.find((display) => display.id === id)!;
 
 const canvasOf = (backdrop: PixelBackdrop) =>
   backdrop.querySelector("emulated-canvas")!;
@@ -324,14 +334,14 @@ test("a stopped backdrop leaves its canvas manual, so no fade or drift keeps pre
   expect(backdrop.hasAttribute("data-disabled")).toBe(true);
 });
 
-test("the canvas is coloured in the scheme's palette, and a manual flip restarts its passes once", async () => {
+test("the canvas is coloured in the shown scheme's site palette, and a manual flip restarts its passes once", async () => {
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  const { lightBase, lightInk, darkBase, darkInk } = backdrop.knobs;
+  const [light, dark] = ["site-light", "site-dark"].map(displayOf);
   expect(canvas.dataset).toMatchObject({
-    paletteBase: lightBase,
-    paletteInk: lightInk,
+    paletteBase: light.base,
+    paletteInk: light.ink,
   });
 
   document.documentElement.style.colorScheme = "dark";
@@ -340,8 +350,8 @@ test("the canvas is coloured in the scheme's palette, and a manual flip restarts
   await Promise.resolve();
 
   expect(canvas.dataset).toMatchObject({
-    paletteBase: darkBase,
-    paletteInk: darkInk,
+    paletteBase: dark.base,
+    paletteInk: dark.ink,
   });
   expect(reset).toHaveBeenCalledTimes(1);
 });
@@ -401,27 +411,35 @@ test("a reconnected backdrop keeps its tweaks", () => {
   expect(backdrop.tweaks).toEqual({ ghost: 20 });
 });
 
-const pocket = DISPLAYS[1].look!;
+const pocketLcd = displayOf("pocket-lcd");
+const pocket = { ...pocketLcd.look!, base: pocketLcd.base };
+const grid = displayOf("grid");
 
-test("on a display, the knobs in effect are the display's, with the noise stopped and the toy's own ghost", () => {
+/** As the display setting shows one; the backdrop sees it a microtask later. */
+async function show(id: string) {
+  showDisplay(document.documentElement, displayOf(id));
+  await Promise.resolve();
+}
+
+test("on a display, the knobs in effect are the display's, with the noise stopped and the toy's own ghost", async () => {
   const backdrop = mount();
   backdrop.setToy("tuned");
 
-  backdrop.setDisplay("pocket-lcd");
+  await show("pocket-lcd");
 
   expect(backdrop.knobs).toMatchObject({
     gap: pocket.gap,
     shape: "square",
-    lightBase: pocket.base,
+    base: pocket.base,
     ghost: 55,
     noise: 0,
   });
 });
 
-test("on a display, a ghost set through configure takes its rise and fall off the canvas", () => {
+test("on a display, a ghost set through configure takes its rise and fall off the canvas", async () => {
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  backdrop.setDisplay("pocket-lcd");
+  await show("pocket-lcd");
   expect(canvas.dataset).toMatchObject({
     ghostRise: String(pocket.ghostRise),
     ghostFall: String(pocket.ghostFall),
@@ -434,31 +452,43 @@ test("on a display, a ghost set through configure takes its rise and fall off th
   expect(canvas.dataset.ghostFall).toBeUndefined();
 });
 
-test("an unknown display is ignored", () => {
+test("an unknown display shows the site's own look", async () => {
   const backdrop = mount();
+  const site = canvasOf(backdrop).dataset.paletteBase;
+  await show("pocket-lcd");
 
-  backdrop.setDisplay("pocket-lcd");
-  backdrop.setDisplay("missing");
+  document.documentElement.setAttribute(displayAttribute("light"), "missing");
+  await Promise.resolve();
 
-  expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(site);
 });
 
-test("a display restarts the canvas's passes once when its palette changes, and a scheme flip does not", async () => {
+test("a display restarts the canvas's passes once when its palette changes", async () => {
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
-  const backdrop = mount();
+  mount();
 
-  backdrop.setDisplay("pocket-lcd");
+  await show("pocket-lcd");
+
   expect(reset).toHaveBeenCalledTimes(1);
+});
+
+test("each scheme shows its own display, so a scheme flip swaps them", async () => {
+  const backdrop = mount();
+  await show("pocket-lcd");
+  await show("grid");
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
 
   document.documentElement.style.colorScheme = "dark";
   await Promise.resolve();
+  expect(canvasOf(backdrop).dataset.paletteBase).toBe(grid.base);
 
-  expect(reset).toHaveBeenCalledTimes(1);
+  document.documentElement.style.colorScheme = "light";
+  await Promise.resolve();
   expect(canvasOf(backdrop).dataset.paletteBase).toBe(pocket.base);
 });
 
-test("a stored display is on the canvas before the toy first draws, without a restart", () => {
-  localStorage.setItem("backdrop-display", "pocket-lcd");
+test("a display on <html> before the backdrop attaches is on the canvas before the toy first draws, without a restart", () => {
+  showDisplay(document.documentElement, displayOf("pocket-lcd"));
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
   const canvas = document.createElement("emulated-canvas");
   const getContext = canvas.getContext.bind(canvas);
@@ -474,18 +504,6 @@ test("a stored display is on the canvas before the toy first draws, without a re
 
   expect(paletteAtDraw).toBe(pocket.base);
   expect(reset).not.toHaveBeenCalled();
-});
-
-test("a display chosen before the backdrop attaches outranks the stored one", () => {
-  localStorage.setItem("backdrop-display", "pocket-lcd");
-  const backdrop = document.createElement("pixel-backdrop");
-  backdrop.setDisplay("site");
-
-  const canvas = document.createElement("emulated-canvas");
-  backdrop.append(canvas);
-  document.body.append(backdrop);
-
-  expect(canvas.dataset.paletteBase).not.toBe(pocket.base);
 });
 
 /** The attributes written on the backdrop and its canvas while `change` runs. */
@@ -504,17 +522,11 @@ async function writesDuring(backdrop: PixelBackdrop, change: () => unknown) {
 
 test.each<[string, (backdrop: PixelBackdrop) => unknown]>([
   ["an empty configure", (backdrop) => backdrop.configure({})],
-  [
-    "a scheme flip",
-    async () => {
-      document.documentElement.style.colorScheme = "dark";
-      await Promise.resolve();
-    },
-  ],
-  ["the same display again", (backdrop) => backdrop.setDisplay("pocket-lcd")],
+  ["a display chosen for the other scheme", () => show("grid")],
+  ["the same display again", () => show("pocket-lcd")],
 ])("on a display, %s writes nothing", async (_, change) => {
   const backdrop = mount();
-  backdrop.setDisplay("pocket-lcd");
+  await show("pocket-lcd");
 
   expect(await writesDuring(backdrop, () => change(backdrop))).toEqual([]);
 });
@@ -558,32 +570,37 @@ const markupOf = (backdrop: PixelBackdrop) =>
     ),
   );
 
-const ids = DISPLAYS.map(({ id }) => id);
+/** Every pair of displays one scheme offers, as only those can follow each other on screen. */
+const switches = (["light", "dark"] as const).flatMap((scheme) => {
+  const ids = displaysFor(scheme).map(({ id }) => id);
+  return ids.flatMap((from) => ids.map((to) => [scheme, from, to] as const));
+});
 
-test.each(ids.flatMap((from) => ids.map((to) => [from, to])))(
-  "switching from %s to %s leaves exactly the markup of a backdrop shown %s",
-  (from, to) => {
-    const shown = mount();
-    shown.setDisplay(to);
-    const expected = markupOf(shown);
+test.each(switches)(
+  "in %s, switching from %s to %s leaves exactly the markup of a backdrop shown %s",
+  async (scheme, from, to) => {
+    document.documentElement.style.colorScheme = scheme;
+    await show(to);
+    const expected = markupOf(mount());
     document.body.replaceChildren();
+    await show(displaysFor(scheme)[0].id);
     const switched = mount();
 
-    switched.setDisplay(from);
-    switched.setDisplay(to);
+    await show(from);
+    await show(to);
 
     expect(markupOf(switched)).toEqual(expected);
   },
 );
 
 test.each<[string, PixelBackdrop["tweaks"], number]>([
-  ["a tweaked palette", { lightBase: "#123456" }, 1],
+  ["a tweaked palette", { base: "#123456" }, 1],
   ["an untouched palette", { gap: 5 }, 0],
 ])(
   "on a display, reset with %s restarts the canvas's passes exactly when its palette changes",
-  (_, tweak, restarts) => {
+  async (_, tweak, restarts) => {
     const backdrop = mount();
-    backdrop.setDisplay("pocket-lcd");
+    await show("pocket-lcd");
     backdrop.configure(tweak);
     const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
 
@@ -599,7 +616,7 @@ test.each<[string, PixelBackdrop["tweaks"], number]>([
 
 test("reset writes each attribute it changes once", async () => {
   const backdrop = mount();
-  backdrop.setDisplay("pocket-lcd");
+  await show("pocket-lcd");
   backdrop.configure({ noiseSpeed: 9 });
 
   expect(await writesDuring(backdrop, () => backdrop.reset())).toEqual([

@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { render, type Node } from "takumi-js";
 import {
   DISPLAYS,
-  type DisplayLook,
+  displaysFor,
 } from "../../components/pixel-backdrop/backdrop-displays";
 import { getPostTitle, getPublishedPosts } from "../../lib/blog";
 import { formatDateLong } from "../../lib/date";
@@ -31,12 +31,12 @@ type Card = {
 };
 
 const SIZE = 48;
-const PAGE = "oklch(98% 0 0)";
-const TEXT = "oklch(18% 0 0)";
-/** The backdrop's light-mode ink, `--backdrop-light-ink` in global.css. */
-const SITE_LOOK: Look = { ink: "#8a8a99", gap: 2, levels: 5 };
-const POCKET = DISPLAYS.find(({ id }) => id === "pocket-lcd")
-  ?.look as DisplayLook;
+const [SITE] = displaysFor("light");
+const PAGE = SITE.page.bg;
+const TEXT = SITE.page.text;
+const SITE_LOOK: Look = { ink: SITE.ink, gap: 2, levels: 5 };
+const POCKET = DISPLAYS.find(({ id }) => id === "pocket-lcd")!;
+const POCKET_LOOK: Look = { ...POCKET.look!, ink: POCKET.ink };
 /** Finer than the backdrop's grid, so a title lit into it stays legible. */
 const DISPLAY_COLUMNS = 120;
 
@@ -146,7 +146,7 @@ async function backdrop(card: Card) {
     },
     { width: OG_WIDTH, height: OG_HEIGHT, format: "raw", fonts },
   );
-  return paint(litText(mask, seed, DISPLAY_COLUMNS), POCKET);
+  return paint(litText(mask, seed, DISPLAY_COLUMNS), POCKET_LOOK);
 }
 
 async function cardNode(card: Card): Promise<Node> {

@@ -1,4 +1,5 @@
-import { osScheme, saveScheme, type Scheme } from "../../lib/color-scheme";
+import { osScheme, saveScheme } from "../../lib/color-scheme";
+import { shownScheme } from "../pixel-backdrop/backdrop-displays";
 
 /**
  * A two-state toggle over three states, per
@@ -9,7 +10,7 @@ import { osScheme, saveScheme, type Scheme } from "../../lib/color-scheme";
  * touch storage; only a press does.
  */
 export function createThemeSetting(root = document.documentElement) {
-  const current = () => (root.style.colorScheme || osScheme()) as Scheme;
+  const current = () => shownScheme(root);
 
   return {
     label() {

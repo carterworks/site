@@ -4,7 +4,13 @@ import { ClientRouter } from "astro:transitions";
 import CommandBar from "../components/command-bar/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/pixel-backdrop/PixelBackdrop.astro";
-import { SCHEME_KEY } from "../lib/color-scheme";
+import { restoreScript } from "../lib/color-scheme";
+import {
+  displayAttribute,
+  displayColours,
+  displayKey,
+  displaysFor,
+} from "../components/pixel-backdrop/backdrop-displays";
 import { getPageMetadata, pages, type PageMetadata } from "../lib/pages";
 interface Props {
   bare?: boolean;
@@ -20,6 +26,11 @@ const ogImage = new URL(`/og/${metadata.id}.webp`, Astro.site);
 const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
+const schemes = ["light", "dark"] as const;
+const displays = schemes.map((scheme): [string, string] => [
+  displayAttribute(scheme),
+  displayKey(scheme),
+]);
 ---
 
 <!doctype html>
@@ -37,25 +48,17 @@ const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <!-- --color-bg in each scheme; keep in step with global.css. -->
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: light)"
-      content="#f8f8f8"
-    />
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: dark)"
-      content="#121212"
-    />
-    <script is:inline define:vars={{ key: SCHEME_KEY }}>
-      // Runs before first paint, which a bundled module can't; the key is
-      // injected so it can't drift from the one saveScheme writes.
-      try {
-        document.documentElement.style.colorScheme =
-          localStorage.getItem(key) ?? "";
-      } catch {}
-    </script>
+    {
+      schemes.map((scheme) => (
+        <meta
+          name="theme-color"
+          media={`(prefers-color-scheme: ${scheme})`}
+          content={displaysFor(scheme)[0].page.bg}
+        />
+      ))
+    }
+    <style is:inline set:html={displayColours()} />
+    <script is:inline set:html={restoreScript(displays)} />
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />

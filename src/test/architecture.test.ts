@@ -56,7 +56,7 @@ const layers = {
   },
   displays: {
     files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
-    imports: ["lib"],
+    imports: [],
   },
   knobs: {
     files: ["src/components/pixel-backdrop/knobs.ts"],
@@ -91,22 +91,14 @@ const layers = {
     ],
     imports: ["controls", "toy registry", "displays", "lib"],
   },
-  "dev toolbar": {
-    files: ["src/dev-toolbar/*.ts"],
-    imports: ["knobs", "toy registry", "astro/toolbar"],
-  },
   "site lib": {
     files: ["src/lib/*.ts"],
     imports: ["site lib", "lib", "packages"],
   },
   // Pages reach the backdrop only through its entry points, never a single
-  // toy, the toy kit or the dev toolbar.
+  // toy or the toy kit.
   site: {
-    files: [
-      "src/*.ts",
-      "src/{pages,layouts,integrations}/**",
-      "src/components/**/*.astro",
-    ],
+    files: ["src/*.ts", "src/{pages,layouts}/**", "src/components/**/*.astro"],
     imports: [
       "site",
       "site lib",
@@ -125,11 +117,6 @@ const exceptions = [
     from: "src/components/play-toolbar/play-toolbar.ts",
     to: "src/components/backdrop-toys/image.ts",
     why: "a dropped image becomes a toy that is not in the registry",
-  },
-  {
-    from: "src/dev-toolbar/pixel-backdrop.ts",
-    to: "src/components/emulated-canvas/limits.ts",
-    why: "the ghost slider stops at the canvas's retention cap",
   },
 ];
 

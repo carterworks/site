@@ -29,12 +29,7 @@ export function probe(
     "saves: ms of script per frame against as shipped, first and last averaged; approximate, as each pass changes the pixels the next works on";
   const SLOW_FRAMES = (ms) =>
     `frames ${round(ms)} ms idle: the display or browser paces below 60 Hz; Low Power Mode is a common cause`;
-  const PALETTE_OFF = {
-    lightBase: undefined,
-    lightInk: undefined,
-    darkBase: undefined,
-    darkInk: undefined,
-  };
+  const PALETTE_OFF = { base: undefined, ink: undefined };
   const PASSES_OFF = [
     [{ noise: 0 }, ["noise"]],
     [{ ghost: 0 }, ["ghost"]],
@@ -285,9 +280,14 @@ export function probe(
   let canvas;
   let menu;
   const label = () => menu.selectedOptions[0].textContent;
-  const nextDisplay = () => {
+  /**
+   * The menu shows a display on <html>, which the backdrop observes, so it
+   * applies it a microtask later.
+   */
+  const nextDisplay = async () => {
     menu.selectedIndex = (menu.selectedIndex + 1) % menu.length;
     menu.dispatchEvent(new Event("change"));
+    await Promise.resolve();
   };
   /** Sorted, as an attribute or property removed and set again moves to the end. */
   const attributes = (element) =>
@@ -316,11 +316,11 @@ export function probe(
     ].filter(Boolean);
   };
   let displays = [];
-  const choose = (toyId, displayLabel) => {
+  const choose = async (toyId, displayLabel) => {
     backdrop.setToy(toyId);
     for (let presses = 0; label() !== displayLabel; presses += 1) {
       if (presses === displays.length) return;
-      nextDisplay();
+      await nextDisplay();
     }
   };
 
@@ -446,7 +446,7 @@ export function probe(
 
   const runStep = async (step, index, total, homeSnapshot, frameMs) => {
     show(`probe ${run}: ${index}/${total} ${step.name}`);
-    step.apply();
+    await step.apply();
     await play({ ms: SETTLE_MS });
     const problems = [];
     const unapplied = step.applied();
@@ -462,7 +462,7 @@ export function probe(
         `invalid: a frame took ${Math.round(measured.longestGapMs)} ms, as a paused page's does`,
       );
     }
-    step.undo();
+    await step.undo();
     if (snapshot() !== homeSnapshot)
       problems.push(`not restored: ${snapshot()}`);
     return {
@@ -526,7 +526,7 @@ export function probe(
     home.looks = new Map();
     while (!home.looks.has(label())) {
       home.looks.set(label(), look());
-      nextDisplay();
+      await nextDisplay();
     }
     displays = [...home.looks.keys()];
     if (new Set(home.looks.values()).size !== displays.length) {
@@ -541,7 +541,7 @@ export function probe(
         `no display matches "${display}" in ${displays.join(", ")}`,
       );
     }
-    choose(home.toy, home.display);
+    await choose(home.toy, home.display);
     const homeSnapshot = snapshot();
 
     const plan = steps(home);
@@ -568,7 +568,7 @@ export function probe(
         result.saves = shipped - result.script;
       }
     }
-    choose(original.toy, original.display);
+    await choose(original.toy, original.display);
     await post({ type: "done", env, steps: results });
     show(table(env, results));
     box.style.pointerEvents = "auto";

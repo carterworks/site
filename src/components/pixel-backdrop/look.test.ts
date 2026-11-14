@@ -4,11 +4,11 @@ import { DISPLAYS, type Display, type DisplayLook } from "./backdrop-displays";
 import type { Toy } from "../backdrop-toys/toy";
 import { EmulatedCanvas } from "../emulated-canvas/element";
 import { SHAPES as CANVAS_SHAPES } from "../emulated-canvas/presenter";
-import { KNOBS, type BackdropKnobs } from "./knobs";
+import { KNOBS, type BackdropKnobs, type KnobDefaults } from "./knobs";
 import { resolveLook, type LookInput, type ResolvedLook } from "./look";
 
 /** Each value apart from every source that can stand in for it, so a case shows which one won. */
-const DEFAULTS: BackdropKnobs = {
+const DEFAULTS: KnobDefaults = {
   enabled: true,
   autoFit: true,
   scale: 7,
@@ -18,10 +18,6 @@ const DEFAULTS: BackdropKnobs = {
   noise: 18,
   noiseScale: 15,
   noiseSpeed: 5,
-  lightBase: "#f4f4f2",
-  lightInk: "#8a8a99",
-  darkBase: "#141414",
-  darkInk: "#6e6e7a",
 };
 
 const toy = (id: string, look?: Toy["look"]): Toy => ({
@@ -35,7 +31,7 @@ const tuned = toy("tuned", { ghost: 55, noise: 12 });
 
 const displayOf = (id: string) =>
   DISPLAYS.find((display) => display.id === id)!;
-const site = displayOf("site");
+const site = displayOf("site-light");
 const pocket = displayOf("pocket-lcd");
 const amber = displayOf("amber-lcd");
 const screen = pocket.look!;
@@ -45,7 +41,6 @@ const FRESH: LookInput = {
   tweaks: {},
   toy: plain,
   display: site,
-  scheme: "light",
   columns: 160,
 };
 
@@ -163,63 +158,28 @@ const ladders: Record<
     ],
   },
   // The screen behind the canvas is the base too, so the gaps and the strip
-  // past the grid follow it.
-  lightBase: {
+  // past the grid follow it; Site has no screen.
+  base: {
     read: ({ data, hostStyle }) => [
       data.paletteBase,
       hostStyle["--backdrop-display-screen"],
     ],
     rungs: [
-      ["default", {}, [DEFAULTS.lightBase, undefined]],
-      ["display", { display: pocket }, [screen.base, screen.base]],
+      ["site's", {}, [site.base, undefined]],
+      ["display", { display: pocket }, [pocket.base, pocket.base]],
       [
         "tweak",
-        { display: pocket, tweaks: { lightBase: "#123456" } },
+        { display: pocket, tweaks: { base: "#123456" } },
         ["#123456", "#123456"],
       ],
     ],
   },
-  lightInk: {
+  ink: {
     read: (look) => look.data.paletteInk,
     rungs: [
-      ["default", {}, DEFAULTS.lightInk],
-      ["display", { display: pocket }, screen.ink],
-      [
-        "tweak",
-        { display: pocket, tweaks: { lightInk: "#123456" } },
-        "#123456",
-      ],
-    ],
-  },
-  darkBase: {
-    read: ({ data, hostStyle }) => [
-      data.paletteBase,
-      hostStyle["--backdrop-display-screen"],
-    ],
-    rungs: [
-      ["default", { scheme: "dark" }, [DEFAULTS.darkBase, undefined]],
-      [
-        "display",
-        { scheme: "dark", display: pocket },
-        [screen.base, screen.base],
-      ],
-      [
-        "tweak",
-        { scheme: "dark", display: pocket, tweaks: { darkBase: "#123456" } },
-        ["#123456", "#123456"],
-      ],
-    ],
-  },
-  darkInk: {
-    read: (look) => look.data.paletteInk,
-    rungs: [
-      ["default", { scheme: "dark" }, DEFAULTS.darkInk],
-      ["display", { scheme: "dark", display: pocket }, screen.ink],
-      [
-        "tweak",
-        { scheme: "dark", display: pocket, tweaks: { darkInk: "#123456" } },
-        "#123456",
-      ],
+      ["site's", {}, site.ink],
+      ["display", { display: pocket }, pocket.ink],
+      ["tweak", { display: pocket, tweaks: { ink: "#123456" } }, "#123456"],
     ],
   },
 };
@@ -229,7 +189,9 @@ const rungs = Object.entries(ladders).flatMap(([knob, { read, rungs }]) =>
 );
 
 test("every knob has a precedence ladder", () => {
-  expect(Object.keys(ladders).sort()).toEqual(Object.keys(KNOBS).sort());
+  expect(Object.keys(ladders).sort()).toEqual(
+    [...Object.keys(KNOBS), "base", "ink"].sort(),
+  );
 });
 
 test.each(rungs)(
@@ -249,13 +211,9 @@ test.each(Object.entries(ladders))(
   },
 );
 
-const SCHEMES = ["light", "dark"] as const;
-
-/** Every toy, display and scheme, with nothing tweaked. */
+/** Every toy and display, with nothing tweaked. */
 const COMBINATIONS: Partial<LookInput>[] = DISPLAYS.flatMap((display) =>
-  [plain, tuned].flatMap((toy) =>
-    SCHEMES.map((scheme) => ({ display, toy, scheme })),
-  ),
+  [plain, tuned].map((toy) => ({ display, toy })),
 );
 
 const singleSourced = Object.entries(ladders).filter(
@@ -263,7 +221,7 @@ const singleSourced = Object.entries(ladders).filter(
 );
 
 test.each(singleSourced)(
-  "only a tweak moves %s, whatever the toy, display or scheme",
+  "only a tweak moves %s, whatever the toy or display",
   (_, { read, rungs }) => {
     const [[, , byDefault]] = rungs;
     for (const input of COMBINATIONS) {
@@ -289,7 +247,7 @@ test("the shape knob offers every shape the canvas draws", () => {
 });
 
 /** Another valid value for the knob than its default. */
-function another(key: keyof BackdropKnobs): unknown {
+function another(key: keyof KnobDefaults): unknown {
   const current = DEFAULTS[key];
   if (key === "shape") {
     return Object.keys(SHAPES).find((shape) => shape !== current);
@@ -300,8 +258,7 @@ function another(key: keyof BackdropKnobs): unknown {
     case "boolean":
       return !current;
     default:
-      expect(current, `give ${key}'s choices here`).toMatch(/^#/);
-      return current === "#010203" ? "#030201" : "#010203";
+      throw new Error(`give ${key}'s choices here`);
   }
 }
 
@@ -311,8 +268,8 @@ const moves = (changed: Partial<LookInput>, inputs = COMBINATIONS) =>
       !isDeepStrictEqual(resolve({ ...input, ...changed }), resolve(input)),
   );
 
-test.each(Object.keys(KNOBS) as (keyof BackdropKnobs)[])(
-  "the %s knob's default changes the look in some toy, display or scheme",
+test.each(Object.keys(KNOBS) as (keyof KnobDefaults)[])(
+  "the %s knob's default changes the look in some toy or display",
   (key) => {
     const defaults = { ...DEFAULTS, [key]: another(key) };
     expect(moves({ defaults }), `the ${key} knob changes nothing`).toBe(true);
@@ -330,8 +287,10 @@ const fieldsOf = (look: Fields, path: string[] = []): string[][] =>
   );
 
 function withChanged(display: Display, path: string[]): Display {
-  const look = structuredClone(display.look) as unknown as Fields;
-  const parent = path.slice(0, -1).reduce((at, key) => at[key] as Fields, look);
+  const changed = structuredClone(display) as unknown as Fields;
+  const parent = path
+    .slice(0, -1)
+    .reduce((at, key) => at[key] as Fields, changed);
   const field = path.at(-1)!;
   const value = parent[field];
   parent[field] =
@@ -344,7 +303,7 @@ function withChanged(display: Display, path: string[]): Display {
             ? "#030201"
             : "#010203"
           : `${value} changed`;
-  return { ...display, look: look as unknown as Display["look"] };
+  return changed as unknown as Display;
 }
 
 type Complete<T> = {
@@ -355,11 +314,13 @@ type Complete<T> = {
 const complete: Display = {
   id: "complete",
   label: "Complete",
+  scheme: "light",
+  base: "#f89b03",
+  ink: "#3c070d",
+  page: { bg: "#ffffff", text: "#000000", accent: "#000000" },
   look: {
     grid: "#0000000a",
     vignette: { clear: 33, edge: "#e6d3d3" },
-    base: "#f89b03",
-    ink: "#3c070d",
     stops: ["#2bd96b", "#e3f01c"],
     levels: 2,
     dither: true,
@@ -370,7 +331,9 @@ const complete: Display = {
   } satisfies Complete<DisplayLook>,
 };
 
-const displayFields = fieldsOf(complete.look as unknown as Fields).map(
+/** What reaches the canvas: the page's colours are the stylesheet's. */
+const { base, ink, look } = complete;
+const displayFields = fieldsOf({ base, ink, look } as unknown as Fields).map(
   (path) => ({ field: path.join("."), path }),
 );
 
@@ -401,12 +364,12 @@ test("a display colours the canvas and the screen behind it, and lays its grid, 
     shadow: String(screen.shadow!.opacity),
     shadowX: String(screen.shadow!.x),
     shadowY: String(screen.shadow!.y),
-    paletteBase: screen.base,
-    paletteInk: screen.ink,
+    paletteBase: pocket.base,
+    paletteInk: pocket.ink,
     paletteLevels: String(screen.levels),
   });
   expect(look.hostStyle).toEqual({
-    "--backdrop-display-screen": screen.base,
+    "--backdrop-display-screen": pocket.base,
     "--backdrop-display-grid": screen.grid,
     "--backdrop-display-vignette": undefined,
   });
@@ -418,7 +381,7 @@ test("only a display with a backlight vignette lays one over the screen, and one
   expect(amber.look!.vignette).toBeDefined();
 
   expect(look.hostStyle).toEqual({
-    "--backdrop-display-screen": amber.look!.base,
+    "--backdrop-display-screen": amber.base,
     "--backdrop-display-grid": undefined,
     "--backdrop-display-vignette": AMBER_VIGNETTE,
   });
@@ -447,7 +410,7 @@ test("Amber's vignette is plain paint that darkens its screen exactly as its tun
 
 test("a tweaked base colours the screen the vignette darkens", () => {
   expect(
-    resolve({ display: amber, tweaks: { lightBase: "#ffffff" } }).hostStyle,
+    resolve({ display: amber, tweaks: { base: "#ffffff" } }).hostStyle,
   ).toMatchObject({
     "--backdrop-display-screen": "#ffffff",
     "--backdrop-display-vignette":
@@ -478,20 +441,10 @@ test("Site sets none of a display's attributes or properties, and shows the toy'
   expect(look.data).toMatchObject({ ghost: "55", noise: "12" });
 });
 
-test("the palette is the scheme's on Site, and a display's in either scheme", () => {
-  const palette = (input: Partial<LookInput>) => {
-    const { paletteBase, paletteInk } = resolve(input).data;
-    return [paletteBase, paletteInk];
-  };
+test.each(DISPLAYS)("the canvas is in $id's palette", (display) => {
+  const { paletteBase, paletteInk } = resolve({ display }).data;
 
-  expect(palette({})).toEqual([DEFAULTS.lightBase, DEFAULTS.lightInk]);
-  expect(palette({ scheme: "dark" })).toEqual([
-    DEFAULTS.darkBase,
-    DEFAULTS.darkInk,
-  ]);
-  expect(palette({ display: pocket, scheme: "dark" })).toEqual(
-    palette({ display: pocket }),
-  );
+  expect([paletteBase, paletteInk]).toEqual([display.base, display.ink]);
 });
 
 test("the noise's feature size reaches the canvas in its own pixels, scaled from the tuned width", () => {
@@ -513,7 +466,7 @@ test("auto-fit tiles the viewport's larger side with whole strides of the grid, 
 
 test("a tweaked knob sets no custom property on the canvas", () => {
   const look = resolve({
-    tweaks: { ghost: 30, gap: 3, lightInk: "#123456" },
+    tweaks: { ghost: 30, gap: 3, ink: "#123456" },
   });
 
   expect(Object.keys(look.canvasStyle)).toEqual(["--emulated-canvas-scale"]);

@@ -1,6 +1,5 @@
 import { RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
-import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
 import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "../settings/site-settings";
@@ -126,9 +125,6 @@ class PlayToolbarElement extends HTMLElement {
       ),
       Object.assign(option("Image", "image"), { hidden: true }),
     );
-    display.replaceChildren(
-      ...DISPLAYS.map(({ id, label }) => option(label, id)),
-    );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
 
     let playing: ImageBitmap | undefined;
@@ -143,6 +139,9 @@ class PlayToolbarElement extends HTMLElement {
       theme.setAttribute(
         "aria-label",
         `${theme.textContent}. Activate to change.`,
+      );
+      display.replaceChildren(
+        ...settings.display.choices().map(({ id, label }) => option(label, id)),
       );
       display.value = settings.display.value();
       shape.value = backdrop()?.knobs.shape ?? SHAPES[0];

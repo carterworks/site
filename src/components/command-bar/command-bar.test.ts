@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "../settings/backdrop-display-setting";
-import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import {
+  displayAttribute,
+  displayKey,
+  displaysFor,
+} from "../pixel-backdrop/backdrop-displays";
 import { createBackdropToy } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import "./command-bar";
@@ -47,13 +51,14 @@ let osScheme: "light" | "dark" = "light";
 let reducedMotion = false;
 let osListeners: (() => void)[] = [];
 const setToy = vi.fn();
-const setDisplay = vi.fn();
 
 function setupCommandBar() {
-  document.documentElement.style.colorScheme = "";
+  const root = document.documentElement;
+  root.style.colorScheme = "";
+  root.removeAttribute(displayAttribute("light"));
+  root.removeAttribute(displayAttribute("dark"));
   localStorage.clear();
   setToy.mockClear();
-  setDisplay.mockClear();
   Object.assign(settings, {
     theme: createThemeSetting(),
     backdrop: createBackdropToy(() => 0, new EventTarget()),
@@ -63,7 +68,7 @@ function setupCommandBar() {
   template.innerHTML = markup;
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
-  Object.assign(backdrop, { setToy, setDisplay });
+  Object.assign(backdrop, { setToy });
   document.body.append(backdrop);
 
   const dialog = document.querySelector<HTMLDialogElement>("dialog");
@@ -133,6 +138,8 @@ beforeEach(() => {
   setupCommandBar();
 });
 afterEach(() => vi.unstubAllGlobals());
+
+const light = displaysFor("light");
 
 describe("command bar", () => {
   test("opens with links from the current page and omits sitemap duplicates", () => {
@@ -226,15 +233,17 @@ describe("command bar", () => {
     expect(value("backdrop")).toBe(TOYS[1].label);
   });
 
-  test("activating the display row stores and applies the next display", () => {
+  test("activating the display row stores and shows the shown scheme's next display", () => {
     openSettings();
-    expect(value("display")).toBe(DISPLAYS[0].label);
+    expect(value("display")).toBe(light[0].label);
 
     row("display").click();
 
-    expect(localStorage.getItem("backdrop-display")).toBe(DISPLAYS[1].id);
-    expect(setDisplay).toHaveBeenLastCalledWith(DISPLAYS[1].id);
-    expect(value("display")).toBe(DISPLAYS[1].label);
+    expect(localStorage.getItem(displayKey("light"))).toBe(light[1].id);
+    expect(
+      document.documentElement.getAttribute(displayAttribute("light")),
+    ).toBe(light[1].id);
+    expect(value("display")).toBe(light[1].label);
   });
 
   test("the backdrop and display rows note that reduced motion pauses it", () => {
@@ -243,7 +252,7 @@ describe("command bar", () => {
 
     const labels = {
       backdrop: TOYS[0].label,
-      display: DISPLAYS[0].label,
+      display: light[0].label,
     };
     for (const name of ["backdrop", "display"] as const) {
       expect(value(name)).toBe(`${labels[name]} (paused)`);

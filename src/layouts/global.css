@@ -69,14 +69,19 @@
   --size-screen: 100svh;
   --size-prose: 65ch;
 
-  --color-white: oklch(98% 0 0);
-  --color-black: oklch(18% 0 0);
-  --color-text: light-dark(var(--color-black), var(--color-white));
-  --color-bg: light-dark(var(--color-white), var(--color-black));
+  /* Each scheme's display sets its --display-<scheme>-* colours, from the
+     list in backdrop-displays.ts; light-dark() picks the shown scheme's, so a
+     theme flip needs no script. */
+  --color-text: light-dark(var(--display-light-text), var(--display-dark-text));
+  --color-bg: light-dark(var(--display-light-bg), var(--display-dark-bg));
+  --color-accent: light-dark(
+    var(--display-light-accent),
+    var(--display-dark-accent)
+  );
 
   /* Pixel backdrop defaults, the single source of truth: `<pixel-backdrop>`
-     reads them at startup and on reset, and the dev-toolbar app can override
-     any of them at runtime. */
+     reads them at startup and on reset, and `configure()` can override any
+     of them at runtime. */
   --backdrop-enabled: true;
   --backdrop-auto-fit: true;
   --backdrop-scale: 7;
@@ -86,16 +91,9 @@
   --backdrop-noise: 18%;
   --backdrop-noise-scale: 15;
   --backdrop-noise-speed: 5;
-  --backdrop-light-base: #f4f4f2;
-  --backdrop-light-ink: #8a8a99;
-  --backdrop-dark-base: #141414;
-  --backdrop-dark-ink: #6e6e7a;
 
-  scrollbar-color: light-dark(
-      var(--backdrop-light-ink),
-      var(--backdrop-dark-ink)
-    )
-    transparent;
+  accent-color: var(--color-accent);
+  scrollbar-color: var(--color-accent) transparent;
 }
 body {
   --top-gutter-size: clamp(var(--size-md), 40svh, var(--size-3xl));
