@@ -34,6 +34,11 @@ export type Display = {
   /** The only scheme it shows in, the one whose page panels suit its screen. */
   scheme: "light" | "dark";
   look?: DisplayLook;
+  /**
+   * The page's colours over this screen, as `--color-bg`, `--color-text` and
+   * `--color-accent`; without, the scheme's own. Hex only, for the contrast test.
+   */
+  page?: { bg: string; text: string; accent: string };
 };
 
 /**
@@ -57,6 +62,7 @@ export const DISPLAYS: Display[] = [
     id: "pocket-lcd",
     label: "Pocket LCD",
     scheme: "light",
+    page: { bg: "#e8edd6", text: "#1f3326", accent: "#263c2b" },
     look: {
       grid: "#0000000a",
       base: "#889d58",
@@ -74,6 +80,7 @@ export const DISPLAYS: Display[] = [
     id: "amber-lcd",
     label: "Amber LCD",
     scheme: "light",
+    page: { bg: "#fff4e3", text: "#3c070d", accent: "#3c070d" },
     look: {
       vignette: { clear: 33, edge: "#e6d3d3" },
       base: "#f89b03",
@@ -89,6 +96,7 @@ export const DISPLAYS: Display[] = [
     id: "thermal",
     label: "Thermal",
     scheme: "light",
+    page: { bg: "#f4f7fc", text: "#151a24", accent: "#d93a00" },
     look: {
       base: "#cdd8ee",
       stops: ["#2bd96b", "#e3f01c", "#ff4a0a"],
@@ -105,6 +113,7 @@ export const DISPLAYS: Display[] = [
     id: "grid",
     label: "Grid",
     scheme: "dark",
+    page: { bg: "#061018", text: "#e3f9ff", accent: "#11a6d8" },
     look: {
       base: "#04070a",
       stops: ["#0a3346", "#11a6d8", "#7fe6ff"],
