@@ -7,6 +7,7 @@ vi.mock("../backdrop-toys", () => ({
 
 afterEach(() => {
   document.documentElement.style.colorScheme = "";
+  document.documentElement.removeAttribute("data-display-light");
 });
 
 test("a navigation carries the chosen colour scheme to the incoming document", () => {
@@ -20,7 +21,7 @@ test("a navigation carries the chosen colour scheme to the incoming document", (
   expect(newDocument.documentElement.style.colorScheme).toBe("dark");
 });
 
-test("a navigation carries each scheme's display to the incoming document, and drops one cleared since", () => {
+test("a navigation gives the incoming document exactly the displays this one shows", () => {
   const root = document.documentElement;
   root.setAttribute("data-display-light", "pocket-lcd");
   const newDocument = document.implementation.createHTMLDocument();
@@ -29,7 +30,6 @@ test("a navigation carries each scheme's display to the incoming document, and d
   document.dispatchEvent(
     Object.assign(new Event("astro:before-swap"), { newDocument }),
   );
-  root.removeAttribute("data-display-light");
 
   expect(newDocument.documentElement.getAttribute("data-display-light")).toBe(
     "pocket-lcd",

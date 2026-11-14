@@ -4,7 +4,7 @@ import { ClientRouter } from "astro:transitions";
 import CommandBar from "../components/command-bar/CommandBar.astro";
 import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/pixel-backdrop/PixelBackdrop.astro";
-import { SCHEME_KEY } from "../lib/color-scheme";
+import { restoreScript } from "../lib/color-scheme";
 import {
   displayAttribute,
   displayColours,
@@ -27,7 +27,7 @@ const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
 const schemes = ["light", "dark"] as const;
-const displays = schemes.map((scheme) => [
+const displays = schemes.map((scheme): [string, string] => [
   displayAttribute(scheme),
   displayKey(scheme),
 ]);
@@ -58,18 +58,7 @@ const displays = schemes.map((scheme) => [
       ))
     }
     <style is:inline set:html={displayColours()} />
-    <script is:inline define:vars={{ key: SCHEME_KEY, displays }}>
-      // Runs before first paint, which a bundled module can't; the keys are
-      // injected so they can't drift from the ones the settings write.
-      try {
-        const root = document.documentElement;
-        root.style.colorScheme = localStorage.getItem(key) ?? "";
-        for (const [attribute, storeKey] of displays) {
-          const id = localStorage.getItem(storeKey);
-          if (id) root.setAttribute(attribute, id);
-        }
-      } catch {}
-    </script>
+    <script is:inline set:html={restoreScript(displays)} />
 
     <meta name="fediverse:creator" content={fediverseCreator} />
     <ClientRouter />

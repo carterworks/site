@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, vi } from "vitest";
 import {
   DISPLAYS,
@@ -163,3 +165,16 @@ test.each([
     }
   },
 );
+
+test("global.css reads exactly the page colours the themes write, so a typo cannot leave a token unset", () => {
+  const css = readFileSync(
+    join(import.meta.dirname, "../../layouts/global.css"),
+    "utf8",
+  );
+  const names = (text: string, pattern: RegExp) =>
+    [...new Set([...text.matchAll(pattern)].map(([, name]) => name))].sort();
+
+  expect(names(css, /var\((--display-[\w-]+)/g)).toEqual(
+    names(displayColours(), /(--display-[\w-]+):/g),
+  );
+});
