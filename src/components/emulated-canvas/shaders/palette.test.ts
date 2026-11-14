@@ -4,6 +4,7 @@ import {
   useFakeCanvas,
   mountCanvas,
   shown,
+  draw,
   drawRow,
   pixelsShown,
 } from "../../../test/emulated-canvas";
@@ -143,5 +144,55 @@ test("data-palette-levels as many as the colours snaps each pixel to one of them
 
   expect(pixelsShown()).toBe(
     "0 0 0 255 255 0 0 255 0 0 255 255 255 255 255 255",
+  );
+});
+
+test("data-palette-dither mixes the two nearest shades in an ordered 4 x 4 pattern, in proportion", () => {
+  const canvas = mountCanvas({
+    width: "4",
+    height: "4",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+    paletteLevels: "2",
+    paletteDither: "",
+  });
+  const lit = () =>
+    [...shown()]
+      .filter((_, i) => i % 4 === 0)
+      .map((shade) => (shade ? 1 : 0))
+      .join("");
+
+  draw(canvas, 128);
+  canvas.present();
+  expect(lit()).toBe("1010010110100101");
+
+  draw(canvas, 64);
+  canvas.present();
+  expect(lit()).toBe("1010000010100000");
+
+  draw(canvas, 0);
+  canvas.present();
+  expect(lit()).toBe("0".repeat(16));
+
+  draw(canvas, 255);
+  canvas.present();
+  expect(lit()).toBe("1".repeat(16));
+});
+
+test("data-palette-dither between more levels uses only the two shades either side", () => {
+  const canvas = mountCanvas({
+    width: "4",
+    height: "4",
+    paletteBase: "#000000",
+    paletteInk: "#ffffff",
+    paletteLevels: "4",
+    paletteDither: "",
+  });
+  draw(canvas, 128);
+
+  canvas.present();
+
+  expect(new Set([...shown()].filter((_, i) => i % 4 === 0))).toEqual(
+    new Set([85, 170]),
   );
 });
