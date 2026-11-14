@@ -8,7 +8,7 @@ import {
 const light = displaysFor("light");
 const dark = displaysFor("dark");
 import { SHAPES } from "../emulated-canvas/presenter";
-import { createBackdropToy } from "../settings/backdrop-toy-setting";
+import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import "./play-toolbar";
 import { settings } from "../settings/site-settings";
@@ -149,7 +149,7 @@ test("the theme button's accessible name starts with its visible text", () => {
   );
 });
 
-test("the toy menu offers every toy, and no Random entry", () => {
+test("with nothing stored, the toy menu offers every toy and no Random", () => {
   const offered = [...toy().options].filter((option) => !option.hidden);
 
   expect(offered.map((option) => option.value)).toEqual(
@@ -158,6 +158,21 @@ test("the toy menu offers every toy, and no Random entry", () => {
   expect(offered.map((option) => option.textContent)).toEqual(
     TOYS.map((toy) => toy.label),
   );
+});
+
+test("a stored toy adds Random to the menu, which clears it and names the toy on show", () => {
+  chooseToy(TOYS[1].id);
+  const offered = () =>
+    [...toy().options]
+      .filter((option) => !option.hidden)
+      .map((option) => option.textContent);
+  expect(offered()).toEqual([...TOYS.map((toy) => toy.label), "Random"]);
+
+  chooseToy(RANDOM);
+
+  expect(localStorage.getItem("backdrop-mode")).toBeNull();
+  expect(offered()).not.toContain("Random");
+  expect(TOYS.map((toy) => toy.label)).toContain(shownToy());
 });
 
 test("choosing a toy from the menu plays it and keeps it shown", () => {
