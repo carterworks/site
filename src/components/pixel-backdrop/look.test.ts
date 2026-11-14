@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { DISPLAYS, type Display, type DisplayLook } from "./backdrop-displays";
 import type { Toy } from "../backdrop-toys/toy";
 import { EmulatedCanvas } from "../emulated-canvas/element";
+import { SHAPES as CANVAS_SHAPES } from "../emulated-canvas/presenter";
 import { KNOBS, type BackdropKnobs } from "./knobs";
 import { resolveLook, type LookInput, type ResolvedLook } from "./look";
 
@@ -103,9 +104,12 @@ const ladders: Record<
   shape: {
     read: (look) => look.data.shape,
     rungs: [
-      ["default", {}, "circle"],
-      ["display", { display: pocket }, "square"],
-      ["tweak", { display: pocket, tweaks: { shape: "circle" } }, "circle"],
+      ["default", { toy: tuned, display: pocket }, "circle"],
+      [
+        "tweak",
+        { toy: tuned, display: pocket, tweaks: { shape: "hex" } },
+        "hex",
+      ],
     ],
   },
   // A display's ghost is its own rise and fall, which outrank the ghost the
@@ -268,10 +272,21 @@ test.each(singleSourced)(
   },
 );
 
-const SHAPES = { square: true, circle: true } satisfies Record<
-  BackdropKnobs["shape"],
-  true
->;
+const SHAPES = {
+  square: true,
+  circle: true,
+  ring: true,
+  diamond: true,
+  hex: true,
+  triangle: true,
+  dash: true,
+  slash: true,
+  cross: true,
+} satisfies Record<BackdropKnobs["shape"], true>;
+
+test("the shape knob offers every shape the canvas draws", () => {
+  expect(Object.keys(SHAPES)).toEqual([...CANVAS_SHAPES]);
+});
 
 /** Another valid value for the knob than its default. */
 function another(key: keyof BackdropKnobs): unknown {
@@ -376,7 +391,6 @@ test("a display colours the canvas and the screen behind it, and lays its grid, 
 
   expect(look.data).toMatchObject({
     gap: String(screen.gap),
-    shape: "square",
     ghost: "55",
     ghostRise: String(screen.ghostRise),
     ghostFall: String(screen.ghostFall),

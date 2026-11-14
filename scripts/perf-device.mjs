@@ -412,7 +412,7 @@ async function runSelfTest(origin) {
     "from the second display",
     await runIn(browser, async (page) => {
       await page.goto(`${origin}/play/`);
-      await page.click("[data-display]");
+      await page.selectOption("[data-display]", { index: 1 });
     }),
   );
   await browser.close();

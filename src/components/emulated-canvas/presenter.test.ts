@@ -5,7 +5,7 @@ import {
   SoftContext,
   softStats,
 } from "../../test/toy-canvas";
-import { type Geometry, Presenter } from "./presenter";
+import { type Geometry, Presenter, SHAPES } from "./presenter";
 
 const PLAIN: Geometry = {
   scale: 1,
@@ -62,6 +62,28 @@ function bitmap(...rgba: number[][]) {
 
 const GREEN = [0, 200, 0, 255];
 const BLUE = [0, 0, 200, 255];
+const RED = [200, 0, 0, 255];
+const WHITE = [255, 255, 255, 255];
+const CLEAR = [0, 0, 0, 0];
+
+/** An image of these rows of RGBA pixels. */
+function grid(...rows: number[][][]) {
+  return new ImageData(
+    Uint8ClampedArray.from(rows.flat(2)),
+    rows[0].length,
+    rows.length,
+  );
+}
+
+/** A presenter of a 2 x 2 bitmap, or `columns` wide. */
+function mountGrid(geometry: Partial<Geometry>, columns = 2) {
+  const root = document.createElement("div").attachShadow({ mode: "open" });
+  const presenter = new Presenter(root, columns, 2);
+  presenter.configure({ ...PLAIN, ...geometry });
+  const canvases = () => [...root.querySelectorAll("canvas")];
+  const style = () => root.querySelector("style")?.textContent ?? "";
+  return { presenter, canvases, style };
+}
 
 describe("the display", () => {
   test("is a bitmap-sized canvas after the stylesheet", () => {
@@ -145,6 +167,97 @@ describe("the stylesheet", () => {
 
     expect(style()).toContain("var(--emulated-canvas-scale, 4px)");
     expect(style()).not.toContain("3px");
+  });
+});
+
+/** The rules whose selector names a canvas, which a frame changes every present. */
+const canvasRules = (style: string) =>
+  [...style.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter(([, selector]) => /canvas|^\s*\./.test(selector))
+    .map(([, , body]) => body);
+
+describe("a cell shape", () => {
+  test.each(["ring", "diamond", "slash", "cross"] as const)(
+    "%s is cut by painting over the canvas alone, never by masking",
+    (shape) => {
+      const { canvases, style } = mount({ shape, gap: 2 });
+
+      expect(canvases()).toHaveLength(1);
+      expect(style()).not.toContain("mask");
+      expect(style()).toContain("var(--emulated-canvas-gap-color, Canvas)");
+    },
+  );
+
+  test("dash is cut by masking the paint over the canvas, which never changes, and never the canvas", () => {
+    const { canvases, style } = mount({ shape: "dash", gap: 2 });
+
+    expect(canvases()).toHaveLength(1);
+    expect(style()).toContain("mask");
+    expect(canvasRules(style()).join()).not.toContain("mask");
+  });
+
+  test("hex shows the odd rows again half a cell right, on a canvas over the display that is clear on even rows", () => {
+    const { presenter, canvases, style } = mountGrid({ shape: "hex", gap: 2 });
+
+    presenter.show(grid([GREEN, BLUE], [RED, WHITE]));
+
+    const [display, odd] = canvases();
+    expect(canvases()).toHaveLength(2);
+    expect(pixelsOf(display)).toEqual([GREEN, BLUE, RED, WHITE].flat());
+    expect(pixelsOf(odd)).toEqual([CLEAR, CLEAR, RED, WHITE].flat());
+    expect(style()).toContain("translate: calc(var(--stride) / 2)");
+    expect(canvasRules(style()).join()).not.toContain("mask");
+    expect(presenter.needsPixels).toBe(true);
+  });
+
+  test("triangle shows each up and each down cell two cells wide, on two canvases half a cell left, the down one masked to its triangles", () => {
+    const { presenter, canvases, style } = mountGrid(
+      { shape: "triangle", gap: 2 },
+      3,
+    );
+    const [A, B, C, D, E, F] = [GREEN, BLUE, RED, WHITE, BLUE, GREEN].map(
+      (colour, at) => [...colour.slice(0, 3), 250 - at],
+    );
+
+    presenter.show(grid([A, B, C], [D, E, F]));
+
+    const [, up, down] = canvases();
+    expect(canvases().map(({ className }) => className)).toEqual([
+      "",
+      "up",
+      "down",
+    ]);
+    expect(pixelsOf(up)).toEqual([A, A, C, C, CLEAR, E, E, CLEAR].flat());
+    expect(pixelsOf(down)).toEqual([CLEAR, B, B, CLEAR, D, D, F, F].flat());
+    expect(style()).toContain("translate: calc(var(--stride) / -2)");
+    expect(style()).toContain("visibility: hidden");
+    expect(/\.down \{[^}]*\}/.exec(style())![0]).toContain("mask");
+    expect(/\.up \{[^}]*\}/.exec(style())![0]).not.toContain("mask");
+  });
+
+  test("going back to square removes the shifted canvas", () => {
+    const { presenter, canvases } = mountGrid({ shape: "hex" });
+
+    presenter.configure({ ...PLAIN, shape: "square" });
+
+    expect(canvases()).toHaveLength(1);
+    expect(presenter.needsPixels).toBe(false);
+  });
+
+  test("a shifted canvas sits under the shadow's echo", () => {
+    const { canvases } = mountGrid({ shape: "hex", shadow: SHADOW });
+
+    expect(canvases().map(({ className }) => className)).toEqual([
+      "",
+      "odd",
+      "echo",
+    ]);
+  });
+
+  test.each(SHAPES)("%s is sized by the cell, not a fixed length", (shape) => {
+    const { style } = mount({ shape, scale: 9, gap: 2 });
+
+    expect(style()).toContain("var(--scale)");
   });
 });
 

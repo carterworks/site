@@ -18,15 +18,21 @@ export function createBackdropDisplay() {
 
   const current = () => storedDisplay() ?? last ?? SITE.id;
 
+  const choose = (id: string) => {
+    storeChoice(DISPLAY_KEY, id === SITE.id ? undefined : id);
+    last = id;
+    document.querySelector("pixel-backdrop")?.setDisplay(id);
+  };
+
   return {
+    /** The id of the display on show. */
+    value: current,
     label() {
       return DISPLAYS.find((display) => display.id === current())!.label;
     },
+    choose,
     cycle() {
-      const next = nextInRotation(IDS, current());
-      storeChoice(DISPLAY_KEY, next === SITE.id ? undefined : next);
-      last = next;
-      document.querySelector("pixel-backdrop")?.setDisplay(next);
+      choose(nextInRotation(IDS, current()));
     },
   };
 }

@@ -283,8 +283,12 @@ export function probe(
 
   let backdrop;
   let canvas;
-  let button;
-  const label = () => button.textContent.replace("Display: ", "");
+  let menu;
+  const label = () => menu.selectedOptions[0].textContent;
+  const nextDisplay = () => {
+    menu.selectedIndex = (menu.selectedIndex + 1) % menu.length;
+    menu.dispatchEvent(new Event("change"));
+  };
   /** Sorted, as an attribute or property removed and set again moves to the end. */
   const attributes = (element) =>
     [...element.attributes]
@@ -316,7 +320,7 @@ export function probe(
     backdrop.setToy(toyId);
     for (let presses = 0; label() !== displayLabel; presses += 1) {
       if (presses === displays.length) return;
-      button.click();
+      nextDisplay();
     }
   };
 
@@ -327,11 +331,9 @@ export function probe(
     await customElements.whenDefined("pixel-backdrop");
     backdrop = document.querySelector("pixel-backdrop");
     canvas = backdrop?.querySelector("emulated-canvas");
-    button = document.querySelector("[data-display]");
-    if (!backdrop || !canvas || !button) {
-      throw new Error(
-        "/play has no <pixel-backdrop>, canvas or display button",
-      );
+    menu = document.querySelector("[data-display]");
+    if (!backdrop || !canvas || !menu) {
+      throw new Error("/play has no <pixel-backdrop>, canvas or display menu");
     }
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       throw new Error("the device asks for reduced motion, which pauses toys");
@@ -524,7 +526,7 @@ export function probe(
     home.looks = new Map();
     while (!home.looks.has(label())) {
       home.looks.set(label(), look());
-      button.click();
+      nextDisplay();
     }
     displays = [...home.looks.keys()];
     if (new Set(home.looks.values()).size !== displays.length) {

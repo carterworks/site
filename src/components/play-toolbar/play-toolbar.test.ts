@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBackdropDisplay } from "../settings/backdrop-display-setting";
 import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
+import { SHAPES } from "../emulated-canvas/presenter";
 import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
 import "./play-toolbar";
@@ -15,7 +16,8 @@ const markup = `
   <play-toolbar role="group" aria-label="Playground">
     <label>Toy <select data-toy></select></label>
     <button type="button" data-theme></button>
-    <button type="button" data-display></button>
+    <label>Display <select data-display></select></label>
+    <label>Shape <select data-shape></select></label>
     <button type="button" data-image>Image…</button>
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
@@ -35,6 +37,8 @@ const setToy = vi.fn((id: string) => {
   toyId = id;
 });
 const setDisplay = vi.fn();
+let tweaks: { shape?: string } = {};
+const configure = vi.fn((partial: object) => Object.assign(tweaks, partial));
 const play = vi.fn((toy: { id: string }) => {
   toyId = toy.id;
 });
@@ -52,7 +56,12 @@ const chooseToy = (id: string) => {
   toy().dispatchEvent(new Event("change"));
 };
 const theme = () => get<HTMLButtonElement>("[data-theme]");
-const display = () => get<HTMLButtonElement>("[data-display]");
+const display = () => get<HTMLSelectElement>("[data-display]");
+const shownDisplay = () => display().selectedOptions[0]?.textContent;
+const chooseDisplay = (id: string) => {
+  display().value = id;
+  display().dispatchEvent(new Event("change"));
+};
 const status = () => get("[data-status]").textContent;
 const settle = () => new Promise((resolve) => setTimeout(resolve));
 
@@ -87,7 +96,10 @@ function mount() {
   document.body.replaceChildren(template.content.cloneNode(true));
   const backdrop = document.createElement("pixel-backdrop");
   Object.defineProperty(backdrop, "toy", { get: () => toyId });
-  Object.assign(backdrop, { setToy, setDisplay, play });
+  Object.defineProperty(backdrop, "knobs", {
+    get: () => ({ shape: tweaks.shape ?? "square" }),
+  });
+  Object.assign(backdrop, { setToy, setDisplay, play, configure });
   document.body.append(backdrop);
 }
 
@@ -98,6 +110,8 @@ beforeEach(() => {
   setToy.mockClear();
   play.mockClear();
   setDisplay.mockClear();
+  configure.mockClear();
+  tweaks = {};
   vi.stubGlobal("matchMedia", (query: string) => ({
     get matches() {
       return query.includes("dark") === (osScheme === "dark");
@@ -117,17 +131,15 @@ afterEach(() => {
 test("the controls show the current values and nothing is stored on load", () => {
   expect(shownToy()).toBe(TOYS[0].label);
   expect(theme().textContent).toBe("Theme: Light");
-  expect(display().textContent).toBe(`Display: ${DISPLAYS[0].label}`);
+  expect(shownDisplay()).toBe(DISPLAYS[0].label);
   expect(localStorage.length).toBe(0);
   expect(document.documentElement.style.colorScheme).toBe("");
 });
 
-test("each button's accessible name starts with its visible text", () => {
-  for (const button of [theme(), display()]) {
-    expect(button.getAttribute("aria-label")).toBe(
-      `${button.textContent}. Activate to change.`,
-    );
-  }
+test("the theme button's accessible name starts with its visible text", () => {
+  expect(theme().getAttribute("aria-label")).toBe(
+    `${theme().textContent}. Activate to change.`,
+  );
 });
 
 test("the toy menu offers every toy, then Random", () => {
@@ -298,11 +310,22 @@ test("a page load re-renders, as the toy is chosen after the bar connects", () =
   expect(shownToy()).toBe(TOYS[1].label);
 });
 
-test("the display button cycles the display and shows the new one", () => {
-  display().click();
+test("the display menu offers every display", () => {
+  const offered = [...display().options];
 
-  expect(setDisplay).toHaveBeenCalledWith(DISPLAYS[1].id);
-  expect(display().textContent).toBe(`Display: ${DISPLAYS[1].label}`);
+  expect(offered.map((option) => option.value)).toEqual(
+    DISPLAYS.map((display) => display.id),
+  );
+  expect(offered.map((option) => option.textContent)).toEqual(
+    DISPLAYS.map((display) => display.label),
+  );
+});
+
+test("choosing a display from the menu shows it and keeps it shown", () => {
+  chooseDisplay(DISPLAYS[2].id);
+
+  expect(setDisplay).toHaveBeenCalledWith(DISPLAYS[2].id);
+  expect(shownDisplay()).toBe(DISPLAYS[2].label);
 });
 
 const runFrames = () => {
@@ -383,4 +406,36 @@ test("the frame counter stops when the toolbar leaves", () => {
   get("play-toolbar").remove();
 
   expect(cancel).toHaveBeenCalledWith(frames.length);
+});
+
+const shape = () => get<HTMLSelectElement>("[data-shape]");
+const chooseShape = (id: string) => {
+  shape().value = id;
+  shape().dispatchEvent(new Event("change"));
+};
+
+test("the shape menu offers every shape the canvas draws", () => {
+  const offered = [...shape().options];
+
+  expect(offered.map((option) => option.value)).toEqual(SHAPES);
+  expect(offered[0].textContent).toBe("Square");
+});
+
+test("choosing a shape draws the cells in it and stores nothing", () => {
+  chooseShape("hex");
+
+  expect(configure).toHaveBeenLastCalledWith({ shape: "hex" });
+  expect(shape().value).toBe("hex");
+  expect(localStorage.length).toBe(0);
+});
+
+test("every display leaves the chosen shape alone", () => {
+  chooseShape("hex");
+
+  for (const { id } of DISPLAYS) {
+    chooseDisplay(id);
+    expect(shape().value).toBe("hex");
+    expect(shape().disabled).toBe(false);
+  }
+  expect(configure).toHaveBeenCalledTimes(1);
 });

@@ -67,7 +67,17 @@ export const CONTROLS: Controls = {
   shape: {
     kind: "select",
     label: "Shape",
-    choices: { square: "Square", circle: "Circle" },
+    choices: {
+      square: "Square",
+      circle: "Circle",
+      ring: "Ring",
+      diamond: "Diamond",
+      hex: "Hex",
+      triangle: "Triangle",
+      dash: "Dash",
+      slash: "Slash",
+      cross: "Cross",
+    },
   },
   ghost: {
     kind: "range",

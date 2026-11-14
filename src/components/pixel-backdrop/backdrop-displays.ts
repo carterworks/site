@@ -90,6 +90,20 @@ export const DISPLAYS: Display[] = [
       ghostFall: 40,
     },
   },
+  // On a dark screen clearing darkens, so the fall is the trail.
+  {
+    id: "grid",
+    label: "Grid",
+    look: {
+      base: "#04070a",
+      stops: ["#0a3346", "#11a6d8", "#7fe6ff"],
+      ink: "#f2fdff",
+      levels: 5,
+      gap: 2,
+      ghostRise: 40,
+      ghostFall: 65,
+    },
+  },
 ];
 
 export const DISPLAY_KEY = "backdrop-display";

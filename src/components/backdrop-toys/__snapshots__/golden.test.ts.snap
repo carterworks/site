@@ -58,6 +58,62 @@ exports[`crags on Amber LCD > markup 1`] = `
 
 exports[`crags on Amber LCD 1`] = `"923793f7eb907b542b3cf3dee274b05fb0c27f573bfd241ff2d10a52ebcf4724 over 1 changed frames"`;
 
+exports[`crags on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`crags on Grid 1`] = `"789207fc6b450a45a3e8861fd54369f3b63db8ac709d87d5ab2ddb2ee7de3050 over 1 changed frames"`;
+
 exports[`crags on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -340,6 +396,62 @@ exports[`culture on Amber LCD > markup 1`] = `
 `;
 
 exports[`culture on Amber LCD 1`] = `"91649bd3d904f937a1ef65f0db485686d441985cd3c2c111f02aa17eca6482fa over 500 changed frames"`;
+
+exports[`culture on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`culture on Grid 1`] = `"46582e3e852caed62d8a6b8e733f22029eeae4331361efb53b5884a1ff3970a4 over 500 changed frames"`;
 
 exports[`culture on Pocket LCD > markup 1`] = `
 {
@@ -624,6 +736,62 @@ exports[`horizon on Amber LCD > markup 1`] = `
 
 exports[`horizon on Amber LCD 1`] = `"2779647ba165cd6b39f9c0f46c8a6f7e0d514f0b4a1cac939127bd6a86cd9f74 over 1 changed frames"`;
 
+exports[`horizon on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`horizon on Grid 1`] = `"7ec4c2c80ef14f49c42a0c33127a20966626747e646281a8ad39cc2bf25b5723 over 1 changed frames"`;
+
 exports[`horizon on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -906,6 +1074,62 @@ exports[`mote on Amber LCD > markup 1`] = `
 `;
 
 exports[`mote on Amber LCD 1`] = `"6d57a9df28b2364758fa8c15d4f57498ce39ba5934853d954b037f1c551e5fc3 over 439 changed frames"`;
+
+exports[`mote on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "55",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`mote on Grid 1`] = `"5eb4a153b4f62d17e90ab10a30fd15e2d3a163d8ea677f22f888bc69e2aa1ef9 over 439 changed frames"`;
 
 exports[`mote on Pocket LCD > markup 1`] = `
 {
@@ -1190,6 +1414,62 @@ exports[`peaks on Amber LCD > markup 1`] = `
 
 exports[`peaks on Amber LCD 1`] = `"2d904d3bbea111b91c9e2564a6ed616f2601eb547cbefcbae7333a6dc7aeb1ee over 1 changed frames"`;
 
+exports[`peaks on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`peaks on Grid 1`] = `"0568877d2d0aa7f1a6b6a0c89f2ef5636ccea3a10cb96a66ab0e1d9bc7babd33 over 1 changed frames"`;
+
 exports[`peaks on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -1473,6 +1753,62 @@ exports[`pinbed on Amber LCD > markup 1`] = `
 
 exports[`pinbed on Amber LCD 1`] = `"eb8eb5f0d7a35c1b58ebe90fdc84e576df73ccecb11c51ffb2078905ed876d2a over 242 changed frames"`;
 
+exports[`pinbed on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "40",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`pinbed on Grid 1`] = `"a0705240c9dadfb9d9b04ae185d0d63664945d03f0120172a3cdcd971c3b4600 over 354 changed frames"`;
+
 exports[`pinbed on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -1698,6 +2034,345 @@ exports[`pinbed on Thermal > markup 1`] = `
 
 exports[`pinbed on Thermal 1`] = `"12a89e7230257c721de835efbe66a95b1bf1b4dc86efb46da94b6b1912b6708e over 342 changed frames"`;
 
+exports[`planet on Amber LCD > markup 1`] = `
+{
+  "backdropData": {
+    "data-vignette": "",
+  },
+  "backdropStyle": {
+    "--backdrop-display-screen": "#f89b03",
+    "--backdrop-display-vignette": "radial-gradient(farthest-corner, transparent 33%, rgb(107 0 0 / 0.173))",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "1",
+    "data-ghost": "70",
+    "data-ghost-fall": "76",
+    "data-ghost-rise": "86",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f89b03",
+    "data-palette-ink": "#3c070d",
+    "data-palette-levels": "2",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 1px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 1px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: 0px -1px -1px 0px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 0px, transparent 0 calc(0px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: 0px -1px -1px 0px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Amber LCD 1`] = `"d2a5d29ff6d82bed8146b158acbc13f30f65e0c8f6d8d99c343ba7030d2065c5 over 1 changed frames"`;
+
+exports[`planet on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Grid 1`] = `"6c560fbc02c4f05ac27e8b50a76f5bc25344a7f7f1a2f876987c435403eae52e over 500 changed frames"`;
+
+exports[`planet on Pocket LCD > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-grid": "#0000000a",
+    "--backdrop-display-screen": "#889d58",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "30",
+    "data-ghost-rise": "45",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#889d58",
+    "data-palette-ink": "#263c2b",
+    "data-palette-levels": "4",
+    "data-scale": "7",
+    "data-shadow": "25",
+    "data-shadow-x": "4",
+    "data-shadow-y": "4",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+    ":host {",
+    "isolation: isolate;",
+    "}",
+    ".echo {",
+    "inset: 0 auto auto 0;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "translate: 4px 4px;",
+    "z-index: 1;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Pocket LCD 1`] = `"824db5f21c1f43913aef766760d7d38f268160262c4679d8418735bff0642a59 over 500 changed frames"`;
+
+exports[`planet on Site in dark > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#141414",
+    "data-palette-ink": "#6e6e7a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Site in dark 1`] = `"666d8e8352a5fe0feec2cb08dcec53b0a27ba05472093c91c62deaeac9385a61 over 501 changed frames"`;
+
+exports[`planet on Site in light > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {},
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-height": "160",
+    "data-noise": "18",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#f4f4f2",
+    "data-palette-ink": "#8a8a99",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Site in light 1`] = `"6df772720f3a44c10e4a316831caec69ca61c379d42fd7b3b86a7df5b9935132 over 501 changed frames"`;
+
+exports[`planet on Thermal > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#cdd8ee",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "40",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#cdd8ee",
+    "data-palette-ink": "#000000",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#2bd96b #e3f01c #ff4a0a",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`planet on Thermal 1`] = `"d0fea2d3d9a444ec61dddcbcaba05a346a5cfd821e138c3cc413d51631a287ce over 500 changed frames"`;
+
 exports[`pond on Amber LCD > markup 1`] = `
 {
   "backdropData": {
@@ -1755,6 +2430,62 @@ exports[`pond on Amber LCD > markup 1`] = `
 `;
 
 exports[`pond on Amber LCD 1`] = `"91863cb2586e450f70f39e2b6bac7e17e789440c35f8d87018b4c962bdff2764 over 325 changed frames"`;
+
+exports[`pond on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "50",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`pond on Grid 1`] = `"35ace4857c354ff7e225ffc25591d6898f61a947bbd462b59df449128f15e4a7 over 501 changed frames"`;
 
 exports[`pond on Pocket LCD > markup 1`] = `
 {
@@ -2039,6 +2770,62 @@ exports[`shimmer on Amber LCD > markup 1`] = `
 
 exports[`shimmer on Amber LCD 1`] = `"5fdec8c65637ff516a5448686060d43d63c296739e982ebec04ec6779fe2c239 over 196 changed frames"`;
 
+exports[`shimmer on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "70",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`shimmer on Grid 1`] = `"79fec552618bba77bb4464883b22039a512c55609bd391833ed081dafb6faa9e over 198 changed frames"`;
+
 exports[`shimmer on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -2322,6 +3109,62 @@ exports[`silt on Amber LCD > markup 1`] = `
 
 exports[`silt on Amber LCD 1`] = `"c47040658260dbca61f1bda8faeab032b3c04a50911d613ddc448803655a7ba6 over 401 changed frames"`;
 
+exports[`silt on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "55",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`silt on Grid 1`] = `"07e3bfbf95eded653aef7098303642d0d78176a0317281123256160a06e2f750 over 344 changed frames"`;
+
 exports[`silt on Pocket LCD > markup 1`] = `
 {
   "backdropData": {},
@@ -2604,6 +3447,62 @@ exports[`wax on Amber LCD > markup 1`] = `
 `;
 
 exports[`wax on Amber LCD 1`] = `"305ae11c06c63f271aab07a3dd888868df47e28cfe6ff5766d2697958ad94fbe over 499 changed frames"`;
+
+exports[`wax on Grid > markup 1`] = `
+{
+  "backdropData": {},
+  "backdropStyle": {
+    "--backdrop-display-screen": "#04070a",
+  },
+  "canvasData": {
+    "data-fit": "viewport",
+    "data-gap": "2",
+    "data-ghost": "75",
+    "data-ghost-fall": "65",
+    "data-ghost-rise": "40",
+    "data-height": "160",
+    "data-noise": "0",
+    "data-noise-scale": "30",
+    "data-noise-speed": "5",
+    "data-palette-base": "#04070a",
+    "data-palette-ink": "#f2fdff",
+    "data-palette-levels": "5",
+    "data-palette-stops": "#0a3346 #11a6d8 #7fe6ff",
+    "data-scale": "7",
+    "data-shape": "square",
+    "data-width": "160",
+  },
+  "canvasStyle": {
+    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
+  },
+  "stylesheet": [
+    ":host {",
+    "--scale: var(--emulated-canvas-scale, 7px);",
+    "--stride: calc(var(--scale) + 2px);",
+    "display: inline-block;",
+    "line-height: 0;",
+    "overflow: clip;",
+    "position: relative;",
+    "}",
+    "canvas {",
+    "image-rendering: pixelated;",
+    "inline-size: calc(160 * var(--stride));",
+    "block-size: calc(160 * var(--stride));",
+    "margin: -1px -1px -1px -1px;",
+    "vertical-align: top;",
+    "}",
+    ":host::after {",
+    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
+    "content: "";",
+    "inset: -1px -1px -1px -1px;",
+    "pointer-events: none;",
+    "position: absolute;",
+    "}",
+  ],
+}
+`;
+
+exports[`wax on Grid 1`] = `"44b7990867a6e260342c77e89d24f8b7aa58d8f377ee829d725566e51ea11d32 over 499 changed frames"`;
 
 exports[`wax on Pocket LCD > markup 1`] = `
 {

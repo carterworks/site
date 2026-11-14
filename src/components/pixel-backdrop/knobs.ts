@@ -24,7 +24,17 @@ export const KNOBS = {
   /** Space between cells, in display pixels. */
   gap: numeric,
   /** Cell form. */
-  shape: choice<"square" | "circle">(),
+  shape: choice<
+    | "square"
+    | "circle"
+    | "ring"
+    | "diamond"
+    | "hex"
+    | "triangle"
+    | "dash"
+    | "slash"
+    | "cross"
+  >(),
   /** Share of each previous frame the panel keeps, in percent. */
   ghost: numeric,
   /** Opacity of the drifting background noise field, in percent. */

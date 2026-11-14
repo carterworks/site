@@ -2,6 +2,7 @@ import { culture } from "./culture";
 import { crags, horizon, peaks } from "./landscape";
 import { mote } from "./mote";
 import { pinbed } from "./pinbed";
+import { planet } from "./planet";
 import { pond } from "./pond";
 import { shimmer } from "./shimmer";
 import { silt } from "./silt";
@@ -22,4 +23,5 @@ export const TOYS: Toy[] = [
   peaks,
   horizon,
   crags,
+  planet,
 ];
