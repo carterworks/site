@@ -5,7 +5,7 @@
   <label><span>Display</span> <select data-display></select></label>
   <label
     ><span>Shape</span>
-    <select data-shape aria-describedby="shape-note"></select></label
+    <select data-shape></select></label
   >
   <label><span>Cells</span> <select data-cells></select></label>
   <button type="button" data-theme>Theme</button>
@@ -13,7 +13,6 @@
   <div class="notes">
     <p class="paused-notice">Toys are paused for reduced motion.</p>
     <p role="status" data-status></p>
-    <p id="shape-note" data-shape-note></p>
   </div>
   <div class="fps" data-fps hidden>
     <p data-fps-rate></p>
@@ -98,11 +97,6 @@
   /* Wide enough for "Light" and "Dark" alike, so a press never moves the bar. */
   [data-theme] {
     min-inline-size: 7.5em;
-  }
-
-  label:has(:disabled) {
-    cursor: not-allowed;
-    opacity: 0.55;
   }
 
   select {

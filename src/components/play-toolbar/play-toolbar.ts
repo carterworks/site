@@ -1,9 +1,6 @@
 import { RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "../backdrop-toys";
-import {
-  DISPLAYS,
-  type DisplayLook,
-} from "../pixel-backdrop/backdrop-displays";
+import { DISPLAYS } from "../pixel-backdrop/backdrop-displays";
 import { imageToy } from "../backdrop-toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "../settings/site-settings";
@@ -14,10 +11,8 @@ const option = (label: string, value: string) =>
     value,
   });
 
-type Shape = NonNullable<DisplayLook["shape"]>;
-
 /** The canvas's shapes, default first; a test holds it to the canvas's own list. */
-const SHAPES: Shape[] = [
+const SHAPES = [
   "square",
   "circle",
   "ring",
@@ -27,7 +22,7 @@ const SHAPES: Shape[] = [
   "dash",
   "slash",
   "cross",
-];
+] as const;
 
 const FIT = "fit";
 const CELL_SIZES = [5, 7, 10, 14];
@@ -111,7 +106,6 @@ class PlayToolbarElement extends HTMLElement {
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
     const display = this.querySelector<HTMLSelectElement>("[data-display]");
     const shape = this.querySelector<HTMLSelectElement>("[data-shape]");
-    const shapeNote = this.querySelector<HTMLElement>("[data-shape-note]");
     const cells = this.querySelector<HTMLSelectElement>("[data-cells]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
@@ -122,7 +116,6 @@ class PlayToolbarElement extends HTMLElement {
       !theme ||
       !display ||
       !shape ||
-      !shapeNote ||
       !cells ||
       !pick ||
       !input ||
@@ -149,20 +142,8 @@ class PlayToolbarElement extends HTMLElement {
 
     let playing: ImageBitmap | undefined;
     let request = 0;
-    let chosenShape: Shape | undefined;
 
     const backdrop = () => document.querySelector("pixel-backdrop");
-    const shownDisplay = () =>
-      DISPLAYS.find(({ id }) => id === settings.display.value())!;
-
-    // A tweak outranks a display's look, so a display that draws its own
-    // shape is handed it back as one, and the chosen shape returns after.
-    const applyShape = () => {
-      if (chosenShape === undefined) return;
-      backdrop()?.configure({
-        shape: shownDisplay().look?.shape ?? chosenShape,
-      });
-    };
 
     const render = () => {
       toy.value =
@@ -173,11 +154,8 @@ class PlayToolbarElement extends HTMLElement {
         `${theme.textContent}. Activate to change.`,
       );
       display.value = settings.display.value();
-      const { label, look } = shownDisplay();
       const knobs = backdrop()?.knobs;
-      shape.disabled = look?.shape !== undefined;
-      shape.value = look?.shape ?? knobs?.shape ?? SHAPES[0];
-      shapeNote.textContent = shape.disabled ? `${label} sets the shape.` : "";
+      shape.value = knobs?.shape ?? SHAPES[0];
       cells.value = knobs?.autoFit === false ? String(knobs.scale) : FIT;
     };
 
@@ -199,12 +177,10 @@ class PlayToolbarElement extends HTMLElement {
     });
     display.addEventListener("change", () => {
       settings.display.choose(display.value);
-      applyShape();
       render();
     });
     shape.addEventListener("change", () => {
-      chosenShape = shape.value as Shape;
-      applyShape();
+      backdrop()?.configure({ shape: shape.value as (typeof SHAPES)[number] });
       render();
     });
     cells.addEventListener("change", () => {

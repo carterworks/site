@@ -23,7 +23,6 @@ const markup = `
     <input type="file" accept="image/*" hidden />
     <a href="/">Home</a>
     <p role="status" data-status></p>
-    <p data-shape-note></p>
     <div data-fps hidden>
       <p data-fps-rate></p>
       <p data-fps-low></p>
@@ -420,11 +419,6 @@ const chooseShape = (id: string) => {
   shape().value = id;
   shape().dispatchEvent(new Event("change"));
 };
-const shapeNote = () => get("[data-shape-note]").textContent;
-const fixing = DISPLAYS.find((display) => display.look?.shape)!;
-const leaving = DISPLAYS.find(
-  (display) => display.look && !display.look.shape,
-)!;
 
 test("the shape menu offers every shape the canvas draws", () => {
   const offered = [...shape().options];
@@ -441,32 +435,15 @@ test("choosing a shape draws the cells in it and stores nothing", () => {
   expect(localStorage.length).toBe(0);
 });
 
-test("a display that fixes the shape disables the menu and says why", () => {
-  chooseDisplay(fixing.id);
-
-  expect(shape().disabled).toBe(true);
-  expect(shape().value).toBe(fixing.look!.shape);
-  expect(shapeNote()).toBe(`${fixing.label} sets the shape.`);
-});
-
-test("a display that fixes nothing leaves the menu alone", () => {
-  chooseDisplay(leaving.id);
-
-  expect(shape().disabled).toBe(false);
-  expect(shapeNote()).toBe("");
-  expect(configure).not.toHaveBeenCalled();
-});
-
-test("a chosen shape gives way to a display's own, and returns after it", () => {
+test("every display leaves the chosen shape alone", () => {
   chooseShape("hex");
 
-  chooseDisplay(fixing.id);
-  expect(configure).toHaveBeenLastCalledWith({ shape: fixing.look!.shape });
-
-  chooseDisplay(leaving.id);
-  expect(configure).toHaveBeenLastCalledWith({ shape: "hex" });
-  expect(shape().value).toBe("hex");
-  expect(shape().disabled).toBe(false);
+  for (const { id } of DISPLAYS) {
+    chooseDisplay(id);
+    expect(shape().value).toBe("hex");
+    expect(shape().disabled).toBe(false);
+  }
+  expect(configure).toHaveBeenCalledTimes(1);
 });
 
 const cells = () => get<HTMLSelectElement>("[data-cells]");

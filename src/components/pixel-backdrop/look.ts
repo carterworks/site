@@ -29,13 +29,12 @@ export type ResolvedLook = {
 
 /**
  * A display stops the noise, so a screen stays a plain grid whatever toy runs
- * on it, and fixes the cells' shape if it has one. Its ghost is its rise and
- * fall, which `resolveLook` writes beside the knob.
+ * on it. Its ghost is its rise and fall, which `resolveLook` writes beside the
+ * knob.
  */
 const displayed = (look?: DisplayLook): Partial<BackdropKnobs> | undefined =>
   look && {
     gap: look.gap,
-    ...(look.shape && { shape: look.shape }),
     noise: 0,
     lightBase: look.base,
     darkBase: look.base,

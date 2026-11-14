@@ -104,9 +104,12 @@ const ladders: Record<
   shape: {
     read: (look) => look.data.shape,
     rungs: [
-      ["default", {}, "circle"],
-      ["display", { display: pocket }, "square"],
-      ["tweak", { display: pocket, tweaks: { shape: "circle" } }, "circle"],
+      ["default", { toy: tuned, display: pocket }, "circle"],
+      [
+        "tweak",
+        { toy: tuned, display: pocket, tweaks: { shape: "hex" } },
+        "hex",
+      ],
     ],
   },
   // A display's ghost is its own rise and fall, which outrank the ghost the
@@ -358,7 +361,6 @@ const complete: Display = {
     stops: ["#2bd96b", "#e3f01c"],
     levels: 2,
     gap: 1,
-    shape: "square",
     ghostRise: 86,
     ghostFall: 76,
     shadow: { opacity: 25, x: 4, y: 4 },
@@ -389,7 +391,6 @@ test("a display colours the canvas and the screen behind it, and lays its grid, 
 
   expect(look.data).toMatchObject({
     gap: String(screen.gap),
-    shape: "square",
     ghost: "55",
     ghostRise: String(screen.ghostRise),
     ghostFall: String(screen.ghostFall),
@@ -407,15 +408,6 @@ test("a display colours the canvas and the screen behind it, and lays its grid, 
     "--backdrop-display-vignette": undefined,
   });
   expect(look.hostFlags["data-vignette"]).toBe(false);
-});
-
-test("a display without a shape of its own leaves the cells to the shape knob", () => {
-  const { shape, ...unshaped } = screen;
-  expect(shape).toBe("square");
-
-  expect(resolve({ display: { ...pocket, look: unshaped } }).data.shape).toBe(
-    DEFAULTS.shape,
-  );
 });
 
 test("only a display with a backlight vignette lays one over the screen, and one without a grid leaves the gaps the screen's", () => {
