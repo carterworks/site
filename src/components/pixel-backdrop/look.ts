@@ -91,6 +91,7 @@ export function resolveLook(input: LookInput): ResolvedLook {
       paletteInk: ink,
       paletteStops: look?.stops?.join(" "),
       paletteLevels: text(look?.levels),
+      paletteDither: look?.dither ? "" : undefined,
     },
     canvasStyle: {
       "--emulated-canvas-scale": knobs.autoFit

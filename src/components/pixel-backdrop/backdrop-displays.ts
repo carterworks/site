@@ -22,6 +22,8 @@ export type DisplayLook = {
   stops?: string[];
   ink: string;
   levels: number;
+  /** Mixes neighbouring levels in an ordered pattern, so shades between them still show. */
+  dither?: boolean;
   gap: number;
   ghostRise: number;
   ghostFall: number;

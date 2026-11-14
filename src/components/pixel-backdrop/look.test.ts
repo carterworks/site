@@ -319,7 +319,7 @@ test.each(Object.keys(KNOBS) as (keyof BackdropKnobs)[])(
   },
 );
 
-type Fields = { [field: string]: string | number | Fields };
+type Fields = { [field: string]: string | number | boolean | Fields };
 
 /** Each field of a look as a path, nested ones included. */
 const fieldsOf = (look: Fields, path: string[] = []): string[][] =>
@@ -337,11 +337,13 @@ function withChanged(display: Display, path: string[]): Display {
   parent[field] =
     typeof value === "number"
       ? value + 1
-      : typeof value === "string" && /^#[0-9a-f]{6}$/.test(value)
-        ? value === "#010203"
-          ? "#030201"
-          : "#010203"
-        : `${value} changed`;
+      : typeof value === "boolean"
+        ? !value
+        : typeof value === "string" && /^#[0-9a-f]{6}$/.test(value)
+          ? value === "#010203"
+            ? "#030201"
+            : "#010203"
+          : `${value} changed`;
   return { ...display, look: look as unknown as Display["look"] };
 }
 
@@ -360,6 +362,7 @@ const complete: Display = {
     ink: "#3c070d",
     stops: ["#2bd96b", "#e3f01c"],
     levels: 2,
+    dither: true,
     gap: 1,
     ghostRise: 86,
     ghostFall: 76,
@@ -462,6 +465,7 @@ test("Site sets none of a display's attributes or properties, and shows the toy'
     "shadowX",
     "shadowY",
     "paletteLevels",
+    "paletteDither",
   ]) {
     expect(look.data[key]).toBeUndefined();
   }
