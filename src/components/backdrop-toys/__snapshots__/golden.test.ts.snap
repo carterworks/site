@@ -283,62 +283,6 @@ exports[`crags on Site in light > markup 1`] = `
 
 exports[`crags on Site in light 1`] = `"8d1577dcd4808de3c9d7553a5ff617fe1f992b7ffb59e8e875bd58dd4708b4d7 over 65 changed frames"`;
 
-exports[`crags on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`crags on Tet 1`] = `"354f3be2a5405ef7c983bea66577fdcf6046b93deafe7ef3f376af7cb769560d over 1 changed frames"`;
-
 exports[`crags on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -677,62 +621,6 @@ exports[`culture on Site in light > markup 1`] = `
 `;
 
 exports[`culture on Site in light 1`] = `"f362eed192086982a9589cfa572aef2f6a48bdf3d40c39585bde4f2eb64ebc83 over 500 changed frames"`;
-
-exports[`culture on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`culture on Tet 1`] = `"5cafe42b41f6a3811f65eb5f72892daec496361e69ee2f9b1afae92c06593244 over 500 changed frames"`;
 
 exports[`culture on Thermal > markup 1`] = `
 {
@@ -1073,62 +961,6 @@ exports[`horizon on Site in light > markup 1`] = `
 
 exports[`horizon on Site in light 1`] = `"7f54eaf9e46c59db0b948698740143a56e7d08502eb4983730402092fe8b4bd5 over 65 changed frames"`;
 
-exports[`horizon on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`horizon on Tet 1`] = `"c2b84d5ec1b1df9583f0456fc4284dec0e52616b9434818ac42a2e06e132c7b0 over 1 changed frames"`;
-
 exports[`horizon on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -1467,62 +1299,6 @@ exports[`mote on Site in light > markup 1`] = `
 `;
 
 exports[`mote on Site in light 1`] = `"441b19489359a75d9aa95aa39e9b5379cd5afdb9cc8fb89814793f1293faea63 over 501 changed frames"`;
-
-exports[`mote on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "55",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`mote on Tet 1`] = `"a64133d9c37f8d3d5ff1cb4be24a34bb14527d036ab377d392c529e0192f4ab2 over 439 changed frames"`;
 
 exports[`mote on Thermal > markup 1`] = `
 {
@@ -1863,62 +1639,6 @@ exports[`peaks on Site in light > markup 1`] = `
 
 exports[`peaks on Site in light 1`] = `"659e20b11e2454a5556be4974bfd120d6bbe0a8e23880a2afbc108d9d7821f2b over 65 changed frames"`;
 
-exports[`peaks on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`peaks on Tet 1`] = `"ae103240a6b6b663ef2632c17c21df4fa1c2d3b8256dbea74b419b833f15aa6d over 1 changed frames"`;
-
 exports[`peaks on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -2257,62 +1977,6 @@ exports[`pinbed on Site in light > markup 1`] = `
 `;
 
 exports[`pinbed on Site in light 1`] = `"6a998e139c8ffc62f1025bb54a7aeb8d854ab0d0dac2f151f21804340ff7afe6 over 384 changed frames"`;
-
-exports[`pinbed on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "40",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`pinbed on Tet 1`] = `"7c211d4747cb5fb31b9d1822b27575efdd66d0bacfa2e9ab94c86ba298bdb415 over 344 changed frames"`;
 
 exports[`pinbed on Thermal > markup 1`] = `
 {
@@ -2653,62 +2317,6 @@ exports[`planet on Site in light > markup 1`] = `
 
 exports[`planet on Site in light 1`] = `"6df772720f3a44c10e4a316831caec69ca61c379d42fd7b3b86a7df5b9935132 over 501 changed frames"`;
 
-exports[`planet on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`planet on Tet 1`] = `"5d1882731c89f98a0fbc50b8e851404205abfca059ea53b5cbe7d2821ab96eec over 500 changed frames"`;
-
 exports[`planet on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -3047,62 +2655,6 @@ exports[`pond on Site in light > markup 1`] = `
 `;
 
 exports[`pond on Site in light 1`] = `"fba504945cb0325642f5dc4e00ab07a4fb0ea060b9537b13e665dc0076a2ebd7 over 501 changed frames"`;
-
-exports[`pond on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "50",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`pond on Tet 1`] = `"0ac2f9936b1f500338bbd4d7439af05051b187b54e1649061a4b897c06e10309 over 501 changed frames"`;
 
 exports[`pond on Thermal > markup 1`] = `
 {
@@ -3443,62 +2995,6 @@ exports[`shimmer on Site in light > markup 1`] = `
 
 exports[`shimmer on Site in light 1`] = `"a2b379b433c272560aab6d469afab211d5aae5505c23faf6111728aa8978a787 over 235 changed frames"`;
 
-exports[`shimmer on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "70",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`shimmer on Tet 1`] = `"1d9541249609a260431844e494042708fae350a2473db13c356b47910976c95d over 192 changed frames"`;
-
 exports[`shimmer on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -3838,62 +3334,6 @@ exports[`silt on Site in light > markup 1`] = `
 
 exports[`silt on Site in light 1`] = `"b4f3339ecafcd8897dd1d98a9fe318ddb19d4273893d0104f76101a1e025eccf over 405 changed frames"`;
 
-exports[`silt on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "55",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`silt on Tet 1`] = `"3593daec6bda2645dd78265c0a47892da4aeaf2ce53ed7844a8d11e5916e0647 over 332 changed frames"`;
-
 exports[`silt on Thermal > markup 1`] = `
 {
   "backdropData": {},
@@ -4232,62 +3672,6 @@ exports[`wax on Site in light > markup 1`] = `
 `;
 
 exports[`wax on Site in light 1`] = `"b83a1e4261f27ea34327aaca041b5f9d0c1ce8841ae1ac8509f57ee054c604e7 over 501 changed frames"`;
-
-exports[`wax on Tet > markup 1`] = `
-{
-  "backdropData": {},
-  "backdropStyle": {
-    "--backdrop-display-screen": "#0b1218",
-  },
-  "canvasData": {
-    "data-fit": "viewport",
-    "data-gap": "2",
-    "data-ghost": "75",
-    "data-ghost-fall": "55",
-    "data-ghost-rise": "40",
-    "data-height": "160",
-    "data-noise": "0",
-    "data-noise-scale": "30",
-    "data-noise-speed": "5",
-    "data-palette-base": "#0b1218",
-    "data-palette-ink": "#ff6a3d",
-    "data-palette-levels": "5",
-    "data-palette-stops": "#12384a #2a8fb0 #9fe9ff",
-    "data-scale": "7",
-    "data-shape": "square",
-    "data-width": "160",
-  },
-  "canvasStyle": {
-    "--emulated-canvas-scale": "max(1px, round(up, max(100lvw, 100lvh) / 160, 1px) - 2px)",
-  },
-  "stylesheet": [
-    ":host {",
-    "--scale: var(--emulated-canvas-scale, 7px);",
-    "--stride: calc(var(--scale) + 2px);",
-    "display: inline-block;",
-    "line-height: 0;",
-    "overflow: clip;",
-    "position: relative;",
-    "}",
-    "canvas {",
-    "image-rendering: pixelated;",
-    "inline-size: calc(160 * var(--stride));",
-    "block-size: calc(160 * var(--stride));",
-    "margin: -1px -1px -1px -1px;",
-    "vertical-align: top;",
-    "}",
-    ":host::after {",
-    "background: repeating-linear-gradient(to right, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride)), repeating-linear-gradient(to bottom, var(--emulated-canvas-gap-color, Canvas) 0 1px, transparent 0 calc(1px + var(--scale)), var(--emulated-canvas-gap-color, Canvas) 0 var(--stride));",
-    "content: "";",
-    "inset: -1px -1px -1px -1px;",
-    "pointer-events: none;",
-    "position: absolute;",
-    "}",
-  ],
-}
-`;
-
-exports[`wax on Tet 1`] = `"ac8e6c6975c861c24e2cf924e369c77e2397e76290aa48ddc085d54bd1eecc58 over 499 changed frames"`;
 
 exports[`wax on Thermal > markup 1`] = `
 {

@@ -76,7 +76,6 @@ export default {
       "Pocket LCD": 76_800,
       "Amber LCD": 51_200,
       Thermal: 51_200,
-      Tet: 51_200,
       Grid: 51_200,
     },
     canvasPixelsRead: {
@@ -84,7 +83,6 @@ export default {
       "Pocket LCD": 0,
       "Amber LCD": 0,
       Thermal: 0,
-      Tet: 0,
       Grid: 0,
     },
     canvasCalls: {
@@ -92,7 +90,6 @@ export default {
       "Pocket LCD": 3,
       "Amber LCD": 2,
       Thermal: 2,
-      Tet: 2,
       Grid: 2,
     },
     renderPasses: {
@@ -100,7 +97,6 @@ export default {
       "Pocket LCD": 1,
       "Amber LCD": 1,
       Thermal: 1,
-      Tet: 1,
       Grid: 1,
     },
     offscreenPixels: {
@@ -108,7 +104,6 @@ export default {
       "Pocket LCD": 0,
       "Amber LCD": 0,
       Thermal: 0,
-      Tet: 0,
       Grid: 0,
     },
     blendedPixels: {
@@ -116,7 +111,6 @@ export default {
       "Pocket LCD": 0,
       "Amber LCD": 0,
       Thermal: 0,
-      Tet: 0,
       Grid: 0,
     },
   },
