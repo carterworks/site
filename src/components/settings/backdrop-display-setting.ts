@@ -1,5 +1,6 @@
 import { nextInRotation, storeChoice } from "../../lib/cycle-setting";
 import {
+  type Display,
   DISPLAYS,
   displayKey,
   displaysFor,
@@ -12,11 +13,15 @@ import {
  * Each scheme has its own display, held on `<html>` (set from storage by the
  * head script before paint), so a light screen never shows in dark. Nothing
  * stored means the scheme's site look, which is also the reset: choosing it
- * clears the store.
+ * clears the store. Without a `scheme`, it is the shown scheme's display.
  */
-export function createBackdropDisplay(root = document.documentElement) {
-  const choices = () => displaysFor(shownScheme(root));
-  const current = () => shownDisplay(root, shownScheme(root));
+export function createBackdropDisplay({
+  root = document.documentElement,
+  scheme,
+}: { root?: HTMLElement; scheme?: Display["scheme"] } = {}) {
+  const shown = () => scheme ?? shownScheme(root);
+  const choices = () => displaysFor(shown());
+  const current = () => shownDisplay(root, shown());
 
   const choose = (id: string) => {
     const display = DISPLAYS.find((candidate) => candidate.id === id);
