@@ -69,22 +69,14 @@
   --size-screen: 100svh;
   --size-prose: 65ch;
 
-  --color-white: oklch(98% 0 0);
-  --color-black: oklch(18% 0 0);
-  /* A display shown in a scheme sets its --display-<scheme>-* colours (see
-     BaseLayout.astro); light-dark() picks the shown scheme's, so a theme flip
-     needs no script. */
-  --color-text: light-dark(
-    var(--display-light-text, var(--color-black)),
-    var(--display-dark-text, var(--color-white))
-  );
-  --color-bg: light-dark(
-    var(--display-light-bg, var(--color-white)),
-    var(--display-dark-bg, var(--color-black))
-  );
+  /* Each scheme's display sets its --display-<scheme>-* colours, from the
+     list in backdrop-displays.ts; light-dark() picks the shown scheme's, so a
+     theme flip needs no script. */
+  --color-text: light-dark(var(--display-light-text), var(--display-dark-text));
+  --color-bg: light-dark(var(--display-light-bg), var(--display-dark-bg));
   --color-accent: light-dark(
-    var(--display-light-accent, var(--backdrop-light-ink)),
-    var(--display-dark-accent, var(--backdrop-dark-ink))
+    var(--display-light-accent),
+    var(--display-dark-accent)
   );
 
   /* Pixel backdrop defaults, the single source of truth: `<pixel-backdrop>`
@@ -99,10 +91,6 @@
   --backdrop-noise: 18%;
   --backdrop-noise-scale: 15;
   --backdrop-noise-speed: 5;
-  --backdrop-light-base: #f4f4f2;
-  --backdrop-light-ink: #8a8a99;
-  --backdrop-dark-base: #141414;
-  --backdrop-dark-ink: #6e6e7a;
 
   accent-color: var(--color-accent);
   scrollbar-color: var(--color-accent) transparent;

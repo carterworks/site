@@ -8,7 +8,7 @@ import {
 import { TOYS } from "../backdrop-toys";
 import type { Toy } from "../backdrop-toys/toy";
 import { relayPointer } from "./pointer-relay";
-import { readDefaults, type BackdropKnobs } from "./knobs";
+import { readDefaults, type BackdropKnobs, type KnobDefaults } from "./knobs";
 import { resolveKnobs, resolveLook } from "./look";
 
 /**
@@ -20,8 +20,8 @@ import { resolveKnobs, resolveLook } from "./look";
  * above it paints its own solid panels over the result.
  *
  * The element owns its render knobs, which `configure()` can tweak live, as
- * /play's shape menu does. `resolveLook` turns them, the toy's look, the display and the scheme
- * into the `<emulated-canvas>`'s `data-*` attributes, its public API, and the
+ * /play's shape menu does. `resolveLook` turns them, the toy's look and the
+ * shown scheme's display into the `<emulated-canvas>`'s `data-*` attributes, its public API, and the
  * properties the backdrop's stylesheet reads.
  */
 
@@ -43,7 +43,7 @@ function shownScheme(): Display["scheme"] {
 const WATCHED = ["style", displayAttribute("light"), displayAttribute("dark")];
 
 export class PixelBackdrop extends HTMLElement {
-  #defaults?: BackdropKnobs;
+  #defaults?: KnobDefaults;
   #tweaks: Partial<BackdropKnobs> = {};
   #canvas?: EmulatedCanvas;
   /** Waits for the canvas when the element is connected before its child is parsed. */
@@ -149,13 +149,11 @@ export class PixelBackdrop extends HTMLElement {
   }
 
   #state() {
-    const scheme = shownScheme();
     return {
       defaults: this.#defaults ?? readDefaults(),
       tweaks: this.#tweaks,
       toy: this.#chosen,
-      scheme,
-      display: shownDisplay(document.documentElement, scheme),
+      display: shownDisplay(document.documentElement, shownScheme()),
     };
   }
 

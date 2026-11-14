@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import {
   DISPLAYS,
   displayAttribute,
+  displayColours,
   displaysFor,
   showDisplay,
   shownDisplay,
@@ -33,16 +34,12 @@ test("ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
 
-test.each(looks)(
-  "$label's colours are hex, since any other form needs a helper canvas to parse",
-  ({ look }) => {
-    for (const colour of [
-      look!.base,
-      look!.ink,
-      look!.vignette?.edge ?? "#000000",
-    ]) {
-      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
-    }
+test.each(DISPLAYS)(
+  "$id's colours are hex: the palette pass needs a helper canvas to parse any other form, and the contrast test this",
+  ({ base, ink, page, look }) => {
+    const colours = [base, ink, ...Object.values(page), ...(look?.stops ?? [])];
+    if (look?.vignette) colours.push(look.vignette.edge);
+    for (const colour of colours) expect(colour).toMatch(/^#[0-9a-f]{6}$/);
   },
 );
 
@@ -106,20 +103,40 @@ const contrast = (a: string, b: string) => {
 /** The browser's own link colours, which the site leaves as they are. */
 const LINK = { light: "#0000ee", dark: "#9e9eff" };
 
-const screens = DISPLAYS.filter(({ look }) => look);
-
-test.each(screens)("$label colours the page's panels", ({ page }) => {
-  expect(page).toBeDefined();
-  for (const colour of Object.values(page!)) {
-    expect(colour).toMatch(/^#[0-9a-f]{6}$/);
-  }
-});
-
-test.each(screens)(
-  "$label's panels keep text and links at WCAG AA, and its accent at 3:1",
+test.each(DISPLAYS)(
+  "$id's panels keep text and links at WCAG AA, and its accent at 3:1",
   ({ page, scheme }) => {
-    expect(contrast(page!.text, page!.bg)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(LINK[scheme], page!.bg)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(page!.accent, page!.bg)).toBeGreaterThanOrEqual(3);
+    expect(contrast(page.text, page.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(LINK[scheme], page.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(page.accent, page.bg)).toBeGreaterThanOrEqual(3);
+  },
+);
+
+test.each(["light", "dark"] as const)(
+  "the page takes the %s display's colours, and the site's own with none shown",
+  (scheme) => {
+    const style = document.createElement("style");
+    style.textContent = displayColours();
+    document.head.append(style);
+    const root = document.documentElement;
+    const shown = () =>
+      Object.fromEntries(
+        ["bg", "text", "accent"].map((name) => [
+          name,
+          getComputedStyle(root)
+            .getPropertyValue(`--display-${scheme}-${name}`)
+            .trim(),
+        ]),
+      );
+
+    try {
+      for (const display of displaysFor(scheme)) {
+        showDisplay(root, display);
+        expect(shown()).toEqual(display.page);
+      }
+    } finally {
+      style.remove();
+      root.removeAttribute(displayAttribute(scheme));
+    }
   },
 );

@@ -6,9 +6,10 @@ import InlineAvatar from "../components/InlineAvatar.astro";
 import PixelBackdrop from "../components/pixel-backdrop/PixelBackdrop.astro";
 import { SCHEME_KEY } from "../lib/color-scheme";
 import {
-  DISPLAYS,
   displayAttribute,
+  displayColours,
   displayKey,
+  displaysFor,
 } from "../components/pixel-backdrop/backdrop-displays";
 import { getPageMetadata, pages, type PageMetadata } from "../lib/pages";
 interface Props {
@@ -25,17 +26,11 @@ const ogImage = new URL(`/og/${metadata.id}.webp`, Astro.site);
 const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
-const displays = (["light", "dark"] as const).map((scheme) => [
+const schemes = ["light", "dark"] as const;
+const displays = schemes.map((scheme) => [
   displayAttribute(scheme),
   displayKey(scheme),
 ]);
-const displayColours = DISPLAYS.flatMap(({ id, scheme, page }) =>
-  page
-    ? `:root[${displayAttribute(scheme)}="${id}"] { ${Object.entries(page)
-        .map(([name, colour]) => `--display-${scheme}-${name}: ${colour};`)
-        .join(" ")} }`
-    : [],
-).join("\n");
 ---
 
 <!doctype html>
@@ -53,18 +48,16 @@ const displayColours = DISPLAYS.flatMap(({ id, scheme, page }) =>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <!-- --color-bg in each scheme; keep in step with global.css. -->
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: light)"
-      content="#f8f8f8"
-    />
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: dark)"
-      content="#121212"
-    />
-    <style is:inline set:html={displayColours} />
+    {
+      schemes.map((scheme) => (
+        <meta
+          name="theme-color"
+          media={`(prefers-color-scheme: ${scheme})`}
+          content={displaysFor(scheme)[0].page.bg}
+        />
+      ))
+    }
+    <style is:inline set:html={displayColours()} />
     <script is:inline define:vars={{ key: SCHEME_KEY, displays }}>
       // Runs before first paint, which a bundled module can't; the keys are
       // injected so they can't drift from the ones the settings write.

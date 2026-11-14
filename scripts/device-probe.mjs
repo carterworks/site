@@ -29,12 +29,7 @@ export function probe(
     "saves: ms of script per frame against as shipped, first and last averaged; approximate, as each pass changes the pixels the next works on";
   const SLOW_FRAMES = (ms) =>
     `frames ${round(ms)} ms idle: the display or browser paces below 60 Hz; Low Power Mode is a common cause`;
-  const PALETTE_OFF = {
-    lightBase: undefined,
-    lightInk: undefined,
-    darkBase: undefined,
-    darkInk: undefined,
-  };
+  const PALETTE_OFF = { base: undefined, ink: undefined };
   const PASSES_OFF = [
     [{ noise: 0 }, ["noise"]],
     [{ ghost: 0 }, ["ghost"]],

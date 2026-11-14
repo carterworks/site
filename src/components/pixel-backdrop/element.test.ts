@@ -101,6 +101,9 @@ function mount() {
   return backdrop;
 }
 
+const displayOf = (id: string) =>
+  DISPLAYS.find((display) => display.id === id)!;
+
 const canvasOf = (backdrop: PixelBackdrop) =>
   backdrop.querySelector("emulated-canvas")!;
 
@@ -331,14 +334,14 @@ test("a stopped backdrop leaves its canvas manual, so no fade or drift keeps pre
   expect(backdrop.hasAttribute("data-disabled")).toBe(true);
 });
 
-test("the canvas is coloured in the scheme's palette, and a manual flip restarts its passes once", async () => {
+test("the canvas is coloured in the shown scheme's site palette, and a manual flip restarts its passes once", async () => {
   const reset = vi.spyOn(EmulatedCanvas.prototype, "reset");
   const backdrop = mount();
   const canvas = canvasOf(backdrop);
-  const { lightBase, lightInk, darkBase, darkInk } = backdrop.knobs;
+  const [light, dark] = ["site-light", "site-dark"].map(displayOf);
   expect(canvas.dataset).toMatchObject({
-    paletteBase: lightBase,
-    paletteInk: lightInk,
+    paletteBase: light.base,
+    paletteInk: light.ink,
   });
 
   document.documentElement.style.colorScheme = "dark";
@@ -347,8 +350,8 @@ test("the canvas is coloured in the scheme's palette, and a manual flip restarts
   await Promise.resolve();
 
   expect(canvas.dataset).toMatchObject({
-    paletteBase: darkBase,
-    paletteInk: darkInk,
+    paletteBase: dark.base,
+    paletteInk: dark.ink,
   });
   expect(reset).toHaveBeenCalledTimes(1);
 });
@@ -408,10 +411,9 @@ test("a reconnected backdrop keeps its tweaks", () => {
   expect(backdrop.tweaks).toEqual({ ghost: 20 });
 });
 
-const displayOf = (id: string) =>
-  DISPLAYS.find((display) => display.id === id)!;
-const pocket = displayOf("pocket-lcd").look!;
-const grid = displayOf("grid").look!;
+const pocketLcd = displayOf("pocket-lcd");
+const pocket = { ...pocketLcd.look!, base: pocketLcd.base };
+const grid = displayOf("grid");
 
 /** As the display setting shows one; the backdrop sees it a microtask later. */
 async function show(id: string) {
@@ -428,7 +430,7 @@ test("on a display, the knobs in effect are the display's, with the noise stoppe
   expect(backdrop.knobs).toMatchObject({
     gap: pocket.gap,
     shape: "square",
-    lightBase: pocket.base,
+    base: pocket.base,
     ghost: 55,
     noise: 0,
   });
@@ -592,7 +594,7 @@ test.each(switches)(
 );
 
 test.each<[string, PixelBackdrop["tweaks"], number]>([
-  ["a tweaked palette", { lightBase: "#123456" }, 1],
+  ["a tweaked palette", { base: "#123456" }, 1],
   ["an untouched palette", { gap: 5 }, 0],
 ])(
   "on a display, reset with %s restarts the canvas's passes exactly when its palette changes",

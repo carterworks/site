@@ -1,16 +1,15 @@
 import { hexRgb, multiplyOverlay, type Rgb } from "../../lib/rgb";
-import type { Display, DisplayLook } from "./backdrop-displays";
+import type { Display } from "./backdrop-displays";
 import { type Look, TUNED_GRID, type Toy } from "../backdrop-toys/toy";
-import type { BackdropKnobs } from "./knobs";
+import type { BackdropKnobs, KnobDefaults } from "./knobs";
 
 export type LookInput = {
   /** The knobs' defaults, from the `--backdrop-*` custom properties. */
-  defaults: BackdropKnobs;
+  defaults: KnobDefaults;
   /** Knobs set through `configure` since the last `reset`. */
   tweaks: Partial<BackdropKnobs>;
   toy: Toy;
   display: Display;
-  scheme: "light" | "dark";
   /** The canvas bitmap's width: the noise's feature size and the fit scale with it. */
   columns: number;
 };
@@ -28,19 +27,15 @@ export type ResolvedLook = {
 };
 
 /**
- * A display stops the noise, so a screen stays a plain grid whatever toy runs
- * on it. Its ghost is its rise and fall, which `resolveLook` writes beside the
- * knob.
+ * A display's palette, and a panel's gap. A panel stops the noise, so a
+ * screen stays a plain grid whatever toy runs on it. Its ghost is its rise and
+ * fall, which `resolveLook` writes beside the knob.
  */
-const displayed = (look?: DisplayLook): Partial<BackdropKnobs> | undefined =>
-  look && {
-    gap: look.gap,
-    noise: 0,
-    lightBase: look.base,
-    darkBase: look.base,
-    lightInk: look.ink,
-    darkInk: look.ink,
-  };
+const displayed = ({ base, ink, look }: Display) => ({
+  base,
+  ink,
+  ...(look && { gap: look.gap, noise: 0 }),
+});
 
 /**
  * The knobs in effect: a tweak, the display's, the toy's look, the default.
@@ -52,11 +47,11 @@ export const resolveKnobs = ({
   tweaks,
   toy,
   display,
-}: Omit<LookInput, "scheme" | "columns">): BackdropKnobs => ({
+}: Omit<LookInput, "columns">): BackdropKnobs => ({
   ...defaults,
   // A key that is not a knob, or not of its type, would be spread in and never read.
   ...(toy.look satisfies Pick<BackdropKnobs, keyof Look> | undefined),
-  ...displayed(display.look),
+  ...displayed(display),
   ...tweaks,
 });
 
@@ -65,12 +60,9 @@ const text = (value?: number) =>
 
 export function resolveLook(input: LookInput): ResolvedLook {
   const knobs = resolveKnobs(input);
-  const { tweaks, display, scheme, columns } = input;
+  const { tweaks, display, columns } = input;
   const look = display.look;
-  const [base, ink] =
-    scheme === "dark"
-      ? [knobs.darkBase, knobs.darkInk]
-      : [knobs.lightBase, knobs.lightInk];
+  const { base, ink } = knobs;
   // A tweaked ghost sets both responses itself.
   const ghostOf = Object.hasOwn(tweaks, "ghost") ? undefined : look;
   return {
@@ -101,7 +93,8 @@ export function resolveLook(input: LookInput): ResolvedLook {
     hostStyle: {
       "--backdrop-display-screen": look && base,
       "--backdrop-display-grid": look?.grid,
-      "--backdrop-display-vignette": look && vignette({ ...look, base }),
+      "--backdrop-display-vignette":
+        look?.vignette && vignette(look.vignette, base),
     },
     hostFlags: {
       "data-disabled": !knobs.enabled,
@@ -117,8 +110,7 @@ export function resolveLook(input: LookInput): ResolvedLook {
  * which most of the screen shows; see `multiplyOverlay`. Gradients mix
  * premultiplied, so every stop between matches the multiply too.
  */
-function vignette({ base, vignette }: DisplayLook) {
-  if (vignette === undefined) return undefined;
+function vignette(vignette: { clear: number; edge: string }, base: string) {
   const screen = hexRgb(base);
   const edge = hexRgb(vignette.edge);
   if (screen === undefined || edge === undefined) return undefined;

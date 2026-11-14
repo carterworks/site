@@ -10,7 +10,6 @@ const choice =
   <T extends string>() =>
   (css: string) =>
     css as T;
-const color = (css: string) => css;
 
 export const KNOBS = {
   /** Whether the backdrop renders at all. */
@@ -41,30 +40,28 @@ export const KNOBS = {
   noiseScale: numeric,
   /** Drift speed of the noise field, 0–100. */
   noiseSpeed: numeric,
-  /** Colour of the "off" pixels in light mode. */
-  lightBase: color,
-  /** Colour of the lit pixels in light mode, across every toy and the noise. */
-  lightInk: color,
-  /** Colour of the "off" pixels in dark mode. */
-  darkBase: color,
-  /** Colour of the lit pixels in dark mode, across every toy and the noise. */
-  darkInk: color,
 } satisfies Record<string, (css: string) => unknown>;
 
-export type BackdropKnobs = {
+export type KnobDefaults = {
   [K in keyof typeof KNOBS]: ReturnType<(typeof KNOBS)[K]>;
 };
+
+/**
+ * Every knob in effect. The palette has no default of its own: it is the
+ * shown display's `base` and `ink`, which `configure()` can still override.
+ */
+export type BackdropKnobs = KnobDefaults & { base: string; ink: string };
 
 /** `--backdrop-*`, the custom property each knob's default is read from. */
 export const property = (key: string) =>
   `--backdrop-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
 
-export function readDefaults(): BackdropKnobs {
+export function readDefaults(): KnobDefaults {
   const styles = getComputedStyle(document.documentElement);
   return Object.fromEntries(
     Object.entries(KNOBS).map(([key, parse]) => [
       key,
       parse(styles.getPropertyValue(property(key)).trim()),
     ]),
-  ) as BackdropKnobs;
+  ) as KnobDefaults;
 }
