@@ -7,7 +7,6 @@
     ><span>Shape</span>
     <select data-shape></select></label
   >
-  <label><span>Cells</span> <select data-cells></select></label>
   <button type="button" data-theme>Theme</button>
   <a href="/">Home</a>
   <div class="notes">
@@ -58,15 +57,15 @@
     }
 
     play-toolbar > * {
-      grid-column: span 2;
+      grid-column: span 3;
     }
 
     label:has([data-toy]) {
       grid-column: span 4;
     }
 
-    label:has([data-display], [data-shape]) {
-      grid-column: span 3;
+    button[data-image] {
+      grid-column: span 2;
     }
   }
 

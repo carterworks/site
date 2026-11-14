@@ -24,9 +24,6 @@ const SHAPES = [
   "cross",
 ] as const;
 
-const FIT = "fit";
-const CELL_SIZES = [5, 7, 10, 14];
-
 const capitalized = (word: string) => word[0].toUpperCase() + word.slice(1);
 
 const SAMPLE_MS = 500;
@@ -106,7 +103,6 @@ class PlayToolbarElement extends HTMLElement {
     const theme = this.querySelector<HTMLButtonElement>("[data-theme]");
     const display = this.querySelector<HTMLSelectElement>("[data-display]");
     const shape = this.querySelector<HTMLSelectElement>("[data-shape]");
-    const cells = this.querySelector<HTMLSelectElement>("[data-cells]");
     const pick = this.querySelector<HTMLButtonElement>("[data-image]");
     const input = this.querySelector<HTMLInputElement>("input[type=file]");
     const status = this.querySelector<HTMLElement>("[data-status]");
@@ -116,7 +112,6 @@ class PlayToolbarElement extends HTMLElement {
       !theme ||
       !display ||
       !shape ||
-      !cells ||
       !pick ||
       !input ||
       !status ||
@@ -135,10 +130,6 @@ class PlayToolbarElement extends HTMLElement {
       ...DISPLAYS.map(({ id, label }) => option(label, id)),
     );
     shape.replaceChildren(...SHAPES.map((id) => option(capitalized(id), id)));
-    cells.replaceChildren(
-      option("Fit", FIT),
-      ...CELL_SIZES.map((size) => option(`${size}px`, String(size))),
-    );
 
     let playing: ImageBitmap | undefined;
     let request = 0;
@@ -154,9 +145,7 @@ class PlayToolbarElement extends HTMLElement {
         `${theme.textContent}. Activate to change.`,
       );
       display.value = settings.display.value();
-      const knobs = backdrop()?.knobs;
-      shape.value = knobs?.shape ?? SHAPES[0];
-      cells.value = knobs?.autoFit === false ? String(knobs.scale) : FIT;
+      shape.value = backdrop()?.knobs.shape ?? SHAPES[0];
     };
 
     const release = () => {
@@ -181,14 +170,6 @@ class PlayToolbarElement extends HTMLElement {
     });
     shape.addEventListener("change", () => {
       backdrop()?.configure({ shape: shape.value as (typeof SHAPES)[number] });
-      render();
-    });
-    cells.addEventListener("change", () => {
-      backdrop()?.configure(
-        cells.value === FIT
-          ? { autoFit: true }
-          : { autoFit: false, scale: Number(cells.value) },
-      );
       render();
     });
     pick.addEventListener("click", () => input.click());
