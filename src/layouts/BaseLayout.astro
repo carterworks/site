@@ -27,9 +27,10 @@ const fediverseCreator = "@literallyacar@mastodon.social";
 const socialTitle = metadata.ogTitle ?? title;
 const ogImageAlt = metadata.ogImageAlt ?? socialTitle;
 const schemes = ["light", "dark"] as const;
-const displays = schemes.map((scheme): [string, string] => [
+const displays = schemes.map((scheme): [string, string, string[]] => [
   displayAttribute(scheme),
   displayKey(scheme),
+  displaysFor(scheme).map((display) => display.id),
 ]);
 ---
 

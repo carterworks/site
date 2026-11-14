@@ -44,11 +44,14 @@ export async function launch(builds, { gpu = false } = {}) {
     );
   }
   const context = await browser.newContext({ viewport: VIEWPORT });
-  // A visit draws its pixel shape at random, and shapes cost differently, so
-  // every build is measured on the default square, as builds before the draw.
-  await context.addInitScript(() =>
-    sessionStorage.setItem("backdrop-shape", "square"),
-  );
+  // A visit draws its pixel shape and displays at random, and each costs
+  // differently, so every build starts on the square and the Site displays,
+  // as builds before the draw did.
+  await context.addInitScript(() => {
+    sessionStorage.setItem("backdrop-shape", "square");
+    sessionStorage.setItem("backdrop-display-light", "site-light");
+    sessionStorage.setItem("backdrop-display-dark", "site-dark");
+  });
   await context.route("**/*", (route) => {
     const { hostname, pathname } = new URL(route.request().url());
     const root = roots[hostname.split(".")[0]];
@@ -100,7 +103,9 @@ export function playControls(page) {
       const menus = {};
       for (const scheme of ["light", "dark"]) {
         await showScheme(scheme);
-        menus[scheme] = await displayOptions.allTextContents();
+        menus[scheme] = (await displayOptions.allTextContents()).filter(
+          (label) => label !== "Random",
+        );
       }
       const split = menus.light.join() !== menus.dark.join();
       offered.clear();

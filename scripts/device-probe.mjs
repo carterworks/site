@@ -23,10 +23,12 @@ export function probe(
   onePercentLow,
   play,
 ) {
-  // A visit draws its pixel shape at random, and shapes cost differently, so
-  // every run is measured on the default square. This runs before the page's
-  // scripts read it.
+  // A visit draws its pixel shape and displays at random, and each costs
+  // differently, so every run starts on the square and the Site displays.
+  // This runs before the page's scripts read them.
   sessionStorage.setItem("backdrop-shape", "square");
+  sessionStorage.setItem("backdrop-display-light", "site-light");
+  sessionStorage.setItem("backdrop-display-dark", "site-dark");
   const SETTLE_MS = Math.min(1500, seconds * 1000);
   const CALIBRATE_MS = 400;
   const SAVES =
