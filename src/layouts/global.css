@@ -88,8 +88,8 @@
   );
 
   /* Pixel backdrop defaults, the single source of truth: `<pixel-backdrop>`
-     reads them at startup and on reset, and the dev-toolbar app can override
-     any of them at runtime. */
+     reads them at startup and on reset, and `configure()` can override any
+     of them at runtime. */
   --backdrop-enabled: true;
   --backdrop-auto-fit: true;
   --backdrop-scale: 7;

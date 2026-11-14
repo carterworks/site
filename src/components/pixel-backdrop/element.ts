@@ -19,8 +19,8 @@ import { resolveKnobs, resolveLook } from "./look";
  * passes it the pointer. The layer is fixed and non-interactive, so the page
  * above it paints its own solid panels over the result.
  *
- * The element owns its render knobs so the dev-toolbar app can tweak them
- * live. `resolveLook` turns them, the toy's look, the display and the scheme
+ * The element owns its render knobs, which `configure()` can tweak live, as
+ * /play's shape menu does. `resolveLook` turns them, the toy's look, the display and the scheme
  * into the `<emulated-canvas>`'s `data-*` attributes, its public API, and the
  * properties the backdrop's stylesheet reads.
  */

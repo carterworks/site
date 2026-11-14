@@ -1,6 +1,5 @@
 import sitemap from "@astrojs/sitemap";
 import { defineConfig, envField } from "astro/config";
-import pixelBackdropToolbar from "./src/integrations/pixel-backdrop-toolbar";
 
 // https://astro.build/config
 export default defineConfig({
@@ -8,10 +7,7 @@ export default defineConfig({
   compressHTML: true,
   // Small shared styles should arrive with the document, not block its paint.
   build: { inlineStylesheets: "always" },
-  integrations: [
-    sitemap({ filter: (page) => !page.endsWith("/play/") }),
-    pixelBackdropToolbar(),
-  ],
+  integrations: [sitemap({ filter: (page) => !page.endsWith("/play/") })],
   output: "static",
   env: {
     schema: {

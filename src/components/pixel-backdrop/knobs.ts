@@ -1,9 +1,7 @@
 /**
  * The backdrop's knobs, each with how its default parses. The defaults live
  * only as `--backdrop-*` custom properties on `:root` in global.css, so there
- * is a single source of truth for them. A knob's value type is its kind; the
- * dev toolbar pairs each with a control of its own, so none of the panel's
- * presentation ships to every page.
+ * is a single source of truth for them. A knob's value type is its kind.
  */
 
 const numeric = Number.parseFloat;
