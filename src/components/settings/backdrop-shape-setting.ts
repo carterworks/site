@@ -3,6 +3,7 @@ import {
   storedChoice,
   storeChoice,
 } from "../../lib/cycle-setting";
+import { RANDOM } from "./backdrop-toy-setting";
 
 export const SHAPE_KEY = "backdrop-shape";
 
@@ -22,22 +23,22 @@ export const SHAPES = [
 /**
  * Each visit draws a random shape, kept in session storage so reloads and
  * navigations keep it until the tab closes. A stored shape overrides it, and
- * a choice that lands on the visit's shape clears the store instead, so the
- * random default stays reachable without a Random entry, as the theme
- * toggle's OS scheme does.
+ * Random, in the rotation only while one is stored, clears the store and
+ * draws afresh. The row always names the shape on show.
  */
 export function createBackdropShape(
   random = Math.random,
   events: EventTarget = document,
 ) {
-  let visits = storedChoice(SHAPE_KEY, SHAPES, "sessionStorage");
-  if (visits === undefined) {
-    visits = SHAPES[Math.floor(random() * SHAPES.length)];
-    storeChoice(SHAPE_KEY, visits, "sessionStorage");
-  }
-
   let chosen = storedChoice(SHAPE_KEY, SHAPES);
-  const current = () => chosen ?? visits;
+  let visits = storedChoice(SHAPE_KEY, SHAPES, "sessionStorage");
+  const current = () => chosen ?? visits ?? SHAPES[0];
+
+  const draw = (from: readonly (typeof SHAPES)[number][]) => {
+    visits = from[Math.floor(random() * from.length)];
+    storeChoice(SHAPE_KEY, visits, "sessionStorage");
+  };
+  if (visits === undefined) draw(SHAPES);
 
   const show = () =>
     document.querySelector("pixel-backdrop")?.configure({ shape: current() });
@@ -45,9 +46,14 @@ export function createBackdropShape(
   events.addEventListener("astro:page-load", show);
 
   const choose = (id: string) => {
-    const shape = SHAPES.find((known) => known === id);
-    if (shape === undefined) return;
-    chosen = shape === visits ? undefined : shape;
+    if (id === RANDOM) {
+      draw(SHAPES.filter((shape) => shape !== current()));
+      chosen = undefined;
+    } else {
+      const shape = SHAPES.find((known) => known === id);
+      if (shape === undefined) return;
+      chosen = shape;
+    }
     storeChoice(SHAPE_KEY, chosen);
     show();
   };
@@ -60,7 +66,8 @@ export function createBackdropShape(
     },
     choose,
     cycle() {
-      choose(nextInRotation(SHAPES, current()));
+      const rotation = chosen ? [...SHAPES, RANDOM] : SHAPES;
+      choose(nextInRotation<string>(rotation, current()));
     },
   };
 }
