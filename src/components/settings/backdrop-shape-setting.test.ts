@@ -1,6 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropShape, SHAPE_KEY } from "./backdrop-shape-setting";
-import { RANDOM } from "./backdrop-toy-setting";
 import { SHAPES } from "../emulated-canvas/presenter";
 
 const configure = vi.fn();
@@ -75,32 +74,48 @@ test("activating stores the next shape and draws it", () => {
   expect(shape.label()).toBe("Circle");
 });
 
-test("Random follows the last shape, clears storage and draws a different shape for the visit", () => {
-  localStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
+test("cycling onto the visit's shape clears storage instead of storing it", () => {
+  sessionStorage.setItem(SHAPE_KEY, SHAPES[1]);
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0), events);
   load(events);
 
+  for (let step = 0; step < SHAPES.length - 1; step++) shape.cycle();
+  expect(shape.value()).toBe(SHAPES[0]);
+  expect(localStorage.getItem(SHAPE_KEY)).toBe(SHAPES[0]);
+
   shape.cycle();
 
-  expect(shape.value()).toBe(RANDOM);
-  expect(shape.label()).toBe("Random");
+  expect(shape.value()).toBe(SHAPES[1]);
+  expect(shown()).toBe(SHAPES[1]);
   expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
-  expect(shown()).toBe(SHAPES[0]);
-  expect(sessionStorage.getItem(SHAPE_KEY)).toBe(SHAPES[0]);
-
-  shape.choose(RANDOM);
-  expect(shown()).not.toBe(SHAPES[0]);
 });
 
-test("Random is not offered while nothing has been stored since the page loaded", () => {
-  sessionStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
+test("a stored shape still leaves a visit's shape to return to", () => {
+  localStorage.setItem(SHAPE_KEY, SHAPES[0]);
+  const events = new EventTarget();
+  const shape = createBackdropShape(fixedRandom(0.5), events);
+  load(events);
+
+  expect(sessionStorage.getItem(SHAPE_KEY)).toBe(SHAPES[4]);
+  shape.choose(SHAPES[4]);
+
+  expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
+  expect(shape.label()).toBe("Hex");
+});
+
+test("offers only shapes, never a Random entry", () => {
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0), events);
   load(events);
 
-  shape.cycle();
+  const labels = Array.from({ length: SHAPES.length * 2 }, () => {
+    shape.cycle();
+    return shape.label();
+  });
 
+  expect(labels).not.toContain("Random");
+  shape.choose("random");
   expect(shape.value()).toBe(SHAPES[0]);
 });
 
