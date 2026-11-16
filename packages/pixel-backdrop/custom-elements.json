@@ -1,0 +1,2024 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/culture.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "culture",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"culture\", label: \"Culture\", look: { ghost: 70, noise: 0 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width: columns, height: rows } = canvas; const size = columns * rows; const scale = columns / GALLERY_COLUMNS; const sporeRadius = Math.round(SPORE_RADIUS * scale); const stepsPerGeneration = Math.round(STEPS_PER_GENERATION / scale); const stepsPerHeldGeneration = Math.round( STEPS_PER_HELD_GENERATION / scale, ); const scatterReach = Math.max(MIN_SCATTER, scale); const image = context.createImageData(columns, rows); const pixels = image.data; pixels.fill(255); let cells = new Uint8Array(size); let next = new Uint8Array(size); const trail = new Float32Array(size); // Inclusive bounds of the cells that touch the visible region. let regionLeft = 0; let regionTop = 0; let regionRight = columns - 1; let regionBottom = rows - 1; let fitted: CellRect | undefined; let time = 0; const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS); let clock = 0; let population = 0; let previousPopulation = -1; let unchanged = 0; let sporedAt = -Infinity; let lastInputAt = 0; let awake = true; let fading = false; const cell: Point = { x: 0, y: 0 }; const last: Point = { x: 0, y: 0 }; const pressed: Point = { x: 0, y: 0 }; let hasPointer = false; let hasLast = false; let held = false; let pressPending = false; let hovering = false; let hover = -1; // Bounds of cells that may be alive; empty while `liveLeft > liveRight`. let liveLeft = columns; let liveTop = rows; let liveRight = -1; let liveBottom = -1; // Bounds of cells that are alive or still leave a trail. let trailLeft = columns; let trailTop = rows; let trailRight = -1; let trailBottom = -1; // Bounds of cells whose pixels are stale; repainted by the next frame. let dirtyLeft = 0; let dirtyTop = 0; let dirtyRight = columns - 1; let dirtyBottom = rows - 1; const markDirty = (x: number, y: number) => { dirtyLeft = Math.min(dirtyLeft, x); dirtyTop = Math.min(dirtyTop, y); dirtyRight = Math.max(dirtyRight, x); dirtyBottom = Math.max(dirtyBottom, y); }; const inRegion = (x: number, y: number) => x >= regionLeft && x <= regionRight && y >= regionTop && y <= regionBottom; const seed = (x: number, y: number) => { x = Math.round(x); y = Math.round(y); if (inRegion(x, y)) { cells[y * columns + x] = 1; liveLeft = Math.min(liveLeft, x); liveTop = Math.min(liveTop, y); liveRight = Math.max(liveRight, x); liveBottom = Math.max(liveBottom, y); } }; const fit = () => { const visible = visibleCells(canvas); if (fitted !== undefined && sameRect(fitted, visible)) return; fitted = visible; regionLeft = Math.floor(visible.left); regionTop = Math.floor(visible.top); regionRight = Math.ceil(visible.right) - 1; regionBottom = Math.ceil(visible.bottom) - 1; for (let y = 0; y < rows; y += 1) { for (let x = 0; x < columns; x += 1) { if (!inRegion(x, y)) cells[y * columns + x] = 0; } } dirtyLeft = 0; dirtyTop = 0; dirtyRight = columns - 1; dirtyBottom = rows - 1; }; const spore = () => { const x = regionLeft + Math.floor(Math.random() * (regionRight - regionLeft + 1)); const y = regionTop + Math.floor(Math.random() * (regionBottom - regionTop + 1)); for (let dy = -sporeRadius; dy <= sporeRadius; dy += 1) { for (let dx = -sporeRadius; dx <= sporeRadius; dx += 1) { if (Math.random() < 0.45) seed(x + dx, y + dy); } } sporedAt = time; unchanged = 0; }; const generation = () => { population = 0; const left = Math.max(liveLeft - 1, regionLeft); const top = Math.max(liveTop - 1, regionTop); const right = Math.min(liveRight + 1, regionRight); const bottom = Math.min(liveBottom + 1, regionBottom); liveLeft = columns; liveTop = rows; liveRight = -1; liveBottom = -1; for (let y = top; y <= bottom; y += 1) { for (let x = left; x <= right; x += 1) { const i = y * columns + x; const west = x > 0; const east = x < columns - 1; let n = 0; if (west) n += cells[i - 1]; if (east) n += cells[i + 1]; if (y > 0) { n += cells[i - columns]; if (west) n += cells[i - columns - 1]; if (east) n += cells[i - columns + 1]; } if (y < rows - 1) { n += cells[i + columns]; if (west) n += cells[i + columns - 1]; if (east) n += cells[i + columns + 1]; } if (!(cells[i] ? n === 2 || n === 3 : n === 3)) continue; next[i] = 1; population += 1; liveLeft = Math.min(liveLeft, x); liveTop = Math.min(liveTop, y); liveRight = Math.max(liveRight, x); liveBottom = Math.max(liveBottom, y); } } [cells, next] = [next, cells]; // `next` is the old generation, which lives only inside the box swept above. for (let y = top; y <= bottom; y += 1) { next.fill(0, y * columns + left, y * columns + right + 1); } unchanged = population === previousPopulation ? unchanged + 1 : 0; previousPopulation = population; }; const scatter = (x: number, y: number) => { seed(x, y); if (Math.random() >= 0.5) return; for (let i = 0; i < 2; i += 1) { seed( x + (Math.random() * 2 - 1) * scatterReach, y + (Math.random() * 2 - 1) * scatterReach, ); } }; const step = () => { awake = time - lastInputAt < AWAKE_MS; if (pressPending) { pressPending = false; seed(pressed.x, pressed.y); seed(pressed.x + 1, pressed.y); seed(pressed.x, pressed.y + 1); } if (held && hasPointer) line(hasLast ? last : cell, cell, scatter); hasLast = hasPointer; if (hasLast) { last.x = cell.x; last.y = cell.y; } hovering = hasLast && !held; if (awake) { clock += 1; if (clock >= (held ? stepsPerHeldGeneration : stepsPerGeneration)) { clock = 0; generation(); const quiet = time - lastInputAt > SPORE_AFTER_IDLE_MS; if ( quiet && time - sporedAt > SPORE_COOLDOWN_MS && (population < FADING_COLONY || unchanged > STALLED_GENERATIONS) ) { spore(); } } } fading = false; const left = Math.min(trailLeft, liveLeft); const top = Math.min(trailTop, liveTop); const right = Math.max(trailRight, liveRight); const bottom = Math.max(trailBottom, liveBottom); trailLeft = columns; trailTop = rows; trailRight = -1; trailBottom = -1; for (let y = top; y <= bottom; y += 1) { for (let x = left; x <= right; x += 1) { const i = y * columns + x; if (cells[i]) trail[i] = 1; else if (trail[i] > 0) { trail[i] = trail[i] > TRAIL_FLOOR ? trail[i] * TRAIL_DECAY : 0; fading = true; } if (trail[i] > 0) { trailLeft = Math.min(trailLeft, x); trailTop = Math.min(trailTop, y); trailRight = Math.max(trailRight, x); trailBottom = Math.max(trailBottom, y); } } } if (left <= right && top <= bottom) { markDirty(left, top); markDirty(right, bottom); } }; const advanceClock = () => { time += STEP_MS; step(); }; const cursor = () => { if (!hovering || !inRegion(last.x, last.y)) return -1; const i = last.y * columns + last.x; return cells[i] ? -1 : i; }; const draw = () => { const shown = cursor(); if (shown !== hover) { if (hover >= 0) markDirty(hover % columns, Math.floor(hover / columns)); if (shown >= 0) markDirty(shown % columns, Math.floor(shown / columns)); hover = shown; } for (let y = dirtyTop; y <= dirtyBottom; y += 1) { for (let x = dirtyLeft; x <= dirtyRight; x += 1) { const i = y * columns + x; let level = 0; if (cells[i]) level = 1; else if (i === hover) level = CURSOR_LEVEL; else if (trail[i] > 0) level = trail[i] * TRAIL_LEVEL; pixels[i * 4 + 3] = level * 255; } } dirtyLeft = columns; dirtyTop = rows; dirtyRight = -1; dirtyBottom = -1; context.putImageData(image, 0, 0); }; const tick = (now: number) => { pace.advance(now, advanceClock); draw(); const going = awake || fading; if (!going) pace.restart(); return going; }; const { wake, stop } = frameLoop(tick); const touched = () => { lastInputAt = time; wake(); }; const onMove = (event: PointerEvent) => { const point = pointOn(canvas, event); cell.x = Math.floor(point.x); cell.y = Math.floor(point.y); hasPointer = true; touched(); }; const onDown = (event: PointerEvent) => { const point = pointOn(canvas, event); pressed.x = Math.floor(point.x); pressed.y = Math.floor(point.y); pressPending = true; held = true; // A finger lands somewhere new, so its first move must not join on to the last. if (event.pointerType === \"touch\") hasPointer = false; touched(); }; const onLift = (event: PointerEvent) => { held = false; if (event.pointerType === \"touch\") hasPointer = false; wake(); }; const onLeave = () => { hasPointer = false; wake(); }; const onResize = () => { fit(); wake(); }; fit(); const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); stop(); }; }, }",
+          "description": "Conway's life across the whole visible region. Drawing seeds cells; dead\ncells leave a fading trail. Cells beyond the region's edge count as dead, so\na colony meets the edge and dies there rather than wrapping round.\n\nIt draws white on transparent, fading by alpha, into its own image data put\nwhole each frame, though only the box where cells changed is repainted."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "culture",
+          "declaration": {
+            "name": "culture",
+            "module": "src/backdrop-toys/culture.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/image.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "imageToy",
+          "return": {
+            "type": {
+              "text": "Toy"
+            }
+          },
+          "parameters": [
+            {
+              "name": "source",
+              "type": {
+                "text": "ImageBitmap"
+              }
+            }
+          ],
+          "description": "A picture the visitor chose, for the playground. The caller owns the\nbitmap, so stopping never closes it: the same toy can start again."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "imageToy",
+          "declaration": {
+            "name": "imageToy",
+            "module": "src/backdrop-toys/image.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/index.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "TOYS",
+          "type": {
+            "text": "Toy[]"
+          },
+          "default": "[ shimmer, pond, pinbed, culture, wax, silt, mote, peaks, horizon, crags, planet, ]",
+          "description": "Every backdrop toy, in menu order; the first is the default."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TOYS",
+          "declaration": {
+            "name": "TOYS",
+            "module": "src/backdrop-toys/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/landscape.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "peaks",
+          "description": "The link previews' ranges."
+        },
+        {
+          "kind": "variable",
+          "name": "horizon"
+        },
+        {
+          "kind": "variable",
+          "name": "crags"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "peaks",
+          "declaration": {
+            "name": "peaks",
+            "module": "src/backdrop-toys/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "horizon",
+          "declaration": {
+            "name": "horizon",
+            "module": "src/backdrop-toys/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "crags",
+          "declaration": {
+            "name": "crags",
+            "module": "src/backdrop-toys/landscape.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/line.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "line",
+          "parameters": [
+            {
+              "name": "from",
+              "type": {
+                "text": "Point"
+              }
+            },
+            {
+              "name": "to",
+              "type": {
+                "text": "Point"
+              }
+            },
+            {
+              "name": "visit",
+              "type": {
+                "text": "(x: number, y: number) => void"
+              }
+            }
+          ],
+          "description": "Visits every cell on the line between two cells, ends included."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "line",
+          "declaration": {
+            "name": "line",
+            "module": "src/backdrop-toys/line.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/mote.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "mote",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"mote\", label: \"Mote\", look: { ghost: 55, noise: 10 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width: columns, height: rows } = canvas; const block = Math.max(1, Math.round(cellScale(SPRITE_CELL_PX, columns))); const unitsAcross = Math.ceil(columns / block); const image = context.createImageData(columns, rows); const pixels = image.data; const pressUnits: Point = { x: 0, y: 0 }; const pointerUnits: Point = { x: 0, y: 0 }; const visible: CellRect = { left: 0, top: 0, right: 0, bottom: 0 }; const toUnits = (from: Point, into: Point) => { into.x = from.x / block; into.y = from.y / block; return into; }; const critter = { x: 0, hop: 0, vy: 0, face: 0, asleep: true, breath: 0, walk: 0, happy: 0, drowsy: 0, startle: 0, lastDir: 0, rubs: [-Infinity, -Infinity, -Infinity, -Infinity], rubSlot: 0, }; const crumbs: Crumb[] = []; const bounds = { min: 0, max: 0 }; const floaters: Floater[] = []; let pointer: Point | undefined; let pressed = false; let seenPointerX: number | undefined; let placed = false; let ground = 0; let now = 0; let lastInputAt = 0; const pace = fixedStep(STEP_MS, MAX_OWED_MS); const layout = () => { const cells = visibleCells(canvas); visible.left = cells.left / block; visible.top = cells.top / block; visible.right = cells.right / block; visible.bottom = cells.bottom / block; ground = Math.floor(visible.bottom) - GROUND_INSET; reach(visible, bounds); if (!placed) { critter.x = bounds.min + 0.62 * (bounds.max - bounds.min); placed = true; } }; const top = () => ground - (critter.asleep ? CURLED.length : STAND.length) + Math.round(critter.hop); const over = (p: Point) => Math.abs(p.x - critter.x) < 6 && p.y > top() - 2 && p.y < ground + 1; const float = (glyph: string[], x: number, y: number) => floaters.push({ glyph, x, y, life: 150 }); const heart = () => float(HEART, critter.x - 2, top() - 6); // Impulses added mid-air stack, so a hop only starts from the ground. const startHop = (vy: number) => { if (critter.hop === 0 && critter.vy === 0) critter.vy = vy; }; const wake = () => { critter.asleep = false; startHop(-0.8); critter.startle = 40; critter.drowsy = 0; }; const rubbedEnough = () => { for (const at of critter.rubs) { if (now - at >= RUB_WINDOW_MS) return false; } return true; }; const nap = () => { critter.asleep = true; critter.breath = 0; }; const paint = (x: number, y: number, value: number, overwrite: boolean) => { const originX = Math.round(x) * block; const originY = Math.round(y) * block; const alpha = Math.round(value * 255); for ( let cy = Math.max(0, originY); cy < Math.min(rows, originY + block); cy += 1 ) { for ( let cx = Math.max(0, originX); cx < Math.min(columns, originX + block); cx += 1 ) { const i = (cy * columns + cx) * 4; if (overwrite || pixels[i + 3] < alpha) { pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; pixels[i + 3] = alpha; } } } }; const plot = (x: number, y: number, value: number) => paint(x, y, value, false); const set = (x: number, y: number, value: number) => paint(x, y, value, true); /** One row can be swapped for another so animation frames need no copy. */ const sprite = ( glyph: string[], x: number, y: number, value: number, swapRow = -1, swapWith = \"\", ) => { for (let r = 0; r < glyph.length; r += 1) { const row = r === swapRow && swapWith ? swapWith : glyph[r]; for (let k = 0; k < row.length; k += 1) { if (row[k] === \"#\") plot(x + k, y + r, value); } } }; const eye = (x: number, y: number, closed: boolean) => { set(x, y, closed ? 0.45 : 0); if (critter.startle > 0) set(x, y - 1, 0); }; const tap = () => { pressed = false; const press = pressUnits; if (over(press)) { if (critter.asleep) wake(); else { startHop(-0.7); critter.happy = Math.max(critter.happy, 40); heart(); } } else if (crumbs.length < MAX_CRUMBS) { crumbs.push({ x: clamp(press.x, bounds.min, bounds.max), y: Math.min(press.y, ground - 1), vy: 0, patience: CRUMB_PATIENCE, fade: CRUMB_FADE, }); if (critter.asleep) wake(); } }; const step = () => { if (pressed) tap(); if (!critter.asleep && pointer !== undefined && over(pointer)) { const dir = Math.sign(pointer.x - (seenPointerX ?? pointer.x)); if (dir !== 0 && dir !== critter.lastDir) { critter.rubs[critter.rubSlot] = now; critter.rubSlot = (critter.rubSlot + 1) % RUBS_TO_DELIGHT; critter.lastDir = dir; } } seenPointerX = pointer?.x; if (rubbedEnough()) { critter.happy = 120; critter.rubs.fill(-Infinity); } if (critter.happy > 0) { critter.happy -= 1; if (critter.happy % 30 === 29) heart(); } if (critter.startle > 0) critter.startle -= 1; for (let i = crumbs.length - 1; i >= 0; i -= 1) { const crumb = crumbs[i]; crumb.x = clamp(crumb.x, bounds.min, bounds.max); if (crumb.y < ground - 1) { crumb.vy += 0.02; crumb.y = Math.min(crumb.y + crumb.vy, ground - 1); } else if (crumb.patience > 0 && !critter.asleep) { crumb.patience -= 1; if (crumb.patience === 0) startHop(-0.3); } else if (crumb.patience === 0 && (crumb.fade -= 1) <= 0) { crumbs.splice(i, 1); } } if (critter.asleep) { if (critter.breath < NAP_BREATH_STEPS) { critter.breath += 1; if (critter.breath % 110 === 0) { float(ZED, critter.x + 2, top() - 4); } } } else { let crumb: Crumb | undefined; for (const c of crumbs) { if ( c.y >= ground - 1 && c.patience > 0 && (!crumb || Math.abs(c.x - critter.x) < Math.abs(crumb.x - critter.x)) ) { crumb = c; } } const target = crumb?.x ?? (pointer && clamp(pointer.x, bounds.min, bounds.max)); if ( target !== undefined && Math.abs(target - critter.x) > ARRIVE_DISTANCE ) { critter.face = Math.sign(target - critter.x); critter.x += critter.face * (critter.happy > 0 || crumb ? 0.28 : 0.18); critter.walk += 1; } else { critter.walk = 0; critter.face = pointer ? Math.sign(Math.round(pointer.x - critter.x)) : 0; } if (crumb && Math.abs(crumb.x - critter.x) < EAT_DISTANCE) { crumbs.splice(crumbs.indexOf(crumb), 1); critter.happy = Math.max(critter.happy, 60); startHop(-0.6); heart(); } const settled = crumbs.length === 0 && critter.happy <= 0; critter.drowsy = now - lastInputAt > LONELY_MS && settled ? critter.drowsy + 1 : 0; if (critter.drowsy > DROWSY_STEPS) nap(); } critter.x = clamp(critter.x, bounds.min, bounds.max); if (critter.hop < 0 || critter.vy < 0) { critter.vy += 0.05; critter.hop += critter.vy; if (critter.hop >= 0) { critter.hop = 0; critter.vy = 0; } } for (let i = floaters.length - 1; i >= 0; i -= 1) { const bit = floaters[i]; bit.life -= 1; bit.y -= 0.06; bit.x += Math.sin(bit.life / 14) * 0.03; if (bit.life <= 0) floaters.splice(i, 1); } }; const render = () => { pixels.fill(0); for (let x = 0; x < unitsAcross; x += 1) plot(x, ground, 0.5); for (let x0 = 0; x0 < unitsAcross; x0 += TUFT_PERIOD) { for (let k = 0; k < TUFTS.length; k += 1) { plot(x0 + TUFTS[k], ground - 1, 0.35); if (k % 3 === 0) plot(x0 + TUFTS[k], ground - 2, 0.35); } } for (const crumb of crumbs) { plot( crumb.x, crumb.y, crumb.patience > 0 ? 0.85 : (0.85 * crumb.fade) / CRUMB_FADE, ); } const left = Math.round(critter.x) - SPRITE_HALF_WIDTH; const y0 = top(); if (critter.asleep) { const exhaling = Math.floor(critter.breath / 70) % 2 === 1; sprite(CURLED, left, y0, 1, 0, exhaling ? CURLED_EXHALE : undefined); set(left + 2, y0 + 2, 0.45); set(left + 5, y0 + 2, 0.45); } else { const striding = critter.walk > 0 && Math.floor(critter.walk / 7) % 2 === 1; sprite(STAND, left, y0, 1, 6, striding ? STRIDE_FEET : undefined); const lookUp = pointer !== undefined && pointer.y < y0 - 4 && Math.abs(pointer.x - critter.x) < 10; const eyeRow = y0 + (lookUp ? 2 : 3); const closed = critter.happy > 0 || now % BLINK_PERIOD_MS < BLINK_MS; eye(left + 2 + critter.face, eyeRow, closed); eye(left + 5 + critter.face, eyeRow, closed); } for (const bit of floaters) { sprite(bit.glyph, bit.x, bit.y, 0.65 * (bit.life / 150)); } context.putImageData(image, 0, 0); }; // An awake critter keeps stepping: that is how it runs down to its nap. const moving = () => pressed || !critter.asleep || critter.breath < NAP_BREATH_STEPS || floaters.length > 0; const tick = () => { now = performance.now(); pace.advance(now, step); render(); const going = moving(); if (!going) pace.restart(); return going; }; const loop = frameLoop(tick); const touched = () => { lastInputAt = performance.now(); loop.wake(); }; const onMove = (event: PointerEvent) => { if (event.pointerType !== \"touch\") { pointer = toUnits(pointOn(canvas, event), pointerUnits); } touched(); }; const onDown = (event: PointerEvent) => { const point = pointOn(canvas, event); toUnits(point, pressUnits); pressed = true; if (event.pointerType !== \"touch\") pointer = toUnits(point, pointerUnits); touched(); }; const onLift = (event: PointerEvent) => { if (event.pointerType === \"touch\") pointer = undefined; touched(); }; const onLeave = () => { pointer = undefined; touched(); }; const onResize = () => { layout(); loop.wake(); }; layout(); const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); loop.wake(); return () => { listening.abort(); loop.stop(); }; }, }",
+          "description": "A small critter on the bottom edge of the viewport. It naps curled up, wakes\nto a tap, follows the pointer, delights in being rubbed, and walks to any\ncrumb a tap tosses. Left alone it dozes off again, and the sleeper stops\nasking for frames once its last z has floated away.\n\nIt is simulated in fixed 60 Hz steps, so its pace does not depend on the\ndisplay, and drawn white by alpha into its own image data."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "mote",
+          "declaration": {
+            "name": "mote",
+            "module": "src/backdrop-toys/mote.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/pinbed.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "pinbed",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"pinbed\", label: \"Pinbed\", look: { ghost: 40, noise: 8 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width: columns, height: rows } = canvas; const scale = cellScale(PROTOTYPE_CELL_PX, columns); const hoverRadius = 3.4 * scale; const pressRadius = 5.5 * scale; const pebbleRadius = 3 * scale; const palmRadius = 7 * scale; const fingerRadius = 2.2 * scale; // The dent's far wall is lit above this rise over its up-left neighbour. const litRise = 0.04 / scale; const image = context.createImageData(columns, rows); const pixels = image.data; const depth = new Float32Array(columns * rows); const pushedAt = new Float32Array(columns * rows).fill(-Infinity); // Only pins that are down are relaxed and drawn; scanning all of them each // frame reads every cell of the grid, which is far more than the handful of // dents ever need. const down = new Int32Array(columns * rows); const isDown = new Uint8Array(columns * rows); let downCount = 0; const spring = Float32Array.from( { length: columns * rows }, () => 0.003 + Math.random() * 0.011, ); let pebble: { x: number; y: number; vx: number; vy: number } | undefined; let pebbleAt: number | undefined; let visible = visibleCells(canvas); let printedIn: CellRect | undefined; let pristine = true; let inputPending = false; let tapPending = false; let held = false; let pressAt: number | undefined; let hovering = false; let pointerX = 0; let pointerY = 0; let seenX = Number.NaN; let seenY = Number.NaN; let lit = false; let now = 0; let timer: ReturnType<typeof setTimeout> | undefined; const push = ( x: number, y: number, radius: number, strength: number, ease: number, ) => { const reach = Math.ceil(radius); const cx = Math.round(x); const cy = Math.round(y); for (let yy = Math.max(0, cy - reach); yy <= cy + reach; yy += 1) { if (yy >= rows) break; for (let xx = Math.max(0, cx - reach); xx <= cx + reach; xx += 1) { if (xx >= columns) break; const r = Math.hypot(xx + 0.5 - x, yy + 0.5 - y) / radius; if (r >= 1) continue; const i = yy * columns + xx; const target = strength * Math.sqrt(1 - r * r); if (depth[i] < target) depth[i] += (target - depth[i]) * ease; if (isDown[i] === 0 && depth[i] > 0) { isDown[i] = 1; down[downCount++] = i; } pushedAt[i] = now; } } }; const launchPebble = () => { const fromLeft = Math.random() < 0.5; const margin = 4 * scale; const height = visible.bottom - visible.top; const speed = PEBBLE_SPEED + Math.random() * PEBBLE_SPEED_JITTER; pebble = { x: fromLeft ? visible.left - margin : visible.right + margin, y: visible.top + height * (0.15 + Math.random() * 0.7), vx: fromLeft ? speed : -speed, vy: (Math.random() - 0.5) * 0.05 * scale, }; }; const paint = () => { pixels.fill(0); for (let k = 0; k < downCount; k += 1) { const i = down[k]; const rise = i % columns > 0 && i >= columns ? depth[i] - depth[i - columns - 1] : 0; const level = depth[i] * 0.7 + (rise > litRise ? 0.3 : 0); const o = i * 4; pixels[o] = pixels[o + 1] = pixels[o + 2] = 255; pixels[o + 3] = Math.round(clamp(level, 0, 1) * 5) * 51; } context.putImageData(image, 0, 0); lit = downCount > 0; }; const imprintHand = () => { depth.fill(0); isDown.fill(0); downCount = 0; const x = visible.left + 1.3 * palmRadius; const y = visible.bottom - 1.3 * palmRadius; push(x, y, palmRadius, PRINT_DEPTH, 1); for (const [dx, dy] of FINGERS) { push(x + dx * scale, y + dy * scale, fingerRadius, PRINT_DEPTH, 1); } printedIn = { ...visible }; paint(); }; const relax = () => { let kept = 0; for (let k = 0; k < downCount; k += 1) { const i = down[k]; if (now - pushedAt[i] > HOLD_MS) { depth[i] = Math.max(0, depth[i] - spring[i]); } if (depth[i] > 0) down[kept++] = i; else isDown[i] = 0; } downCount = kept; }; const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS); const simulate = () => { if (tapPending) { tapPending = false; pressAt = now; push(pointerX, pointerY, pressRadius, TAP_DEPTH, 1); } if (held && pressAt !== undefined) { const strength = Math.min( 1, HOLD_START + (now - pressAt) / HOLD_RAMP_MS, ); push(pointerX, pointerY, pressRadius, strength, GRAB); } else if (hovering && (pointerX !== seenX || pointerY !== seenY)) { push(pointerX, pointerY, hoverRadius, HOVER_DEPTH, GRAB); } seenX = hovering ? pointerX : Number.NaN; seenY = hovering ? pointerY : Number.NaN; if (inputPending) { inputPending = false; pebble = undefined; pebbleAt = now + PEBBLE_DELAY_MS + Math.random() * PEBBLE_JITTER_MS; } if (pebbleAt !== undefined && now >= pebbleAt) { pebbleAt = undefined; launchPebble(); } if (pebble !== undefined) { pebble.x += pebble.vx; pebble.y += pebble.vy; push(pebble.x, pebble.y, pebbleRadius, PEBBLE_DEPTH, 0.5); const margin = 6 * scale; if ( pebble.x < visible.left - margin || pebble.x > visible.right + margin ) { pebble = undefined; } } relax(); }; const step = (time: number) => { clearTimeout(timer); timer = undefined; now = time; if (pristine) { pace.restart(); if (printedIn === undefined || !sameRect(printedIn, visible)) { imprintHand(); } return false; } pace.advance(now, simulate); if (downCount > 0 || lit) paint(); if (held || downCount > 0 || pebble !== undefined) return true; pace.restart(); if (pebbleAt !== undefined) { timer = setTimeout(wake, Math.max(0, pebbleAt - now)); } return false; }; const { wake, stop } = frameLoop(step); const receive = (event: PointerEvent) => { const point = pointOn(canvas, event); pointerX = point.x; pointerY = point.y; hovering = true; pristine = false; inputPending = true; wake(); }; const onDown = (event: PointerEvent) => { held = true; tapPending = true; receive(event); }; const onMove = (event: PointerEvent) => { if (event.pointerType === \"touch\" && !held) return; receive(event); }; const onLift = (event: PointerEvent) => { if (pristine) return; held = false; inputPending = true; if (event.pointerType === \"touch\") hovering = false; wake(); }; const onLeave = () => { hovering = false; }; const onResize = () => { visible = visibleCells(canvas); if (pristine) wake(); }; const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); stop(); clearTimeout(timer); }; }, }",
+          "description": "A bed of pins. Pointer movement and presses push pins down; each springs\nback at its own rate once left alone. A press held longer goes deeper.\n\nUntil the first input, a faint handprint rests in the lower-left of the\nvisible area as a hint that the bed is live. It is frozen, so the toy stays\nstill; the first input lets it spring back like any other dent.\n\nThe loop sleeps once every pin is up, so the ambient pebble is tied to\ninput: one rolls across the visible area a few seconds after the last\ninput, woken by a timer, then the toy goes still until the pointer is next\ntouched.\n\nIt draws white on transparent, a pin's depth as its opacity in fifths, into\nits own image data put whole each frame."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "pinbed",
+          "declaration": {
+            "name": "pinbed",
+            "module": "src/backdrop-toys/pinbed.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/planet.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "planet",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"planet\", label: \"Planet\", start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width, height } = canvas; const image = context.createImageData(width, height); const pixels = image.data; const land: number[] = []; for (let i = 0; i < SPHERE_POINTS; i += 1) { const y = 1 - (2 * (i + 0.5)) / SPHERE_POINTS; const r = Math.sqrt(1 - y * y); const x = Math.cos(i * 2.39996) * r; const z = Math.sin(i * 2.39996) * r; const row = Math.floor((90 - (Math.asin(y) * 180) / Math.PI) / 10); const column = Math.floor((Math.atan2(z, x) * 18) / Math.PI + 18) % 36; if (LAND[Math.min(17, row)][column] === \"#\") land.push(x, y, z); } const points = Float32Array.from(land); const random = mulberry32(9); const cities: number[] = []; while (cities.length < CITIES) { const at = Math.floor(random() * (points.length / 3)) * 3; if (Math.abs(points[at + 1]) < 0.8) cities.push(at); } let cx = 0; let cy = 0; let radius = 1; const fit = () => { const { right, bottom, left, top } = visibleCells(canvas); const across = right - left; const tall = bottom - top; const size = Math.min(tall, (across * 9) / 16); // Eases from square to 9:16 rather than switching, so a near-square window doesn't jump. const portrait = clamp(((1 - across / tall) * 16) / 7, 0, 1); cx = right - 0.46 * size; cy = bottom + (0.42 - 0.88 * portrait) * size; radius = 1.15 * size; }; fit(); let angle = 0; let speed = DRIFT; let direction = 1; let touchedAt = performance.now(); let now = touchedAt; let held = false; let dragging = false; let dragX = 0; let movedAt = 0; let px = 0; let py = 0; let pz = 0; const project = (at: number, lift: number) => { const x = points[at] * lift; const y = points[at + 1] * lift; const z = points[at + 2] * lift; const turnedZ = x * Math.sin(angle) + z * Math.cos(angle); px = cx + (x * Math.cos(angle) - z * Math.sin(angle)) * radius; py = cy - (y * Math.cos(TILT) - turnedZ * Math.sin(TILT)) * radius; pz = y * Math.sin(TILT) + turnedZ * Math.cos(TILT); }; const plot = (x: number, y: number, level: number) => { x = Math.round(x); y = Math.round(y); if (x < 0 || y < 0 || x >= width || y >= height) return; const i = (y * width + x) * 4; const opacity = level * 255; if (opacity <= pixels[i + 3]) return; pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; pixels[i + 3] = opacity; }; const base: Point = { x: 0, y: 0 }; const tip: Point = { x: 0, y: 0 }; let spireLength = 1; const spirePixel = (x: number, y: number) => { const along = Math.max(Math.abs(x - base.x), Math.abs(y - base.y)); plot(x, y, 0.3 + (0.1 * along) / spireLength); }; const draw = () => { pixels.fill(0); for (let at = 0; at < points.length; at += 3) { project(at, 1); if (pz > 0.05) plot(px, py, 0.16 + pz * 0.22); } for (let turn = Math.PI; turn < 2 * Math.PI; turn += 0.6 / radius) { if (Math.round(turn * radius) % 2 === 0) { plot(cx + Math.cos(turn) * radius, cy + Math.sin(turn) * radius, 0.3); } } for (const at of cities) { project(at, 1); if (pz < 0.1) continue; base.x = Math.round(px); base.y = Math.round(py); project(at, SPIRE); tip.x = Math.round(px); tip.y = Math.round(py); spireLength = Math.max( 1, Math.abs(tip.x - base.x), Math.abs(tip.y - base.y), ); line(base, tip, spirePixel); } context.putImageData(image, 0, 0); }; const drift = () => { if (held) return 0; const easing = (now - touchedAt - DRIFT_MS) / EASE_OUT_MS; if (easing >= 1) return 0; if (easing <= 0) return DRIFT * direction; return ((DRIFT * direction) / 2) * (1 + Math.cos(Math.PI * easing)); }; const coast = () => { const target = drift(); angle += speed * STEP_MS; speed = target + (speed - target) * FRICTION; if (Math.abs(speed - target) < STILL_SPEED) speed = target; }; const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS); const { wake, stop } = frameLoop((time) => { now = time; if (held && now - movedAt > FLING_MS) speed = 0; if (!dragging) pace.advance(now, coast); draw(); if (!dragging && (speed !== 0 || drift() !== 0)) return true; pace.restart(); return false; }); const onDown = (event: PointerEvent) => { // A forwarded copy is untrusted, and the relay already holds its pointer. if (event.isTrusted) canvas.setPointerCapture(event.pointerId); held = true; dragX = pointOn(canvas, event).x; movedAt = touchedAt = performance.now(); }; const onMove = (event: PointerEvent) => { if (!held) return; dragging = true; const x = pointOn(canvas, event).x; const now = performance.now(); // The near side moves against the angle, so a drag right lowers it. const turn = (dragX - x) / radius; angle += turn; speed += (turn / Math.max(1, now - movedAt) - speed) * 0.5; dragX = x; movedAt = now; wake(); }; const onLift = () => { if (!held) return; held = dragging = false; touchedAt = performance.now(); if (speed !== 0) direction = Math.sign(speed); if (touchedAt - movedAt > FLING_MS) speed = 0; wake(); }; const onResize = () => { fit(); wake(); }; const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); stop(); }; }, }",
+          "description": "A planet of points rising from the lower right of the visible cells, its\nland a Fibonacci sphere masked by a coarse map, shaded by depth behind a\ndashed limb, with short spires for cities. It drifts slowly on its own, and\na horizontal drag turns it; a fling slows back to the drift, and a held\npress stops it. A while after the start or the last press the drift eases\nto a stop and the loop sleeps.\n\nIt draws white on transparent, each shade as alpha, into its own image\ndata put whole each frame."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "planet",
+          "declaration": {
+            "name": "planet",
+            "module": "src/backdrop-toys/planet.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/pond.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "pond",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"pond\", label: \"Still Pond\", look: { ghost: 50, noise: 10 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width, height: rows } = canvas; // A bigger grid has more cells across the same screen: sizes grow with it, // and the wave takes extra sub-steps per frame so it crosses the screen in // the same time. const scale = width / REFERENCE_CELLS; const damping = DAMPING_PER_FRAME ** (1 / scale); const image = context.createImageData(width, rows); const pixels = image.data; const pace = fixedStep(FRAME_MS / scale, MAX_ADVANCE_MS); let peak = 0; let steps = 0; // Everything outside this box is exactly zero in both buffers, so the wave // and the paint skip it. It only grows (by a cell per wave step) until the // surface goes flat, which keeps results identical to sweeping the grid. let minX = width; let maxX = -1; let minY = rows; let maxY = -1; let heights = new Float32Array(width * rows); let previous = new Float32Array(width * rows); let tap: (Point & { at: number }) | undefined; const seen: Point = { x: 0, y: 0 }; let hasSeen = false; let held = false; let nextRain = 0; // A pond nobody has touched yet rains from its start. const arrivedAt = performance.now(); let lastInputAt = arrivedAt; let flat = true; let lit = true; let visible = visibleCells(canvas); let timer: ReturnType<typeof setTimeout> | undefined; const poke = (x: number, y: number, radius: number, amount: number) => { const reach = Math.ceil(radius); minX = Math.max(1, Math.min(minX, Math.round(x) - reach)); maxX = Math.min(width - 2, Math.max(maxX, Math.round(x) + reach)); minY = Math.max(1, Math.min(minY, Math.round(y) - reach)); maxY = Math.min(rows - 2, Math.max(maxY, Math.round(y) + reach)); flat = false; for (let dy = -reach; dy <= reach; dy += 1) { for (let dx = -reach; dx <= reach; dx += 1) { const cx = Math.round(x) + dx; const cy = Math.round(y) + dy; const distance = Math.hypot(dx, dy); if (cx < 1 || cy < 1 || cx >= width - 1 || cy >= rows - 1) continue; if (distance > radius) continue; heights[cy * width + cx] += amount * (Math.cos((distance / radius) * Math.PI) * 0.5 + 0.5); } } }; /** Distance walked since the last poke, so the spacing survives tiny steps. */ let carry = 0; /** Pokes at a fixed arc length, so the energy follows the path, not the event rate. */ const stroke = ( from: Point, to: Point, radius: number, amount: number, spacing: number, ) => { const length = Math.hypot(to.x - from.x, to.y - from.y); let at = spacing - carry; for (; at <= length; at += spacing) { poke( from.x + ((to.x - from.x) * at) / length, from.y + ((to.y - from.y) * at) / length, radius, amount, ); } carry = spacing - (at - length); }; const wave = () => { minX = Math.max(1, minX - 1); maxX = Math.min(width - 2, maxX + 1); minY = Math.max(1, minY - 1); maxY = Math.min(rows - 2, maxY + 1); let peak = 0; for (let y = minY; y <= maxY; y += 1) { for (let x = minX, i = y * width + minX; x <= maxX; x += 1, i += 1) { const value = ((heights[i - 1] + heights[i + 1] + heights[i - width] + heights[i + width]) * 0.5 - previous[i]) * damping; previous[i] = value; peak = Math.max(peak, Math.abs(value)); } } const swap = heights; heights = previous; previous = swap; return peak; }; const paint = () => { const left = Math.max(1, minX - 1); const right = Math.min(width - 2, maxX + 1); for ( let y = Math.max(1, minY - 1); y <= Math.min(rows - 2, maxY + 1); y += 1 ) { for (let x = left, i = y * width + left; x <= right; x += 1, i += 1) { const slope = heights[i - 1 - width] - heights[i + 1 + width]; const level = clamp(slope * 0.9 + Math.abs(heights[i]) * 0.25, 0, 1); const shade = Math.round(level * SHADES); const p = i * 4; pixels[p] = pixels[p + 1] = pixels[p + 2] = shade > 0 ? 255 : 0; pixels[p + 3] = (shade * 255) / SHADES; } } context.putImageData(image, 0, 0); lit = true; }; const rainFrom = () => Math.max(lastInputAt, arrivedAt) + RAIN_AFTER_MS; const rainUntil = () => Math.max(lastInputAt, arrivedAt) + RAIN_UNTIL_MS; const stepWave = () => { peak = wave(); steps += 1; }; const draw = (now: number) => { if (now > rainFrom() && now < rainUntil() && now > nextRain) { const margin = RAIN_MARGIN * scale; poke( visible.left + margin + Math.random() * (visible.right - visible.left - 2 * margin), visible.top + margin + Math.random() * (visible.bottom - visible.top - 2 * margin), RAIN.radius * scale, RAIN.amount, ); nextRain = now + RAIN_GAP_MS + Math.random() * RAIN_SPREAD_MS; } const dirty = maxX >= 0; steps = 0; pace.advance(now, stepWave); if (steps > 0) flat = peak < FLAT; if (!flat) { if (steps > 0) paint(); return true; } if (dirty) { heights.fill(0); previous.fill(0); } minX = width; minY = rows; maxX = maxY = -1; if (lit) { pixels.fill(0); context.putImageData(image, 0, 0); lit = false; } pace.restart(); sleep(now); return false; }; const loop = frameLoop(draw); /** Rests until the next raindrop is due, or for good once the rain is over. */ const sleep = (now: number) => { const due = Math.max(rainFrom(), nextRain, now); if (due >= rainUntil()) return; timer = setTimeout(wake, Math.max(1, due - now)); }; const wake = () => { clearTimeout(timer); timer = undefined; loop.wake(); }; const touched = () => { lastInputAt = performance.now(); wake(); }; const onDown = (event: PointerEvent) => { const point = pointOn(canvas, event); held = true; tap = { ...point, at: performance.now() }; carry = 0; seen.x = point.x; seen.y = point.y; hasSeen = true; touched(); }; const onMove = (event: PointerEvent) => { const point = pointOn(canvas, event); if (hasSeen && (point.x !== seen.x || point.y !== seen.y)) { const { radius, amount, spacing } = held ? DRAG : HOVER; stroke(seen, point, radius * scale, amount, spacing * scale); } seen.x = point.x; seen.y = point.y; hasSeen = true; if ( tap !== undefined && Math.hypot(point.x - tap.x, point.y - tap.y) > TAP_SLOP * scale ) { tap = undefined; } touched(); }; const onLift = (event: PointerEvent) => { held = false; if (event.pointerType === \"touch\") hasSeen = false; if (tap !== undefined && performance.now() - tap.at <= TAP_MS) { poke(tap.x, tap.y, STONE.radius * scale, STONE.amount); } tap = undefined; touched(); }; const onLeave = () => { hasSeen = held; }; const onResize = () => { visible = visibleCells(canvas); }; const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); loop.stop(); clearTimeout(timer); }; }, }",
+          "description": "A ripple tank: a wave height field that spreads, bounces off the walls and\ncrosses itself. A tap drops a stone, a held drag pulls a wake, a hovering\npointer skims the surface, and rain falls once nobody has touched it.\nRain lasts a while after the last touch, then the pond is left to go still.\n\nIt draws white on transparent, the wave's slope and height as alpha, into\nits own image data put whole each frame. The loop sleeps once the surface\nis flat, waking by timer for the next raindrop while the rain lasts."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "pond",
+          "declaration": {
+            "name": "pond",
+            "module": "src/backdrop-toys/pond.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/shimmer.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "shimmer",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"shimmer\", label: \"Shimmer\", start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width, height } = canvas; const scale = width / TUNED_GRID; // Scaled with the canvas, the segment stays as heavy as one pixel was at the tuned width. const thickness = Math.max(1, Math.round(scale)); const image = context.createImageData(width, height); const pixels = image.data; const ripples: Ripple[] = []; const hovered: Point = { x: 0, y: 0 }; const from: Point = { x: 0, y: 0 }; let hovering = false; let moved = false; // Set to start, so the first frame clears whatever the canvas showed. let lit = true; const plot = (x: number, y: number, opacity: number) => { const i = (y * width + x) * 4; if (opacity <= pixels[i + 3]) return; pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; pixels[i + 3] = opacity; }; const stamp = (x: number, y: number) => { const right = Math.min(x + thickness, width); const bottom = Math.min(y + thickness, height); for (let row = y; row < bottom; row += 1) for (let column = x; column < right; column += 1) plot(column, row, 255); }; const ring = (ripple: Ripple, progress: number) => { const radius = progress * RIPPLE_SIZE * scale; const strength = 1 - progress; const reach = Math.ceil(radius + 1); const top = Math.max(0, Math.floor(ripple.y) - reach); const bottom = Math.min(height - 1, Math.floor(ripple.y) + reach); const left = Math.max(0, Math.floor(ripple.x) - reach); const right = Math.min(width - 1, Math.floor(ripple.x) + reach); for (let y = top; y <= bottom; y += 1) { for (let x = left; x <= right; x += 1) { const distance = Math.hypot(x + 0.5 - ripple.x, y + 0.5 - ripple.y); // A one-pixel stroke covers a pixel by how near its centre is to the ring. const cover = 1 - Math.abs(distance - radius); if (cover > 0) plot(x, y, cover * strength * 255); } } }; const draw = (now: number) => { pixels.fill(0); let drew = false; if (moved && hovering) { line(from, hovered, stamp); moved = false; drew = true; } for (let i = ripples.length - 1; i >= 0; i -= 1) { const ripple = ripples[i]; ripple.born ??= now; const progress = (now - ripple.born) / RIPPLE_MS; if (progress >= 1) { ripples.splice(i, 1); continue; } ring(ripple, progress); drew = true; } if (drew || lit) context.putImageData(image, 0, 0); // A frame that drew needs one more after it, to clear what it drew. lit = drew; return drew; }; const { wake, stop } = frameLoop(draw); const onMove = (event: PointerEvent) => { const point = pointOn(canvas, event); const x = clamp(Math.floor(point.x), 0, width - 1); const y = clamp(Math.floor(point.y), 0, height - 1); if (!hovering) { from.x = x; from.y = y; } else if (x !== hovered.x || y !== hovered.y) { from.x = hovered.x; from.y = hovered.y; } hovered.x = x; hovered.y = y; hovering = true; moved = true; wake(); }; const onDown = (event: PointerEvent) => { // A finger lands somewhere new, so its first move must not join on to the last. if (event.pointerType === \"touch\") hovering = false; ripples.push(pointOn(canvas, event)); if (ripples.length > MAX_RIPPLES) ripples.shift(); wake(); }; const onLift = (event: PointerEvent) => { if (event.pointerType === \"touch\") hovering = false; }; const onLeave = () => { hovering = false; }; const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); wake(); return () => { listening.abort(); stop(); }; }, }",
+          "description": "The original backdrop: moving the pointer smears a segment from the pixel it\nleft to the one it entered, and each press drops an expanding ring. The\nsegment is drawn only on the frame after a move, so on the backdrop the\ncanvas's ghost alone fades it into a trail.\n\nIt draws white on transparent, fading by alpha so any page shows through a\nfaint pixel, into its own image data put whole each frame, so presenting it\non an emulated canvas needs no read-back."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "shimmer",
+          "declaration": {
+            "name": "shimmer",
+            "module": "src/backdrop-toys/shimmer.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/silt.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "silt",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"silt\", label: \"Silt\", look: { ghost: 55, noise: 12 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width: columns, height: rows } = canvas; const scale = columns / TUNED_GRID; const pourGrains = Math.round(POUR_GRAINS * scale); const pourSpread = POUR_SPREAD * scale; const tapCells = DOUBLE_TAP_CELLS * scale; // A grain falls one cell per sweep, so sweeping once per cell-size ratio // keeps its speed in px/s. const sweepsPerStep = Math.max(1, Math.round(scale)); // The tray holds scale² as many grains, so a tip-out needs scale² the rate. const tippedDrain = Math.round(TIPPED_DRAIN * scale * scale); const dripPerStep = Math.round((DRIP_GRAINS * scale * scale) / DRIP_STEPS); const grains = new Uint8Array(columns * rows); const image = context.createImageData(columns, rows); const pixels = image.data; for (let i = 0; i < pixels.length; i += 4) { pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; } let count = 0; let gravity = 1; let tipped = false; let dripLeft = 0; let nextDripAt = Infinity; let sweep = 0; let lastTapAt = -Infinity; const lastTap: Point = { x: 0, y: 0 }; const pressAt: Point = { x: 0, y: 0 }; const pointer: Point = { x: 0, y: 0 }; let hasPointer = false; let held = false; const pourAt: Point = { x: 0, y: 0 }; let pourTrail = false; const lineFrom: Point = { x: 0, y: 0 }; const lineTo: Point = { x: 0, y: 0 }; let pouring = false; let lastInputAt = -Infinity; let pristine = true; let seeded = false; let left = 0; let right = columns - 1; let top = 0; let bottom = rows - 1; let refit = true; // Rows that may hold grains, so a sweep and a render skip the empty rest. // Both only ever hold a superset of the grains, never fewer. let minRow = rows; let maxRow = -1; // Rows the image last showed grains in, which the next render must clear. let shownMin = rows; let shownMax = -1; // Set once a sweep moves nothing; anything that can move a grain clears it. let settled = false; let timer: ReturnType<typeof setTimeout> | undefined; const put = (x: number, y: number) => { const cx = Math.floor(x); const cy = Math.floor(y); if (cx < left || cx > right || cy < top || cy > bottom) return; const i = cy * columns + cx; if (grains[i] === 0) { grains[i] = 1 + Math.floor(Math.random() * 3); count += 1; settled = false; minRow = Math.min(minRow, cy); maxRow = Math.max(maxRow, cy); } }; const pour = (x: number, y: number) => { for (let k = 0; k < pourGrains; k += 1) { put( x + (Math.random() - 0.5) * pourSpread, y + (Math.random() - 0.5) * pourSpread, ); } }; const slide = (from: number, to: number) => { grains[to] = grains[from]; grains[from] = 0; }; const slip = (x: number, row: number, next: number, nx: number) => { if ( nx < left || nx > right || grains[next + nx] !== 0 || grains[row + nx] !== 0 ) { return false; } slide(row + x, next + nx); return true; }; // Steps sideways, level, to the edge of a step whose far side is free, so // the grain tumbles down next sweep; a heap then rests at about half the // slope that diagonal slips alone leave. const creep = (x: number, row: number, next: number, side: number) => { const nx = x + side; const far = nx + side; if ( far < left || far > right || grains[next + nx] === 0 || grains[row + nx] !== 0 || grains[row + far] !== 0 || grains[next + far] !== 0 ) { return false; } slide(row + x, row + nx); return true; }; const fall = (x: number, row: number, next: number) => { if (grains[next + x] === 0) { slide(row + x, next + x); return true; } const side = Math.random() < 0.5 ? -1 : 1; return ( slip(x, row, next, x + side) || slip(x, row, next, x - side) || creep(x, row, next, side) || creep(x, row, next, -side) ); }; const sieve = (floor: number, allowed: number) => { const start = Math.floor(Math.random() * (right - left + 1)); const width = right - left + 1; for (let k = 0; k < width && allowed > 0; k += 1) { const i = floor + left + ((start + k) % width); if (grains[i] !== 0) { grains[i] = 0; count -= 1; allowed -= 1; settled = false; } } }; // Grains outside the visible rect never move or drain, so they would hold // the loop in \"active\" forever; they are off-screen anyway. const dropOutside = () => { for (let y = 0; y < rows; y += 1) { for (let x = 0; x < columns; x += 1) { const i = y * columns + x; if ( grains[i] !== 0 && (x < left || x > right || y < top || y > bottom) ) { grains[i] = 0; count -= 1; } } } }; const seedDune = () => { grains.fill(0); count = 0; minRow = rows; maxRow = -1; const width = Math.round((right - left + 1) * DUNE_WIDTH_SHARE); const height = width * DUNE_HEIGHT_SHARE; const start = Math.round((left + right - width) / 2); for (let k = 0; k < width; k += 1) { const rise = Math.round( (height * (1 - Math.cos((2 * Math.PI * (k + 0.5)) / width))) / 2, ); for (let h = 0; h < rise; h += 1) put(start + k, bottom - h); } }; const tap = (at: number, x: number, y: number) => { if ( at - lastTapAt < DOUBLE_TAP_MS && Math.hypot(x - lastTap.x, y - lastTap.y) < tapCells ) { gravity = -gravity; settled = false; minRow = top; maxRow = bottom; tipped = gravity < 0; lastTapAt = -Infinity; } else { lastTapAt = at; lastTap.x = x; lastTap.y = y; } }; // Whether the visible rect moved since the last fit. const fit = () => { const visible = visibleCells(canvas); const nextLeft = Math.max(0, Math.ceil(visible.left)); const nextRight = Math.min(columns - 1, Math.floor(visible.right) - 1); const nextTop = Math.max(0, Math.ceil(visible.top)); const nextBottom = Math.min(rows - 1, Math.floor(visible.bottom) - 1); const moved = left !== nextLeft || right !== nextRight || top !== nextTop || bottom !== nextBottom; if (moved) settled = false; left = nextLeft; right = nextRight; top = nextTop; bottom = nextBottom; return moved; }; const render = () => { const first = Math.max(0, Math.min(minRow, shownMin)); const last = Math.min(rows - 1, Math.max(maxRow, shownMax)); for (let i = first * columns; i < (last + 1) * columns; i += 1) { pixels[i * 4 + 3] = ALPHAS[grains[i]]; } shownMin = minRow; shownMax = maxRow; context.putImageData(image, 0, 0); }; const sweepOnce = (phase: number) => { const floorRow = gravity > 0 ? bottom : top; const farRow = gravity > 0 ? Math.min(bottom, Math.max(top, minRow)) : Math.max(top, Math.min(bottom, maxRow)); let farthest = floorRow; let shifted = false; for (let y = floorRow - gravity; y !== farRow - gravity; y -= gravity) { const row = y * columns; const next = (y + gravity) * columns; const forward = (y + phase) & 1; for (let k = 0; k < right - left + 1; k += 1) { const x = forward ? left + k : right - k; if (grains[row + x] === 0) continue; farthest = y; if (fall(x, row, next)) shifted = true; } } settled = !shifted; minRow = Math.min(farthest, floorRow); maxRow = Math.max(farthest, floorRow); }; const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS); let now = 0; const step = () => { const moved = refit && fit(); refit = false; if (pristine) { if (moved || !seeded) seedDune(); seeded = true; return; } if (moved) dropOutside(); pouring = held; if (pouring) { const here = hasPointer ? pointer : pressAt; const origin = pourTrail ? pourAt : pressAt; lineFrom.x = Math.floor(origin.x); lineFrom.y = Math.floor(origin.y); lineTo.x = Math.floor(here.x); lineTo.y = Math.floor(here.y); line(lineFrom, lineTo, put); pourAt.x = here.x; pourAt.y = here.y; pourTrail = true; pour(here.x, here.y); } else { pourTrail = false; } const quietSince = now - lastInputAt; sweep += 1; if ( !tipped && quietSince > TRICKLE_AFTER_MS && quietSince < TRICKLE_UNTIL_MS && sweep % TRICKLE_EVERY_STEPS === 0 ) { const wander = Math.sin(now / 5200) * (right - left) * 0.34; put( (left + right) / 2 + wander + (Math.random() - 0.5) * TRICKLE_JITTER * scale, gravity > 0 ? top : bottom, ); } const floorRow = gravity > 0 ? bottom : top; for (let s = 0; !settled && s < sweepsPerStep; s += 1) { sweepOnce(sweep + s); } if (tipped) { sieve(floorRow * columns, tippedDrain); if (count === 0) { gravity = 1; tipped = false; } } else if (pouring) { dripLeft = 0; } else if (dripLeft > 0 || (settled && count > 0 && now >= nextDripAt)) { if (dripLeft === 0) dripLeft = DRIP_STEPS; sieve(floorRow * columns, dripPerStep); dripLeft -= 1; if (dripLeft === 0) { for (let n = 0; !settled && n < MAX_SETTLE_SWEEPS; n += 1) { sweepOnce(sweep + n); } nextDripAt = now + DRIP_EVERY_MS; } } }; const tick = (time: number) => { now = time; pace.advance(now, step); render(); if (!pristine && (!settled || pouring || tipped || dripLeft > 0)) { return true; } pace.restart(); if (pristine) return false; if (now - lastInputAt < TRICKLE_UNTIL_MS) { timer = setTimeout(wake, IDLE_FRAME_MS); } else if (count > 0) { timer = setTimeout(wake, Math.max(0, nextDripAt - now)); } return false; }; const loop = frameLoop(tick); const wake = () => { clearTimeout(timer); timer = undefined; loop.wake(); }; const touched = () => { pristine = false; lastInputAt = performance.now(); nextDripAt = lastInputAt + DRIP_EVERY_MS; wake(); }; const onDown = (event: PointerEvent) => { const point = pointOn(canvas, event); pressAt.x = point.x; pressAt.y = point.y; held = true; hasPointer = false; pourTrail = false; touched(); tap(lastInputAt, point.x, point.y); }; const onMove = (event: PointerEvent) => { const point = pointOn(canvas, event); pointer.x = point.x; pointer.y = point.y; hasPointer = true; touched(); }; const onLift = (event: PointerEvent) => { held = false; nextDripAt = performance.now() + DRIP_EVERY_MS; if (event.pointerType === \"touch\") hasPointer = false; wake(); }; const onLeave = () => { hasPointer = false; wake(); }; const onResize = () => { refit = true; wake(); }; const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); loop.stop(); clearTimeout(timer); }; }, }",
+          "description": "Falling sand in a tray the size of the visible screen. Grains pile on its\nbottom edge and slip down dunes; the sieve floor drips grains through, so an\nuntouched tab slowly empties and the loop can stop. A double-tap tips the\ntray out: gravity reverses and the new floor is wide open until the sand is\ngone.\n\nUntil the first input a small settled dune rests on the floor as a hint that\nthe tray is live. It is frozen and costs nothing; the first input hands it\nto the normal sim, so it drains like any poured sand."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "silt",
+          "declaration": {
+            "name": "silt",
+            "module": "src/backdrop-toys/silt.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/toy.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "TUNED_GRID",
+          "type": {
+            "text": "number"
+          },
+          "default": "80",
+          "description": "The width toys' sizes were tuned at: a size authored in its pixels scales\nby `canvas.width / TUNED_GRID`, so it covers as much of any canvas."
+        },
+        {
+          "kind": "function",
+          "name": "cellScale",
+          "parameters": [
+            {
+              "name": "designCellPx",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "width",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "How many canvas pixels span one design cell of `designCellPx` pixels, with\nthe canvas `width` pixels drawn across the reference viewport. Multiply a\nsize authored in design cells by it to keep the same size on screen."
+        },
+        {
+          "kind": "function",
+          "name": "fixedStep",
+          "parameters": [
+            {
+              "name": "stepMs",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "maxCatchUpMs",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "Paces a toy's simulation in whole steps of `stepMs` however often frames\narrive, so a 120 Hz display does not run it twice as fast. A pause longer\nthan `maxCatchUpMs`, like a hidden tab, is not replayed. The first frame\nafter `restart`, which a toy calls whenever its loop stops, runs one step\ninstead of replaying the idle gap."
+        },
+        {
+          "kind": "function",
+          "name": "frameLoop",
+          "parameters": [
+            {
+              "name": "step",
+              "type": {
+                "text": "(now: number) => boolean"
+              }
+            }
+          ],
+          "description": "The animation loop the toys here run on, so each need not write its own.\n`step` runs on an animation frame with its time, and the loop asks for the\nnext frame only while `step` returns true, so it sleeps once nothing moves.\n`wake` asks for a frame unless one is pending. `stop` cancels a pending\nframe, as `cancelAnimationFrame` does, and a later `wake` starts the loop\nagain; inside a step none is pending, so the step's return still decides.\n\nA toy paced by `fixedStep` restarts it, and a toy that sleeps on a timer\nsets it, where its step returns false."
+        },
+        {
+          "kind": "function",
+          "name": "sameRect",
+          "parameters": [
+            {
+              "name": "a",
+              "type": {
+                "text": "CellRect"
+              }
+            },
+            {
+              "name": "b",
+              "type": {
+                "text": "CellRect"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "pointOn",
+          "return": {
+            "type": {
+              "text": "Point"
+            }
+          },
+          "parameters": [
+            {
+              "name": "canvas",
+              "type": {
+                "text": "ToyCanvas"
+              }
+            },
+            {
+              "name": "{ clientX, clientY }",
+              "type": {
+                "text": "{ clientX: number; clientY: number }"
+              }
+            }
+          ],
+          "description": "Where a pointer event falls on the canvas, in its pixels: fractional, and\npast its edges when the pointer is off it."
+        },
+        {
+          "kind": "function",
+          "name": "visibleCells",
+          "return": {
+            "type": {
+              "text": "CellRect"
+            }
+          },
+          "parameters": [
+            {
+              "name": "canvas",
+              "type": {
+                "text": "ToyCanvas"
+              }
+            }
+          ],
+          "description": "The part of the canvas a toy fits its scene to, in its pixels: the whole\ncanvas, unless the owner set `data-fit=\"viewport\"` because the canvas is a\nfixed layer larger than the viewport. Then it is the part on screen. A toy\nmeasures it on start and on `resize`. A canvas not laid out yet counts as\nvisible whole."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TUNED_GRID",
+          "declaration": {
+            "name": "TUNED_GRID",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "cellScale",
+          "declaration": {
+            "name": "cellScale",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "fixedStep",
+          "declaration": {
+            "name": "fixedStep",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "frameLoop",
+          "declaration": {
+            "name": "frameLoop",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "sameRect",
+          "declaration": {
+            "name": "sameRect",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "pointOn",
+          "declaration": {
+            "name": "pointOn",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "visibleCells",
+          "declaration": {
+            "name": "visibleCells",
+            "module": "src/backdrop-toys/toy.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/backdrop-toys/wax.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "farCells",
+          "parameters": [
+            {
+              "name": "columns",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "rows",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "The lattice spans at most the whole grid, sampled every `FAR_STRIDE` cells plus a border."
+        },
+        {
+          "kind": "variable",
+          "name": "wax",
+          "type": {
+            "text": "Toy"
+          },
+          "default": "{ id: \"wax\", label: \"Lamp Wax\", look: { ghost: 75, noise: 8 }, start(canvas) { const context = canvas.getContext(\"2d\"); if (context === null) return () => {}; const { width: columns, height: rows } = canvas; const scale = cellScale(PROTOTYPE_CELL_PX, columns); const reach = 18 * scale; const blobs: Blob[] = []; const scratch: BlobScratch = { near: new Float64Array(columns * rows), far: new Float64Array(farCells(columns, rows)), }; const field = new Float32Array(columns * rows); const image = context.createImageData(columns, rows); const pixels = image.data; for (let i = 0; i < pixels.length; i += 4) { pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; } const pointer: Point = { x: 0, y: 0 }; const pressAt: Point = { x: 0, y: 0 }; let hovering = false; let held = false; let visible: CellRect = visibleCells(canvas); let box = cellsInGrid(visible, columns, rows); let grab: Grab | undefined; let lastInputAt = performance.now(); let settled = false; const pace = fixedStep(STEP_MS, MAX_CATCH_UP_MS); let now = 0; const spawn = () => { const width = visible.right - visible.left; const height = visible.bottom - visible.top; for (let k = 0; k < BLOBS; k += 1) { const share = k / (BLOBS - 1); blobs.push({ x: visible.left + width * (0.1 + 0.8 * Math.random()), y: visible.top + height * (0.125 + 0.75 * share), vx: 0, vy: 0, r: (3 + Math.random() * 2.2) * scale, heat: share > 0.5 ? 0.8 : 0.2, }); } }; const shove = (x: number, y: number, force: number) => { for (const blob of blobs) { const dx = blob.x - x; const dy = blob.y - y; const distance = Math.hypot(dx, dy) || 1; if (distance < reach) { const push = (force * (1 - distance / reach)) / distance; blob.vx += dx * push; blob.vy += dy * push; } } }; const grabNearest = (x: number, y: number) => { let nearest: Blob | undefined; let gap = 3 * scale; for (const blob of blobs) { const away = Math.hypot(blob.x - x, blob.y - y) - blob.r; if (away < gap) { gap = away; nearest = blob; } } if (nearest === undefined) return undefined; return { blob: nearest, dx: nearest.x - x, dy: nearest.y - y }; }; const advance = () => { const awake = grab !== undefined || now - lastInputAt < COOL_MS; const height = visible.bottom - visible.top; if (grab !== undefined) { const target = hovering ? pointer : pressAt; const { blob } = grab; blob.vx = (blob.vx + (target.x + grab.dx - blob.x) * 0.14) * 0.72; blob.vy = (blob.vy + (target.y + grab.dy - blob.y) * 0.14) * 0.72; blob.heat = 0.5; } let fastest = 0; for (let k = 0; k < blobs.length; k += 1) { const blob = blobs[k]; if (blob !== grab?.blob) { if (!awake) { blob.vx *= COOLING_DRAG; blob.vy *= COOLING_DRAG; } else { if (hovering) { const dx = blob.x - pointer.x; const dy = blob.y - pointer.y; const distance = Math.hypot(dx, dy) || 1; if (distance < blob.r + 4 * scale) { blob.vx += (dx / distance) * 0.02 * scale; blob.vy += (dy / distance) * 0.02 * scale; } } if (blob.y > visible.top + height * 0.8) { blob.heat = Math.min(1, blob.heat + 0.004); } else if (blob.y < visible.top + height * 0.2) { blob.heat = Math.max(0, blob.heat - 0.004); } blob.vy -= (blob.heat - 0.5) * 0.003 * scale; blob.vx += (Math.random() - 0.5) * 0.004 * scale; blob.vx *= 0.985; blob.vy *= 0.985; if ( blob.vx * blob.vx + blob.vy * blob.vy > FAST_SQUARED * scale * scale ) { blob.vx *= 0.95; blob.vy *= 0.95; } } } blob.x += blob.vx; blob.y += blob.vy; const margin = blob.r * 0.6; const left = visible.left + margin; const right = visible.right - margin; const top = visible.top + margin; const bottom = visible.bottom - margin; if (blob.x < left) { blob.x = left; blob.vx = Math.abs(blob.vx) * 0.4; } if (blob.x > right) { blob.x = right; blob.vx = -Math.abs(blob.vx) * 0.4; } if (blob.y < top) { blob.y = top; blob.vy = Math.abs(blob.vy) * 0.4; } if (blob.y > bottom) { blob.y = bottom; blob.vy = -Math.abs(blob.vy) * 0.4; } const vx = blob.vx < 0 ? -blob.vx : blob.vx; const vy = blob.vy < 0 ? -blob.vy : blob.vy; if (vx > fastest) fastest = vx; if (vy > fastest) fastest = vy; } settled = !awake && fastest < STOPPED_SPEED; if (settled) { for (const blob of blobs) { blob.vx = 0; blob.vy = 0; } } }; const draw = (time: number) => { now = time; pace.advance(now, advance); renderBlobs(blobs, box, columns, scratch, field); for (let y = box.top; y < box.bottom; y += 1) { for ( let i = y * columns + box.left; i < y * columns + box.right; i += 1 ) { pixels[i * 4 + 3] = field[i] * 255; } } context.putImageData(image, 0, 0); if (settled) pace.restart(); return !settled; }; const loop = frameLoop(draw); const wake = () => { settled = false; loop.wake(); }; const touch = () => { lastInputAt = performance.now(); wake(); }; const onMove = (event: PointerEvent) => { if (event.pointerType === \"touch\" && !held) return; Object.assign(pointer, pointOn(canvas, event)); hovering = true; touch(); }; const onDown = (event: PointerEvent) => { const point = pointOn(canvas, event); Object.assign(pressAt, point); Object.assign(pointer, point); hovering = true; held = true; grab = grabNearest(point.x, point.y); if (grab === undefined) shove(point.x, point.y, 0.9 * scale); touch(); }; const onLift = (event: PointerEvent) => { held = false; grab = undefined; if (event.pointerType === \"touch\") hovering = false; touch(); }; const onLeave = () => { hovering = false; }; const onResize = () => { visible = visibleCells(canvas); box = cellsInGrid(visible, columns, rows); field.fill(0); for (let i = 3; i < pixels.length; i += 4) pixels[i] = 0; wake(); }; spawn(); const listening = new AbortController(); const { signal } = listening; canvas.addEventListener(\"pointermove\", onMove, { signal }); canvas.addEventListener(\"pointerdown\", onDown, { signal }); canvas.addEventListener(\"pointerup\", onLift, { signal }); canvas.addEventListener(\"pointercancel\", onLift, { signal }); canvas.addEventListener(\"pointerleave\", onLeave, { signal }); window.addEventListener(\"resize\", onResize, { signal }); wake(); return () => { listening.abort(); loop.stop(); }; }, }",
+          "description": "A lava lamp: blobs warm near the bottom, rise, cool near the top and sink.\nPress a blob to hold and drag it, let go to fling it; tapping empty glass\nshoves the wax away and hovering nudges it. Left alone the lamp cools to a\nstop, so an untouched tab costs nothing, and any input warms it again.\n\nIt draws white, each band of wax a different alpha, so an owner can recolour\nit without losing the bands."
+        },
+        {
+          "kind": "function",
+          "name": "renderBlobs",
+          "parameters": [
+            {
+              "name": "blobs",
+              "type": {
+                "text": "readonly Pick<Blob, \"x\" | \"y\" | \"r\">[]"
+              }
+            },
+            {
+              "name": "visible",
+              "type": {
+                "text": "CellRect"
+              }
+            },
+            {
+              "name": "columns",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "{ near, far }",
+              "type": {
+                "text": "BlobScratch"
+              }
+            },
+            {
+              "name": "field",
+              "type": {
+                "text": "Float32Array"
+              }
+            }
+          ],
+          "description": "Bands the summed influence of the blobs over the visible cells. A blob's\n`r² / (d² + 0.5)` falls off slowly, so it is split at `TAIL`: the part above\nit is added exactly within the box where it exists, and the capped remainder,\nwhich is smooth, is sampled on a coarse lattice and interpolated. The cost\nfollows the blobs' size, not their count times the whole grid."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "farCells",
+          "declaration": {
+            "name": "farCells",
+            "module": "src/backdrop-toys/wax.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "wax",
+          "declaration": {
+            "name": "wax",
+            "module": "src/backdrop-toys/wax.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "renderBlobs",
+          "declaration": {
+            "name": "renderBlobs",
+            "module": "src/backdrop-toys/wax.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/display.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "`<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>`, its\nchild, and runs a backdrop toy on it. The toy only draws on the canvas and\nlistens to it, as it would on any canvas; the element picks the toy, styles\nthe canvas (the display's palette, the drifting noise, the dissolve between\ntoys), and passes it the pointer. The layer is fixed and non-interactive,\nso the page above it paints its own solid panels over the result. Its\nlayout is `pixel-backdrop.css`, which also holds the knobs' defaults; a\npage overrides them on its own `:root`.\n\nThe element owns its render knobs, which `configure()` can tweak live.\n`resolveLook` turns them, the toy's look and the display into the\n`<emulated-canvas>`'s `data-*` attributes, its public API, and the\nproperties the backdrop's stylesheet reads. Under reduced motion it runs\nno toy.",
+          "name": "PixelBackdrop",
+          "cssProperties": [
+            {
+              "description": "Whether the backdrop renders at all.",
+              "name": "--backdrop-enabled",
+              "default": "true"
+            },
+            {
+              "description": "Size the cells to cover the viewport; when `false`, `--backdrop-scale` is used as is.",
+              "name": "--backdrop-auto-fit",
+              "default": "true"
+            },
+            {
+              "description": "Cell size in CSS pixels, when auto-fit is off.",
+              "name": "--backdrop-scale",
+              "default": "7"
+            },
+            {
+              "description": "Space between cells, in CSS pixels.",
+              "name": "--backdrop-gap",
+              "default": "2"
+            },
+            {
+              "description": "Cell form, one of `<emulated-canvas>`'s `data-shape` values.",
+              "name": "--backdrop-shape",
+              "default": "square"
+            },
+            {
+              "description": "Share of each previous frame the panel keeps.",
+              "name": "--backdrop-ghost",
+              "default": "70%"
+            },
+            {
+              "description": "Opacity of the drifting background noise.",
+              "name": "--backdrop-noise",
+              "default": "18%"
+            },
+            {
+              "description": "Feature size of the noise at an 80-pixel-wide canvas; it scales with the real one. Larger is softer.",
+              "name": "--backdrop-noise-scale",
+              "default": "15"
+            },
+            {
+              "description": "Drift speed of the noise, 0–100.",
+              "name": "--backdrop-noise-speed",
+              "default": "5"
+            },
+            {
+              "description": "What shows behind the backdrop, which a plain display paints its gaps in.",
+              "name": "--backdrop-page-color",
+              "default": "Canvas"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "display",
+              "type": {
+                "text": "BackdropDisplay"
+              },
+              "description": "The screen the toys show on: its palette and, for a physical panel, its\nlook. Set it before the element is defined, or before its canvas is\nattached, and the first frame is already in it; a change later restarts\nthe canvas's passes when the palette differs."
+            },
+            {
+              "kind": "field",
+              "name": "toy",
+              "type": {
+                "text": "string"
+              },
+              "description": "The id of the chosen toy, which is the incoming one mid-dissolve.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "knobs",
+              "type": {
+                "text": "BackdropKnobs"
+              },
+              "description": "The knobs in effect for the chosen toy on the display. A display's own\nghost rise and fall are not among them.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "tweaks",
+              "type": {
+                "text": "Partial<BackdropKnobs>"
+              },
+              "description": "A copy of the knobs set through `configure` since the last `reset`.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "configure",
+              "parameters": [
+                {
+                  "name": "partial",
+                  "type": {
+                    "text": "Partial<BackdropKnobs>"
+                  }
+                }
+              ],
+              "description": "Merge a partial set of knobs, and repaint."
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Restore the defaults from the `--backdrop-*` custom properties, and drop every tweak."
+            },
+            {
+              "kind": "method",
+              "name": "setToy",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "description": "Dissolve into a registered toy, starting it fresh; an unknown id is\nignored, and so is the toy already chosen. A request while no toy runs\n(before the canvas exists, disabled, reduced motion) is remembered and\nstarts when one can."
+            },
+            {
+              "kind": "method",
+              "name": "play",
+              "parameters": [
+                {
+                  "name": "toy",
+                  "type": {
+                    "text": "Toy"
+                  }
+                }
+              ],
+              "description": "Like `setToy` for a toy the registry does not list."
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "summary": "A fixed, viewport-filling pixel grid that runs an interactive canvas toy.",
+          "tagName": "pixel-backdrop",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BackdropDisplay",
+          "declaration": {
+            "name": "BackdropDisplay",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DisplayLook",
+          "declaration": {
+            "name": "DisplayLook",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BackdropKnobs",
+          "declaration": {
+            "name": "BackdropKnobs",
+            "module": "./knobs"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Toy",
+          "declaration": {
+            "name": "Toy",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ToyCanvas",
+          "declaration": {
+            "name": "ToyCanvas",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PixelBackdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "pixel-backdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/knobs.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "KNOBS",
+          "default": "{ /** Whether the backdrop renders at all. */ enabled: flag, /** Size the cells to cover the viewport; when off, `scale` is used as-is. */ autoFit: flag, /** Cell size in display pixels, when `autoFit` is off. */ scale: numeric, /** Space between cells, in display pixels. */ gap: numeric, /** Cell form. */ shape: choice< | \"square\" | \"circle\" | \"ring\" | \"diamond\" | \"hex\" | \"triangle\" | \"dash\" | \"slash\" | \"cross\" >(), /** Share of each previous frame the panel keeps, in percent. */ ghost: numeric, /** Opacity of the drifting background noise field, in percent. */ noise: numeric, /** Feature size of the noise field, in pixels at the tuned width; it scales with the real one. Larger is softer. */ noiseScale: numeric, /** Drift speed of the noise field, 0–100. */ noiseSpeed: numeric, } satisfies Record<string, (css: string) => unknown>"
+        },
+        {
+          "kind": "function",
+          "name": "property",
+          "parameters": [
+            {
+              "name": "key",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "description": "`--backdrop-*`, the custom property each knob's default is read from."
+        },
+        {
+          "kind": "function",
+          "name": "readDefaults",
+          "return": {
+            "type": {
+              "text": "KnobDefaults"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "KNOBS",
+          "declaration": {
+            "name": "KNOBS",
+            "module": "src/pixel-backdrop/knobs.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "property",
+          "declaration": {
+            "name": "property",
+            "module": "src/pixel-backdrop/knobs.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "readDefaults",
+          "declaration": {
+            "name": "readDefaults",
+            "module": "src/pixel-backdrop/knobs.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/look.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "resolveKnobs",
+          "return": {
+            "type": {
+              "text": "BackdropKnobs"
+            }
+          },
+          "parameters": [
+            {
+              "name": "{\n  defaults,\n  tweaks,\n  toy,\n  display,\n}",
+              "type": {
+                "text": "Omit<LookInput, \"columns\">"
+              }
+            }
+          ],
+          "description": "The knobs in effect: a tweak, the display's, the toy's look, the default.\nA toy's look is tuned to it, so it beats the site-wide default, while a\ntweak is someone deliberately trying a value."
+        },
+        {
+          "kind": "function",
+          "name": "resolveLook",
+          "return": {
+            "type": {
+              "text": "ResolvedLook"
+            }
+          },
+          "parameters": [
+            {
+              "name": "input",
+              "type": {
+                "text": "LookInput"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "resolveKnobs",
+          "declaration": {
+            "name": "resolveKnobs",
+            "module": "src/pixel-backdrop/look.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "resolveLook",
+          "declaration": {
+            "name": "resolveLook",
+            "module": "src/pixel-backdrop/look.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/pointer-relay.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "relayPointer",
+          "return": {
+            "type": {
+              "text": "() => void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "canvas",
+              "type": {
+                "text": "EventTarget"
+              }
+            }
+          ],
+          "description": "Passes the window's pointer to `canvas`, which a fixed, non-interactive\nlayer can't receive itself, until the returned stop. A press in the open\nstarts a hold; stopping lets go of one as a `pointercancel`."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "relayPointer",
+          "declaration": {
+            "name": "relayPointer",
+            "module": "src/pixel-backdrop/pointer-relay.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/press.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "isToyPress",
+          "parameters": [
+            {
+              "name": "event",
+              "type": {
+                "text": "PointerEvent"
+              }
+            }
+          ],
+          "description": "Whether a `pointerdown` is a press in the open, for a toy: the primary\nbutton or a primary touch or pen contact, not on page content."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "isToyPress",
+          "declaration": {
+            "name": "isToyPress",
+            "module": "src/pixel-backdrop/press.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/colour.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "colourRgb",
+          "return": {
+            "type": {
+              "text": "Rgb"
+            }
+          },
+          "parameters": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "description": "Resolve any CSS colour to `[r, g, b]`."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "colourRgb",
+          "declaration": {
+            "name": "colourRgb",
+            "module": "src/emulated-canvas/colour.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A canvas stand-in that hides its display surface. Consumers draw into an\n`OffscreenCanvas` through `getContext`, and a real `<canvas>` in a closed\nshadow root is blitted from that bitmap.\n\n`data-width` and `data-height` size the inner (logical) canvas. The outer\ncanvas can magnify each logical pixel into a cell: `data-scale` sets the\ncell size in CSS pixels (default 1), `data-gap` the space between cells\n(default 0), and `data-shape` the cell form, inscribed in the cell:\n`\"square\"` (default), `\"circle\"`, `\"ring\"`, `\"diamond\"`, `\"hex\"` (pointy\ntop, odd rows half a cell right), `\"triangle\"` (two cells wide, up and down\nby turns, interlocking), `\"dash\"` (a horizontal capsule),\n`\"slash\"` (bottom left to top right) or `\"cross\"`. With the defaults the\nouter canvas is a straight 1:1 mirror. A page can instead size cells from\nCSS by setting `--emulated-canvas-scale` to a length on the element, which\nthen follows viewport changes without any script.\n\nGaps and the rest of each cell outside its shape are painted over the\ncells rather than cut out, in `--emulated-canvas-gap-color` (default\n`Canvas`, the page's default background); set it to whatever shows behind\nthe element. A pixel shadow is cast from square cells whatever the shape.\n\n`data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's\nsegments over their backplate: each pixel darkens what lies under it by how\nmuch darker it is than unlit, at that opacity, offset by `data-shadow-x` and\n`data-shadow-y` (whole CSS pixels, default 0). With a palette unlit is its\nbase, so only pixels darker than the base cast a shadow; without one it is\nwhite. The shadow is cast from the frame's pixels on each present, so a\nshadow over drawing other than a whole-bitmap `putImageData`, with no pass\non, reads the bitmap back.\n\nEffects are `SHADERS`, an ordered list of per-pixel passes (a drifting\nnoise, a two-colour palette and an LCD's ghosting), each documenting its own\nlive `data-*` knobs in `shaders/`. They run on the logical bitmap, never at\ndisplay resolution, so each costs the same however large the cells are\ndrawn.\n\nThe canvas presents on its own, the way a plain `<canvas>` shows what is\ndrawn on it: drawing through the 2D context queues a present for when the\ndrawing code returns, so a frame drawn in an animation frame shows in that\nsame frame, and several calls cost one present. While a pass is still\nchanging the display, the canvas keeps presenting every animation frame, or\nat about 8 fps for a pass that only drifts, then stops. `data-manual` opts\nout: the owner calls `present()` itself.\n\nThe context is the inner canvas's own, with only its pixel-writing methods\nwrapped to note that the bitmap changed: nothing is proxied or replayed, so\ndrawing costs what it costs on any canvas. A `putImageData` of the whole\nbitmap hands the passes those pixels, sparing them a read-back; any other\ndrawing is read back once, on the present after it.",
+          "name": "EmulatedCanvas",
+          "cssProperties": [
+            {
+              "description": "A length that sizes the cells instead of `data-scale`, so they follow the viewport without script.",
+              "name": "--emulated-canvas-scale"
+            },
+            {
+              "description": "Paints the gaps and the rest of each cell outside its shape.",
+              "name": "--emulated-canvas-gap-color",
+              "default": "Canvas"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "getContext",
+              "return": {
+                "type": {
+                  "text": "OffscreenCanvasRenderingContext2D | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "\"2d\""
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getContext",
+              "return": {
+                "type": {
+                  "text": "object | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "OffscreenRenderingContextId"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "unknown"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getContext",
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "OffscreenRenderingContextId"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "unknown"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "width",
+              "description": "The bitmap's real width, readable before the element is connected.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "height",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "present",
+              "description": "Paints the current bitmap now; the owner of a `data-manual` canvas calls\nthis. Returns whether the shaders are still changing the display, so an\nowner whose bitmap is static knows when it can stop presenting."
+            },
+            {
+              "kind": "method",
+              "name": "transition",
+              "description": "Freezes the frame on show and wipes the frames drawn after it in over it,\nblob by blob through a noise mask, so a change of scene dissolves rather\nthan cuts. The frozen frame is what was shown, styled and mid-dissolve\nincluded, so nothing jumps. Before the first present there is nothing to\nfreeze, and the next frame shows at once."
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The bitmap's width, in pixels.",
+              "name": "data-width",
+              "default": "64"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The bitmap's height, in pixels.",
+              "name": "data-height",
+              "default": "64"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Cell size, in CSS pixels.",
+              "name": "data-scale",
+              "default": "1"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Space between cells, in CSS pixels.",
+              "name": "data-gap",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "\"square\" | \"circle\" | \"ring\" | \"diamond\" | \"hex\" | \"triangle\" | \"dash\" | \"slash\" | \"cross\""
+              },
+              "description": "Cell form, inscribed in the cell.",
+              "name": "data-shape",
+              "default": "square"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Opacity, 0–100, of the shadow each pixel darker than unlit casts.",
+              "name": "data-shadow",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The shadow's horizontal offset, in whole CSS pixels.",
+              "name": "data-shadow-x",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The shadow's vertical offset, in whole CSS pixels.",
+              "name": "data-shadow-y",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "The palette's darkest colour; with `data-palette-ink`, recolours every pixel by its luma.",
+              "name": "data-palette-base"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "The palette's lightest colour.",
+              "name": "data-palette-ink"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "Colours, separated by spaces, spaced evenly between base and ink.",
+              "name": "data-palette-stops"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Snaps each pixel to the nearest of this many shades, 2 or more.",
+              "name": "data-palette-levels"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "With levels, mixes the shades either side of a pixel in an ordered pattern.",
+              "name": "data-palette-dither"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Intensity, 0–100, of a drifting noise field under the frame.",
+              "name": "data-noise",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The noise's feature size, in pixels.",
+              "name": "data-noise-scale",
+              "default": "8"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "How fast the noise drifts, 0–100.",
+              "name": "data-noise-speed",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Share, 0–100, of the previous frame the panel keeps per 60 Hz frame.",
+              "name": "data-ghost",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "`data-ghost` for pixels getting brighter.",
+              "name": "data-ghost-rise"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "`data-ghost` for pixels getting darker.",
+              "name": "data-ghost-fall"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "The owner presents with `present()` itself.",
+              "name": "data-manual"
+            },
+            {
+              "type": {
+                "text": "\"viewport\""
+              },
+              "description": "Tells a toy the canvas is a fixed layer larger than the viewport, so it fits its scene to the part on screen.",
+              "name": "data-fit"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "summary": "A canvas stand-in that draws its bitmap as magnified cells through per-pixel passes.",
+          "tagName": "emulated-canvas",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "EmulatedCanvas",
+          "declaration": {
+            "name": "EmulatedCanvas",
+            "module": "src/emulated-canvas/element.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "emulated-canvas",
+          "declaration": {
+            "name": "EmulatedCanvas",
+            "module": "src/emulated-canvas/element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/limits.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "MAX_GHOST",
+          "type": {
+            "text": "number"
+          },
+          "default": "0.98",
+          "description": "Retention is capped below 1 so the panel can never freeze on one frame."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MAX_GHOST",
+          "declaration": {
+            "name": "MAX_GHOST",
+            "module": "src/emulated-canvas/limits.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/pipeline.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "One element's passes, built from its shaders and configured from its\n`dataset`. A present asks `active` first, so that with no pass on it can\nskip reading the pixels back, then hands them to `apply`.",
+          "name": "Pipeline",
+          "members": [
+            {
+              "kind": "method",
+              "name": "configure"
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Drops every pass's state."
+            },
+            {
+              "kind": "method",
+              "name": "active",
+              "description": "Whether any pass is on. A pass found off after being on is rebuilt here,\nso when it comes back it starts from the current frame, not a stale one."
+            },
+            {
+              "kind": "method",
+              "name": "apply",
+              "return": {
+                "type": {
+                  "text": "Pace"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "pixels",
+                  "type": {
+                    "text": "Uint8ClampedArray"
+                  }
+                },
+                {
+                  "name": "frame",
+                  "type": {
+                    "text": "ShaderFrame"
+                  }
+                },
+                {
+                  "name": "sinceDrawMs",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "Runs every active pass over `pixels`, in order, and returns how soon to\npresent next. Call `active` first each frame, as it rebuilds the passes\nthat went off; it is separate so a caller can skip reading pixels back."
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Pipeline",
+          "declaration": {
+            "name": "Pipeline",
+            "module": "src/emulated-canvas/pipeline.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/presenter.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "SHAPES",
+          "type": {
+            "text": "[\n  \"square\",\n  \"circle\",\n  \"ring\",\n  \"diamond\",\n  \"hex\",\n  \"triangle\",\n  \"dash\",\n  \"slash\",\n  \"cross\",\n]"
+          },
+          "default": "[ \"square\", \"circle\", \"ring\", \"diamond\", \"hex\", \"triangle\", \"dash\", \"slash\", \"cross\", ]",
+          "description": "Every cell form, the default first."
+        },
+        {
+          "kind": "class",
+          "description": "Puts a bitmap-sized frame on screen: a real `<canvas>` (the display) in the\ngiven shadow root, the stylesheet that draws its pixels as cells, and the\necho that casts their shadow.",
+          "name": "Presenter",
+          "members": [
+            {
+              "kind": "field",
+              "name": "needsPixels",
+              "description": "A shadow and a shifted canvas are drawn from the frame's pixels, so while one is on, `show` must be given them.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "configure",
+              "parameters": [
+                {
+                  "name": "geometry",
+                  "type": {
+                    "text": "Geometry"
+                  }
+                }
+              ],
+              "description": "Rewrites the stylesheet, so it belongs to attribute changes, never to a present."
+            },
+            {
+              "kind": "method",
+              "name": "show",
+              "parameters": [
+                {
+                  "name": "frame",
+                  "type": {
+                    "text": "ImageData | OffscreenCanvas"
+                  }
+                }
+              ],
+              "description": "Shows the frame: image data as its pixels, a bitmap as drawn. False when the display cannot draw."
+            },
+            {
+              "kind": "field",
+              "name": "width",
+              "default": "columns"
+            },
+            {
+              "kind": "field",
+              "name": "height",
+              "default": "rows"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SHAPES",
+          "declaration": {
+            "name": "SHAPES",
+            "module": "src/emulated-canvas/presenter.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Presenter",
+          "declaration": {
+            "name": "Presenter",
+            "module": "src/emulated-canvas/presenter.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/shader.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/backdrop-noise.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "mulberry32",
+          "parameters": [
+            {
+              "name": "seed",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "A tiny deterministic PRNG, so the noise field is stable across reloads."
+        },
+        {
+          "kind": "variable",
+          "name": "NOISE_SEED",
+          "type": {
+            "text": "number"
+          },
+          "default": "0x9e3779b9"
+        },
+        {
+          "kind": "variable",
+          "name": "NOISE_OFFSET_X",
+          "type": {
+            "text": "number"
+          },
+          "default": "12.9898",
+          "description": "Simplex is exactly zero on integer lattice points, so sample off-lattice:\nwithout this a 1-pixel feature size would flatten to a constant."
+        },
+        {
+          "kind": "variable",
+          "name": "NOISE_OFFSET_Y",
+          "type": {
+            "text": "number"
+          },
+          "default": "78.233"
+        },
+        {
+          "kind": "function",
+          "name": "makeNoise2D",
+          "return": {
+            "type": {
+              "text": "(x: number, y: number) => number"
+            }
+          },
+          "parameters": [
+            {
+              "name": "seed",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "Build a seeded 2D simplex field, returning values in [-1, 1]."
+        },
+        {
+          "kind": "function",
+          "name": "makeCoarseNoise",
+          "parameters": [
+            {
+              "name": "noise",
+              "type": {
+                "text": "(x: number, y: number) => number"
+              }
+            },
+            {
+              "name": "columns",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "rows",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "A noise layer over a `columns` × `rows` field that samples `noise` only every\n`step` cells along each axis and fills between bilinearly. Smooth noise\nbarely bends over a few cells, so this costs about 1/step² of sampling every\ncell for a near-identical layer. Each call raises every cell to `amount`\ntimes the noise mapped to 0–1, where that is brighter; cell (x, y) samples\nthe noise at `(x * frequency + offsetX, y * frequency + offsetY)`."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "mulberry32",
+          "declaration": {
+            "name": "mulberry32",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "NOISE_SEED",
+          "declaration": {
+            "name": "NOISE_SEED",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "NOISE_OFFSET_X",
+          "declaration": {
+            "name": "NOISE_OFFSET_X",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "NOISE_OFFSET_Y",
+          "declaration": {
+            "name": "NOISE_OFFSET_Y",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "makeNoise2D",
+          "declaration": {
+            "name": "makeNoise2D",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "makeCoarseNoise",
+          "declaration": {
+            "name": "makeCoarseNoise",
+            "module": "src/lib/backdrop-noise.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/clamp.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "clamp",
+          "parameters": [
+            {
+              "name": "value",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "min",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "max",
+              "type": {
+                "text": "number"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "clamp",
+          "declaration": {
+            "name": "clamp",
+            "module": "src/lib/clamp.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/landscape.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "HORIZON",
+          "type": {
+            "text": "Terrain"
+          },
+          "default": "{ level: 12, relief: 5 }"
+        },
+        {
+          "kind": "variable",
+          "name": "PEAKS",
+          "type": {
+            "text": "Terrain"
+          },
+          "default": "{ level: 19, relief: 9 }"
+        },
+        {
+          "kind": "function",
+          "name": "texture",
+          "parameters": [
+            {
+              "name": "seed",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "The backdrop's mottle: broad blotches with a finer grain over them."
+        },
+        {
+          "kind": "function",
+          "name": "landscape",
+          "return": {
+            "type": {
+              "text": "Grid"
+            }
+          },
+          "parameters": [
+            {
+              "name": "seed",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "{ level, relief }",
+              "type": {
+                "text": "Terrain"
+              }
+            },
+            {
+              "name": "columns",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "rows",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "scale",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "A seeded skyline over mottled ground that darkens with depth, in 0–1 cell\nvalues. Its sizes were tuned in cells of an 80-column grid; `scale` is how\nmany cells of this grid span one of those."
+        },
+        {
+          "kind": "function",
+          "name": "crags",
+          "return": {
+            "type": {
+              "text": "Grid"
+            }
+          },
+          "parameters": [
+            {
+              "name": "seed",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "columns",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "rows",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "scale",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "A jagged range lit from the upper left, in 0.3–1 cell values that grow with\nshadow, after the browserbase.com hero. Each cell is jittered, so a palette\nof few levels stipples between them as the hero's does. Sized like\n`landscape`."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "HORIZON",
+          "declaration": {
+            "name": "HORIZON",
+            "module": "src/lib/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PEAKS",
+          "declaration": {
+            "name": "PEAKS",
+            "module": "src/lib/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "texture",
+          "declaration": {
+            "name": "texture",
+            "module": "src/lib/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "landscape",
+          "declaration": {
+            "name": "landscape",
+            "module": "src/lib/landscape.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "crags",
+          "declaration": {
+            "name": "crags",
+            "module": "src/lib/landscape.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/rgb.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "multiplyOverlay",
+          "return": {
+            "type": {
+              "text": "number"
+            }
+          },
+          "parameters": [
+            {
+              "name": "base",
+              "type": {
+                "text": "Readonly<Rgb>"
+              }
+            },
+            {
+              "name": "factor",
+              "type": {
+                "text": "Readonly<Rgb>"
+              }
+            },
+            {
+              "name": "colour",
+              "type": {
+                "text": "Rgb"
+              }
+            }
+          ],
+          "description": "Writes into `colour` the paint, and returns the alpha, that composited over\n`base` as ordinary paint gives what multiplying it by `factor` (0–1 per\nchannel) gives, so a layer can darken without a blend mode. Paint has one\nalpha for all three channels, so over any other colour a channel is off by\n`(factor − min factor)·(base − colour under)`: exact in the channel darkened\nmost. `colour` is the caller's, so painting per pixel allocates nothing."
+        },
+        {
+          "kind": "function",
+          "name": "hexRgb",
+          "return": {
+            "type": {
+              "text": "Rgb | undefined"
+            }
+          },
+          "parameters": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "description": "`#rgb` or `#rrggbb` as `[r, g, b]`, or undefined for any other form."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "multiplyOverlay",
+          "declaration": {
+            "name": "multiplyOverlay",
+            "module": "src/lib/rgb.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "hexRgb",
+          "declaration": {
+            "name": "hexRgb",
+            "module": "src/lib/rgb.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/shaders/ghost.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "ghost",
+          "type": {
+            "text": "Shader"
+          },
+          "default": "{ attributes: [\"data-ghost\", \"data-ghost-rise\", \"data-ghost-fall\"], create() { let panel: Float32Array | undefined; let riseTau = 0; let fallTau = 0; let active = false; return { configure(data) { const rise = retention(data.ghostRise ?? data.ghost); const fall = retention(data.ghostFall ?? data.ghost); riseTau = timeConstant(rise); fallTau = timeConstant(fall); active = rise > 0 || fall > 0; }, active: () => active, apply(pixels, { elapsedMs }) { if (panel?.length !== pixels.length) { // Seed the panel with this frame so it starts opaque; otherwise a high // retention would fade in from transparent. panel = Float32Array.from(pixels); return \"still\"; } const rise = response(riseTau, elapsedMs); const fall = response(fallTau, elapsedMs); let changing = false; for (let pixel = 0; pixel < pixels.length; pixel += 4) { const brightening = pixels[pixel] + pixels[pixel + 1] + pixels[pixel + 2] > panel[pixel] + panel[pixel + 1] + panel[pixel + 2]; const share = brightening ? rise : fall; for (let i = pixel; i < pixel + 4; i += 1) { const target = pixels[i]; const level = panel[i] + (target - panel[i]) * share; if (Math.abs(target - level) < SETTLED_LEVELS) { panel[i] = target; } else { panel[i] = level; pixels[i] = level; changing = true; } } } return changing ? \"active\" : \"still\"; }, }; }, }",
+          "description": "Emulates an LCD's slow pixel response: every channel moves toward the new\nframe along an exponential with time constant τ, so fast motion leaves a\nfading trail. Driving it by elapsed time rather than per frame keeps the\ntrail the same length at any refresh rate, and keeping the state in floats\nlets it land on the frame exactly instead of stalling a few 8-bit steps\nshort.\n\nReal panels brighten and darken at different speeds, so a pixel getting\nbrighter overall follows the rise curve in every channel and one getting\ndarker the fall curve. Choosing per pixel rather than per channel keeps a\ncolour change from splitting into a fast and a slow channel.\n\n`data-ghost` (0–100, default 0) is the percentage of the previous frame the\npanel keeps per 60 Hz frame, capped just below 100 so the panel can never\nfreeze. `data-ghost-rise` and `data-ghost-fall` (same range, each defaulting\nto `data-ghost`) set it apart for pixels getting brighter and darker."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ghost",
+          "declaration": {
+            "name": "ghost",
+            "module": "src/emulated-canvas/shaders/ghost.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/shaders/index.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "SHADERS",
+          "type": {
+            "text": "readonly Shader[]"
+          },
+          "default": "[noise, palette, ghost]",
+          "description": "Per-pixel passes over the logical bitmap, in order. To add an effect, write a\n`Shader` and add it to this list."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SHADERS",
+          "declaration": {
+            "name": "SHADERS",
+            "module": "src/emulated-canvas/shaders/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/shaders/noise.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "MAX_NOISE_STEP",
+          "type": {
+            "text": "number"
+          },
+          "default": "4",
+          "description": "The noise is sampled at most this many pixels apart and filled in between.\nAt the backdrop's feature size that is a quarter of the samples per axis,\nwithin 0.02 RMS (0.075 at worst) of sampling every pixel."
+        },
+        {
+          "kind": "variable",
+          "name": "noise",
+          "type": {
+            "text": "Shader"
+          },
+          "default": "{ attributes: [\"data-noise\", \"data-noise-scale\", \"data-noise-speed\"], create() { const sample = makeNoise2D(NOISE_SEED); let layer: ReturnType<typeof makeCoarseNoise> | undefined; let field = new Float32Array(0); let clock = 0; let intensity = 0; let speed = 0; let feature = 8; let step = 1; return { configure(data) { intensity = clamp(knob(data.noise, 0), 0, 100) / 100; speed = knob(data.noiseSpeed, 0); feature = Math.max(1, knob(data.noiseScale, 8)); step = clamp( Math.floor(feature / NOISE_SAMPLES_PER_FEATURE), 1, MAX_NOISE_STEP, ); }, active: () => intensity > 0, apply(pixels, { width, height, elapsedMs }) { if (layer === undefined || field.length !== width * height) { layer = makeCoarseNoise(sample, width, height); field = new Float32Array(width * height); } clock += elapsedMs; const drift = clock * speed * 0.00005; field.fill(0); layer( field, step, 1 / feature, drift + NOISE_OFFSET_X, drift * 0.5 + NOISE_OFFSET_Y, intensity, ); for (let i = 0, cell = 0; i < pixels.length; i += 4, cell += 1) { const level = field[cell] * 255; // Over black, so a transparent pixel takes the noise rather than hiding it. const opacity = pixels[i + 3] / 255; for (let channel = i; channel < i + 3; channel += 1) { const value = pixels[channel] * opacity; pixels[channel] = value > level ? value : level; } pixels[i + 3] = 255; } return speed > 0 ? \"idle\" : \"still\"; }, }; }, }",
+          "description": "A drifting simplex field under the frame, so its dark pixels shimmer: each\nchannel is lifted to the noise where that is brighter, like a `lighten`\nblend, and the drawing shows on top. `data-noise` is its intensity (0–100),\n`data-noise-scale` its feature size in pixels (default 8) and\n`data-noise-speed` how fast it drifts (0–100, default 0). At the speeds the\nbackdrop uses the drift moves about a pixel per 60 Hz frame on a desktop\nscreen, so it redraws at the idle rate."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "noise",
+          "declaration": {
+            "name": "noise",
+            "module": "src/emulated-canvas/shaders/noise.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/shaders/palette.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "palette",
+          "type": {
+            "text": "Shader"
+          },
+          "default": "{ attributes: [ \"data-palette-base\", \"data-palette-ink\", \"data-palette-stops\", \"data-palette-levels\", \"data-palette-dither\", ], create() { let base: string | undefined; let ink: string | undefined; let stops: string | undefined; let steps = 0; let dither = false; let stale = true; const table = new Uint8ClampedArray(256 * 3); return { configure(data) { const levels = Number.parseInt(data.paletteLevels ?? \"\"); const nextSteps = levels >= 2 ? levels - 1 : 0; if ( base !== data.paletteBase || ink !== data.paletteInk || stops !== data.paletteStops || steps !== nextSteps ) { stale = true; } base = data.paletteBase; ink = data.paletteInk; stops = data.paletteStops; steps = nextSteps; dither = data.paletteDither !== undefined; }, active: () => base !== undefined && ink !== undefined, apply(pixels, { width }) { if (stale) { stale = false; const colours = [ base!, ...(stops?.split(\" \").filter(Boolean) ?? []), ink!, ].map(colourRgb); const segments = colours.length - 1; for (let level = 0; level < 256; level += 1) { const shade = steps > 0 ? (Math.round((level * steps) / 255) * 255) / steps : level; const place = (shade * segments) / 255; const segment = Math.min(Math.floor(place), segments - 1); const from = colours[segment]; const to = colours[segment + 1]; for (let channel = 0; channel < 3; channel += 1) { table[level * 3 + channel] = from[channel] + (to[channel] - from[channel]) * (place - segment); } } } const step = dither && steps > 0 ? 255 / steps : 0; for (let i = 0; i < pixels.length; i += 4) { // Rec. 709 weights in 256ths, which sum to 256. const luma = (pixels[i] * 54 + pixels[i + 1] * 183 + pixels[i + 2] * 19) >> 8; let level = ((luma * pixels[i + 3]) / 255) | 0; if (step > 0) { const pixel = i >> 2; const threshold = BAYER[(((pixel / width) & 3) << 2) | ((pixel % width) & 3)]; level = clamp(Math.round(level + threshold * step), 0, 255); } const entry = level * 3; pixels[i] = table[entry]; pixels[i + 1] = table[entry + 1]; pixels[i + 2] = table[entry + 2]; pixels[i + 3] = 255; } return \"still\"; }, }; }, }",
+          "description": "Recolours the frame: each pixel's luma, over black, picks its place on the\nscale from `data-palette-base` (dark) to `data-palette-ink` (light), CSS\ncolours that are both set or the pass is off, so a consumer can draw in any\ncolour and still show in the palette. `data-palette-stops`, colours\nseparated by spaces, spaces more colours evenly between them, so the scale\nruns through each.\n`data-palette-levels` (2 or more) snaps each pixel to the nearest of that\nmany evenly spaced shades, like a panel with few grey levels; as many as the\ncolours lands each shade on one. `data-palette-dither`, with levels, mixes\nthe two shades either side of a pixel's luma in a 4 x 4 ordered pattern in\nproportion, so detail fainter than a step still shows, as a panel shows grey\non its few levels. The pattern is fixed to the bitmap, so moving shapes do\nnot shimmer. The scale is a 256-entry table, rebuilt only when a knob\nchanges."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "palette",
+          "declaration": {
+            "name": "palette",
+            "module": "src/emulated-canvas/shaders/palette.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

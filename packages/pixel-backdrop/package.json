@@ -24,5 +24,11 @@
     "./src/pixel-backdrop/element.ts",
     "./src/emulated-canvas/element.ts",
     "*.css"
-  ]
+  ],
+  "scripts": {
+    "analyze": "cem analyze --quiet"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "0.11.0"
+  }
 }
