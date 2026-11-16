@@ -63,7 +63,28 @@ test("a stored shape replaces the visit's", () => {
   expect(shape.value()).toBe(SHAPES[2]);
 });
 
-test("activating stores the next shape and draws it", () => {
+test("with nothing stored, the row marks the shape on show as random", () => {
+  const events = new EventTarget();
+  const shape = createBackdropShape(fixedRandom(0.5), events);
+  load(events);
+
+  expect(shape.label()).toBe("Hex (random)");
+});
+
+test("the first activation stores the random shape without changing it", () => {
+  const events = new EventTarget();
+  const shape = createBackdropShape(fixedRandom(0.5), events);
+  load(events);
+
+  shape.cycle();
+
+  expect(localStorage.getItem(SHAPE_KEY)).toBe(SHAPES[4]);
+  expect(shown()).toBe(SHAPES[4]);
+  expect(shape.label()).toBe("Hex");
+});
+
+test("activating a stored shape stores the next and draws it", () => {
+  localStorage.setItem(SHAPE_KEY, SHAPES[0]);
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0), events);
   load(events);
@@ -75,20 +96,17 @@ test("activating stores the next shape and draws it", () => {
   expect(shape.label()).toBe("Circle");
 });
 
-test("Random follows the last shape only while a shape is stored", () => {
-  sessionStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
+test("after the last stored shape comes Random, which reads as random", () => {
+  localStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
   const events = new EventTarget();
   const shape = createBackdropShape(fixedRandom(0), events);
   load(events);
 
   shape.cycle();
-  expect(shape.value()).toBe(SHAPES[0]);
-  expect(localStorage.getItem(SHAPE_KEY)).toBe(SHAPES[0]);
-
-  shape.choose(SHAPES.at(-1)!);
-  shape.cycle();
 
   expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
+  expect(shown()).toBe(SHAPES[0]);
+  expect(shape.label()).toBe("Square (random)");
 });
 
 test("choosing Random clears storage and draws a different shape for the visit", () => {
@@ -103,20 +121,6 @@ test("choosing Random clears storage and draws a different shape for the visit",
   expect(localStorage.getItem(SHAPE_KEY)).toBeNull();
   expect(shown()).toBe(SHAPES[1]);
   expect(sessionStorage.getItem(SHAPE_KEY)).toBe(SHAPES[1]);
-});
-
-test("with nothing stored, the row reads the shape on show, never Random", () => {
-  localStorage.setItem(SHAPE_KEY, SHAPES.at(-1)!);
-  const events = new EventTarget();
-  const shape = createBackdropShape(fixedRandom(0.5), events);
-  load(events);
-
-  shape.cycle();
-
-  expect(shape.value()).toBe(shown());
-  expect(shape.label()).not.toBe("Random");
-  shape.cycle();
-  expect(localStorage.getItem(SHAPE_KEY)).not.toBeNull();
 });
 
 test("ignores a stored id that is no longer a shape", () => {
@@ -141,6 +145,7 @@ test("still draws a shape when storage is blocked", () => {
   const shape = createBackdropShape(fixedRandom(0), events);
 
   load(events);
+  shape.cycle();
   shape.cycle();
 
   expect(shown()).toBe(SHAPES[1]);

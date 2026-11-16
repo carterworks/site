@@ -22,9 +22,9 @@ export const SHAPES = [
 
 /**
  * Each visit draws a random shape, kept in session storage so reloads and
- * navigations keep it until the tab closes. A stored shape overrides it, and
- * Random, in the rotation only while one is stored, clears the store and
- * draws afresh. The row always names the shape on show.
+ * navigations keep it until the tab closes, and the row marks it as random.
+ * The first activation stores that shape as it is; then each one stores the
+ * next, and Random, after the last, clears the store and draws afresh.
  */
 export function createBackdropShape(
   random = Math.random,
@@ -62,12 +62,13 @@ export function createBackdropShape(
     value: current,
     label() {
       const id = current();
-      return id[0].toUpperCase() + id.slice(1);
+      const name = id[0].toUpperCase() + id.slice(1);
+      return chosen ? name : `${name} (random)`;
     },
     choose,
     cycle() {
-      const rotation = chosen ? [...SHAPES, RANDOM] : SHAPES;
-      choose(nextInRotation<string>(rotation, current()));
+      if (!chosen) return choose(current());
+      choose(nextInRotation<string>([...SHAPES, RANDOM], current()));
     },
   };
 }

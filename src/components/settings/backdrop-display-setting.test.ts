@@ -25,16 +25,27 @@ const cycleTimes = (display: { cycle(): void }, times: number) => {
   for (let i = 0; i < times; i += 1) display.cycle();
 };
 
-test("shows the site's own look and stores nothing by default", () => {
+test("shows the site's own look, marked random, and stores nothing by default", () => {
   const display = createBackdropDisplay({ root });
 
-  expect(display.label()).toBe(site.label);
+  expect(display.label()).toBe(`${site.label} (random)`);
   expect(display.value()).toBe(site.id);
   expect(localStorage.getItem(displayKey("light"))).toBeNull();
 });
 
-test("the first activation stores and shows the scheme's first screen", () => {
+test("the first activation stores the random screen without changing it", () => {
   const display = createBackdropDisplay({ root });
+
+  display.cycle();
+
+  expect(localStorage.getItem(displayKey("light"))).toBe(site.id);
+  expect(shownDisplay(root, "light")).toBe(site);
+  expect(display.label()).toBe(site.label);
+});
+
+test("activating a stored screen stores and shows the next", () => {
+  const display = createBackdropDisplay({ root });
+  display.choose(site.id);
 
   display.cycle();
 
@@ -46,14 +57,14 @@ test("the first activation stores and shows the scheme's first screen", () => {
 test("after the last screen comes Random, which clears storage and draws a different screen for the visit", () => {
   const display = createBackdropDisplay({ root, random: () => 0 });
 
-  cycleTimes(display, displaysFor("light").length - 1);
+  cycleTimes(display, displaysFor("light").length);
   expect(display.value()).toBe(lastLight.id);
   expect(display.choices().at(-1)?.id).toBe(RANDOM);
 
   display.cycle();
 
   expect(display.value()).toBe(site.id);
-  expect(display.label()).toBe(site.label);
+  expect(display.label()).toBe(`${site.label} (random)`);
   expect(shownDisplay(root, "light")).toBe(site);
   expect(localStorage.getItem(displayKey("light"))).toBeNull();
   expect(sessionStorage.getItem(displayKey("light"))).toBe(site.id);
@@ -74,7 +85,7 @@ test("light and dark each keep their own choice", () => {
   display.choose(pocket.id);
   root.style.colorScheme = "dark";
 
-  display.cycle();
+  cycleTimes(display, 2);
 
   expect(display.value()).toBe(grid.id);
   expect(localStorage.getItem(displayKey("dark"))).toBe(grid.id);
@@ -133,7 +144,7 @@ test("given a scheme, offers and stores that scheme's displays whichever is show
   const display = createBackdropDisplay({ root, scheme: "dark" });
   expect(display.choices()).toBe(displaysFor("dark"));
 
-  display.cycle();
+  cycleTimes(display, 2);
 
   expect(display.value()).toBe(grid.id);
   expect(localStorage.getItem(displayKey("dark"))).toBe(grid.id);

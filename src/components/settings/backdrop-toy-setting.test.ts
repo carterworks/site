@@ -47,10 +47,23 @@ test("a navigation never repeats the previous toy", () => {
     TOYS[1].id,
     TOYS[0].id,
   ]);
+  expect(backdrop.label()).toBe(`${TOYS[0].label} (random)`);
+});
+
+test("the first activation stores the random toy without changing it", () => {
+  const events = new EventTarget();
+  const backdrop = createBackdropToy(fixedRandom(0), events);
+  events.dispatchEvent(new Event("astro:page-load"));
+
+  backdrop.cycle();
+
+  expect(localStorage.getItem("backdrop-mode")).toBe(TOYS[0].id);
+  expect(setToy).toHaveBeenLastCalledWith(TOYS[0].id);
   expect(backdrop.label()).toBe(TOYS[0].label);
 });
 
-test("activating stores the next toy and applies it", () => {
+test("activating a stored toy stores the next and applies it", () => {
+  localStorage.setItem("backdrop-mode", TOYS[0].id);
   const events = new EventTarget();
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
@@ -86,6 +99,7 @@ test("Random follows the last toy only while a toy is stored", () => {
   backdrop.cycle();
 
   expect(localStorage.getItem("backdrop-mode")).toBeNull();
+  expect(backdrop.label()).toBe(`${TOYS[0].label} (random)`);
   expect(backdrop.choices()).not.toContain(RANDOM);
 });
 
@@ -100,7 +114,7 @@ test("choosing Random clears storage and applies a different toy", () => {
   expect(localStorage.getItem("backdrop-mode")).toBeNull();
   expect(setToy).toHaveBeenLastCalledWith(TOYS[1].id);
   expect(backdrop.value()).toBe(TOYS[1].id);
-  expect(backdrop.label()).toBe(TOYS[1].label);
+  expect(backdrop.label()).toBe(`${TOYS[1].label} (random)`);
 });
 
 test("choosing the page's random toy stores it", () => {
@@ -126,6 +140,7 @@ test("keeps cycling when storage is blocked", () => {
   const backdrop = createBackdropToy(fixedRandom(0), events);
   events.dispatchEvent(new Event("astro:page-load"));
 
+  backdrop.cycle();
   backdrop.cycle();
 
   expect(setToy).toHaveBeenLastCalledWith(TOYS[1].id);

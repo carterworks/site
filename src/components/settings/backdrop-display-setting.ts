@@ -18,9 +18,10 @@ import { RANDOM } from "./backdrop-toy-setting";
  * Each scheme has its own display, held on `<html>` (set by the head script
  * before paint), so a light screen never shows in dark. Nothing stored means
  * the display this visit drew at random, which the head script keeps in
- * session storage. Random, offered only while a display is stored, clears the
- * store and draws afresh. Without a `scheme`, it is the shown scheme's
- * display.
+ * session storage, and the row marks it as random. The first activation
+ * stores it as it is; then each one stores the next, and Random, offered only
+ * while a display is stored, clears the store and draws afresh. Without a
+ * `scheme`, it is the shown scheme's display.
  */
 export function createBackdropDisplay({
   root = document.documentElement,
@@ -65,11 +66,16 @@ export function createBackdropDisplay({
   return {
     /** The id of the display on show. */
     value: () => current().id,
-    label: () => current().label,
+    label: () => (stored() ? current().label : `${current().label} (random)`),
     /** The shown scheme's displays in menu order, and Random while one is stored. */
     choices,
     choose,
     cycle() {
+      if (!stored()) {
+        choose(current().id);
+        // With storage blocked nothing stays chosen, so move on instead.
+        if (stored()) return;
+      }
       const ids = choices().map((display) => display.id);
       choose(nextInRotation(ids, current().id));
     },

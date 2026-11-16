@@ -194,7 +194,7 @@ describe("command bar", () => {
 
     expect(getElement<HTMLElement>('[data-panel="root"]').hidden).toBe(true);
     expect(value("theme")).toBe("Light");
-    expect(value("backdrop")).toBe(TOYS[0].label);
+    expect(value("backdrop")).toBe(`${TOYS[0].label} (random)`);
     expect(row("theme").getAttribute("aria-label")).toBe(
       "Theme: Light. Activate to change.",
     );
@@ -237,8 +237,13 @@ describe("command bar", () => {
     expect(localStorage.getItem("color-scheme")).toBeNull();
   });
 
-  test("activating the backdrop row stores and applies the next toy", () => {
+  test("activating the backdrop row stores the random toy, then the next", () => {
     openSettings();
+
+    row("backdrop").click();
+
+    expect(localStorage.getItem("backdrop-mode")).toBe(TOYS[0].id);
+    expect(value("backdrop")).toBe(TOYS[0].label);
 
     row("backdrop").click();
 
@@ -247,9 +252,14 @@ describe("command bar", () => {
     expect(value("backdrop")).toBe(TOYS[1].label);
   });
 
-  test("the light and dark theme rows each store and show their own scheme's next display", () => {
+  test("the light and dark theme rows each store their own scheme's random display, then the next", () => {
     openSettings();
-    expect(value("lightDisplay")).toBe(light[0].label);
+    expect(value("lightDisplay")).toBe(`${light[0].label} (random)`);
+    expect(value("darkDisplay")).toBe(`${dark[0].label} (random)`);
+
+    row("darkDisplay").click();
+
+    expect(localStorage.getItem(displayKey("dark"))).toBe(dark[0].id);
     expect(value("darkDisplay")).toBe(dark[0].label);
 
     row("darkDisplay").click();
@@ -259,16 +269,22 @@ describe("command bar", () => {
       document.documentElement.getAttribute(displayAttribute("dark")),
     ).toBe(dark[1].id);
     expect(value("darkDisplay")).toBe(dark[1].label);
-    expect(value("lightDisplay")).toBe(light[0].label);
+    expect(value("lightDisplay")).toBe(`${light[0].label} (random)`);
 
+    row("lightDisplay").click();
     row("lightDisplay").click();
 
     expect(localStorage.getItem(displayKey("light"))).toBe(light[1].id);
     expect(value("lightDisplay")).toBe(light[1].label);
   });
 
-  test("activating the shape row stores and draws the next shape", () => {
+  test("activating the shape row stores the random shape, then the next", () => {
     openSettings();
+    expect(value("shape")).toBe("Square (random)");
+
+    row("shape").click();
+
+    expect(localStorage.getItem(SHAPE_KEY)).toBe("square");
     expect(value("shape")).toBe("Square");
 
     row("shape").click();
@@ -283,10 +299,10 @@ describe("command bar", () => {
     openSettings();
 
     const labels = {
-      backdrop: TOYS[0].label,
-      lightDisplay: light[0].label,
-      darkDisplay: dark[0].label,
-      shape: "Square",
+      backdrop: `${TOYS[0].label} (random)`,
+      lightDisplay: `${light[0].label} (random)`,
+      darkDisplay: `${dark[0].label} (random)`,
+      shape: "Square (random)",
     };
     for (const name of Object.keys(labels) as (keyof typeof labels)[]) {
       expect(value(name)).toBe(`${labels[name]} (paused)`);

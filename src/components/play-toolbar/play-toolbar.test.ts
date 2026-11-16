@@ -315,7 +315,7 @@ test("an OS colour scheme change re-renders the label without storing anything",
 });
 
 test("a page load re-renders, as the toy is chosen after the bar connects", () => {
-  settings.backdrop.cycle();
+  settings.backdrop.choose(TOYS[1].id);
   toy().value = "";
 
   document.dispatchEvent(new Event("astro:page-load"));
