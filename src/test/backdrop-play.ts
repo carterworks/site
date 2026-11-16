@@ -1,14 +1,11 @@
 import { vi } from "vitest";
-import {
-  DISPLAYS,
-  showDisplay,
-} from "../components/pixel-backdrop/backdrop-displays";
-import type { BackdropKnobs } from "../components/pixel-backdrop/knobs";
-import { place } from "./toy-canvas";
+import { DISPLAYS } from "../components/pixel-backdrop/backdrop-displays";
+import type { BackdropKnobs } from "@carterworks/pixel-backdrop";
+import { place } from "../../packages/pixel-backdrop/src/test/toy-canvas";
 
 /**
  * Stubs `matchMedia` with a reduced-motion query a test can flip. Import this
- * module before `pixel-backdrop/element`, which reads its media queries as it loads.
+ * module before `@carterworks/pixel-backdrop`, which reads its media query as it loads.
  */
 export const motion = (() => {
   const listeners = new Set<() => void>();
@@ -34,20 +31,14 @@ export const motion = (() => {
 
 export const SIZE = 160;
 
-/**
- * A 4:3 viewport over the square grid, which overhangs it top and bottom. The
- * page is put in the display's scheme, as only there does it show.
- */
+/** A 4:3 viewport over the square grid, which overhangs it top and bottom. */
 export function mount(
   id: string,
   knobs: Partial<BackdropKnobs> = {},
   display = "site-light",
 ) {
-  const shown = DISPLAYS.find((candidate) => candidate.id === display)!;
-  const root = document.documentElement;
-  root.style.colorScheme = shown.scheme;
-  showDisplay(root, shown);
   const backdrop = document.createElement("pixel-backdrop");
+  backdrop.display = DISPLAYS.find((candidate) => candidate.id === display)!;
   backdrop.setToy(id);
   backdrop.configure(knobs);
   const canvas = document.createElement("emulated-canvas");

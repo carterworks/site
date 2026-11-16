@@ -180,6 +180,9 @@ importers:
       '@astrojs/sitemap':
         specifier: 3.7.4
         version: 3.7.4
+      '@carterworks/pixel-backdrop':
+        specifier: workspace:*
+        version: link:packages/pixel-backdrop
       feed:
         specifier: 6.0.0
         version: 6.0.0
@@ -226,6 +229,8 @@ importers:
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@25.9.3)(happy-dom@21.0.4)(vite@8.3.8(@types/node@25.9.3)(esbuild@0.28.1)(yaml@2.9.0))
+
+  packages/pixel-backdrop: {}
 
 packages:
 

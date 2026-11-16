@@ -4,75 +4,80 @@ import { dirname, join, matchesGlob } from "node:path";
 import { expect, test } from "vitest";
 
 /**
- * The site's layers, pixel backdrop first. Every production file must match a
- * layer (first match wins), and may import only files in the layers its
- * `imports` names. A bare import (package, builtin or virtual module) must be
- * named there too, or `imports` must name "packages" to allow any.
+ * The layers of the pixel backdrop package and of the site over it. Every
+ * production file must match a layer (first match wins), and may import only
+ * files in the layers its `imports` names; an import of the backdrop package
+ * counts as one of the file its `exports` maps it to. Any other bare import
+ * (package, builtin or virtual module) must be named there too, or `imports`
+ * must name "packages" to allow any.
  */
+const PACKAGE = "packages/pixel-backdrop";
+const kit = (glob: string) => `${PACKAGE}/src/${glob}`;
+
 const layers = {
   lib: {
-    files: ["src/lib/{clamp,cycle-setting,rgb,backdrop-noise,landscape}.ts"],
+    files: [kit("lib/*.ts")],
     imports: ["lib"],
   },
   "canvas kit": {
-    files: ["src/components/emulated-canvas/{shader,colour,limits}.ts"],
+    files: [kit("emulated-canvas/{shader,colour,limits}.ts")],
     imports: ["lib"],
   },
   "shader registry": {
-    files: ["src/components/emulated-canvas/shaders/index.ts"],
+    files: [kit("emulated-canvas/shaders/index.ts")],
     imports: ["shaders", "canvas kit"],
   },
   // A pass sees only the contract and its helpers, never another pass, the
   // registry or the element.
   shaders: {
-    files: ["src/components/emulated-canvas/shaders/*.ts"],
+    files: [kit("emulated-canvas/shaders/*.ts")],
     imports: ["canvas kit", "lib"],
   },
   pipeline: {
-    files: ["src/components/emulated-canvas/pipeline.ts"],
+    files: [kit("emulated-canvas/pipeline.ts")],
     imports: ["canvas kit"],
   },
   presenter: {
-    files: ["src/components/emulated-canvas/presenter.ts"],
+    files: [kit("emulated-canvas/presenter.ts")],
     imports: ["canvas kit", "lib"],
   },
   // Other layers reach the canvas through the element and the kit, never the
   // pipeline, the presenter or the passes.
   canvas: {
-    files: ["src/components/emulated-canvas/element.ts"],
+    files: [kit("emulated-canvas/element.ts")],
     imports: ["pipeline", "presenter", "shader registry", "canvas kit", "lib"],
   },
   "toy kit": {
-    files: ["src/components/backdrop-toys/{toy,line}.ts"],
+    files: [kit("backdrop-toys/{toy,line}.ts")],
     imports: ["toy kit", "lib"],
   },
   "toy registry": {
-    files: ["src/components/backdrop-toys/index.ts"],
+    files: [kit("backdrop-toys/index.ts")],
     imports: ["toys", "toy kit"],
   },
   toys: {
-    files: ["src/components/backdrop-toys/*.ts"],
+    files: [kit("backdrop-toys/*.ts")],
     imports: ["toy kit", "lib"],
   },
-  displays: {
-    files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
+  display: {
+    files: [kit("pixel-backdrop/display.ts")],
     imports: [],
   },
   knobs: {
-    files: ["src/components/pixel-backdrop/knobs.ts"],
+    files: [kit("pixel-backdrop/knobs.ts")],
     imports: [],
   },
   "pointer relay": {
-    files: ["src/components/pixel-backdrop/{pointer-relay,press}.ts"],
+    files: [kit("pixel-backdrop/{pointer-relay,press}.ts")],
     imports: ["pointer relay"],
   },
   // What the backdrop shows is decided from data alone, never the elements.
   look: {
-    files: ["src/components/pixel-backdrop/look.ts"],
-    imports: ["knobs", "toy kit", "displays", "lib"],
+    files: [kit("pixel-backdrop/look.ts")],
+    imports: ["knobs", "toy kit", "display", "lib"],
   },
   backdrop: {
-    files: ["src/components/pixel-backdrop/element.ts"],
+    files: [kit("pixel-backdrop/element.ts"), `${PACKAGE}/pixel-backdrop.css`],
     imports: [
       "pointer relay",
       "look",
@@ -80,8 +85,21 @@ const layers = {
       "canvas",
       "toy registry",
       "toy kit",
-      "displays",
+      "display",
     ],
+  },
+  // The site's themes, which only the page knows, and how it shows them.
+  displays: {
+    files: ["src/components/pixel-backdrop/backdrop-displays.ts"],
+    imports: ["backdrop"],
+  },
+  "display follower": {
+    files: ["src/components/pixel-backdrop/follow-display.ts"],
+    imports: ["displays", "backdrop"],
+  },
+  "cycle setting": {
+    files: ["src/lib/cycle-setting.ts"],
+    imports: [],
   },
   controls: {
     files: [
@@ -89,7 +107,7 @@ const layers = {
       // The theme setting's storage, shared with the layout's inline script.
       "src/lib/color-scheme.ts",
     ],
-    imports: ["controls", "toy registry", "displays", "lib"],
+    imports: ["controls", "toy registry", "displays", "cycle setting"],
   },
   "site lib": {
     files: ["src/lib/*.ts"],
@@ -104,7 +122,7 @@ const layers = {
       "site lib",
       "controls",
       "backdrop",
-      "canvas",
+      "display follower",
       "toy registry",
       "displays",
       "packages",
@@ -115,13 +133,13 @@ const layers = {
 const exceptions = [
   {
     from: "src/components/play-toolbar/play-toolbar.ts",
-    to: "src/components/backdrop-toys/image.ts",
+    to: kit("backdrop-toys/image.ts"),
     why: "a dropped image becomes a toy that is not in the registry",
   },
 ];
 
-const production = globSync("src/**/*.{ts,js,mjs,astro}", {
-  exclude: ["**/*.test.ts", "src/test/**"],
+const production = globSync(`{src,${PACKAGE}/src}/**/*.{ts,js,mjs,astro}`, {
+  exclude: ["**/*.test.ts", "src/test/**", `${PACKAGE}/src/test/**`],
 }).sort();
 
 const layerOf = (file: string) =>
@@ -129,9 +147,37 @@ const layerOf = (file: string) =>
     files.some((glob) => matchesGlob(file, glob)),
   )?.[0];
 
-const isBare = (specifier: string) => !specifier.startsWith(".");
+const { name: packageName, exports: entries } = JSON.parse(
+  readFileSync(join(PACKAGE, "package.json"), "utf8"),
+) as { name: string; exports: Record<string, string> };
+
+/** The file an import of the package names, through its `exports`, as Node resolves it. */
+const resolveEntry = (specifier: string) => {
+  const subpath = `.${specifier.slice(packageName.length)}`;
+  for (const [entry, target] of Object.entries(entries)) {
+    const [head, tail] = entry.split("*");
+    const match =
+      tail === undefined
+        ? entry === subpath
+        : subpath.startsWith(head) && subpath.endsWith(tail);
+    if (!match) continue;
+    const star = subpath.slice(
+      head.length,
+      subpath.length - (tail?.length ?? 0),
+    );
+    return join(PACKAGE, target.replace("*", star));
+  }
+  return specifier;
+};
+
+const isPackage = (specifier: string) =>
+  specifier === packageName || specifier.startsWith(`${packageName}/`);
+
+const isBare = (specifier: string) =>
+  !specifier.startsWith(".") && !isPackage(specifier);
 
 const resolve = (from: string, specifier: string) => {
+  if (isPackage(specifier)) return resolveEntry(specifier);
   const base = join(dirname(from), specifier);
   return [`${base}.ts`, join(base, "index.ts")].find(existsSync) ?? base;
 };

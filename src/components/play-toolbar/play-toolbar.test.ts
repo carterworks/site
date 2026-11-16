@@ -7,14 +7,14 @@ import {
 
 const light = displaysFor("light");
 const dark = displaysFor("dark");
-import { SHAPES } from "../emulated-canvas/presenter";
+import { SHAPES } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
 import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
-import { TOYS } from "../backdrop-toys";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
 import "./play-toolbar";
 import { settings } from "../settings/site-settings";
 import { createThemeSetting } from "../settings/theme-setting";
 
-vi.mock("../backdrop-toys", () => ({
+vi.mock("@carterworks/pixel-backdrop/toys", () => ({
   TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 

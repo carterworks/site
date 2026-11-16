@@ -10,8 +10,8 @@ import {
   shownDisplay,
   shownScheme,
 } from "./backdrop-displays";
-import { MAX_GHOST } from "../emulated-canvas/limits";
-import { hexRgb } from "../../lib/rgb";
+import { MAX_GHOST } from "../../../packages/pixel-backdrop/src/emulated-canvas/limits";
+import { hexRgb } from "../../../packages/pixel-backdrop/src/lib/rgb";
 
 const looks = DISPLAYS.filter(({ look }) => look);
 

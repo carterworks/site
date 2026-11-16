@@ -10,12 +10,12 @@ import {
   SHAPE_KEY,
 } from "../settings/backdrop-shape-setting";
 import { createBackdropToy } from "../settings/backdrop-toy-setting";
-import { TOYS } from "../backdrop-toys";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
 import "./command-bar";
 import { settings } from "../settings/site-settings";
 import { createThemeSetting } from "../settings/theme-setting";
 
-vi.mock("../backdrop-toys", () => ({
+vi.mock("@carterworks/pixel-backdrop/toys", () => ({
   TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 

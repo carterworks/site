@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../../test/backdrop-defaults";
+import { installBackdropDefaults } from "../../../packages/pixel-backdrop/src/test/backdrop-defaults";
 import {
   motion,
   mount,
@@ -15,11 +15,11 @@ import {
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
-} from "../../test/toy-canvas";
+} from "../../../packages/pixel-backdrop/src/test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
-import { TOYS } from "../backdrop-toys";
-import { Presenter } from "../emulated-canvas/presenter";
-import "./element";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
+import { Presenter } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
+import "@carterworks/pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
 

@@ -1,6 +1,6 @@
 import { SHAPES } from "../settings/backdrop-shape-setting";
-import { TOYS } from "../backdrop-toys";
-import { imageToy } from "../backdrop-toys/image";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
+import { imageToy } from "@carterworks/pixel-backdrop/toys/image";
 import { onePercentLow } from "./frame-rate";
 import { settings } from "../settings/site-settings";
 

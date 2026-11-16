@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import "./site-settings";
 
-vi.mock("../backdrop-toys", () => ({
+vi.mock("@carterworks/pixel-backdrop/toys", () => ({
   TOYS: ["one", "two"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
