@@ -12,8 +12,10 @@ import {
  */
 const WATCHED = ["style", displayAttribute("light"), displayAttribute("dark")];
 
-/** Shows the backdrop the theme on `<html>`, now and whenever it changes. */
-export function followDisplay(backdrop: PixelBackdrop) {
+// Runs as the module loads, before the element is defined, so the element
+// upgrades already holding the theme and its first frame is in it.
+const backdrop: PixelBackdrop | null = document.querySelector("pixel-backdrop");
+if (backdrop !== null) {
   const root = document.documentElement;
   const show = () => {
     backdrop.display = shownDisplay(root, shownScheme(root));
@@ -22,8 +24,3 @@ export function followDisplay(backdrop: PixelBackdrop) {
   new MutationObserver(show).observe(root, { attributeFilter: WATCHED });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", show);
 }
-
-// Runs as the module loads, before the element is defined, so the element
-// upgrades already holding the theme and its first frame is in it.
-const backdrop = document.querySelector("pixel-backdrop");
-if (backdrop !== null) followDisplay(backdrop);

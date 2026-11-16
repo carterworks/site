@@ -20,11 +20,6 @@
     "./pixel-backdrop.css": "./pixel-backdrop.css",
     "./custom-elements.json": "./custom-elements.json"
   },
-  "sideEffects": [
-    "./src/pixel-backdrop/element.ts",
-    "./src/emulated-canvas/element.ts",
-    "*.css"
-  ],
   "scripts": {
     "analyze": "cem analyze --quiet"
   },

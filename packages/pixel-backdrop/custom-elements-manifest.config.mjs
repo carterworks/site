@@ -1,6 +1,5 @@
 export default {
-  globs: ["src/**/*.ts"],
-  exclude: ["src/**/*.test.ts", "src/test/**"],
+  globs: ["src/pixel-backdrop/element.ts", "src/emulated-canvas/element.ts"],
   packagejson: false,
   plugins: [
     {
