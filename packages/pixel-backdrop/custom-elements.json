@@ -4,214 +4,6 @@
   "modules": [
     {
       "kind": "javascript-module",
-      "path": "src/pixel-backdrop/element.ts",
-      "declarations": [
-        {
-          "kind": "class",
-          "description": "`<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>`, its\nchild, and runs a backdrop toy on it. The toy only draws on the canvas and\nlistens to it, as it would on any canvas; the element picks the toy, styles\nthe canvas (the display's palette, the drifting noise, the dissolve between\ntoys), and passes it the pointer. The layer is fixed and non-interactive,\nso the page above it paints its own solid panels over the result. Its\nlayout is `pixel-backdrop.css`, which also holds the knobs' defaults; a\npage overrides them on its own `:root`.\n\nThe element owns its render knobs, which `configure()` can tweak live.\n`resolveLook` turns them, the toy's look and the display into the\n`<emulated-canvas>`'s `data-*` attributes, its public API, and the\nproperties the backdrop's stylesheet reads. Under reduced motion it runs\nno toy.",
-          "name": "PixelBackdrop",
-          "cssProperties": [
-            {
-              "description": "Whether the backdrop renders at all.",
-              "name": "--backdrop-enabled",
-              "default": "true"
-            },
-            {
-              "description": "Size the cells to cover the viewport; when `false`, `--backdrop-scale` is used as is.",
-              "name": "--backdrop-auto-fit",
-              "default": "true"
-            },
-            {
-              "description": "Cell size in CSS pixels, when auto-fit is off.",
-              "name": "--backdrop-scale",
-              "default": "7"
-            },
-            {
-              "description": "Space between cells, in CSS pixels.",
-              "name": "--backdrop-gap",
-              "default": "2"
-            },
-            {
-              "description": "Cell form, one of `<emulated-canvas>`'s `data-shape` values.",
-              "name": "--backdrop-shape",
-              "default": "square"
-            },
-            {
-              "description": "Share of each previous frame the panel keeps.",
-              "name": "--backdrop-ghost",
-              "default": "70%"
-            },
-            {
-              "description": "Opacity of the drifting background noise.",
-              "name": "--backdrop-noise",
-              "default": "18%"
-            },
-            {
-              "description": "Feature size of the noise at an 80-pixel-wide canvas; it scales with the real one. Larger is softer.",
-              "name": "--backdrop-noise-scale",
-              "default": "15"
-            },
-            {
-              "description": "Drift speed of the noise, 0–100.",
-              "name": "--backdrop-noise-speed",
-              "default": "5"
-            },
-            {
-              "description": "What shows behind the backdrop, which a plain display paints its gaps in.",
-              "name": "--backdrop-page-color",
-              "default": "Canvas"
-            }
-          ],
-          "members": [
-            {
-              "kind": "field",
-              "name": "display",
-              "type": {
-                "text": "BackdropDisplay"
-              },
-              "description": "The screen the toys show on: its palette and, for a physical panel, its\nlook. Set it before the element is defined, or before its canvas is\nattached, and the first frame is already in it; a change later restarts\nthe canvas's passes when the palette differs."
-            },
-            {
-              "kind": "field",
-              "name": "toy",
-              "type": {
-                "text": "string"
-              },
-              "description": "The id of the chosen toy, which is the incoming one mid-dissolve.",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "knobs",
-              "type": {
-                "text": "BackdropKnobs"
-              },
-              "description": "The knobs in effect for the chosen toy on the display. A display's own\nghost rise and fall are not among them.",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "tweaks",
-              "type": {
-                "text": "Partial<BackdropKnobs>"
-              },
-              "description": "A copy of the knobs set through `configure` since the last `reset`.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "configure",
-              "parameters": [
-                {
-                  "name": "partial",
-                  "type": {
-                    "text": "Partial<BackdropKnobs>"
-                  }
-                }
-              ],
-              "description": "Merge a partial set of knobs, and repaint."
-            },
-            {
-              "kind": "method",
-              "name": "reset",
-              "description": "Restore the defaults from the `--backdrop-*` custom properties, and drop every tweak."
-            },
-            {
-              "kind": "method",
-              "name": "setToy",
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": {
-                    "text": "string"
-                  }
-                }
-              ],
-              "description": "Dissolve into a registered toy, starting it fresh; an unknown id is\nignored, and so is the toy already chosen. A request while no toy runs\n(before the canvas exists, disabled, reduced motion) is remembered and\nstarts when one can."
-            },
-            {
-              "kind": "method",
-              "name": "play",
-              "parameters": [
-                {
-                  "name": "toy",
-                  "type": {
-                    "text": "Toy"
-                  }
-                }
-              ],
-              "description": "Like `setToy` for a toy the registry does not list."
-            }
-          ],
-          "superclass": {
-            "name": "HTMLElement"
-          },
-          "summary": "A fixed, viewport-filling pixel grid that runs an interactive canvas toy.",
-          "tagName": "pixel-backdrop",
-          "customElement": true
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "BackdropDisplay",
-          "declaration": {
-            "name": "BackdropDisplay",
-            "module": "./display"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "DisplayLook",
-          "declaration": {
-            "name": "DisplayLook",
-            "module": "./display"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "BackdropKnobs",
-          "declaration": {
-            "name": "BackdropKnobs",
-            "module": "./knobs"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "Toy",
-          "declaration": {
-            "name": "Toy",
-            "module": "../backdrop-toys/toy"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "ToyCanvas",
-          "declaration": {
-            "name": "ToyCanvas",
-            "module": "../backdrop-toys/toy"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "PixelBackdrop",
-          "declaration": {
-            "name": "PixelBackdrop",
-            "module": "src/pixel-backdrop/element.ts"
-          }
-        },
-        {
-          "kind": "custom-element-definition",
-          "name": "pixel-backdrop",
-          "declaration": {
-            "name": "PixelBackdrop",
-            "module": "src/pixel-backdrop/element.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
       "path": "src/emulated-canvas/element.ts",
       "declarations": [
         {
@@ -501,6 +293,214 @@
           "declaration": {
             "name": "EmulatedCanvas",
             "module": "src/emulated-canvas/element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "`<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>`, its\nchild, and runs a backdrop toy on it. The toy only draws on the canvas and\nlistens to it, as it would on any canvas; the element picks the toy, styles\nthe canvas (the display's palette, the drifting noise, the dissolve between\ntoys), and passes it the pointer. The layer is fixed and non-interactive,\nso the page above it paints its own solid panels over the result. Its\nlayout is `pixel-backdrop.css`, which also holds the knobs' defaults; a\npage overrides them on its own `:root`.\n\nThe element owns its render knobs, which `configure()` can tweak live.\n`resolveLook` turns them, the toy's look and the display into the\n`<emulated-canvas>`'s `data-*` attributes, its public API, and the\nproperties the backdrop's stylesheet reads. Under reduced motion it runs\nno toy.",
+          "name": "PixelBackdrop",
+          "cssProperties": [
+            {
+              "description": "Whether the backdrop renders at all.",
+              "name": "--backdrop-enabled",
+              "default": "true"
+            },
+            {
+              "description": "Size the cells to cover the viewport; when `false`, `--backdrop-scale` is used as is.",
+              "name": "--backdrop-auto-fit",
+              "default": "true"
+            },
+            {
+              "description": "Cell size in CSS pixels, when auto-fit is off.",
+              "name": "--backdrop-scale",
+              "default": "7"
+            },
+            {
+              "description": "Space between cells, in CSS pixels.",
+              "name": "--backdrop-gap",
+              "default": "2"
+            },
+            {
+              "description": "Cell form, one of `<emulated-canvas>`'s `data-shape` values.",
+              "name": "--backdrop-shape",
+              "default": "square"
+            },
+            {
+              "description": "Share of each previous frame the panel keeps.",
+              "name": "--backdrop-ghost",
+              "default": "70%"
+            },
+            {
+              "description": "Opacity of the drifting background noise.",
+              "name": "--backdrop-noise",
+              "default": "18%"
+            },
+            {
+              "description": "Feature size of the noise at an 80-pixel-wide canvas; it scales with the real one. Larger is softer.",
+              "name": "--backdrop-noise-scale",
+              "default": "15"
+            },
+            {
+              "description": "Drift speed of the noise, 0–100.",
+              "name": "--backdrop-noise-speed",
+              "default": "5"
+            },
+            {
+              "description": "What shows behind the backdrop, which a plain display paints its gaps in.",
+              "name": "--backdrop-page-color",
+              "default": "Canvas"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "display",
+              "type": {
+                "text": "BackdropDisplay"
+              },
+              "description": "The screen the toys show on: its palette and, for a physical panel, its\nlook. Set it before the element is defined, or before its canvas is\nattached, and the first frame is already in it; a change later restarts\nthe canvas's passes when the palette differs."
+            },
+            {
+              "kind": "field",
+              "name": "toy",
+              "type": {
+                "text": "string"
+              },
+              "description": "The id of the chosen toy, which is the incoming one mid-dissolve.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "knobs",
+              "type": {
+                "text": "BackdropKnobs"
+              },
+              "description": "The knobs in effect for the chosen toy on the display. A display's own\nghost rise and fall are not among them.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "tweaks",
+              "type": {
+                "text": "Partial<BackdropKnobs>"
+              },
+              "description": "A copy of the knobs set through `configure` since the last `reset`.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "configure",
+              "parameters": [
+                {
+                  "name": "partial",
+                  "type": {
+                    "text": "Partial<BackdropKnobs>"
+                  }
+                }
+              ],
+              "description": "Merge a partial set of knobs, and repaint."
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Restore the defaults from the `--backdrop-*` custom properties, and drop every tweak."
+            },
+            {
+              "kind": "method",
+              "name": "setToy",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "description": "Dissolve into a registered toy, starting it fresh; an unknown id is\nignored, and so is the toy already chosen. A request while no toy runs\n(before the canvas exists, disabled, reduced motion) is remembered and\nstarts when one can."
+            },
+            {
+              "kind": "method",
+              "name": "play",
+              "parameters": [
+                {
+                  "name": "toy",
+                  "type": {
+                    "text": "Toy"
+                  }
+                }
+              ],
+              "description": "Like `setToy` for a toy the registry does not list."
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "summary": "A fixed, viewport-filling pixel grid that runs an interactive canvas toy.",
+          "tagName": "pixel-backdrop",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BackdropDisplay",
+          "declaration": {
+            "name": "BackdropDisplay",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DisplayLook",
+          "declaration": {
+            "name": "DisplayLook",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BackdropKnobs",
+          "declaration": {
+            "name": "BackdropKnobs",
+            "module": "./knobs"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Toy",
+          "declaration": {
+            "name": "Toy",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ToyCanvas",
+          "declaration": {
+            "name": "ToyCanvas",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PixelBackdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "pixel-backdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
           }
         }
       ]
