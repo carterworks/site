@@ -506,3 +506,31 @@ test("the canvas observes every attribute a look writes, so a live switch of dis
   );
   expect(unobserved, "observe these on <emulated-canvas>").toEqual([]);
 });
+
+test.each([
+  [
+    "a picture on a dark ink",
+    { toy: { ...plain, picture: true }, display: panel },
+    "",
+  ],
+  [
+    "a picture on a light ink",
+    { toy: { ...plain, picture: true }, display: DISPLAYS.dark },
+    undefined,
+  ],
+  ["a drawing on a dark ink", { toy: plain, display: panel }, undefined],
+  [
+    "a picture on a dark ink tweaked light",
+    {
+      toy: { ...plain, picture: true },
+      display: panel,
+      tweaks: { ink: "#ffffff" },
+    },
+    undefined,
+  ],
+] satisfies [string, Partial<LookInput>, unknown][])(
+  "%s inverts the palette only where it would otherwise show as a negative",
+  (_, input, invert) => {
+    expect(resolve(input).data.paletteInvert).toBe(invert);
+  },
+);

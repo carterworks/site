@@ -55,6 +55,18 @@ export const resolveKnobs = ({
   ...tweaks,
 });
 
+const luma = (colour: string) => {
+  const rgb = hexRgb(colour);
+  return rgb && rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+};
+
+/** Whether `toy` would show as a negative, ink being the darker colour. */
+const negative = (toy: Toy, base: string, ink: string) => {
+  if (!toy.picture) return false;
+  const [from, to] = [luma(base), luma(ink)];
+  return from !== undefined && to !== undefined && to < from;
+};
+
 const text = (value?: number) =>
   value === undefined ? undefined : String(value);
 
@@ -84,6 +96,7 @@ export function resolveLook(input: LookInput): ResolvedLook {
       paletteStops: look?.stops?.join(" "),
       paletteLevels: text(look?.levels),
       paletteDither: look?.dither ? "" : undefined,
+      paletteInvert: negative(input.toy, base, ink) ? "" : undefined,
     },
     canvasStyle: {
       "--emulated-canvas-scale": knobs.autoFit
