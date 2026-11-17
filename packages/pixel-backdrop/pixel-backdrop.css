@@ -1,0 +1,74 @@
+/* The knobs' defaults, the single source of truth: `<pixel-backdrop>` reads
+   them at startup and on reset, and `configure()` can override any of them at
+   runtime. :where() leaves a page's own declaration the winner wherever it
+   comes in the cascade. */
+:where(:root) {
+  --backdrop-enabled: true;
+  --backdrop-auto-fit: true;
+  --backdrop-scale: 7;
+  --backdrop-gap: 2;
+  --backdrop-shape: square;
+  --backdrop-ghost: 70%;
+  --backdrop-noise: 18%;
+  --backdrop-noise-scale: 15;
+  --backdrop-noise-speed: 5;
+}
+
+/* The large viewport, like the cell size, so mobile toolbars sliding in and
+   out can't move the grid. */
+/* 100vw runs under a classic scrollbar, whose track is transparent, so the
+   grid shows through it and is centred on the full viewport. */
+pixel-backdrop {
+  background-color: var(--backdrop-display-screen, transparent);
+  block-size: 100lvh;
+  display: block;
+  inline-size: 100vw;
+  inset: 0 auto auto 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  z-index: 0;
+}
+
+pixel-backdrop[data-disabled] {
+  display: none;
+}
+
+/* Centre the oversized grid so its middle always covers the viewport. The
+   offsets are rounded because a half-pixel shift would blur the gap overlay.
+   The gaps are painted in the page colour that shows behind this layer, or in
+   a display's screen colour, which also fills the strip past the grid's edge,
+   or in a display's own grid paint. */
+pixel-backdrop emulated-canvas {
+  --emulated-canvas-gap-color: var(
+    --backdrop-display-grid,
+    var(--backdrop-display-screen, var(--backdrop-page-color, Canvas))
+  );
+  inline-size: max-content;
+  left: round(50%, 1px);
+  position: absolute;
+  top: round(50%, 1px);
+  translate: round(-50%, 1px) round(-50%, 1px);
+}
+
+pixel-backdrop[data-vignette]::after {
+  background: var(--backdrop-display-vignette);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+/* A held finger would otherwise raise iOS's callout, and the overscroll is
+   belt and braces for the touchmove the element already blocks. */
+:root[data-backdrop-holding] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  pixel-backdrop {
+    display: none;
+  }
+}

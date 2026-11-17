@@ -1,0 +1,29 @@
+{
+  "name": "@carterworks/pixel-backdrop",
+  "version": "0.1.0",
+  "description": "A live pixel-grid backdrop: generic canvas toys shown through an emulated LCD canvas.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carterworks/site.git",
+    "directory": "packages/pixel-backdrop"
+  },
+  "customElements": "custom-elements.json",
+  "exports": {
+    ".": "./src/pixel-backdrop/element.ts",
+    "./emulated-canvas": "./src/emulated-canvas/element.ts",
+    "./toys": "./src/backdrop-toys/index.ts",
+    "./toys/*": "./src/backdrop-toys/*.ts",
+    "./landscape": "./src/lib/landscape.ts",
+    "./pixel-backdrop.css": "./pixel-backdrop.css",
+    "./custom-elements.json": "./custom-elements.json"
+  },
+  "scripts": {
+    "analyze": "cem analyze --quiet"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "0.11.0"
+  }
+}

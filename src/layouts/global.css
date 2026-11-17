@@ -79,18 +79,8 @@
     var(--display-dark-accent)
   );
 
-  /* Pixel backdrop defaults, the single source of truth: `<pixel-backdrop>`
-     reads them at startup and on reset, and `configure()` can override any
-     of them at runtime. */
-  --backdrop-enabled: true;
-  --backdrop-auto-fit: true;
-  --backdrop-scale: 7;
-  --backdrop-gap: 2;
-  --backdrop-shape: square;
-  --backdrop-ghost: 70%;
-  --backdrop-noise: 18%;
-  --backdrop-noise-scale: 15;
-  --backdrop-noise-speed: 5;
+  /* The pixel backdrop's knobs keep the defaults in its own stylesheet. */
+  --backdrop-page-color: var(--color-bg);
 
   accent-color: var(--color-accent);
   scrollbar-color: var(--color-accent) transparent;

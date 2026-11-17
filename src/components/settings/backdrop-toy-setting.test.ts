@@ -1,8 +1,8 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropToy, RANDOM, TOY_KEY } from "./backdrop-toy-setting";
-import { TOYS } from "../backdrop-toys";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
 
-vi.mock("../backdrop-toys", () => ({
+vi.mock("@carterworks/pixel-backdrop/toys", () => ({
   TOYS: ["one", "two", "three"].map((id) => ({ id, label: id.toUpperCase() })),
 }));
 
@@ -159,7 +159,7 @@ test("ignores a stored id that is no longer a toy", () => {
 
 test("with a single toy, every navigation shows it", async () => {
   vi.resetModules();
-  vi.doMock("../backdrop-toys", () => ({
+  vi.doMock("@carterworks/pixel-backdrop/toys", () => ({
     TOYS: [{ id: "only", label: "Only" }],
   }));
   const { createBackdropToy } = await import("./backdrop-toy-setting");
@@ -170,7 +170,7 @@ test("with a single toy, every navigation shows it", async () => {
   events.dispatchEvent(new Event("astro:page-load"));
 
   expect(setToy.mock.calls.map(([id]) => id)).toEqual(["only", "only"]);
-  vi.doUnmock("../backdrop-toys");
+  vi.doUnmock("@carterworks/pixel-backdrop/toys");
 });
 
 test("choosing a toy stores and applies it", () => {

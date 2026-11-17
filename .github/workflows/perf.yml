@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - src/**
+      - packages/**
       - scripts/perf.mjs
       - scripts/play-page.mjs
       - package.json

@@ -1,5 +1,7 @@
+import { globSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../../test/backdrop-defaults";
+import { installBackdropDefaults } from "../../../packages/pixel-backdrop/src/test/backdrop-defaults";
 import {
   motion,
   mount,
@@ -15,11 +17,11 @@ import {
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
-} from "../../test/toy-canvas";
+} from "../../../packages/pixel-backdrop/src/test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
-import { TOYS } from "../backdrop-toys";
-import { Presenter } from "../emulated-canvas/presenter";
-import "./element";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
+import { Presenter } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
+import "@carterworks/pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
 
@@ -358,4 +360,17 @@ describe.each(Object.keys(STILL).map((id) => [id]))("%s, still", (id) => {
       expect(presents()).toBeGreaterThan(painted);
     },
   );
+});
+
+test("no site stylesheet blends over the backdrop, as a blend over a changing canvas is re-blended on every present", () => {
+  const src = join(import.meta.dirname, "../..");
+  const sheets = globSync("**/*.{css,astro}", { cwd: src });
+  const blending = sheets.filter((file) =>
+    readFileSync(join(src, file), "utf8")
+      .replace(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, "")
+      .includes("mix-blend-mode"),
+  );
+
+  expect(sheets).not.toHaveLength(0);
+  expect(blending).toEqual([]);
 });

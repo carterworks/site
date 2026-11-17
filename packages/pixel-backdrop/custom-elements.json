@@ -1,0 +1,509 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/emulated-canvas/element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A canvas stand-in that hides its display surface. Consumers draw into an\n`OffscreenCanvas` through `getContext`, and a real `<canvas>` in a closed\nshadow root is blitted from that bitmap.\n\n`data-width` and `data-height` size the inner (logical) canvas. The outer\ncanvas can magnify each logical pixel into a cell: `data-scale` sets the\ncell size in CSS pixels (default 1), `data-gap` the space between cells\n(default 0), and `data-shape` the cell form, inscribed in the cell:\n`\"square\"` (default), `\"circle\"`, `\"ring\"`, `\"diamond\"`, `\"hex\"` (pointy\ntop, odd rows half a cell right), `\"triangle\"` (two cells wide, up and down\nby turns, interlocking), `\"dash\"` (a horizontal capsule),\n`\"slash\"` (bottom left to top right) or `\"cross\"`. With the defaults the\nouter canvas is a straight 1:1 mirror. A page can instead size cells from\nCSS by setting `--emulated-canvas-scale` to a length on the element, which\nthen follows viewport changes without any script.\n\nGaps and the rest of each cell outside its shape are painted over the\ncells rather than cut out, in `--emulated-canvas-gap-color` (default\n`Canvas`, the page's default background); set it to whatever shows behind\nthe element. A pixel shadow is cast from square cells whatever the shape.\n\n`data-shadow` (0–100, default 0) casts each pixel's shadow, like an LCD's\nsegments over their backplate: each pixel darkens what lies under it by how\nmuch darker it is than unlit, at that opacity, offset by `data-shadow-x` and\n`data-shadow-y` (whole CSS pixels, default 0). With a palette unlit is its\nbase, so only pixels darker than the base cast a shadow; without one it is\nwhite. The shadow is cast from the frame's pixels on each present, so a\nshadow over drawing other than a whole-bitmap `putImageData`, with no pass\non, reads the bitmap back.\n\nEffects are `SHADERS`, an ordered list of per-pixel passes (a drifting\nnoise, a two-colour palette and an LCD's ghosting), each documenting its own\nlive `data-*` knobs in `shaders/`. They run on the logical bitmap, never at\ndisplay resolution, so each costs the same however large the cells are\ndrawn.\n\nThe canvas presents on its own, the way a plain `<canvas>` shows what is\ndrawn on it: drawing through the 2D context queues a present for when the\ndrawing code returns, so a frame drawn in an animation frame shows in that\nsame frame, and several calls cost one present. While a pass is still\nchanging the display, the canvas keeps presenting every animation frame, or\nat about 8 fps for a pass that only drifts, then stops. `data-manual` opts\nout: the owner calls `present()` itself.\n\nThe context is the inner canvas's own, with only its pixel-writing methods\nwrapped to note that the bitmap changed: nothing is proxied or replayed, so\ndrawing costs what it costs on any canvas. A `putImageData` of the whole\nbitmap hands the passes those pixels, sparing them a read-back; any other\ndrawing is read back once, on the present after it.",
+          "name": "EmulatedCanvas",
+          "cssProperties": [
+            {
+              "description": "A length that sizes the cells instead of `data-scale`, so they follow the viewport without script.",
+              "name": "--emulated-canvas-scale"
+            },
+            {
+              "description": "Paints the gaps and the rest of each cell outside its shape.",
+              "name": "--emulated-canvas-gap-color",
+              "default": "Canvas"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "getContext",
+              "return": {
+                "type": {
+                  "text": "OffscreenCanvasRenderingContext2D | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "\"2d\""
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getContext",
+              "return": {
+                "type": {
+                  "text": "object | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "OffscreenRenderingContextId"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "unknown"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getContext",
+              "parameters": [
+                {
+                  "name": "contextId",
+                  "type": {
+                    "text": "OffscreenRenderingContextId"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "unknown"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "width",
+              "description": "The bitmap's real width, readable before the element is connected.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "height",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "present",
+              "description": "Paints the current bitmap now; the owner of a `data-manual` canvas calls\nthis. Returns whether the shaders are still changing the display, so an\nowner whose bitmap is static knows when it can stop presenting."
+            },
+            {
+              "kind": "method",
+              "name": "transition",
+              "description": "Freezes the frame on show and wipes the frames drawn after it in over it,\nblob by blob through a noise mask, so a change of scene dissolves rather\nthan cuts. The frozen frame is what was shown, styled and mid-dissolve\nincluded, so nothing jumps. Before the first present there is nothing to\nfreeze, and the next frame shows at once."
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Drops every pass's state and any dissolve, so the next present shows the bitmap as drawn."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The bitmap's width, in pixels.",
+              "name": "data-width",
+              "default": "64"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The bitmap's height, in pixels.",
+              "name": "data-height",
+              "default": "64"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Cell size, in CSS pixels.",
+              "name": "data-scale",
+              "default": "1"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Space between cells, in CSS pixels.",
+              "name": "data-gap",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "\"square\" | \"circle\" | \"ring\" | \"diamond\" | \"hex\" | \"triangle\" | \"dash\" | \"slash\" | \"cross\""
+              },
+              "description": "Cell form, inscribed in the cell.",
+              "name": "data-shape",
+              "default": "square"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Opacity, 0–100, of the shadow each pixel darker than unlit casts.",
+              "name": "data-shadow",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The shadow's horizontal offset, in whole CSS pixels.",
+              "name": "data-shadow-x",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The shadow's vertical offset, in whole CSS pixels.",
+              "name": "data-shadow-y",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "The palette's darkest colour; with `data-palette-ink`, recolours every pixel by its luma.",
+              "name": "data-palette-base"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "The palette's lightest colour.",
+              "name": "data-palette-ink"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "description": "Colours, separated by spaces, spaced evenly between base and ink.",
+              "name": "data-palette-stops"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Snaps each pixel to the nearest of this many shades, 2 or more.",
+              "name": "data-palette-levels"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "With levels, mixes the shades either side of a pixel in an ordered pattern.",
+              "name": "data-palette-dither"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Intensity, 0–100, of a drifting noise field under the frame.",
+              "name": "data-noise",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The noise's feature size, in pixels.",
+              "name": "data-noise-scale",
+              "default": "8"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "How fast the noise drifts, 0–100.",
+              "name": "data-noise-speed",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "Share, 0–100, of the previous frame the panel keeps per 60 Hz frame.",
+              "name": "data-ghost",
+              "default": "0"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "`data-ghost` for pixels getting brighter.",
+              "name": "data-ghost-rise"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "`data-ghost` for pixels getting darker.",
+              "name": "data-ghost-fall"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "description": "The owner presents with `present()` itself.",
+              "name": "data-manual"
+            },
+            {
+              "type": {
+                "text": "\"viewport\""
+              },
+              "description": "Tells a toy the canvas is a fixed layer larger than the viewport, so it fits its scene to the part on screen.",
+              "name": "data-fit"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "summary": "A canvas stand-in that draws its bitmap as magnified cells through per-pixel passes.",
+          "tagName": "emulated-canvas",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "EmulatedCanvas",
+          "declaration": {
+            "name": "EmulatedCanvas",
+            "module": "src/emulated-canvas/element.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "emulated-canvas",
+          "declaration": {
+            "name": "EmulatedCanvas",
+            "module": "src/emulated-canvas/element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pixel-backdrop/element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "`<pixel-backdrop>` fills the viewport with a live `<emulated-canvas>`, its\nchild, and runs a backdrop toy on it. The toy only draws on the canvas and\nlistens to it, as it would on any canvas; the element picks the toy, styles\nthe canvas (the display's palette, the drifting noise, the dissolve between\ntoys), and passes it the pointer. The layer is fixed and non-interactive,\nso the page above it paints its own solid panels over the result. Its\nlayout is `pixel-backdrop.css`, which also holds the knobs' defaults; a\npage overrides them on its own `:root`.\n\nThe element owns its render knobs, which `configure()` can tweak live.\n`resolveLook` turns them, the toy's look and the display into the\n`<emulated-canvas>`'s `data-*` attributes, its public API, and the\nproperties the backdrop's stylesheet reads. Under reduced motion it runs\nno toy.",
+          "name": "PixelBackdrop",
+          "cssProperties": [
+            {
+              "description": "Whether the backdrop renders at all.",
+              "name": "--backdrop-enabled",
+              "default": "true"
+            },
+            {
+              "description": "Size the cells to cover the viewport; when `false`, `--backdrop-scale` is used as is.",
+              "name": "--backdrop-auto-fit",
+              "default": "true"
+            },
+            {
+              "description": "Cell size in CSS pixels, when auto-fit is off.",
+              "name": "--backdrop-scale",
+              "default": "7"
+            },
+            {
+              "description": "Space between cells, in CSS pixels.",
+              "name": "--backdrop-gap",
+              "default": "2"
+            },
+            {
+              "description": "Cell form, one of `<emulated-canvas>`'s `data-shape` values.",
+              "name": "--backdrop-shape",
+              "default": "square"
+            },
+            {
+              "description": "Share of each previous frame the panel keeps.",
+              "name": "--backdrop-ghost",
+              "default": "70%"
+            },
+            {
+              "description": "Opacity of the drifting background noise.",
+              "name": "--backdrop-noise",
+              "default": "18%"
+            },
+            {
+              "description": "Feature size of the noise at an 80-pixel-wide canvas; it scales with the real one. Larger is softer.",
+              "name": "--backdrop-noise-scale",
+              "default": "15"
+            },
+            {
+              "description": "Drift speed of the noise, 0–100.",
+              "name": "--backdrop-noise-speed",
+              "default": "5"
+            },
+            {
+              "description": "What shows behind the backdrop, which a plain display paints its gaps in.",
+              "name": "--backdrop-page-color",
+              "default": "Canvas"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "display",
+              "type": {
+                "text": "BackdropDisplay"
+              },
+              "description": "The screen the toys show on: its palette and, for a physical panel, its\nlook. Set it before the element is defined, or before its canvas is\nattached, and the first frame is already in it; a change later restarts\nthe canvas's passes when the palette differs."
+            },
+            {
+              "kind": "field",
+              "name": "toy",
+              "type": {
+                "text": "string"
+              },
+              "description": "The id of the chosen toy, which is the incoming one mid-dissolve.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "knobs",
+              "type": {
+                "text": "BackdropKnobs"
+              },
+              "description": "The knobs in effect for the chosen toy on the display. A display's own\nghost rise and fall are not among them.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "tweaks",
+              "type": {
+                "text": "Partial<BackdropKnobs>"
+              },
+              "description": "A copy of the knobs set through `configure` since the last `reset`.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "configure",
+              "parameters": [
+                {
+                  "name": "partial",
+                  "type": {
+                    "text": "Partial<BackdropKnobs>"
+                  }
+                }
+              ],
+              "description": "Merge a partial set of knobs, and repaint."
+            },
+            {
+              "kind": "method",
+              "name": "reset",
+              "description": "Restore the defaults from the `--backdrop-*` custom properties, and drop every tweak."
+            },
+            {
+              "kind": "method",
+              "name": "setToy",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "description": "Dissolve into a registered toy, starting it fresh; an unknown id is\nignored, and so is the toy already chosen. A request while no toy runs\n(before the canvas exists, disabled, reduced motion) is remembered and\nstarts when one can."
+            },
+            {
+              "kind": "method",
+              "name": "play",
+              "parameters": [
+                {
+                  "name": "toy",
+                  "type": {
+                    "text": "Toy"
+                  }
+                }
+              ],
+              "description": "Like `setToy` for a toy the registry does not list."
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "summary": "A fixed, viewport-filling pixel grid that runs an interactive canvas toy.",
+          "tagName": "pixel-backdrop",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BackdropDisplay",
+          "declaration": {
+            "name": "BackdropDisplay",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DisplayLook",
+          "declaration": {
+            "name": "DisplayLook",
+            "module": "./display"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BackdropKnobs",
+          "declaration": {
+            "name": "BackdropKnobs",
+            "module": "./knobs"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Toy",
+          "declaration": {
+            "name": "Toy",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ToyCanvas",
+          "declaration": {
+            "name": "ToyCanvas",
+            "module": "../backdrop-toys/toy"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PixelBackdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "pixel-backdrop",
+          "declaration": {
+            "name": "PixelBackdrop",
+            "module": "src/pixel-backdrop/element.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

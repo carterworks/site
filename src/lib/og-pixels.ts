@@ -1,6 +1,15 @@
-import { landscape, texture, type Grid, type Terrain } from "./landscape";
+import {
+  landscape,
+  texture,
+  type Grid,
+  type Terrain,
+} from "@carterworks/pixel-backdrop/landscape";
 
-export { HORIZON, PEAKS, type Grid } from "./landscape";
+export {
+  HORIZON,
+  PEAKS,
+  type Grid,
+} from "@carterworks/pixel-backdrop/landscape";
 
 /**
  * Still pixel scenes for the Open Graph cards, drawn in the backdrop's grid

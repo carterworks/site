@@ -1,5 +1,6 @@
 packages:
   - .
+  - packages/*
 
 onlyBuiltDependencies:
   - esbuild
@@ -8,6 +9,7 @@ onlyBuiltDependencies:
 
 allowBuilds:
   esbuild: true
+  rs-module-lexer: false
   sharp: true
   workerd: true
 

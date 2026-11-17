@@ -3,7 +3,7 @@ import {
   storedChoice,
   storeChoice,
 } from "../../lib/cycle-setting";
-import { TOYS } from "../backdrop-toys";
+import { TOYS } from "@carterworks/pixel-backdrop/toys";
 
 export const TOY_KEY = "backdrop-mode";
 
