@@ -211,6 +211,13 @@
             },
             {
               "type": {
+                "text": "boolean"
+              },
+              "description": "Runs the scale from light to the base for opaque pixels, so a picture keeps its tones on a dark ink.",
+              "name": "data-palette-invert"
+            },
+            {
+              "type": {
                 "text": "number"
               },
               "description": "Intensity, 0–100, of a drifting noise field under the frame.",
