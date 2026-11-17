@@ -77,8 +77,32 @@ test("it listens only with a signal, which its stop aborts", () => {
   ]);
 });
 
-test("the toy has its own id and label and no look", () => {
+test("the toy is a still picture, with no noise over it", () => {
   const toy = imageToy({ width: 1, height: 1 } as ImageBitmap);
 
-  expect([toy.id, toy.label, toy.look]).toEqual(["image", "Image", undefined]);
+  expect(toy).toMatchObject({
+    id: "image",
+    label: "Image",
+    picture: true,
+    look: { ghost: 0, noise: 0 },
+  });
+});
+
+test("a dull picture is stretched to every shade, its darkest and lightest hundredth clipped", () => {
+  vi.mocked(SoftContext.prototype.drawImage).mockImplementation(function (
+    this: SoftContext,
+    _,
+    ...rect
+  ) {
+    const [x, y, width, height] = rect as number[];
+    this.fillStyle = "rgb(100, 100, 100)";
+    this.fillRect(x, y, width / 2, height);
+    this.fillStyle = "rgb(150, 150, 150)";
+    this.fillRect(x + width / 2, y, width / 2, height);
+  });
+  const { canvas } = startWith({ width: 200, height: 100 });
+  const grey = (x: number) =>
+    canvas.getContext("2d")!.getImageData(x, 80, 1, 1).data.join(" ");
+
+  expect([grey(10), grey(150)]).toEqual(["0 0 0 255", "255 255 255 255"]);
 });

@@ -196,3 +196,26 @@ test("data-palette-dither between more levels uses only the two shades either si
     new Set([85, 170]),
   );
 });
+
+test("data-palette-invert scales each pixel's luma the other way, so light shows as the base and transparent still does", () => {
+  const canvas = mountCanvas({
+    width: "4",
+    height: "1",
+    paletteBase: "#ffffff",
+    paletteInk: "#000000",
+    paletteInvert: "",
+  });
+  drawRow(
+    canvas,
+    [255, 255, 255, 255],
+    [0, 0, 0, 255],
+    [0, 0, 0, 0],
+    [100, 100, 100, 255],
+  );
+
+  canvas.present();
+
+  expect(pixelsShown()).toBe(
+    "255 255 255 255 0 0 0 255 255 255 255 255 100 100 100 255",
+  );
+});

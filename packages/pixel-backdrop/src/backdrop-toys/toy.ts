@@ -37,6 +37,11 @@ export type Toy = {
   id: string;
   label: string;
   look?: Look;
+  /**
+   * Draws a picture, whose light parts should show light: an owner whose ink
+   * is darker than its base runs the palette the other way for it.
+   */
+  picture?: boolean;
   start(canvas: ToyCanvas): () => void;
 };
 

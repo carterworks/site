@@ -24,7 +24,9 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(
  * the two shades either side of a pixel's luma in a 4 x 4 ordered pattern in
  * proportion, so detail fainter than a step still shows, as a panel shows grey
  * on its few levels. The pattern is fixed to the bitmap, so moving shapes do
- * not shimmer. The scale is a 256-entry table, rebuilt only when a knob
+ * not shimmer. `data-palette-invert` runs the scale the other way for opaque
+ * pixels, light to the base, so a picture keeps its tones where the ink is the
+ * darker colour; transparent pixels still show the base. The scale is a 256-entry table, rebuilt only when a knob
  * changes.
  */
 export const palette: Shader = {
@@ -34,6 +36,7 @@ export const palette: Shader = {
     "data-palette-stops",
     "data-palette-levels",
     "data-palette-dither",
+    "data-palette-invert",
   ],
   create() {
     let base: string | undefined;
@@ -41,6 +44,7 @@ export const palette: Shader = {
     let stops: string | undefined;
     let steps = 0;
     let dither = false;
+    let invert = false;
     let stale = true;
     const table = new Uint8ClampedArray(256 * 3);
     return {
@@ -60,6 +64,7 @@ export const palette: Shader = {
         stops = data.paletteStops;
         steps = nextSteps;
         dither = data.paletteDither !== undefined;
+        invert = data.paletteInvert !== undefined;
       },
       active: () => base !== undefined && ink !== undefined,
       apply(pixels, { width }) {
@@ -90,8 +95,9 @@ export const palette: Shader = {
         const step = dither && steps > 0 ? 255 / steps : 0;
         for (let i = 0; i < pixels.length; i += 4) {
           // Rec. 709 weights in 256ths, which sum to 256.
-          const luma =
+          let luma =
             (pixels[i] * 54 + pixels[i + 1] * 183 + pixels[i + 2] * 19) >> 8;
+          if (invert) luma = 255 - luma;
           let level = ((luma * pixels[i + 3]) / 255) | 0;
           if (step > 0) {
             const pixel = i >> 2;

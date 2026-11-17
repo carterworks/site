@@ -105,6 +105,7 @@ const ATTRIBUTES = [
  * @attr {string} data-palette-stops - Colours, separated by spaces, spaced evenly between base and ink.
  * @attr {number} data-palette-levels - Snaps each pixel to the nearest of this many shades, 2 or more.
  * @attr {boolean} data-palette-dither - With levels, mixes the shades either side of a pixel in an ordered pattern.
+ * @attr {boolean} data-palette-invert - Runs the scale from light to the base for opaque pixels, so a picture keeps its tones on a dark ink.
  * @attr {number} [data-noise=0] - Intensity, 0–100, of a drifting noise field under the frame.
  * @attr {number} [data-noise-scale=8] - The noise's feature size, in pixels.
  * @attr {number} [data-noise-speed=0] - How fast the noise drifts, 0–100.
