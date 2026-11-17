@@ -1,0 +1,263 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout class="resume">
+  <hgroup>
+    <h1>Carter McBride</h1>
+    <p>Software Engineer · Saratoga Springs, Utah</p>
+    <p>
+      <a href="mailto:jobs@carter.works">jobs@carter.works</a> ·
+      <a href="https://carter.works">carter.works</a> ·
+      <a href="https://github.com/carterworks">github.com/carterworks</a> ·
+      <a href="https://www.linkedin.com/in/thatcartermcbride/"
+        >linkedin.com/in/thatcartermcbride</a
+      >
+    </p>
+  </hgroup>
+
+  <p>
+    Web developer with eight years of professional experience, building small,
+    fast JavaScript that runs on some of the world’s busiest websites. Happiest
+    making builds simpler, bundles smaller and tests trustworthy.
+  </p>
+
+  <section>
+    <h2>Experience</h2>
+
+    <article>
+      <h3>Software Engineer, Adobe <span>Jan 2022 – Present</span></h3>
+      <p>Lehi, Utah</p>
+      <ul>
+        <li>
+          Develop the open-source Adobe Experience Platform Web SDK (<a
+            href="https://github.com/adobe/alloy">adobe/alloy</a
+          >), the data collection and personalization library on many of the
+          world’s largest websites and storefronts, and its Adobe Tags
+          extension: 250+ merged pull requests.
+        </li>
+        <li>
+          Built datastream configuration overrides, which let customers change
+          a datastream’s settings per page or per command, across the SDK and
+          the extension’s UI.
+        </li>
+        <li>
+          Dropped Internet Explorer support to cut the gzipped SDK by 9%, and
+          added bundle-size reporting and browser-compatibility linting to
+          every build.
+        </li>
+        <li>
+          Merged the SDK and its extension into one pnpm monorepo, automated
+          releases to npm and the CDN with Changesets, and moved the functional
+          tests from TestCafe to Vitest, Playwright and Mock Service Worker.
+        </li>
+        <li>Developed the Adobe Experience Platform Debugger.</li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Software Developer, ICE Mortgage Technology <span
+          >Jan 2019 – Jan 2022</span
+        >
+      </h3>
+      <p>Provo, Utah</p>
+      <ul>
+        <li>
+          Improved performance on critical-path user features, and championed
+          new, intuitive workflows for large customers.
+        </li>
+        <li>
+          Mentored new employees and coached them on every part of software
+          development; kept the software reliable with high test coverage.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>Software Engineer, Lingotek <span>May 2018 – Dec 2018</span></h3>
+      <ul>
+        <li>
+          Moved several pages of the main product to Vue.js, cutting page load
+          times by 15%.
+        </li>
+        <li>
+          Reworked a large project’s build, cutting build times by 25% and
+          opening it to modern tools.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Front-End Web Developer, Brigham Young University <span
+          >Feb 2016 – May 2018</span
+        >
+      </h3>
+      <p>Provo, Utah</p>
+      <ul>
+        <li>
+          Built features for Learning Suite, BYU’s learning management system,
+          used by thousands of students and faculty.
+        </li>
+        <li>
+          Guarded data integrity with thorough unit tests, and automated setup
+          for quick onboarding.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Product Solutions Intern, Nu Skin Enterprises <span
+          >May 2017 – Aug 2017</span
+        >
+      </h3>
+      <ul>
+        <li>
+          Integrated company data with SharePoint and Azure Active Directory,
+          working directly with internal customers.
+        </li>
+      </ul>
+    </article>
+  </section>
+
+  <section>
+    <h2>Projects</h2>
+    <ul>
+      <li>
+        <a href="https://yazzy.carter.works">Yazzy</a>: reader mode for any
+        website, in Astro.
+      </li>
+      <li>
+        <a href="https://github.com/carterworks/substack-to-epub"
+          >substack-to-epub</a
+        >: saves a Substack newsletter to SQLite and binds it as an EPUB, in
+        Python.
+      </li>
+      <li>
+        <a href="https://carter.works">carter.works</a>: this site, with a
+        pixel-art backdrop published as a reusable web components package.
+      </li>
+      <li>
+        <a href="https://tools.carter.works">tools.carter.works</a>: a
+        collection of single-file HTML tools.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Education</h2>
+    <h3>
+      B.S. Computer Science, Brigham Young University <span>2015 – 2019</span>
+    </h3>
+    <p>
+      Minor in Portuguese. Association for Computing Machinery. Third place,
+      BYU Google Games 2017.
+    </p>
+  </section>
+
+  <section>
+    <h2>Skills</h2>
+    <dl>
+      <dt>Languages</dt>
+      <dd>TypeScript, JavaScript, HTML, CSS, Python, Go</dd>
+      <dt>Web</dt>
+      <dd>Web components, Astro, React, Vue.js, Node.js</dd>
+      <dt>Tooling</dt>
+      <dd>
+        Vite, Rollup, Vitest, Playwright, pnpm, GitHub Actions, Claude Code
+      </dd>
+      <dt>Spoken</dt>
+      <dd>English, Brazilian Portuguese</dd>
+    </dl>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(.resume) {
+    --flow-space: var(--size-sm);
+
+    display: grid;
+    gap: var(--size-md);
+  }
+
+  h1 {
+    font-size: 1.6em;
+  }
+
+  h2 {
+    border-block-end: 1px solid;
+    font-size: 1em;
+    margin-block-end: var(--size-xs);
+    text-transform: uppercase;
+  }
+
+  h3 {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 1em;
+    justify-content: space-between;
+  }
+
+  h3 span {
+    font-weight: normal;
+  }
+
+  article + article {
+    margin-block-start: var(--size-sm);
+  }
+
+  ul {
+    padding-inline-start: 1.2em;
+  }
+
+  dl {
+    display: grid;
+    gap: 0 var(--size-sm);
+    grid-template-columns: max-content 1fr;
+  }
+
+  dt {
+    font-weight: bold;
+  }
+
+  @media print {
+    @page {
+      margin: 0.5in;
+      size: letter;
+    }
+
+    :global(html) {
+      color-scheme: light;
+      font-size: 10pt;
+    }
+
+    :global(body) {
+      background: none;
+      color: #000;
+      display: block;
+    }
+
+    :global(pixel-backdrop),
+    :global(body > .stack > header) {
+      display: none;
+    }
+
+    :global(.resume) {
+      background: none;
+      gap: var(--size-sm);
+      margin: 0;
+      padding: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a[href]::after {
+      content: none;
+    }
+  }
+</style>

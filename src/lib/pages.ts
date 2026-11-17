@@ -24,6 +24,12 @@ export const pages: Record<string, PageMetadata> = {
     ogType: "website",
     title: "Blog | carter.works",
   },
+  "/resume/": {
+    description: "Carter McBride's resume.",
+    id: "resume",
+    ogTitle: "Resume",
+    title: "Resume | carter.works",
+  },
   "/play/": {
     description: "The pixel backdrop, full-screen.",
     id: "play",
