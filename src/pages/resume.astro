@@ -17,9 +17,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Web developer with eight years of professional experience, building small,
-    fast JavaScript that runs on some of the world’s busiest websites. Happiest
-    making builds simpler, bundles smaller and tests trustworthy.
+    Web developer since 2016, now on Adobe’s open-source Web SDK. Likes small bundles, simple builds and tests worth
+    trusting.
   </p>
 
   <section>
@@ -30,28 +29,34 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Lehi, Utah</p>
       <ul>
         <li>
-          Develop the open-source Adobe Experience Platform Web SDK (<a
+          Develop the Adobe Experience Platform Web SDK (<a
             href="https://github.com/adobe/alloy">adobe/alloy</a
-          >), the data collection and personalization library on many of the
-          world’s largest websites and storefronts, and its Adobe Tags
-          extension: 250+ merged pull requests.
+          >), the open-source library enterprise sites use to collect data and
+          personalize pages, plus its Tags extension and the Experience Platform
+          Debugger.
         </li>
         <li>
-          Built datastream configuration overrides, which let customers change
-          a datastream’s settings per page or per command, across the SDK and
-          the extension’s UI.
+          Cut typing lag in the Tags extension from 140–209 ms to under 15 ms per
+          keystroke by rebuilding its forms on TanStack Form and ArkType, and
+          moved its UI to React Spectrum 2.
         </li>
         <li>
-          Dropped Internet Explorer support to cut the gzipped SDK by 9%, and
-          added bundle-size reporting and browser-compatibility linting to
-          every build.
+          Cut the gzipped SDK by 9%, from 44 KB to 40 KB, by dropping Internet
+          Explorer; added bundle-size reporting to CI and a browser-compatibility
+          lint.
         </li>
         <li>
-          Merged the SDK and its extension into one pnpm monorepo, automated
-          releases to npm and the CDN with Changesets, and moved the functional
-          tests from TestCafe to Vitest, Playwright and Mock Service Worker.
+          Split the SDK into a platform-agnostic core and a browser package, and
+          wrote the migration plan, as groundwork for a Node.js SDK.
         </li>
-        <li>Developed the Adobe Experience Platform Debugger.</li>
+        <li>
+          Moved the SDK into a pnpm monorepo and made its releases to npm and
+          the CDN automatic and retry-safe with Changesets.
+        </li>
+        <li>
+          Migrated 17 functional test suites from TestCafe to Vitest, Playwright
+          and Mock Service Worker.
+        </li>
       </ul>
     </article>
 
@@ -64,12 +69,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Improved performance on critical-path user features, and championed
-          new, intuitive workflows for large customers.
-        </li>
-        <li>
-          Mentored new employees and coached them on every part of software
-          development; kept the software reliable with high test coverage.
+          Improved performance of critical-path features, championed simpler
+          workflows for large customers, and mentored new hires.
         </li>
       </ul>
     </article>
@@ -83,7 +84,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </li>
         <li>
           Reworked a large project’s build, cutting build times by 25% and
-          opening it to modern tools.
+          letting developers use modern tools.
         </li>
       </ul>
     </article>
@@ -98,25 +99,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <ul>
         <li>
           Built features for Learning Suite, BYU’s learning management system,
-          used by thousands of students and faculty.
-        </li>
-        <li>
-          Guarded data integrity with thorough unit tests, and automated setup
-          for quick onboarding.
-        </li>
-      </ul>
-    </article>
-
-    <article>
-      <h3>
-        Product Solutions Intern, Nu Skin Enterprises <span
-          >May 2017 – Aug 2017</span
-        >
-      </h3>
-      <ul>
-        <li>
-          Integrated company data with SharePoint and Azure Active Directory,
-          working directly with internal customers.
+          used by thousands; backed them with unit tests and automated
+          developer setup.
         </li>
       </ul>
     </article>
@@ -127,21 +111,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <ul>
       <li>
         <a href="https://yazzy.carter.works">Yazzy</a>: reader mode for any
-        website, in Astro.
+        web article, in Astro.
       </li>
       <li>
         <a href="https://github.com/carterworks/substack-to-epub"
           >substack-to-epub</a
-        >: saves a Substack newsletter to SQLite and binds it as an EPUB, in
+        >: saves a Substack newsletter to SQLite and formats it as an EPUB, in
         Python.
       </li>
       <li>
-        <a href="https://carter.works">carter.works</a>: this site, with a
-        pixel-art backdrop published as a reusable web components package.
-      </li>
-      <li>
-        <a href="https://tools.carter.works">tools.carter.works</a>: a
-        collection of single-file HTML tools.
+        <a href="https://carter.works">carter.works</a>: this site, with its
+        pixel-art backdrop extracted into a self-contained web components package.
       </li>
     </ul>
   </section>
@@ -152,8 +132,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       B.S. Computer Science, Brigham Young University <span>2015 – 2019</span>
     </h3>
     <p>
-      Minor in Portuguese. Association for Computing Machinery. Third place,
-      BYU Google Games 2017.
+      Minor in Portuguese. Third place, BYU Google Games 2017.
     </p>
   </section>
 
