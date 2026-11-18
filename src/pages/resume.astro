@@ -17,8 +17,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Web developer since 2016, now on Adobe’s open-source Web SDK. Likes small bundles, simple builds and tests worth
-    trusting.
+    Web developer since 2016, now the lead contributor to Adobe’s open-source
+    Web SDK. The thread through every job: make web software faster for the
+    people using it and easier to ship for the people building it.
   </p>
 
   <section>
@@ -29,33 +30,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Lehi, Utah</p>
       <ul>
         <li>
-          Develop the Adobe Experience Platform Web SDK (<a
+          Lead contributor to the Adobe Experience Platform Web SDK (<a
             href="https://github.com/adobe/alloy">adobe/alloy</a
-          >), the open-source library enterprise sites use to collect data and
-          personalize pages, plus its Tags extension and the Experience Platform
-          Debugger.
+          >), the open-source analytics and personalization library on
+          enterprise sites: about 60% of the pull requests people merged in 2026.
         </li>
         <li>
-          Cut typing lag in the Tags extension from 140–209 ms to under 15 ms per
-          keystroke by rebuilding its forms on TanStack Form and ArkType, and
-          moved its UI to React Spectrum 2.
+          Modernized its codebase: a monorepo with automated, retry-safe
+          releases, and fast, deterministic tests in place of a neglected
+          end-to-end suite.
         </li>
         <li>
-          Cut the gzipped SDK by 9%, from 44 KB to 40 KB, by dropping Internet
-          Explorer; added bundle-size reporting to CI and a browser-compatibility
-          lint.
+          Wrote the plan to take it beyond the browser as a Universal JavaScript
+          SDK for Node.js too, and split out its platform-agnostic core as the
+          first step.
         </li>
         <li>
-          Split the SDK into a platform-agnostic core and a browser package, and
-          wrote the migration plan, as groundwork for a Node.js SDK.
-        </li>
-        <li>
-          Moved the SDK into a pnpm monorepo and made its releases to npm and
-          the CDN automatic and retry-safe with Changesets.
-        </li>
-        <li>
-          Migrated 17 functional test suites from TestCafe to Vitest, Playwright
-          and Mock Service Worker.
+          Kept it fast for visitors and the people configuring it: 9% smaller by
+          retiring Internet Explorer, and settings typing lag cut from 140–209 ms
+          to under 15 ms.
         </li>
       </ul>
     </article>
@@ -69,8 +62,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Improved performance of critical-path features, championed simpler
-          workflows for large customers, and mentored new hires.
+          Improved the performance of critical-path features in software for
+          mortgage lenders, championed simpler workflows for large customers,
+          and mentored new hires.
         </li>
       </ul>
     </article>
@@ -79,12 +73,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h3>Software Engineer, Lingotek <span>May 2018 – Dec 2018</span></h3>
       <ul>
         <li>
-          Moved several pages of the main product to Vue.js, cutting page load
-          times by 15%.
-        </li>
-        <li>
-          Reworked a large project’s build, cutting build times by 25% and
-          letting developers use modern tools.
+          Made the main product faster to use and to build: 15% faster page
+          loads by moving pages to Vue.js, and 25% faster builds on modern
+          tooling.
         </li>
       </ul>
     </article>
@@ -99,8 +90,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <ul>
         <li>
           Built features for Learning Suite, BYU’s learning management system,
-          used by thousands; backed them with unit tests and automated
-          developer setup.
+          used by thousands, with unit tests and automated setup that kept it
+          reliable and onboarding quick.
         </li>
       </ul>
     </article>
