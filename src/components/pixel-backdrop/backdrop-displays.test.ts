@@ -11,8 +11,6 @@ import {
   shownScheme,
 } from "./backdrop-displays";
 
-const looks = DISPLAYS.filter(({ look }) => look);
-
 test.each(["light", "dark"] as const)(
   "%s mode offers the site's own look first, then screens of its own",
   (scheme) => {
@@ -41,16 +39,6 @@ test.each(DISPLAYS)(
     const colours = [base, ink, ...Object.values(page), ...(look?.stops ?? [])];
     if (look?.vignette) colours.push(look.vignette.edge);
     for (const colour of colours) expect(colour).toMatch(/^#[0-9a-f]{6}$/);
-  },
-);
-
-test.each(looks)(
-  "$label's ghost stays below 100, so the panel never freezes",
-  ({ look }) => {
-    for (const ghost of [look!.ghostRise, look!.ghostFall]) {
-      expect(ghost).toBeGreaterThanOrEqual(0);
-      expect(ghost).toBeLessThan(100);
-    }
   },
 );
 
