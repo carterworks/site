@@ -282,10 +282,17 @@ const LARGE_ARRAY = 64;
 /**
  * Whether the code that called the counted function is a dependency's,
  * like happy-dom copying its listener list on every dispatch: that is the
- * test environment's cost, not the toy's. Frames: this, the counter, its caller.
+ * test environment's cost, not the toy's. The backdrop is a dependency
+ * too, but its allocations are the ones being counted.
+ * Frames: this, the counter, its caller.
  */
-const fromDependency = () =>
-  (new Error().stack?.split("\n")[3] ?? "").includes("node_modules");
+const fromDependency = () => {
+  const caller = new Error().stack?.split("\n")[3] ?? "";
+  return (
+    caller.includes("node_modules") &&
+    !caller.includes("/@carterworks/pixel-backdrop/")
+  );
+};
 
 /**
  * Counts buffers, canvases, large arrays and array copies made until

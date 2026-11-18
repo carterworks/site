@@ -7,7 +7,7 @@ import {
 
 const light = displaysFor("light");
 const dark = displaysFor("dark");
-import { SHAPES } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
+import { SHAPES } from "@carterworks/pixel-backdrop/emulated-canvas";
 import { createBackdropToy, RANDOM } from "../settings/backdrop-toy-setting";
 import { TOYS } from "@carterworks/pixel-backdrop/toys";
 import "./play-toolbar";
