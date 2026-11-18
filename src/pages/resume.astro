@@ -17,9 +17,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Frontend engineer since 2016. Makes web software faster for the people
-    using it and easier to ship for the people building it, and likes working
-    directly with the customers who depend on it.
+    Frontend engineer since 2016, working mostly in JavaScript, TypeScript and
+    the web platform. Makes web software faster for the people using it and
+    easier to ship for the people building it, and likes working directly with
+    the customers who depend on it.
   </p>
 
   <section>
@@ -38,13 +39,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </li>
         <li>
           Proposed and designed a Universal JavaScript architecture that frees
-          the SDK’s core from the browser, so it can run in Node.js and, in
-          prototypes, Cloudflare Workers; built most of it.
+          the SDK’s core from the browser; built most of it. It now also ships
+          as a Node.js SDK, and runs on Cloudflare Workers in prototypes.
         </li>
         <li>
           Pushed for and led a monorepo, automated releases and deterministic
-          tests. Releasing went from a wiki checklist the whole team swarmed on
-          to two clicks, with generated changelogs and continuous betas.
+          Vitest and Playwright tests. Releasing went from a wiki checklist the
+          whole team swarmed on to two clicks, with continuous betas; stable
+          releases rose from about 7 a year to 12 so far in 2026.
         </li>
         <li>
           Sole engineer on the Experience Platform Debugger, a Chrome extension
@@ -133,27 +135,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       B.S. Computer Science, Brigham Young University <span>2015 – 2019</span>
     </h3>
     <p>
-      Minor in Portuguese. Third place, BYU Google Games 2017.
+      Minor in Portuguese; fluent in Brazilian Portuguese. Third place, BYU
+      Google Games 2017.
     </p>
   </section>
 
-  <section>
-    <h2>Skills</h2>
-    <dl>
-      <dt>Languages</dt>
-      <dd>TypeScript, JavaScript, HTML, CSS, Python, Go</dd>
-      <dt>Web</dt>
-      <dd>
-        Web components, React, Vue.js, Astro, Node.js, Chrome extensions
-      </dd>
-      <dt>Tooling</dt>
-      <dd>
-        Vite, Rollup, Vitest, Playwright, pnpm, GitHub Actions, Claude Code
-      </dd>
-      <dt>Spoken</dt>
-      <dd>English, Brazilian Portuguese</dd>
-    </dl>
-  </section>
 </BaseLayout>
 
 <style>
@@ -194,15 +180,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     padding-inline-start: 1.2em;
   }
 
-  dl {
-    display: grid;
-    gap: 0 var(--size-sm);
-    grid-template-columns: max-content 1fr;
-  }
-
-  dt {
-    font-weight: bold;
-  }
 
   @media print {
     @page {
