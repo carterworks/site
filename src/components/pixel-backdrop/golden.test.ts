@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../../../packages/pixel-backdrop/src/test/backdrop-defaults";
+import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import { mountWithShadow, play } from "../../test/backdrop-play";
 import {
   installSoftCanvas,
   type SoftBitmap,
   useFakeFrames,
   SLOW_TEST_MS,
-} from "../../../packages/pixel-backdrop/src/test/toy-canvas";
-import { mulberry32 } from "../../../packages/pixel-backdrop/src/lib/backdrop-noise";
+} from "../../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
 import "@carterworks/pixel-backdrop";
 import { TOYS } from "@carterworks/pixel-backdrop/toys";
@@ -43,6 +42,18 @@ const LOOKS = DISPLAYS.map(({ id, label, look, scheme }) => ({
   name: look ? label : `${label} in ${scheme}`,
   display: id,
 }));
+
+/** The Mulberry32 generator, seeding `Math.random` as the digests were first recorded with. */
+function mulberry32(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 /** One frame at 60 Hz, the step the screen is sampled at. */
 const FRAME_MS = 16;

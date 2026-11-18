@@ -1,7 +1,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { installBackdropDefaults } from "../../../packages/pixel-backdrop/src/test/backdrop-defaults";
+import { installBackdropDefaults } from "../../test/backdrop-defaults";
 import {
   motion,
   mount,
@@ -17,10 +17,9 @@ import {
   softStats,
   useFakeFrames,
   SLOW_TEST_MS,
-} from "../../../packages/pixel-backdrop/src/test/toy-canvas";
+} from "../../test/toy-canvas";
 import { DISPLAYS } from "./backdrop-displays";
 import { TOYS } from "@carterworks/pixel-backdrop/toys";
-import { Presenter } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
 import "@carterworks/pixel-backdrop";
 
 vi.setConfig({ testTimeout: SLOW_TEST_MS });
@@ -56,13 +55,21 @@ let bitmaps: ReturnType<typeof installSoftCanvas>;
 /** Timestamps of the animation frames that have run. */
 let animationFrames: Set<number>;
 
-/** Frames the canvas handed its presenter to show. */
-const presents = () => vi.mocked(Presenter.prototype.show).mock.calls.length;
+/**
+ * Frames the canvas presented, each one draw on its display: the `<canvas>`
+ * in its shadow root with no class, as the echo and the shapes drawn on
+ * canvases of their own have one. Square cells, the default, draw only there.
+ */
+const presents = () =>
+  [SoftContext.prototype.putImageData, SoftContext.prototype.drawImage]
+    .flatMap((draw) => vi.mocked(draw).mock.contexts as SoftContext[])
+    .filter(({ canvas }) => canvas?.className === "").length;
 
 beforeEach(() => {
   useFakeFrames();
   bitmaps = installSoftCanvas();
-  vi.spyOn(Presenter.prototype, "show");
+  vi.spyOn(SoftContext.prototype, "putImageData");
+  vi.spyOn(SoftContext.prototype, "drawImage");
   animationFrames = new Set();
   const requestFrame = window.requestAnimationFrame;
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
@@ -132,7 +139,7 @@ describe.each(TOYS.map((toy) => [toy.id]))("%s", (id) => {
   });
 
   test("with no style changing, presents only after the toy draws", async () => {
-    const draws = vi.spyOn(SoftContext.prototype, "putImageData");
+    const draws = vi.mocked(SoftContext.prototype.putImageData);
     mount(id, { ghost: 0, noise: 0 });
     const offscreen = bitmaps.offscreen[0].getContext();
     await play();

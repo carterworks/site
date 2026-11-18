@@ -1,7 +1,6 @@
 import { vi } from "vitest";
 import { DISPLAYS } from "../components/pixel-backdrop/backdrop-displays";
 import type { BackdropKnobs } from "@carterworks/pixel-backdrop";
-import { place } from "../../packages/pixel-backdrop/src/test/toy-canvas";
 
 /**
  * Stubs `matchMedia` with a reduced-motion query a test can flip. Import this
@@ -47,10 +46,14 @@ export function mount(
     height: String(SIZE),
     fit: "viewport",
   });
-  place(
-    canvas,
-    new DOMRect(0, (innerHeight - innerWidth) / 2, innerWidth, innerWidth),
+  // happy-dom lays out nothing.
+  const rect = new DOMRect(
+    0,
+    (innerHeight - innerWidth) / 2,
+    innerWidth,
+    innerWidth,
   );
+  canvas.getBoundingClientRect = () => rect;
   backdrop.append(canvas);
   document.body.append(backdrop);
   return canvas;
