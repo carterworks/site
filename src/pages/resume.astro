@@ -5,7 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout class="resume">
   <hgroup>
     <h1>Carter McBride</h1>
-    <p>Software Engineer · Saratoga Springs, Utah</p>
+    <p>Frontend Engineer · Saratoga Springs, Utah</p>
     <p>
       <a href="mailto:jobs@carter.works">jobs@carter.works</a> ·
       <a href="https://carter.works">carter.works</a> ·
@@ -17,65 +17,75 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Web developer since 2016, now the lead contributor to Adobe’s open-source
-    Web SDK. The thread through every job: make web software faster for the
-    people using it and easier to ship for the people building it.
+    Frontend engineer since 2016. Makes web software faster for the people
+    using it and easier to ship for the people building it, and likes working
+    directly with the customers who depend on it.
   </p>
 
   <section>
     <h2>Experience</h2>
 
     <article>
-      <h3>Software Engineer, Adobe <span>Jan 2022 – Present</span></h3>
-      <p>Lehi, Utah</p>
+      <h3>Software Engineer 3, Adobe <span>Jan 2022 – Present</span></h3>
+      <p>Lehi, Utah · promoted from Software Engineer 2 in 2023</p>
       <ul>
         <li>
-          Lead contributor to the Adobe Experience Platform Web SDK (<a
-            href="https://github.com/adobe/alloy">adobe/alloy</a
-          >), the open-source analytics and personalization library on
-          enterprise sites: about 60% of the pull requests people merged in 2026.
+          Second most senior of four engineers on Adobe’s open-source Web SDK
+          (<a href="https://github.com/adobe/alloy">adobe/alloy</a>), the
+          analytics and personalization library on enterprise sites. Lead most
+          feature work and customer issues, and review the team’s code and
+          designs; wrote about 60% of its merged pull requests in 2026.
         </li>
         <li>
-          Modernized its codebase: a monorepo with automated, retry-safe
-          releases, and fast, deterministic tests in place of a neglected
-          end-to-end suite.
+          Proposed and designed a Universal JavaScript architecture that frees
+          the SDK’s core from the browser, so it can run in Node.js and, in
+          prototypes, Cloudflare Workers; built most of it.
         </li>
         <li>
-          Wrote the plan to take it beyond the browser as a Universal JavaScript
-          SDK for Node.js too, and split out its platform-agnostic core as the
-          first step.
+          Pushed for and led a monorepo, automated releases and deterministic
+          tests. Releasing went from a wiki checklist the whole team swarmed on
+          to two clicks, with generated changelogs and continuous betas.
         </li>
         <li>
-          Kept it fast for visitors and the people configuring it: 9% smaller by
-          retiring Internet Explorer, and settings typing lag cut from 140–209 ms
-          to under 15 ms.
+          Sole engineer on the Experience Platform Debugger, a Chrome extension
+          with about 80,000 users, for four of the past five years; moved it to
+          Manifest V3 when Google retired V2.
+        </li>
+        <li>
+          Spotted and fixed lag in the SDK’s Tags extension, cutting typing delay
+          in its settings from 140–209&nbsp;ms to under 15&nbsp;ms, and moved its UI to
+          React Spectrum 2.
         </li>
       </ul>
     </article>
 
     <article>
       <h3>
-        Software Developer, ICE Mortgage Technology <span
+        Software Developer, ICE Mortgage Technology (formerly Simplifile) <span
           >Jan 2019 – Jan 2022</span
         >
       </h3>
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Improved the performance of critical-path features in software for
-          mortgage lenders, championed simpler workflows for large customers,
-          and mentored new hires.
+          Built and sped up features in Simplifile’s e-recording application,
+          which sends real-estate documents to county recorders electronically.
+        </li>
+        <li>
+          Formally mentored support technicians through their first year as
+          engineers, after they moved over from a coding bootcamp.
         </li>
       </ul>
     </article>
 
     <article>
-      <h3>Software Engineer, Lingotek <span>May 2018 – Dec 2018</span></h3>
+      <h3>
+        Software Engineering Intern, Lingotek <span>May 2018 – Dec 2018</span>
+      </h3>
       <ul>
         <li>
-          Made the main product faster to use and to build: 15% faster page
-          loads by moving pages to Vue.js, and 25% faster builds on modern
-          tooling.
+          Moved pages of the main app to Vue.js for 15% faster loads, and cut
+          its build time by 25%.
         </li>
       </ul>
     </article>
@@ -133,7 +143,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <dt>Languages</dt>
       <dd>TypeScript, JavaScript, HTML, CSS, Python, Go</dd>
       <dt>Web</dt>
-      <dd>Web components, Astro, React, Vue.js, Node.js</dd>
+      <dd>
+        Web components, React, Vue.js, Astro, Node.js, Chrome extensions
+      </dd>
       <dt>Tooling</dt>
       <dd>
         Vite, Rollup, Vitest, Playwright, pnpm, GitHub Actions, Claude Code
