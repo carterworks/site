@@ -7,7 +7,7 @@
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.1",
     "@astrojs/sitemap": "3.7.4",
-    "@carterworks/pixel-backdrop": "workspace:*",
+    "@carterworks/pixel-backdrop": "0.1.1",
     "feed": "6.0.0"
   },
   "engines": {
@@ -27,14 +27,13 @@
     "assets": "node scripts/assets.mjs",
     "media:markup": "node scripts/media-markup.mjs",
     "format": "oxfmt --write .",
-    "analyze": "pnpm --filter @carterworks/pixel-backdrop analyze",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run",
     "perf": "astro build && node scripts/perf.mjs",
     "budgets": "astro build && node scripts/budget-check.mjs",
     "perf:device": "astro build && node scripts/perf-device.mjs",
     "perf:device:test": "astro build && node scripts/perf-device.mjs --self-test",
-    "verify": "oxfmt --check . && pnpm check && pnpm test && pnpm analyze && git diff --exit-code -- packages/pixel-backdrop/custom-elements.json",
+    "verify": "oxfmt --check . && pnpm check && pnpm test",
     "deploy": "alchemy deploy"
   },
   "devDependencies": {
@@ -54,7 +53,6 @@
     "vitest": "5.0.0"
   },
   "workspaces": [
-    ".",
-    "packages/*"
+    "."
   ]
 }

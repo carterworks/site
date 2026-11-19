@@ -1,6 +1,5 @@
 packages:
   - .
-  - packages/*
 
 onlyBuiltDependencies:
   - esbuild
@@ -9,7 +8,6 @@ onlyBuiltDependencies:
 
 allowBuilds:
   esbuild: true
-  rs-module-lexer: false
   sharp: true
   workerd: true
 
@@ -20,3 +18,6 @@ overrides:
   fast-uri: ">=3.1.2"
   fast-xml-builder: ">=1.1.7"
   yaml: ">=2.8.3"
+
+minimumReleaseAgeExclude:
+  - "@carterworks/pixel-backdrop@0.1.1"

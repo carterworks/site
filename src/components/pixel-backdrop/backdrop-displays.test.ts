@@ -10,10 +10,6 @@ import {
   shownDisplay,
   shownScheme,
 } from "./backdrop-displays";
-import { MAX_GHOST } from "../../../packages/pixel-backdrop/src/emulated-canvas/limits";
-import { hexRgb } from "../../../packages/pixel-backdrop/src/lib/rgb";
-
-const looks = DISPLAYS.filter(({ look }) => look);
 
 test.each(["light", "dark"] as const)(
   "%s mode offers the site's own look first, then screens of its own",
@@ -38,20 +34,10 @@ test("ids are unique", () => {
 });
 
 test.each(DISPLAYS)(
-  "$id's colours are hex: the palette pass needs a helper canvas to parse any other form, and the contrast test this",
-  ({ base, ink, page, look }) => {
-    const colours = [base, ink, ...Object.values(page), ...(look?.stops ?? [])];
-    if (look?.vignette) colours.push(look.vignette.edge);
-    for (const colour of colours) expect(colour).toMatch(/^#[0-9a-f]{6}$/);
-  },
-);
-
-test.each(looks)(
-  "$label's ghost stays below the cap, so the panel never freezes",
-  ({ look }) => {
-    for (const ghost of [look!.ghostRise, look!.ghostFall]) {
-      expect(ghost).toBeGreaterThanOrEqual(0);
-      expect(ghost).toBeLessThanOrEqual(MAX_GHOST * 100);
+  "$id's page colours are hex, the only form the contrast test parses",
+  ({ page }) => {
+    for (const colour of Object.values(page)) {
+      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
     }
   },
 );
@@ -89,10 +75,10 @@ test("showing a scheme's own site look clears its attribute", () => {
   expect(root.hasAttribute(displayAttribute("light"))).toBe(false);
 });
 
-/** WCAG 2's relative luminance of a hex colour. */
+/** WCAG 2's relative luminance of a `#rrggbb` colour. */
 function luminance(hex: string) {
-  const [r, g, b] = hexRgb(hex)!.map((channel) => {
-    const c = channel / 255;
+  const [r, g, b] = [1, 3, 5].map((at) => {
+    const c = Number.parseInt(hex.slice(at, at + 2), 16) / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;

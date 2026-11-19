@@ -96,7 +96,7 @@ export function playControls(page) {
       ),
     /**
      * Every display's name, light's menu then dark's. A label both menus offer
-     * is named for its scheme, as the golden tests name them, unless the menus
+     * is named for its scheme, unless the menus
      * match, as on a base build from before displays had a scheme.
      */
     async displays() {

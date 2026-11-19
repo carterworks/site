@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { createBackdropShape, SHAPE_KEY } from "./backdrop-shape-setting";
 import { RANDOM } from "./backdrop-toy-setting";
-import { SHAPES } from "../../../packages/pixel-backdrop/src/emulated-canvas/presenter";
+import { SHAPES } from "@carterworks/pixel-backdrop/emulated-canvas";
 
 const configure = vi.fn();
 

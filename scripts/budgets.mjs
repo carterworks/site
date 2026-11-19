@@ -50,18 +50,10 @@ export default {
   },
 
   /**
-   * What one frame of hover-only play on the homepage asks for, the worst
-   * frame of the worst toy, per display. Work a slow phone must do 60 times a
+   * What one frame of hover-only play on the homepage asks of the compositor,
+   * the worst frame of the worst toy, per display; what the canvas draws is
+   * held by the package's own budgets. Work a slow phone must do 60 times a
    * second, so each is a ratchet: lower it when a change does less.
-   *   canvasPixelsWritten  area of every putImageData (its dirty rectangle)
-   *                        and drawImage (its destination), on any 2D or
-   *                        offscreen canvas: the toy's frame, the display's
-   *                        present and the Pocket LCD's shadow, the only
-   *                        canvas drawing the homepage does each frame; not
-   *                        vector drawing, such as fillRect
-   *   canvasPixelsRead     area of every getImageData, a read-back that can
-   *                        stall a GPU canvas
-   *   canvasCalls          those calls
    *   renderPasses         surfaces the compositor draws, the screen included
    *   offscreenPixels      pixels of those surfaces other than the screen,
    *                        each drawn and then composited again
@@ -71,30 +63,6 @@ export default {
    *                        forces offscreen passes too
    */
   perFrame: {
-    canvasPixelsWritten: {
-      "Site in light": 51_200,
-      "Site in dark": 51_200,
-      "Pocket LCD": 76_800,
-      "Amber LCD": 51_200,
-      Thermal: 51_200,
-      Grid: 51_200,
-    },
-    canvasPixelsRead: {
-      "Site in light": 0,
-      "Site in dark": 0,
-      "Pocket LCD": 0,
-      "Amber LCD": 0,
-      Thermal: 0,
-      Grid: 0,
-    },
-    canvasCalls: {
-      "Site in light": 2,
-      "Site in dark": 2,
-      "Pocket LCD": 3,
-      "Amber LCD": 2,
-      Thermal: 2,
-      Grid: 2,
-    },
     renderPasses: {
       "Site in light": 1,
       "Site in dark": 1,
