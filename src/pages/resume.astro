@@ -16,12 +16,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <hgroup>
     <h1>Carter McBride</h1>
     <p>Frontend Engineer · Saratoga Springs, Utah</p>
-    <p>
-      <a href="mailto:jobs@carter.works">jobs@carter.works</a> ·
-      <a href="https://carter.works">carter.works</a> ·
-      <a href="https://github.com/carterworks">github.com/carterworks</a> ·
-      <a href="https://www.linkedin.com/in/thatcartermcbride/"
-        >linkedin.com/in/thatcartermcbride</a
+    <p class="contact">
+      <span><a href="mailto:jobs@carter.works">jobs@carter.works</a> ·</span>
+      <span><a href="https://carter.works">carter.works</a> ·</span>
+      <span
+        ><a href="https://github.com/carterworks">github.com/carterworks</a> ·</span
+      >
+      <span
+        ><a href="https://www.linkedin.com/in/thatcartermcbride/"
+          >linkedin.com/in/thatcartermcbride</a
+        ></span
       >
     </p>
   </hgroup>
@@ -141,7 +145,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section>
     <h2>Education</h2>
     <h3>
-      B.S. Computer Science, Brigham Young University <span>2015 – 2019</span>
+      B.S. Computer Science, Brigham Young University <span>2015–2019</span>
     </h3>
     <p>
       Minor in Portuguese; fluent in Brazilian Portuguese. Third place, BYU
@@ -168,35 +172,65 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   h1 {
-    font-size: 1.6em;
+    font-size: 2em;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  /* Each item keeps its separator, so a wrapped line never starts with one. */
+  .contact span {
+    white-space: nowrap;
   }
 
   h2 {
     border-block-end: 1px solid;
-    font-size: 1em;
-    margin-block-end: var(--size-xs);
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-block-end: 0.5em;
+    padding-block-end: 0.25em;
     text-transform: uppercase;
   }
 
   h3 {
+    align-items: baseline;
+    column-gap: 1em;
     display: flex;
-    flex-wrap: wrap;
     font-size: 1em;
+    font-weight: 600;
     justify-content: space-between;
   }
 
   h3 span {
+    flex: none;
+    font-variant-numeric: tabular-nums;
     font-weight: normal;
+    white-space: nowrap;
   }
 
   article + article {
-    margin-block-start: var(--size-sm);
+    margin-block-start: 0.6lh;
   }
 
   ul {
     padding-inline-start: 1.2em;
   }
 
+  li {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  a[href]::after {
+    content: none;
+  }
 
   @media print {
     @page {
@@ -209,10 +243,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       font-size: 10pt;
     }
 
+    /* The site's body is a viewport-high grid that centres its content, and
+       Chromium still honours that centring on a block container. */
     :global(body) {
       background: none;
       color: #000;
       display: block;
+      min-height: 0;
+      place-content: normal;
     }
 
     :global(pixel-backdrop),
@@ -220,20 +258,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       display: none;
     }
 
-    :global(.resume) {
+    /* BaseLayout's scoped main rule outranks a bare .resume selector. */
+    :global(body main.resume) {
       background: none;
-      gap: var(--size-sm);
+      line-height: 1.35;
       margin: 0;
       padding: 0;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
+    h2 {
+      border-block-end-width: 0.5pt;
     }
 
-    a[href]::after {
-      content: none;
+    a {
+      text-decoration: none;
     }
   }
 </style>
