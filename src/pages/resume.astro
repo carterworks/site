@@ -1,0 +1,277 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+// This page must print to exactly one US Letter page (see the print styles
+// below): recruiters skim one page, and a second page that holds a stray line
+// reads as careless. After any edit, print it to PDF and check the page count
+// before committing; cut words rather than shrinking the type or margins.
+//
+// Write experience bullets in Google's XYZ format, "Accomplished [X] as
+// measured by [Y], by doing [Z]", one sentence of about two printed lines
+// each, so every bullet states an outcome, its evidence, and the work that
+// caused it rather than listing duties.
+---
+
+<BaseLayout class="resume">
+  <hgroup>
+    <h1>Carter McBride</h1>
+    <p>Frontend Engineer · Saratoga Springs, Utah</p>
+    <p class="contact">
+      <span><a href="mailto:jobs@carter.works">jobs@carter.works</a> ·</span>
+      <span><a href="https://carter.works">carter.works</a> ·</span>
+      <span
+        ><a href="https://github.com/carterworks">github.com/carterworks</a> ·</span
+      >
+      <span
+        ><a href="https://www.linkedin.com/in/thatcartermcbride/"
+          >linkedin.com/in/thatcartermcbride</a
+        ></span
+      >
+    </p>
+  </hgroup>
+
+  <p>
+    Frontend engineer since 2016, working mostly in JavaScript, TypeScript and
+    the web platform. Makes web software faster for the people using it and
+    easier to ship for the people building it, and likes working directly with
+    the customers who depend on it.
+  </p>
+
+  <section>
+    <h2>Experience</h2>
+
+    <article>
+      <h3>Software Engineer 3, Adobe <span>Jan 2022 – Present</span></h3>
+      <p>Lehi, Utah · promoted from Software Engineer 2 in 2023</p>
+      <ul>
+        <li>
+          Lead most features, escalations and code review on Adobe’s open-source
+          Web SDK (<a href="https://github.com/adobe/alloy">adobe/alloy</a>): 9
+          billion requests a day from 1,500 companies, 100+ in the Fortune 500.
+          Wrote 60% of its 2026 pull requests.
+        </li>
+        <li>
+          Freed the SDK’s core from the browser, so it now ships as a Node.js
+          SDK and runs on Cloudflare Workers in prototypes, by proposing and
+          designing a Universal JavaScript architecture and its migration plan.
+        </li>
+        <li>
+          Nearly doubled stable releases, from about 7 a year to 13 in 2026, and
+          cut merge-to-npm time from four weeks to one, by leading a monorepo,
+          one-approval automated releases and deterministic Vitest and
+          Playwright tests.
+        </li>
+        <li>
+          Kept the Experience Platform Debugger’s 80,000 users working past
+          Chrome’s Manifest V2 shutdown, shipping V3 three months early, as its
+          sole engineer for four of the past five years.
+        </li>
+        <li>
+          Cut typing delay in the Tags extension’s settings from
+          140–209&nbsp;ms to under 15&nbsp;ms by replacing Formik, which
+          re-rendered every form on each keystroke, with TanStack Form.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Software Developer, ICE Mortgage Technology (formerly Simplifile) <span
+          >Jan 2019 – Jan 2022</span
+        >
+      </h3>
+      <p>Provo, Utah</p>
+      <ul>
+        <li>
+          Built and sped up features in Simplifile’s e-recording application,
+          which sends real-estate documents to county recorders electronically.
+        </li>
+        <li>
+          Mentored support technicians who moved over from a coding bootcamp
+          through their first year as engineers.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Software Engineering Intern, Lingotek <span>May 2018 – Dec 2018</span>
+      </h3>
+      <ul>
+        <li>
+          Made the main app’s pages load 15% faster by moving them to Vue.js,
+          and cut its build time 25%.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Front-End Web Developer, Brigham Young University <span
+          >Feb 2016 – May 2018</span
+        >
+      </h3>
+      <p>Provo, Utah</p>
+      <ul>
+        <li>
+          Kept Learning Suite, BYU’s learning management system, reliable and
+          quick to onboard onto by adding unit tests and automated setup while
+          building its features.
+        </li>
+      </ul>
+    </article>
+  </section>
+
+  <section>
+    <h2>Projects</h2>
+    <ul>
+      <li>
+        <a href="https://yazzy.carter.works">Yazzy</a>: reader mode for any
+        web article, in Astro.
+      </li>
+      <li>
+        <a href="https://github.com/carterworks/substack-to-epub"
+          >substack-to-epub</a
+        >: saves a Substack newsletter to SQLite and formats it as an EPUB, in
+        Python.
+      </li>
+      <li>
+        <a href="https://carter.works">carter.works</a>: this site, with its
+        pixel-art backdrop extracted into a self-contained web components package.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Education</h2>
+    <h3>
+      B.S. Computer Science, Brigham Young University <span>2015–2019</span>
+    </h3>
+    <p>
+      Minor in Portuguese; fluent in Brazilian Portuguese. Third place, BYU
+      Google Games 2017.
+    </p>
+  </section>
+
+  <section>
+    <h2>Skills</h2>
+    <p>
+      TypeScript, JavaScript, HTML, CSS, React, Vue.js, web components, Chrome
+      extensions, Node.js, Vite, Rollup, Vitest, Playwright, GitHub Actions, AI
+      coding agents
+    </p>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(.resume) {
+    --flow-space: var(--size-sm);
+
+    display: grid;
+    gap: var(--size-md);
+  }
+
+  h1 {
+    font-size: 2em;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  /* Each item keeps its separator, so a wrapped line never starts with one. */
+  .contact span {
+    white-space: nowrap;
+  }
+
+  h2 {
+    border-block-end: 1px solid;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-block-end: 0.5em;
+    padding-block-end: 0.25em;
+    text-transform: uppercase;
+  }
+
+  h3 {
+    align-items: baseline;
+    column-gap: 1em;
+    display: flex;
+    font-size: 1em;
+    font-weight: 600;
+    justify-content: space-between;
+  }
+
+  h3 span {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  article + article {
+    margin-block-start: 0.6lh;
+  }
+
+  ul {
+    padding-inline-start: 1.2em;
+  }
+
+  li {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+
+  @media print {
+    @page {
+      margin: 0.5in;
+      size: letter;
+    }
+
+    :global(html) {
+      color-scheme: light;
+      font-size: 10pt;
+    }
+
+    /* The site's body is a viewport-high grid that centres its content, and
+       Chromium still honours that centring on a block container. */
+    :global(body) {
+      background: none;
+      color: #000;
+      display: block;
+      min-height: 0;
+      place-content: normal;
+    }
+
+    :global(pixel-backdrop),
+    :global(body > .stack > header) {
+      display: none;
+    }
+
+    /* BaseLayout's scoped main rule outranks a bare .resume selector. */
+    :global(body main.resume) {
+      background: none;
+      line-height: 1.35;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      border-block-end-width: 0.5pt;
+    }
+
+    a {
+      text-decoration: none;
+    }
+  }
+</style>
