@@ -28,8 +28,8 @@ compare passes.
 
 `pnpm budgets` builds the site and fails if it misses a performance budget:
 script and font bytes, leaks, layouts and style recalculations during play, and
-the canvas pixels, render passes, offscreen pixels and blended pixels each frame
-asks for, each limit in [`scripts/budgets.mjs`](./scripts/budgets.mjs) with what
+the render passes, offscreen pixels and blended pixels each frame asks for (the
+canvas's own work is the package's to budget), each limit in [`scripts/budgets.mjs`](./scripts/budgets.mjs) with what
 it covers. Each is an exact count for the pinned Chromium, never a time, so a
 busy machine cannot move it; time is `pnpm perf --against`'s to report. Every
 pull request runs it. It needs the same browser; on NixOS, run it as

@@ -125,51 +125,6 @@ for (const [path, limit] of Object.entries(budgets.font)) {
 lap("Measured bytes");
 
 await page.context().addInitScript(virtualClock, { paused: true });
-// Counts, per frame, the canvas pixels written and read and the calls that did.
-// Areas are as asked for, before clipping to the canvas.
-await page.context().addInitScript(() => {
-  const work = (window.__canvasWork = []);
-  let row;
-  // A dirty rectangle may run negative, and is clipped to the image.
-  const clip = (from, length, limit) => {
-    const start = Math.min(from, from + length);
-    return Math.max(
-      0,
-      Math.min(limit, start + Math.abs(length)) - Math.max(0, start),
-    );
-  };
-  const areas = {
-    putImageData: (
-      image,
-      ...[, , x = 0, y = 0, w = image.width, h = image.height]
-    ) => clip(x, w, image.width) * clip(y, h, image.height),
-    // Only the three-argument form leaves the destination's size to the image.
-    drawImage: (image, ...at) =>
-      Math.abs(
-        at.length === 2 ? image.width * image.height : at.at(-2) * at.at(-1),
-      ),
-    getImageData: (...[, , w, h]) => Math.abs(w * h),
-  };
-  for (const Context of [
-    CanvasRenderingContext2D,
-    OffscreenCanvasRenderingContext2D,
-  ]) {
-    for (const [name, area] of Object.entries(areas)) {
-      const method = Context.prototype[name];
-      Context.prototype[name] = function (...args) {
-        const { frame } = window.__clock;
-        if (row?.frame !== frame) {
-          row = { frame, written: 0, read: 0, calls: 0 };
-          work.push(row);
-        }
-        row[name === "getImageData" ? "read" : "written"] += area(...args);
-        row.calls += 1;
-        return method.apply(this, args);
-      };
-    }
-  }
-});
-
 const playFor = (options) => playOnClock(page, options);
 
 const controls = playControls(page);
@@ -316,10 +271,8 @@ for (const display of displays) {
     await controls.chooseToy(toy);
     await page.goto(`${ORIGIN}/`);
     await playFor({ ms: 500, press: false });
-    await page.evaluate(() => __canvasWork.splice(0));
     const start = await metrics();
     const compositor = await traceFrames({ ms: 500, press: false });
-    const canvas = await page.evaluate(() => __canvasWork.splice(0));
     const hovered = await metrics();
     await playFor({ ms: 500, press: true });
     const pressed = await metrics();
@@ -331,10 +284,6 @@ for (const display of displays) {
       hoverStyleRecalcs: gained(hovered, start, "RecalcStyleCount"),
       pressLayouts: gained(pressed, hovered, "LayoutCount"),
       pressStyleRecalcs: gained(pressed, hovered, "RecalcStyleCount"),
-      canvasFrames: canvas.length,
-      canvasPixelsWritten: most(canvas, "written"),
-      canvasPixelsRead: most(canvas, "read"),
-      canvasCalls: most(canvas, "calls"),
       traced: compositor.length > 0,
       renderPasses: most(compositor, "renderPasses"),
       offscreenPixels: most(compositor, "offscreenPixels"),
@@ -355,7 +304,6 @@ for (const [key, limit] of Object.entries(budgets.play)) {
 }
 for (const display of displays) {
   const shown = rows.filter((row) => row.display === display);
-  need(most(shown, "canvasFrames") > 0, `no canvas drawing on ${display}`);
   need(
     shown.some((row) => row.traced),
     `no ${QUADS} frames on ${display}`,
