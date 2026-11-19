@@ -171,8 +171,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     gap: var(--size-md);
   }
 
-  /* Print sets its own 10pt on html, and a size here would scale that too. The
-     children take it, not main, whose padding and margins match the header. */
+  /* The children take it, not main, whose padding and margins are in lh and
+     match the header's. */
   @media screen {
     :global(.resume > *) {
       font-size: 1.125rem;
@@ -241,13 +241,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     content: none;
   }
 
-  /* iOS text autosizing enlarges the printed text by about a fifth, which
-     pushes the page onto a second sheet. */
-  :global(html) {
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-
   @media print {
     @page {
       margin: 0.5in;
@@ -256,7 +249,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     :global(html) {
       color-scheme: light;
-      font-size: 10pt;
     }
 
     /* The site's body is a viewport-high grid that centres its content, and
@@ -267,6 +259,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       display: block;
       min-height: 0;
       place-content: normal;
+      container-type: inline-size;
     }
 
     :global(pixel-backdrop),
@@ -274,9 +267,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       display: none;
     }
 
-    /* BaseLayout's scoped main rule outranks a bare .resume selector. */
+    /* BaseLayout's scoped main rule outranks a bare .resume selector. Safari on
+       iOS lays the page out about 590px wide where Chrome uses 720px, so a
+       fixed size prints a fifth larger there; 54 ems to the line is 10pt on
+       the 7.5in line in both. */
     :global(body main.resume) {
       background: none;
+      font-size: calc(100cqi / 54);
       line-height: 1.35;
       margin: 0;
       padding: 0;
