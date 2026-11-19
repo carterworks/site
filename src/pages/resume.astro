@@ -5,6 +5,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 // below): recruiters skim one page, and a second page that holds a stray line
 // reads as careless. After any edit, print it to PDF and check the page count
 // before committing; cut words rather than shrinking the type or margins.
+// Safari on iOS prints narrower and shorter than Chrome, with wider side
+// margins and its own footer, so leave about two lines spare at the bottom.
 //
 // Write experience bullets in Google's XYZ format, "Accomplished [X] as
 // measured by [Y], by doing [Z]", one sentence of about two printed lines
@@ -89,12 +91,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Built and sped up features in Simplifile’s e-recording application,
-          which sends real-estate documents to county recorders electronically.
+          Built and sped up features in Simplifile’s e-recording app for county
+          real-estate filings.
         </li>
         <li>
-          Mentored support technicians who moved over from a coding bootcamp
-          through their first year as engineers.
+          Mentored bootcamp-trained support technicians through their first year
+          as engineers.
         </li>
       </ul>
     </article>
@@ -169,6 +171,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     gap: var(--size-md);
   }
 
+  /* The children take it, not main, whose padding and margins are in lh and
+     match the header's. */
+  @media screen {
+    :global(.resume > *) {
+      font-size: 1.125rem;
+    }
+  }
+
   h1 {
     font-size: 2em;
     font-weight: 650;
@@ -198,6 +208,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     font-size: 1em;
     font-weight: 600;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   h3 span {
@@ -238,7 +249,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     :global(html) {
       color-scheme: light;
-      font-size: 10pt;
     }
 
     /* The site's body is a viewport-high grid that centres its content, and
@@ -249,6 +259,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       display: block;
       min-height: 0;
       place-content: normal;
+      container-type: inline-size;
     }
 
     :global(pixel-backdrop),
@@ -256,9 +267,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       display: none;
     }
 
-    /* BaseLayout's scoped main rule outranks a bare .resume selector. */
+    /* BaseLayout's scoped main rule outranks a bare .resume selector. Safari on
+       iOS lays the page out about 590px wide where Chrome uses 720px, so a
+       fixed size prints a fifth larger there; 54 ems to the line is 10pt on
+       the 7.5in line in both. */
     :global(body main.resume) {
       background: none;
+      font-size: calc(100cqi / 54);
       line-height: 1.35;
       margin: 0;
       padding: 0;
