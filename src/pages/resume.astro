@@ -1,5 +1,15 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+// This page must print to exactly one US Letter page (see the print styles
+// below): recruiters skim one page, and a second page that holds a stray line
+// reads as careless. After any edit, print it to PDF and check the page count
+// before committing; cut words rather than shrinking the type or margins.
+//
+// Write experience bullets in Google's XYZ format, "Accomplished [X] as
+// measured by [Y], by doing [Z]", one sentence of about two printed lines
+// each, so every bullet states an outcome, its evidence, and the work that
+// caused it rather than listing duties.
 ---
 
 <BaseLayout class="resume">
@@ -31,32 +41,31 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Lehi, Utah · promoted from Software Engineer 2 in 2023</p>
       <ul>
         <li>
-          Second most senior of four engineers on Adobe’s open-source Web SDK
-          (<a href="https://github.com/adobe/alloy">adobe/alloy</a>), the
-          analytics and personalization library on enterprise sites. Lead most
-          feature work and customer issues, and review the team’s code and
-          designs; wrote about 60% of its merged pull requests in 2026.
+          Lead most features, escalations and code review on Adobe’s open-source
+          Web SDK (<a href="https://github.com/adobe/alloy">adobe/alloy</a>): 9
+          billion requests a day from 1,500 companies, 100+ in the Fortune 500.
+          Wrote 60% of its 2026 pull requests.
         </li>
         <li>
-          Proposed and designed a Universal JavaScript architecture that frees
-          the SDK’s core from the browser; built most of it. It now also ships
-          as a Node.js SDK, and runs on Cloudflare Workers in prototypes.
+          Freed the SDK’s core from the browser, so it now ships as a Node.js
+          SDK and runs on Cloudflare Workers in prototypes, by proposing and
+          designing a Universal JavaScript architecture and its migration plan.
         </li>
         <li>
-          Pushed for and led a monorepo, automated releases and deterministic
-          Vitest and Playwright tests. Releasing went from a wiki checklist the
-          whole team swarmed on to two clicks, with continuous betas; stable
-          releases rose from about 7 a year to 12 so far in 2026.
+          Nearly doubled stable releases, from about 7 a year to 13 in 2026, and
+          cut merge-to-npm time from four weeks to one, by leading a monorepo,
+          one-approval automated releases and deterministic Vitest and
+          Playwright tests.
         </li>
         <li>
-          Sole engineer on the Experience Platform Debugger, a Chrome extension
-          with about 80,000 users, for four of the past five years; moved it to
-          Manifest V3 when Google retired V2.
+          Kept the Experience Platform Debugger’s 80,000 users working past
+          Chrome’s Manifest V2 shutdown, shipping V3 three months early, as its
+          sole engineer for four of the past five years.
         </li>
         <li>
-          Spotted and fixed lag in the SDK’s Tags extension, cutting typing delay
-          in its settings from 140–209&nbsp;ms to under 15&nbsp;ms, and moved its UI to
-          React Spectrum 2.
+          Cut typing delay in the Tags extension’s settings from
+          140–209&nbsp;ms to under 15&nbsp;ms by replacing Formik, which
+          re-rendered every form on each keystroke, with TanStack Form.
         </li>
       </ul>
     </article>
@@ -74,8 +83,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           which sends real-estate documents to county recorders electronically.
         </li>
         <li>
-          Formally mentored support technicians through their first year as
-          engineers, after they moved over from a coding bootcamp.
+          Mentored support technicians who moved over from a coding bootcamp
+          through their first year as engineers.
         </li>
       </ul>
     </article>
@@ -86,8 +95,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </h3>
       <ul>
         <li>
-          Moved pages of the main app to Vue.js for 15% faster loads, and cut
-          its build time by 25%.
+          Made the main app’s pages load 15% faster by moving them to Vue.js,
+          and cut its build time 25%.
         </li>
       </ul>
     </article>
@@ -101,9 +110,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Built features for Learning Suite, BYU’s learning management system,
-          used by thousands, with unit tests and automated setup that kept it
-          reliable and onboarding quick.
+          Kept Learning Suite, BYU’s learning management system, reliable and
+          quick to onboard onto by adding unit tests and automated setup while
+          building its features.
         </li>
       </ul>
     </article>
