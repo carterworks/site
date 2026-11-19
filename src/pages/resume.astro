@@ -15,7 +15,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout class="resume">
   <hgroup>
     <h1>Carter McBride</h1>
-    <p>Frontend Engineer · Saratoga Springs, Utah</p>
+    <p>Frontend Engineer · React, TypeScript, Node.js · Saratoga Springs, Utah</p>
     <p class="contact">
       <span><a href="mailto:jobs@carter.works">jobs@carter.works</a> ·</span>
       <span><a href="https://carter.works">carter.works</a> ·</span>
@@ -31,10 +31,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Frontend engineer since 2016, working mostly in JavaScript, TypeScript and
-    the web platform. Makes web software faster for the people using it and
-    easier to ship for the people building it, and likes working directly with
-    the customers who depend on it.
+    Frontend engineer since 2016. Leads most features, code review and customer
+    escalations, on a team of four, for Adobe’s open-source Web SDK
+    (<a href="https://github.com/adobe/alloy">adobe/alloy</a>): 9 billion
+    requests a day from 1,500 companies, 100+ in the Fortune 500. Designed and
+    built the React UI of the 80,000-user Experience Platform Debugger as
+    its sole engineer for four of the past five years.
   </p>
 
   <section>
@@ -45,26 +47,30 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Lehi, Utah · promoted from Software Engineer 2 in 2023</p>
       <ul>
         <li>
-          Lead most features, escalations and code review on Adobe’s open-source
-          Web SDK (<a href="https://github.com/adobe/alloy">adobe/alloy</a>): 9
-          billion requests a day from 1,500 companies, 100+ in the Fortune 500.
-          Wrote 60% of its 2026 pull requests.
+          Worked 30 enterprise customer escalations since 2022, 14 of them
+          Blocker or Critical, reproducing bugs on pages we don’t control and
+          shipping the fixes; one Critical fix merged 38 minutes after it was
+          reported.
         </li>
         <li>
-          Freed the SDK’s core from the browser, so it now ships as a Node.js
-          SDK and runs on Cloudflare Workers in prototypes, by proposing and
-          designing a Universal JavaScript architecture and its migration plan.
+          Took the SDK beyond the browser, shipping a Node.js SDK on npm and
+          Cloudflare Workers prototypes, by designing a Universal JavaScript
+          architecture and the migration plan a new hire built under my review.
         </li>
         <li>
-          Nearly doubled stable releases, from about 7 a year to 13 in 2026, and
-          cut merge-to-npm time from four weeks to one, by leading a monorepo,
-          one-approval automated releases and deterministic Vitest and
-          Playwright tests.
+          Cut the SDK’s download on every customer page by 9% gzipped (18%
+          minified) by removing Internet Explorer support and its workarounds,
+          and made each build report its size.
         </li>
         <li>
-          Kept the Experience Platform Debugger’s 80,000 users working past
-          Chrome’s Manifest V2 shutdown, shipping V3 three months early, as its
-          sole engineer for four of the past five years.
+          Cut the time from a merged fix to its npm release from about four weeks
+          to one by leading a monorepo, one&#8209;approval automated releases and
+          deterministic Vitest and Playwright tests.
+        </li>
+        <li>
+          Kept the Experience Platform Debugger working for its 80,000 users
+          past Chrome’s Manifest V2 shutdown by shipping Manifest V3 three
+          months early.
         </li>
         <li>
           Cut typing delay in the Tags extension’s settings from
@@ -124,22 +130,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   <section>
     <h2>Projects</h2>
-    <ul>
-      <li>
-        <a href="https://yazzy.carter.works">Yazzy</a>: reader mode for any
-        web article, in Astro.
-      </li>
-      <li>
-        <a href="https://github.com/carterworks/substack-to-epub"
-          >substack-to-epub</a
-        >: saves a Substack newsletter to SQLite and formats it as an EPUB, in
-        Python.
-      </li>
-      <li>
-        <a href="https://carter.works">carter.works</a>: this site, with its
-        pixel-art backdrop extracted into a self-contained web components package.
-      </li>
-    </ul>
+    <p>
+      <a href="https://yazzy.carter.works">Yazzy</a>, reader mode used on 5,600+
+      articles ·
+      <a href="https://github.com/carterworks/substack-to-epub"
+        >substack-to-epub</a
+      >, Substack to EPUB ·
+      <a href="https://github.com/carterworks/pixel-backdrop">pixel-backdrop</a> (npm)
+    </p>
   </section>
 
   <section>
