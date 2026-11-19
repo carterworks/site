@@ -5,6 +5,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 // below): recruiters skim one page, and a second page that holds a stray line
 // reads as careless. After any edit, print it to PDF and check the page count
 // before committing; cut words rather than shrinking the type or margins.
+// Safari on iOS prints narrower and shorter than Chrome, with wider side
+// margins and its own footer, so leave about two lines spare at the bottom.
 //
 // Write experience bullets in Google's XYZ format, "Accomplished [X] as
 // measured by [Y], by doing [Z]", one sentence of about two printed lines
@@ -89,12 +91,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Provo, Utah</p>
       <ul>
         <li>
-          Built and sped up features in Simplifile’s e-recording application,
-          which sends real-estate documents to county recorders electronically.
+          Built and sped up features in Simplifile’s e-recording app for county
+          real-estate filings.
         </li>
         <li>
-          Mentored support technicians who moved over from a coding bootcamp
-          through their first year as engineers.
+          Mentored bootcamp-trained support technicians through their first year
+          as engineers.
         </li>
       </ul>
     </article>
@@ -228,6 +230,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   a[href]::after {
     content: none;
+  }
+
+  /* iOS text autosizing enlarges the printed text by about a fifth, which
+     pushes the page onto a second sheet. */
+  :global(html) {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   @media print {
