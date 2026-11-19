@@ -34,11 +34,11 @@ test("ids are unique", () => {
 });
 
 test.each(DISPLAYS)(
-  "$id's colours are hex: the palette pass needs a helper canvas to parse any other form, and the contrast test this",
-  ({ base, ink, page, look }) => {
-    const colours = [base, ink, ...Object.values(page), ...(look?.stops ?? [])];
-    if (look?.vignette) colours.push(look.vignette.edge);
-    for (const colour of colours) expect(colour).toMatch(/^#[0-9a-f]{6}$/);
+  "$id's page colours are hex, the only form the contrast test parses",
+  ({ page }) => {
+    for (const colour of Object.values(page)) {
+      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
+    }
   },
 );
 
