@@ -171,6 +171,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     gap: var(--size-md);
   }
 
+  /* Print sets its own 10pt on html, and a size here would scale that too. The
+     children take it, not main, whose padding and margins match the header. */
+  @media screen {
+    :global(.resume > *) {
+      font-size: 1.125rem;
+    }
+  }
+
   h1 {
     font-size: 2em;
     font-weight: 650;
@@ -200,6 +208,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     font-size: 1em;
     font-weight: 600;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   h3 span {
