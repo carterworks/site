@@ -17,12 +17,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout class="resume">
   <hgroup>
     <h1>Carter McBride</h1>
-    <p>Frontend Engineer · React, TypeScript, Node.js · Saratoga Springs, Utah</p>
+    <p>
+      Senior Frontend Engineer | Browser SDKs, React &amp; TypeScript | Saratoga
+      Springs, Utah
+    </p>
     <p class="contact">
-      <span><a href="mailto:jobs@carter.works">jobs@carter.works</a> ·</span>
-      <span><a href="https://carter.works">carter.works</a> ·</span>
+      <span><a href="mailto:jobs@carter.works">jobs@carter.works</a> |</span>
+      <span><a href="https://carter.works">carter.works</a> |</span>
       <span
-        ><a href="https://github.com/carterworks">github.com/carterworks</a> ·</span
+        ><a href="https://github.com/carterworks">github.com/carterworks</a> |</span
       >
       <span
         ><a href="https://www.linkedin.com/in/thatcartermcbride/"
@@ -33,98 +36,109 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </hgroup>
 
   <p>
-    Frontend engineer since 2016. Leads most features, code review and customer
-    escalations, on a team of four, for Adobe’s open-source Web SDK
-    (<a href="https://github.com/adobe/alloy">adobe/alloy</a>): 9 billion
-    requests a day from 1,500 companies, 100+ in the Fortune 500. Designed and
-    built the React UI of the 80,000-user Experience Platform Debugger as
-    its sole engineer for four of the past five years.
+    10 years of experience building browser SDKs, developer tools, and React
+    apps. Technical lead for architecture, release engineering, and escalations
+    on Adobe’s open-source Web SDK (<a href="https://github.com/adobe/alloy"
+      >adobe/alloy</a
+    >: 9B requests/day, 1,500 orgs, 100+ Fortune 500), and sole engineer of
+    Adobe’s Experience Platform Debugger.
   </p>
 
   <section>
     <h2>Experience</h2>
 
     <article>
-      <h3>Software Engineer 3, Adobe <span>Jan 2022 – Present</span></h3>
-      <p>Lehi, Utah · promoted from Software Engineer 2 in 2023</p>
-      <ul>
-        <li>
-          Worked 30 enterprise customer escalations since 2022, 14 of them
-          Blocker or Critical, reproducing bugs on pages we don’t control and
-          shipping the fixes; one Critical fix merged 38 minutes after it was
-          reported.
-        </li>
-        <li>
-          Took the SDK beyond the browser, shipping a Node.js SDK on npm and
-          Cloudflare Workers prototypes, by designing a Universal JavaScript
-          architecture and the migration plan a new hire built under my review.
-        </li>
-        <li>
-          Cut the SDK’s download on every customer page by 9% gzipped (18%
-          minified) by removing Internet Explorer support and its workarounds,
-          and made each build report its size.
-        </li>
-        <li>
-          Cut the time from a merged fix to its npm release from about four weeks
-          to one by leading a monorepo, one&#8209;approval automated releases and
-          deterministic Vitest and Playwright tests.
-        </li>
-        <li>
-          Kept the Experience Platform Debugger working for its 80,000 users
-          past Chrome’s Manifest V2 shutdown by shipping Manifest V3 three
-          months early.
-        </li>
-        <li>
-          Cut typing delay in the Tags extension’s settings from
-          140–209&nbsp;ms to under 15&nbsp;ms by replacing Formik, which
-          re-rendered every form on each keystroke, with TanStack Form.
-        </li>
-      </ul>
-    </article>
-
-    <article>
       <h3>
-        Software Developer, ICE Mortgage Technology (formerly Simplifile) <span
-          >Jan 2019 – Jan 2022</span
+        Software Engineer 3, Adobe<span class="print-sep"> | </span><span
+          class="dates">Jan 2022 – Present</span
         >
       </h3>
-      <p>Provo, Utah</p>
       <ul>
         <li>
-          Built and sped up features in Simplifile’s e-recording app for county
-          real-estate filings.
+          Nearly doubled stable Web SDK releases (7 to 13/yr) and cut median
+          merge-to-npm time from 28 to 7 days by building a pnpm monorepo with
+          one-click, retry-safe releases and replacing 3–4 engineer manual QA
+          sessions with 2,906 Vitest and Playwright tests.
         </li>
         <li>
-          Mentored bootcamp-trained support technicians through their first year
-          as engineers.
+          Pitched an edge/Node.js SDK at Innovation Week that became a 2026
+          roadmap epic, then shipped @adobe/alloy-node on npm by designing the
+          Universal JavaScript architecture, mentoring a new hire through all 38
+          PRs, and prototyping a Cloudflare Workers proxy.
+        </li>
+        <li>
+          Pioneered Web SDK data collection for AI clients by building a ChatGPT
+          app and MCP server sample, authoring MCP payload specs for ChatGPT,
+          and writing cross-team RFCs on third-party cookies and Storage Access
+          API.
+        </li>
+        <li>
+          Grew the Experience Platform Debugger from 30K to 80K users as its
+          sole engineer, shipping Chrome Manifest V3 three months before MV2
+          shutdown by migrating to service workers, Parcel 2, and
+          remote-code-free injection.
+        </li>
+        <li>
+          Resolved 30 enterprise escalations (14 Blocker or Critical) by
+          reproducing bugs on third-party production sites and shipping fixes,
+          including a Critical telecom login fix merged in 38 minutes.
+        </li>
+        <li>
+          Cut typing latency in Adobe Tags’ configuration UI from
+          <span class="nowrap">140–209 ms</span> to
+          <span class="nowrap">8–15 ms</span> (10× faster) by replacing Formik,
+          which re-rendered every form on each keystroke, with TanStack Form.
+        </li>
+        <li>
+          Raised team engineering standards by leading the UI &amp; React
+          interview loop, authoring the on-call runbook, and reviewing 500+ PRs
+          across the Web SDK.
         </li>
       </ul>
     </article>
 
     <article>
       <h3>
-        Software Engineering Intern, Lingotek <span>May 2018 – Dec 2018</span>
-      </h3>
-      <ul>
-        <li>
-          Made the main app’s pages load 15% faster by moving them to Vue.js,
-          and cut its build time 25%.
-        </li>
-      </ul>
-    </article>
-
-    <article>
-      <h3>
-        Front-End Web Developer, Brigham Young University <span
-          >Feb 2016 – May 2018</span
+        Software Developer, ICE Mortgage Technology (Simplifile)<span
+          class="print-sep"
         >
+          |
+        </span><span class="dates">Jan 2019 – Jan 2022</span>
       </h3>
-      <p>Provo, Utah</p>
       <ul>
         <li>
-          Kept Learning Suite, BYU’s learning management system, reliable and
-          quick to onboard onto by adding unit tests and automated setup while
-          building its features.
+          Built and maintained customer-facing frontend features in Simplifile’s
+          real-estate e-recording app, and mentored bootcamp-trained support
+          technicians through their first year as engineers.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Software Engineering Intern, Lingotek<span class="print-sep"> | </span
+        ><span class="dates">May 2018 – Dec 2018</span>
+      </h3>
+      <ul>
+        <li>
+          Improved main app page load times by 15% while migrating views to
+          Vue.js and cut build times by 25%.
+        </li>
+      </ul>
+    </article>
+
+    <article>
+      <h3>
+        Front-End Web Developer, Brigham Young University<span
+          class="print-sep"
+        >
+          |
+        </span><span class="dates">Feb 2016 – May 2018</span>
+      </h3>
+      <ul>
+        <li>
+          Built features for Learning Suite, BYU’s learning management system,
+          and added unit tests and automated onboarding setup.
         </li>
       </ul>
     </article>
@@ -133,32 +147,44 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section>
     <h2>Projects</h2>
     <p>
-      <a href="https://yazzy.carter.works">Yazzy</a>, reader mode used on 5,600+
-      articles ·
-      <a href="https://github.com/carterworks/substack-to-epub"
-        >substack-to-epub</a
-      >, Substack to EPUB ·
-      <a href="https://github.com/carterworks/pixel-backdrop">pixel-backdrop</a> (npm)
+      <strong><a href="https://yazzy.carter.works">Yazzy</a></strong>: reader
+      mode (5,600+ articles) |
+      <strong
+        ><a href="https://github.com/carterworks/substack-to-epub"
+          >substack-to-epub</a
+        ></strong
+      >: ebook CLI |
+      <strong
+        ><a href="https://github.com/carterworks/pixel-backdrop"
+          >pixel-backdrop</a
+        ></strong
+      >: WebGL component (npm)
     </p>
   </section>
 
   <section>
     <h2>Education</h2>
     <h3>
-      B.S. Computer Science, Brigham Young University <span>2015–2019</span>
+      B.S. Computer Science, Brigham Young University (Minor: Brazilian
+      Portuguese, fluent)<span class="print-sep"> | </span><span class="dates"
+        >2015–2019</span
+      >
     </h3>
-    <p>
-      Minor in Portuguese; fluent in Brazilian Portuguese. Third place, BYU
-      Google Games 2017.
-    </p>
   </section>
 
-  <section>
+  <section class="skills">
     <h2>Skills</h2>
     <p>
-      TypeScript, JavaScript, HTML, CSS, React, Vue.js, web components, Chrome
-      extensions, Node.js, Vite, Rollup, Vitest, Playwright, GitHub Actions, AI
-      coding agents
+      <strong>Languages &amp; Web:</strong> TypeScript, JavaScript, HTML, CSS,
+      Web Components, Chrome Extensions (MV3)
+    </p>
+    <p>
+      <strong>Frameworks &amp; Platform:</strong> React, Node.js, Vue.js,
+      Cloudflare Workers, TanStack Form
+    </p>
+    <p>
+      <strong>Tooling, Testing &amp; AI:</strong> Vite, pnpm, Monorepos, Vitest,
+      Playwright, GitHub Actions, CI/CD, MCP, AI Coding Agents
     </p>
   </section>
 </BaseLayout>
@@ -187,8 +213,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   /* Each item keeps its separator, so a wrapped line never starts with one. */
-  .contact span {
+  .contact span,
+  .nowrap {
     white-space: nowrap;
+  }
+
+  .skills p + p {
+    margin-block-start: 0.15em;
   }
 
   h2 {
@@ -211,7 +242,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     flex-wrap: wrap;
   }
 
-  h3 span {
+  h3 .print-sep {
+    display: none;
+  }
+
+  h3 .dates {
     flex: none;
     font-variant-numeric: tabular-nums;
     font-weight: normal;
@@ -273,14 +308,33 @@ import BaseLayout from "../layouts/BaseLayout.astro";
        the 7.5in line in both. */
     :global(body main.resume) {
       background: none;
+      display: block;
       font-size: calc(100cqi / 54);
+      font-variant-ligatures: none;
       line-height: 1.35;
       margin: 0;
       padding: 0;
     }
 
+    :global(body main.resume > * + *) {
+      margin-block-start: 0.75em;
+    }
+
+    h1 {
+      font-weight: 700;
+    }
+
     h2 {
       border-block-end-width: 0.5pt;
+    }
+
+    h3 {
+      display: block;
+    }
+
+    h3 .print-sep {
+      display: inline;
+      font-weight: normal;
     }
 
     a {

@@ -28,7 +28,7 @@ export const pages: Record<string, PageMetadata> = {
     description: "Carter McBride's resume.",
     id: "resume",
     ogTitle: "Resume",
-    title: "Resume | carter.works",
+    title: "Carter McBride — Resume",
   },
   "/play/": {
     description: "The pixel backdrop, full-screen.",
